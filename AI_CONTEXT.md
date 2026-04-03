@@ -15,7 +15,7 @@ This document is the **Primary Source of Truth** for the modernized Medicert Por
 ### 2. Middleware & Security (Cloudflare Worker)
 - **Role:** Secure API Proxy & Secret Injector.
 - **Security Flow:** **Browser (No Key)** -> **Cloudflare Worker (Injects Secret API_KEY)** -> **GAS Bridge**.
-- **Worker Secrets:** `API_KEY` (Auth), `GAS_API_URL` (Execution URL).
+- **Worker Secrets:** `API_KEY` (Auth), `GAS_API_URL` (Execution URL - Official: `https://portalapi.medicert.com.tr`).
 
 ---
 

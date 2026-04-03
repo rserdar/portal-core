@@ -11,8 +11,9 @@ export default {
   async fetch(request, env, ctx) {
     // 🌐 İzin Verilen Kaynaklar (CORS)
     const allowedOrigins = [
-      "https://portal.pages.dev", // Sizin Cloudflare Pages domaininiz
-      "http://localhost:4321"     // Yerel geliştirme ortamınız
+      "https://portal.medicert.com.tr", // Ana Portal (Production)
+      "https://portal.pages.dev",       // Cloudflare Pages (Staging)
+      "http://localhost:4321"           // Yerel Geliştirme
     ];
 
     const origin = request.headers.get("Origin");
