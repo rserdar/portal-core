@@ -285,7 +285,7 @@ This document is the **Primary Source of Truth** for the modernized Medicert Por
 ## 💻 Local Development Guide
 1. **Middleware (Worker):** Run `npx wrangler dev`. Ensure local secrets match GAS.
 2. **Frontend (Astro):** Run `npm run dev`. Ensure `PUBLIC_WORKER_URL` in `.env` points to local Worker.
-3. **GAS Backend:** Ensure `API_KEY` script property is set for local proxy calls.
+3. **GAS Backend:** Ensure `API_KEY` script property is set to `mc-portal-3.0_8a2d7f9e4c1b5a6c3d2e1f0b9a8c7d6e` for local proxy calls.
 
 ---
 **Status:** Secured, Code-Verified & Complete.
