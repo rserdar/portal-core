@@ -1,0 +1,220 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+
+/**
+ * 📚 Doküman Sorgulama Paneli
+ * 
+ * Firmalara ait üretilmiş dokümanları listeleyen, PDF'e 
+ * dönüştürme ve Drive klasör yönetimi sağlayan modül.
+ */
+---
+
+<DashboardLayout title="Doküman Sorgulama">
+  <div class="max-w-6xl mx-auto space-y-8 pb-20">
+    
+    <!-- 🏢 1. Firma Seçimi & Klasör Butonu -->
+    <section class="glass p-8 rounded-3xl flex flex-col md:flex-row items-center gap-6">
+      <div class="flex-1 relative group w-full">
+        <input 
+          type="text" 
+          id="company-search" 
+          list="company-list" 
+          placeholder="Dokümanlarını görmek istediğiniz firmayı arayın..." 
+          class="w-full bg-white/5 border border-white/10 rounded-xl px-12 py-4 text-lg focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
+        />
+        <svg class="absolute left-4 top-4.5 text-gray-500 group-focus-within:text-indigo-400 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <datalist id="company-list"></datalist>
+      </div>
+      
+      <button id="open-folder-btn" class="hidden md:flex items-center gap-2 px-8 py-4 glass border-white/10 rounded-xl text-gray-400 hover:text-indigo-400 hover:border-indigo-500/30 transition-all font-bold">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93l-1-1A2 2 0 0 0 9.6 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"/></svg>
+        DOKÜMAN KLASÖRÜNÜ AÇ
+      </button>
+    </section>
+
+    <!-- 📊 2. Doküman Listesi -->
+    <div id="results-container" class="hidden space-y-6">
+        <div class="flex items-center justify-between px-2">
+            <div>
+                <h2 id="result-title" class="text-xl font-bold text-white">Dokümanlar</h2>
+                <p class="text-xs text-gray-500 mt-1">Seçili firmaya ait üretilmiş güncel dosyalar.</p>
+            </div>
+            <div id="file-count" class="px-4 py-1.5 glass rounded-full border-white/10 text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                0 DOSYA
+            </div>
+        </div>
+
+        <div class="glass rounded-3xl overflow-hidden border-white/5 shadow-2xl">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/5 bg-white/5 text-gray-400">
+                            <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Doküman Adı</th>
+                            <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Tip</th>
+                            <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Oluşturulma</th>
+                            <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-right">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="doc-table-body" class="divide-y divide-white/5">
+                        <!-- Reaktif Veriler -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="table-loader" class="hidden px-8 py-32 text-center flex flex-col items-center justify-center gap-4">
+                <div class="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+                <p class="text-sm text-gray-500 animate-pulse">Dosyalar taranıyor...</p>
+            </div>
+
+            <div id="no-results" class="hidden px-8 py-32 text-center flex flex-col items-center justify-center gap-4">
+                 <div class="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <p class="text-lg font-bold text-gray-500">Bu firmaya ait doküman bulunamadı.</p>
+                <p class="text-xs text-gray-600 max-w-xs">Dokümanlar klasörü boş veya henüz oluşturulmamış olabilir.</p>
+            </div>
+        </div>
+    </div>
+
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api } from '../../lib/api';
+  import { $companies } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
+
+  const companySearch = document.getElementById('company-search') as HTMLInputElement;
+  const companyList = document.getElementById('company-list');
+  const resultsContainer = document.getElementById('results-container');
+  const tableBody = document.getElementById('doc-table-body');
+  const tableLoader = document.getElementById('table-loader');
+  const noResults = document.getElementById('no-results');
+  const resultTitle = document.getElementById('result-title');
+  const fileCount = document.getElementById('file-count');
+  const openFolderBtn = document.getElementById('open-folder-btn');
+
+  let selectedNickname = "";
+
+  // 📡 Store'u Dinle (Arama Datalist)
+  $companies.subscribe(companies => {
+    if (companyList) {
+      companyList.innerHTML = '';
+      companies.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = `${c.nickname} (M${c.id})`;
+        companyList.appendChild(opt);
+      });
+    }
+  });
+
+  // 🔍 Firma Seçimi & Listeleme
+  companySearch?.addEventListener('input', async (e) => {
+    const val = (e.target as HTMLInputElement).value;
+    const match = $companies.get().find(c => `${c.nickname} (M${c.id})` === val);
+    
+    if (match) {
+      selectedNickname = match.nickname;
+      resultsContainer?.classList.remove('hidden');
+      openFolderBtn?.classList.remove('hidden');
+      if (resultTitle) resultTitle.textContent = `${match.nickname} - Doküman Listesi`;
+      loadDocuments(match.nickname);
+    }
+  });
+
+  async function loadDocuments(nickname: string) {
+    if (!tableBody || !tableLoader || !noResults) return;
+
+    tableBody.innerHTML = '';
+    tableLoader.classList.remove('hidden');
+    noResults.classList.add('hidden');
+    if (fileCount) fileCount.textContent = 'TARANIYOR...';
+
+    const res = await api.call('getRecentFiles', { 
+        nickname: nickname,
+        mimeTypes: ['application/vnd.google-apps.document', 'application/pdf', 'application/vnd.google-apps.spreadsheet']
+    });
+
+    tableLoader.classList.add('hidden');
+
+    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      if (fileCount) fileCount.textContent = `${res.data.length} DOSYA`;
+      renderFiles(res.data);
+    } else {
+      if (fileCount) fileCount.textContent = '0 DOSYA';
+      noResults.classList.remove('hidden');
+    }
+  }
+
+  function renderFiles(files: any[]) {
+    if (!tableBody) return;
+
+    files.forEach(file => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-white/5 transition-colors group';
+      
+      const isPdf = file.mimeType === 'application/pdf';
+      const isDoc = file.mimeType === 'application/vnd.google-apps.document';
+      
+      tr.innerHTML = `
+        <td class="px-6 py-5">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg ${isPdf ? 'bg-rose-500/10 text-rose-400' : 'bg-indigo-500/10 text-indigo-400'} flex items-center justify-center">
+                    ${isPdf ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>' : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>'}
+                </div>
+                <span class="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">${file.name}</span>
+            </div>
+        </td>
+        <td class="px-6 py-5">
+            <span class="text-[10px] font-black uppercase tracking-tighter text-gray-500">${isPdf ? 'PDF Belgesi' : 'Google Doc'}</span>
+        </td>
+        <td class="px-6 py-5">
+             <div class="text-[11px] text-gray-500 font-mono">${new Date(file.dateCreated).toLocaleDateString('tr-TR')}</div>
+        </td>
+        <td class="px-6 py-5 text-right">
+          <div class="flex items-center justify-end gap-2 translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
+            <a href="${file.url}" target="_blank" class="p-2 glass rounded-lg text-gray-400 hover:text-indigo-400 transition" title="Drive'da Aç">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+            ${isDoc ? `
+                <button class="pdf-convert-btn p-2 glass rounded-lg text-gray-400 hover:text-rose-400 transition" data-id="${file.id}" title="PDF'e Dönüştür">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </button>
+            ` : ''}
+          </div>
+        </td>
+      `;
+      tableBody.appendChild(tr);
+    });
+
+    attachDocActions();
+  }
+
+  function attachDocActions() {
+    document.querySelectorAll('.pdf-convert-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = (e.currentTarget as HTMLElement).dataset.id;
+        const btnElem = e.currentTarget as HTMLElement;
+        btnElem.classList.add('animate-spin', 'text-rose-500');
+        
+        const res = await api.call('convertToPdf', { docId: id });
+        btnElem.classList.remove('animate-spin', 'text-rose-500');
+
+        if (res.success) {
+            alert("PDF Başarıyla oluşturuldu! Listeyi yeniliyorum...");
+            loadDocuments(selectedNickname);
+        } else {
+            alert("Hata: " + res.data.error);
+        }
+      });
+    });
+  }
+
+  openFolderBtn?.addEventListener('click', async () => {
+    const res = await api.call('getFolderId', { nickname: selectedNickname });
+    if (res.success) window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
+  });
+
+  // Başlat
+  SyncManager.init();
+</script>

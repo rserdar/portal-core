@@ -1,0 +1,283 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+
+/**
+ * 📝 Doküman Seti Üretim Paneli
+ * 
+ * Firma bazlı toplu doküman (Sertifika, Form, Sözleşme) üretimi
+ * ve progres bar takibi sağlayan akıllı modül.
+ */
+---
+
+<DashboardLayout title="Doküman Üret">
+  <div class="max-w-4xl mx-auto space-y-8 pb-20">
+    
+    <!-- 🏢 1. Firma Seçimi -->
+    <section class="glass p-8 rounded-3xl space-y-6">
+      <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+        <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"/><path d="M5 21V7"/><path d="M19 21V7"/><path d="M9 7v1"/><path d="M15 7v1"/><path d="M9 12v1"/><path d="M15 12v1"/><path d="M9 17v1"/><path d="M15 17v1"/></svg>
+        </div>
+        <h2 class="text-xl font-bold">Adım 1: Firma Seçimi</h2>
+      </div>
+
+      <div class="relative group">
+        <input 
+          type="text" 
+          id="company-search" 
+          list="company-list" 
+          placeholder="İşlem yapılacak firmayı arayın..." 
+          class="w-full bg-white/5 border border-white/10 rounded-xl px-12 py-4 text-lg focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
+        />
+        <svg class="absolute left-4 top-4.5 text-gray-500 group-focus-within:text-indigo-400 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <datalist id="company-list"></datalist>
+      </div>
+
+      <div id="selected-company-info" class="hidden glass p-4 rounded-2xl border-indigo-500/20 bg-indigo-500/5 transition-all animate-fade-in">
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Seçili Firma</p>
+                <h3 id="display-unvan" class="font-bold text-lg text-white"></h3>
+                <p id="display-id" class="text-xs text-gray-500 font-mono"></p>
+            </div>
+            <button id="clear-selection" class="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-red-400 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 👤 2. Sorumlu Kişiler -->
+    <section class="glass p-8 rounded-3xl space-y-6 opacity-50 pointer-events-none transition-all duration-500" id="section-responsibles">
+       <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+        <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h2 class="text-xl font-bold">Adım 2: Departman Sorumluları</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase">Depo / Sevkiyat</label>
+            <input type="text" id="resp-depo" class="form-input" placeholder="Ad Soyad">
+        </div>
+        <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase">Üretim / Planlama</label>
+            <input type="text" id="resp-uretim" class="form-input" placeholder="Ad Soyad">
+        </div>
+        <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase">Mali İşler</label>
+            <input type="text" id="resp-mali" class="form-input" placeholder="Ad Soyad">
+        </div>
+        <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase">Kalite Kontrol</label>
+            <input type="text" id="resp-kalite" class="form-input" placeholder="Ad Soyad">
+        </div>
+      </div>
+    </section>
+
+    <!-- 🏗️ 3. Set Seçimi & Üretim -->
+    <section class="glass p-8 rounded-3xl space-y-6 opacity-50 pointer-events-none transition-all duration-500" id="section-sets">
+       <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+        <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
+        <h2 class="text-xl font-bold">Adım 3: Set Seçimi & Üretim</h2>
+      </div>
+
+      <div class="flex flex-col md:flex-row gap-4">
+        <select id="set-select" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white outline-none focus:ring-2 focus:ring-orange-500/50">
+            <option value="" disabled selected>Doküman Seti Seçiniz...</option>
+        </select>
+        <button id="generate-btn" class="px-10 py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-lg shadow-orange-600/20 transition-all flex items-center justify-center gap-3 group">
+            <svg class="group-hover:translate-x-1 transition-transform" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4-4-4"/><path d="M3 3.41c1.53 1.5 3.37 2.48 5.39 2.81 1.81.3 3.65.11 5.35-.57L19 3"/><path d="M3 20.59c1.53-1.5 3.37-2.48 5.39-2.81 1.81-.3 3.65-.11 5.35.57L19 21"/><path d="M16 10H3"/></svg>
+            ÜRETİMİ BAŞLAT
+        </button>
+      </div>
+
+      <!-- Progress Bar -->
+      <div id="progress-container" class="hidden space-y-4 pt-6">
+        <div class="flex justify-between items-end">
+            <div class="space-y-1">
+                <p id="progress-text" class="text-xs font-bold text-gray-400">Dokümanlar Hazırlanıyor...</p>
+                <p id="current-doc-name" class="text-sm font-bold text-white"></p>
+            </div>
+            <div class="text-right">
+                <span id="progress-percent" class="text-3xl font-black text-indigo-400">0%</span>
+            </div>
+        </div>
+        <div class="h-4 bg-white/5 rounded-full overflow-hidden border border-white/10">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-indigo-600 to-purple-600 w-0 transition-all duration-500"></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</DashboardLayout>
+
+<style is:global>
+  @reference "../../styles/index.css";
+
+  .form-input {
+    @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm;
+  }
+</style>
+
+<script>
+  import { api } from '../../lib/api';
+  import { $companies } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
+
+  const companySearch = document.getElementById('company-search') as HTMLInputElement;
+  const companyList = document.getElementById('company-list');
+  const selectedInfo = document.getElementById('selected-company-info');
+  const displayUnvan = document.getElementById('display-unvan');
+  const displayId = document.getElementById('display-id');
+  const clearBtn = document.getElementById('clear-selection');
+
+  const secResponsibles = document.getElementById('section-responsibles');
+  const secSets = document.getElementById('section-sets');
+  const setSelect = document.getElementById('set-select') as HTMLSelectElement;
+  const generateBtn = document.getElementById('generate-btn') as HTMLButtonElement;
+
+  const progressContainer = document.getElementById('progress-container');
+  const progressBar = document.getElementById('progress-bar');
+  const progressPercent = document.getElementById('progress-percent');
+  const progressText = document.getElementById('progress-text');
+  const currentDocName = document.getElementById('current-doc-name');
+
+  let selectedCompany: any = null;
+
+  // 📡 Store'u Dinle (Arama Datalist)
+  $companies.subscribe(companies => {
+    if (companyList) {
+      companyList.innerHTML = '';
+      companies.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = `${c.nickname} (M${c.id})`;
+        companyList.appendChild(opt);
+      });
+    }
+  });
+
+  // 🔍 Firma Seçimi
+  companySearch?.addEventListener('input', (e) => {
+    const val = (e.target as HTMLInputElement).value;
+    const match = $companies.get().find(c => `${c.nickname} (M${c.id})` === val);
+    
+    if (match) {
+      selectedCompany = match;
+      if (displayUnvan) displayUnvan.textContent = match.unvan;
+      if (displayId) displayId.textContent = `Müşteri No: ${match.id} | Klasör: ${match.nickname}`;
+      selectedInfo?.classList.remove('hidden');
+      companySearch.classList.add('hidden');
+      
+      // Diğer bölümleri aç
+      [secResponsibles, secSets].forEach(sec => {
+        sec?.classList.remove('opacity-50', 'pointer-events-none');
+      });
+
+      loadSets();
+    }
+  });
+
+  clearBtn?.addEventListener('click', () => {
+    selectedCompany = null;
+    selectedInfo?.classList.add('hidden');
+    companySearch.classList.remove('hidden');
+    companySearch.value = '';
+    [secResponsibles, secSets].forEach(sec => {
+      sec?.classList.add('opacity-50', 'pointer-events-none');
+    });
+  });
+
+  // 🔌 Setleri Yükle
+  async function loadSets() {
+    if (setSelect.options.length > 1) return; // Zaten yüklü
+    const res = await api.call('getAvailableSets');
+    if (res.success && Array.isArray(res.data)) {
+      res.data.forEach(setName => {
+        const opt = document.createElement('option');
+        opt.value = setName;
+        opt.textContent = setName;
+        setSelect.appendChild(opt);
+      });
+    }
+  }
+
+  // 🏗️ Üretimi Başlat (Batch Processing)
+  generateBtn?.addEventListener('click', async () => {
+    const setName = setSelect.value;
+    if (!setName) return alert('Lütfen bir set seçiniz.');
+    if (!selectedCompany) return;
+
+    if (!confirm(`${setName} setindeki tüm dokümanlar üretilecektir. Onaylıyor musunuz?`)) return;
+
+    generateBtn.disabled = true;
+    progressContainer?.classList.remove('hidden');
+
+    try {
+      // 1. Klasör hazırlığı ve şablon listesi
+      if (progressText) progressText.textContent = "Klasör hiyerarşisi oluşturuluyor...";
+      const prepRes = await api.call('prepareBatchFolders', { 
+        data: { nick: selectedCompany.nickname, setName: setName } 
+      });
+
+      if (!prepRes.success) throw new Error(prepRes.error || "Bilinmeyen hata");
+
+      const rows = prepRes.data.rows;
+      const folderMap = prepRes.data.folderMap;
+      const total = rows.length;
+
+      // 2. Tek tek üret (GAS limit koruması için döngü)
+      for (let i = 0; i < total; i++) {
+        const row = rows[i];
+        const percent = Math.round(((i + 1) / total) * 100);
+        
+        if (currentDocName) currentDocName.textContent = `${row[3]} ${row[4]}`; // Kod + İsim
+        if (progressText) progressText.textContent = `Doküman ${i+1} / ${total} yazdırılıyor...`;
+        
+        const genRes = await api.call('generateSingleBatchDoc', {
+          row: row,
+          data: { 
+            nick: selectedCompany.nickname, 
+            unvan: selectedCompany.unvan,
+            revNo: (document.getElementById('resp-rev-no') as HTMLInputElement)?.value || "00"
+          },
+          folderMap: folderMap
+        });
+
+        if (genRes.success) {
+          if (progressBar) progressBar.style.width = `${percent}%`;
+          if (progressPercent) progressPercent.textContent = `${percent}%`;
+        } else {
+          console.error(`Hata: ${row[4]} üretilemedi.`, genRes.error);
+        }
+      }
+
+      if (progressText) progressText.textContent = "✅ Tüm dokümanlar başarıyla üretildi!";
+      if (currentDocName) currentDocName.textContent = "İşlem Tamamlandı.";
+      
+      const confetti = (window as any).confetti;
+      if (confetti) {
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#4f46e5', '#9333ea', '#f59e0b']
+        });
+      }
+
+    } catch (e: any) {
+      alert("Üretim sırasında hata: " + e.message);
+      if (progressText) progressText.textContent = "❌ Hata oluştu.";
+    } finally {
+      generateBtn.disabled = false;
+    }
+  });
+
+  // Başlat
+  SyncManager.init();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>

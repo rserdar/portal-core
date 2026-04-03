@@ -1,0 +1,182 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Firma Detayı">
+  <div class="space-y-6">
+    <section class="glass rounded-3xl p-6 md:p-8 border-white/10">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-gray-500">Firma Profili</p>
+          <h2 id="company-title" class="text-2xl font-bold text-white mt-1">Yükleniyor...</h2>
+          <p id="company-subtitle" class="text-sm text-gray-400 mt-2">Firma verisi getiriliyor.</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="open-folder-btn" class="btn btn-primary" type="button" disabled>
+            Firma Klasörünü Aç
+          </button>
+          <a href="/search" class="btn glass border border-white/10 text-gray-200 hover:text-white">Aramaya Dön</a>
+        </div>
+      </div>
+      <div id="error-box" class="hidden mt-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"></div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <article class="glass rounded-3xl p-6 border-white/10">
+        <h3 class="text-lg font-bold text-white mb-4">Temel Bilgiler</h3>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <div><dt class="text-gray-500">Firma No</dt><dd id="f-id" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">Kısa Ad</dt><dd id="f-nickname" class="mt-1 text-white">-</dd></div>
+          <div class="sm:col-span-2"><dt class="text-gray-500">Unvan</dt><dd id="f-unvan" class="mt-1 text-white">-</dd></div>
+          <div class="sm:col-span-2"><dt class="text-gray-500">Adres</dt><dd id="f-adres" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">Şehir</dt><dd id="f-city" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">Ülke</dt><dd id="f-country" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">Telefon</dt><dd id="f-tel" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">E-Posta</dt><dd id="f-mail" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">Web</dt><dd id="f-web" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">Danışman</dt><dd id="f-dan" class="mt-1 text-white">-</dd></div>
+        </dl>
+      </article>
+
+      <article class="glass rounded-3xl p-6 border-white/10">
+        <h3 class="text-lg font-bold text-white mb-4">Sertifika ve Operasyon</h3>
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <div><dt class="text-gray-500">EA</dt><dd id="f-ea" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">NACE</dt><dd id="f-nace" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">Toplam Çalışan</dt><dd id="f-tcs" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">Yönetim Çalışan</dt><dd id="f-ycs" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">Üretim Çalışan</dt><dd id="f-ucs" class="mt-1 text-white">-</dd></div>
+          <div><dt class="text-gray-500">Vardiya</dt><dd id="f-vardiya" class="mt-1 text-white">-</dd></div>
+          <div class="sm:col-span-2"><dt class="text-gray-500">Türkçe Kapsam</dt><dd id="f-kapsam" class="mt-1 text-white whitespace-pre-wrap">-</dd></div>
+          <div class="sm:col-span-2"><dt class="text-gray-500">İngilizce Scope</dt><dd id="f-scope" class="mt-1 text-white whitespace-pre-wrap">-</dd></div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="glass rounded-3xl p-6 border-white/10">
+      <h3 class="text-lg font-bold text-white mb-3">Modern Akış Kısayolları</h3>
+      <p class="text-sm text-gray-400 mb-5">
+        Legacy `companyinfo.html` içindeki çoklu modüller modern portalda ayrı ekranlara taşındı.
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <a href="/certificates" class="glass rounded-xl px-4 py-3 border border-white/10 text-sm font-medium text-gray-200 hover:text-white">Sertifika Yönetimi</a>
+        <a href="/audits" class="glass rounded-xl px-4 py-3 border border-white/10 text-sm font-medium text-gray-200 hover:text-white">Denetim Takvimi</a>
+        <a href="/documents/view" class="glass rounded-xl px-4 py-3 border border-white/10 text-sm font-medium text-gray-200 hover:text-white">Doküman ve Drive</a>
+      </div>
+    </section>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api } from '../../lib/api';
+
+  const id = new URLSearchParams(window.location.search).get('id');
+  const errorBox = document.getElementById('error-box');
+  const openFolderBtn = document.getElementById('open-folder-btn');
+  let currentNickname = '';
+
+  const text = (val) => {
+    if (val === null || val === undefined) return '-';
+    const normalized = String(val).trim();
+    return normalized.length ? normalized : '-';
+  };
+
+  const pick = (obj, keys) => {
+    for (const key of keys) {
+      if (obj && Object.prototype.hasOwnProperty.call(obj, key)) {
+        return obj[key];
+      }
+    }
+    return '';
+  };
+
+  const fill = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text(value);
+  };
+
+  function showError(message) {
+    if (!errorBox) return;
+    errorBox.textContent = message;
+    errorBox.classList.remove('hidden');
+  }
+
+  async function loadCompany() {
+    if (!id) {
+      showError('Firma ID bulunamadı. Lütfen arama ekranından tekrar deneyin.');
+      const title = document.getElementById('company-title');
+      const subtitle = document.getElementById('company-subtitle');
+      if (title) title.textContent = 'Firma seçilmedi';
+      if (subtitle) subtitle.textContent = 'URL parametresi eksik: ?id=...';
+      return;
+    }
+
+    const response = await api.getCompanyById(id);
+    if (!response.success || !response.data) {
+      showError(response.error || 'Firma bilgisi alınamadı.');
+      const title = document.getElementById('company-title');
+      const subtitle = document.getElementById('company-subtitle');
+      if (title) title.textContent = 'Firma bulunamadı';
+      if (subtitle) subtitle.textContent = `ID: ${id}`;
+      return;
+    }
+
+    const company = response.data;
+    const firmId = pick(company, ['Firma No', 'ID']);
+    const nickname = pick(company, ['Firma Adı', 'Nickname', 'nick']);
+    const unvan = pick(company, ['Unvan']);
+    const city = pick(company, ['İl', 'Sehir', 'city']);
+    const country = pick(company, ['Ülke', 'Ulke', 'country']);
+    const mail = pick(company, ['Mail', 'E-Posta']);
+    const tel = pick(company, ['Telefon']);
+    const web = pick(company, ['İnternet', 'Internet', 'Web']);
+    const kapsam = pick(company, ['Türkçe Kapsam', 'Sertifika Kapsamı (TR)']);
+    const scope = pick(company, ['İngilizce Kapsam', 'Sertifika Kapsamı (EN)']);
+    const dan = pick(company, ['Danışman', 'Danisman']);
+
+    const title = document.getElementById('company-title');
+    const subtitle = document.getElementById('company-subtitle');
+    if (title) title.textContent = text(unvan);
+    if (subtitle) subtitle.textContent = `${text(nickname)} • ${text(firmId)}`;
+
+    fill('f-id', firmId);
+    fill('f-nickname', nickname);
+    fill('f-unvan', unvan);
+    fill('f-adres', pick(company, ['Adres']));
+    fill('f-city', city);
+    fill('f-country', country);
+    fill('f-tel', tel);
+    fill('f-mail', mail);
+    fill('f-web', web);
+    fill('f-dan', dan);
+    fill('f-ea', pick(company, ['EA']));
+    fill('f-nace', pick(company, ['NACE']));
+    fill('f-tcs', pick(company, ['TCS', 'Toplam Çalışan']));
+    fill('f-ycs', pick(company, ['YCS', 'Yönetim Çalışan']));
+    fill('f-ucs', pick(company, ['UCS', 'Üretim Çalışan']));
+    fill('f-vardiya', pick(company, ['Vardiya']));
+    fill('f-kapsam', kapsam);
+    fill('f-scope', scope);
+
+    currentNickname = text(nickname) === '-' ? '' : String(nickname);
+    if (currentNickname && openFolderBtn) {
+      openFolderBtn.removeAttribute('disabled');
+    }
+  }
+
+  if (openFolderBtn) {
+    openFolderBtn.addEventListener('click', async () => {
+      if (!currentNickname) return;
+      openFolderBtn.setAttribute('disabled', 'true');
+      const response = await api.call('getFolderId', { nickname: currentNickname });
+      openFolderBtn.removeAttribute('disabled');
+      if (response.success && response.data) {
+        window.open(`https://drive.google.com/drive/folders/${response.data}`, '_blank');
+      } else {
+        showError(response.error || 'Firma klasörü açılamadı.');
+      }
+    });
+  }
+
+  loadCompany();
+</script>

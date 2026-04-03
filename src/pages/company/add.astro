@@ -1,0 +1,339 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+
+/**
+ * 🏢 Yeni Firma Ekleme Sayfası
+ * 
+ * E-tabloya yeni kayıt eklemek için kullanılan kapsamlı form.
+ * Modern, bölümlere ayrılmış ve akıllı asistan özellikli.
+ */
+---
+
+<DashboardLayout title="Yeni Firma Ekle">
+  <div class="max-w-5xl mx-auto pb-20">
+    <form id="add-company-form" class="space-y-8">
+      
+      <!-- section: Genel Bilgiler -->
+      <section class="glass p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.1s;">
+        <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"/><path d="M5 21V7"/><path d="M19 21V7"/><path d="M9 7v1"/><path d="M15 7v1"/><path d="M9 12v1"/><path d="M15 12v1"/><path d="M9 17v1"/><path d="M15 17v1"/></svg>
+          </div>
+          <h2 class="text-xl font-bold">Genel Bilgiler</h2>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Firma Ünvanı</label>
+            <input type="text" name="unvan" id="unvan-input" required class="form-input" placeholder="Örn: ABC Teknolojileri Ltd. Şti.">
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2 relative">
+              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Firma Kısa Adı (Klasör Adı)</label>
+              <input type="text" name="nickname" id="nickname-input" required class="form-input" placeholder="Örn: ABC Teknoloji">
+              <p class="text-[10px] text-indigo-400/70 mt-1 italic leading-tight">* Bu isim Google Drive'da otomatik klasör oluşturmak için kullanılacaktır.</p>
+            </div>
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Danışman</label>
+              <select name="danisman" id="consultant-select" class="form-input appearance-none">
+                <option value="">Seçiniz...</option>
+                <!-- JS ile dolacak -->
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- section: Adres & Kapsam -->
+      <section class="glass p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.2s;">
+        <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 7-7"/><path d="M9 10a5 5 0 1 0 10 10 5 5 0 1 0-10-10Z"/><path d="m15 15 7-7"/><path d="m15 5 7 7"/></svg>
+          </div>
+          <h2 class="text-xl font-bold">Kapsam & Adres</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="md:col-span-1 space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Şehir / Ülke</label>
+            <div class="flex gap-2">
+              <input type="text" name="sehir" id="sehir-input" class="form-input flex-1" placeholder="Şehir">
+              <input type="text" name="ulke" id="ulke-input" class="form-input flex-1" placeholder="Ülke" value="TÜRKİYE">
+            </div>
+          </div>
+          <div class="md:col-span-2 space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Tam Adres</label>
+            <input type="text" name="adres" id="adres-input" class="form-input" placeholder="Merkez Adres Bilgisi">
+          </div>
+        </div>
+
+        <div class="space-y-6 mt-4">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Türkçe Kapsam</label>
+              <div class="flex gap-2">
+                <button type="button" class="action-chip" onclick="window.convertCase('kapsam', 'tr')">TR BÜYÜK</button>
+                <button type="button" class="action-chip text-indigo-400" onclick="window.translateField('kapsam', 'scope')">İngilizceye Çevir</button>
+              </div>
+            </div>
+            <textarea name="kapsam" id="kapsam-input" class="form-input min-h-[100px]" placeholder="Sertifika kapsamını giriniz..."></textarea>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">İngilizce Kapsam (Scope)</label>
+              <div class="flex gap-2">
+                <button type="button" class="action-chip" onclick="window.convertCase('scope', 'en')">EN UPPER</button>
+                <button type="button" class="action-chip text-indigo-400" onclick="window.translateField('scope', 'kapsam')">Türkçeye Çevir</button>
+              </div>
+            </div>
+            <textarea name="scope" id="scope-input" class="form-input min-h-[100px]" placeholder="Certification scope in English..."></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- section: İletişim & Vergi -->
+      <section class="glass p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.3s;">
+        <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+          <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <h2 class="text-xl font-bold">İletişim & Vergi</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Telefon</label>
+            <input type="text" name="tel" class="form-input" placeholder="+90 ...">
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">E-Posta</label>
+            <input type="email" name="mail" class="form-input" placeholder="info@firma.com">
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Web Sitesi</label>
+            <input type="text" name="www" class="form-input" placeholder="www.firma.com">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Vergi Dairesi</label>
+            <input type="text" name="vergiD" class="form-input">
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Vergi Numarası</label>
+            <input type="text" name="vergiN" class="form-input">
+          </div>
+        </div>
+      </section>
+
+      <!-- section: Operasyonel Veriler -->
+      <section class="glass p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.4s;">
+        <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M12 11h.01"/><path d="M12 16h.01"/><path d="M8 11h.01"/><path d="M8 16h.01"/><path d="M16 11h.01"/><path d="M16 16h.01"/></svg>
+          </div>
+          <h2 class="text-xl font-bold">Operasyonel Veriler</h2>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase">Toplam Çalışan</label>
+            <input type="number" name="tcs" class="form-input" value="0">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase">Yönetim</label>
+            <input type="number" name="ycs" class="form-input" value="0">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase">Üretim</label>
+            <input type="number" name="ucs" class="form-input" value="0">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase">Vardiya</label>
+            <input type="number" name="vardiya" class="form-input" value="1">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Yapılan İşler</label>
+            <textarea name="yapis" class="form-input min-h-[80px]" placeholder="Firmanın faaliyetlerini kısaca özetleyin..."></textarea>
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Firma Notları</label>
+            <textarea name="not" class="form-input min-h-[80px]" placeholder="Özel notlar veya hatırlatıcılar..."></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- section: Sınıflandırma & Kodlar -->
+      <section class="glass p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.5s;">
+        <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><polyline points="14 2 14 8 20 8"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/></svg>
+          </div>
+          <h2 class="text-xl font-bold">Sınıflandırma & Kodlar</h2>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">EA Kodu</label>
+            <input type="text" name="ea" class="form-input" placeholder="Örn: 19">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">NACE Kodu</label>
+            <input type="text" name="nace" class="form-input" placeholder="Örn: 46.12">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Medikal</label>
+            <input type="text" name="medikal" class="form-input">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Gıda</label>
+            <input type="text" name="gida" class="form-input">
+          </div>
+        </div>
+      </section>
+
+      <!-- sticky: Footer Actions -->
+      <div class="sticky bottom-8 z-50 glass p-4 rounded-2xl flex items-center justify-between border border-white/10 shadow-2xl backdrop-blur-2xl">
+        <button type="button" id="cancel-btn" class="px-6 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition font-bold text-sm">İPTAL</button>
+        <div class="flex gap-4">
+          <button type="submit" id="submit-btn" class="px-8 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
+            <svg id="submit-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <svg id="loading-icon" class="animate-spin hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            KAYDET
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</DashboardLayout>
+
+<style is:global>
+  @reference "../../styles/index.css";
+
+  .form-input {
+    @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all text-sm;
+  }
+  .action-chip {
+    @apply text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/5 border border-white/10 hover:bg-white/10 transition-colors uppercase cursor-pointer;
+  }
+</style>
+
+<script>
+  import { api } from '../../lib/api';
+  import { SyncManager } from '../../lib/sync';
+
+  // Global helpers
+  declare global {
+    interface Window {
+      convertCase: (fieldName: string, lang: 'tr' | 'en') => void;
+      translateField: (fromField: string, toField: string) => Promise<void>;
+    }
+  }
+
+  const form = document.getElementById('add-company-form') as HTMLFormElement;
+  const unvanInput = document.getElementById('unvan-input') as HTMLInputElement;
+  const nicknameInput = document.getElementById('nickname-input') as HTMLInputElement;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+  const submitIcon = document.getElementById('submit-icon');
+  const loadingIcon = document.getElementById('loading-icon');
+
+  // 🤖 Otomatik Kısa Ad (Nickname) Üretimi
+  if (unvanInput && nicknameInput) {
+    unvanInput.addEventListener('input', (e) => {
+      const target = e.target as HTMLInputElement;
+      const val = target.value;
+      if (val.length > 0) {
+        const parts = val.replace(/[.,;:!?(){}[\]'"-]/g, "").replace(/\s+/g, " ").trim().split(" ");
+        const nick = parts.slice(0, 3).map(p => {
+          if (p.length > 1) {
+            return p.charAt(0).toLocaleUpperCase('tr-TR') + p.substring(1).toLocaleLowerCase('tr-TR');
+          }
+          return p.toLocaleUpperCase('tr-TR');
+        }).join(" ");
+        nicknameInput.value = nick;
+      }
+    });
+  }
+
+  // 📝 Case Conversion
+  window.convertCase = (fieldName, lang) => {
+    const input = document.getElementById(`${fieldName}-input`) as HTMLInputElement;
+    if (input) {
+      input.value = input.value.toLocaleUpperCase(lang === 'tr' ? 'tr-TR' : 'en-US');
+    }
+  };
+
+  // 🌍 Translate
+  window.translateField = async (fromField, toField) => {
+    const sourceInput = document.getElementById(`${fromField}-input`) as HTMLTextAreaElement;
+    const targetInput = document.getElementById(`${toField}-input`) as HTMLTextAreaElement;
+    
+    if (sourceInput && targetInput && sourceInput.value) {
+      targetInput.placeholder = "Çeviriliyor...";
+      const response = await api.call('translate', { 
+        text: sourceInput.value, 
+        toEn: fromField === 'kapsam' 
+      });
+      if (response.success) {
+        targetInput.value = response.data;
+      } else {
+        alert("Çeviri hatası oluştu.");
+      }
+      targetInput.placeholder = "";
+    }
+  };
+
+  // 🔌 Danışman Listesini Doldur
+  async function loadConsultants() {
+    const response = await api.call('getConsultants');
+    const select = document.getElementById('consultant-select') as HTMLSelectElement;
+    if (response.success && select && Array.isArray(response.data)) {
+      response.data.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+    }
+  }
+
+  // 💾 Kaydetme İşlemi
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(form);
+      const companyInfo = Object.fromEntries(formData.entries());
+      
+      // Loading state
+      if (submitBtn) submitBtn.disabled = true;
+      if (submitIcon) submitIcon.classList.add('hidden');
+      if (loadingIcon) loadingIcon.classList.remove('hidden');
+
+      const response = await api.call('addCompany', { companyInfo });
+      
+      if (response.success) {
+        // 🔄 Yerel veriyi anında güncelle (Sync)
+        await SyncManager.checkAndSync();
+        
+        alert('Firma başarıyla eklendi! Arama listesine yönlendiriliyorsunuz.');
+        window.location.href = '/search';
+      } else {
+        alert('Hata: ' + response.error);
+        if (submitBtn) submitBtn.disabled = false;
+        if (submitIcon) submitIcon.classList.remove('hidden');
+        if (loadingIcon) loadingIcon.classList.add('hidden');
+      }
+    });
+  }
+
+  // Başlat
+  loadConsultants();
+</script>

@@ -1,0 +1,2316 @@
+<!-- Firma Bilgileri Kartı Tasarımı -->
+<div class="carousel carousel-dark slide" data-bs-touch="true" data-bs-interval="false" id="companyCarousel">
+    <div class="carousel-inner">
+        <!-- Carousel Item 1: Firma Bilgileri -->
+        <div class="carousel-item active">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <h5 id="nickText" class="card-title fw-light fst-italic mb-0">Firma Bilgileri</h5>
+                        <span id="firma-id-text"
+                            class="badge rounded-pill bg-danger bg-gradient fst-italic ms-2"></span>
+                    </div>
+                    <a class="btn btn-primary btn-sm ms-auto" href="#" id="nextCard" data-bs-target="#companyCarousel"
+                        data-bs-slide="next">Düzenle</a>
+                </div>
+                <div class="card-body">
+                    <!-- Yükleme Animasyonu -->
+                    <div id="loading-company" class="card-loading-wrapper d-none">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                    <!-- İçerik Alanı -->
+                    <div id="content-company" style="opacity: 0; pointer-events: none;">
+                        <!-- Unvan Bilgisi -->
+                        <div class="d-flex align-items-center flex-wrap mb-2">
+                            <button class="btn p-1" data-clipboard="unvanText" title="Kopyala">
+                                <i class="bi bi-building"></i>
+                                <strong>Unvan:</strong>
+                            </button>
+                            <span class="ms-1" id="unvanText"></span>
+                        </div>
+
+                        <!-- Adres Bilgisi -->
+                        <div class="d-flex align-items-center flex-wrap mb-2">
+                            <button class="btn p-1" data-clipboard="adresText" title="Kopyala">
+                                <i class="bi bi-map"></i>
+                                <strong>Adres:</strong>
+                            </button>
+                            <span class="ms-1">
+                                <a id="adresText"></a> - <a id="sehirText"></a> / <a id="ulkeText"></a>
+                            </span>
+                        </div>
+
+                        <!-- Şube Adresi -->
+                        <div class="d-flex align-items-center flex-wrap mb-2"
+                            style="visibility: hidden; position: absolute;" id="sube-adres">
+                            <button class="btn p-1" data-clipboard="yazismaText" title="Kopyala">
+                                <i class="bi bi-map"></i>
+                                <strong>Şube Adresi:</strong>
+                            </button>
+                            <span class="ms-1" id="yazismaText"></span>
+                        </div>
+
+                        <!-- Kapsam ve Scope Bilgisi -->
+                        <div class="d-flex align-items-center flex-wrap mb-2">
+                            <button class="btn p-1" data-clipboard="kapsamText" title="Kopyala">
+                                <i class="bi bi-journal-text"></i>
+                                <strong>Kapsam:</strong>
+                            </button>
+                            <span class="ms-1" id="kapsamText"></span>
+                        </div>
+                        <div class="d-flex align-items-center flex-wrap mb-2">
+                            <button class="btn p-1" data-clipboard="scopeText" title="Kopyala">
+                                <i class="bi bi-journal-text"></i>
+                                <strong>Scope:</strong>
+                            </button>
+                            <span class="ms-1" id="scopeText"></span>
+                        </div>
+
+                        <!-- Birinci Satır: Telefon, Fax, Vergi Dairesi, Vergi No -->
+                        <div class="row gx-3 gy-2">
+                            <!-- Telefon -->
+                            <div class="col-md-3 d-flex align-items-center flex-wrap" id="btel">
+                                <button class="btn p-1" data-clipboard="TelText" title="Kopyala">
+                                    <i class="bi bi-telephone"></i>
+                                    <strong>Telefon:</strong>
+                                </button>
+                                <span class="ms-1" id="TelText"></span>
+                            </div>
+
+                            <!-- Fax -->
+                            <div class="col-md-3 d-flex align-items-center flex-wrap" id="bfax">
+                                <button class="btn p-1" data-clipboard="FaxText" title="Kopyala">
+                                    <i class="bi bi-telephone-plus"></i>
+                                    <strong>Fax:</strong>
+                                </button>
+                                <span class="ms-1" id="FaxText"></span>
+                            </div>
+
+                            <!-- Vergi Dairesi -->
+                            <div class="col-md-3 d-flex align-items-center flex-wrap" id="bvd">
+                                <button class="btn p-1" data-clipboard="VDText" title="Kopyala">
+                                    <i class="bi bi-wallet2"></i>
+                                    <strong>Vergi Dairesi:</strong>
+                                </button>
+                                <span class="ms-1" id="VDText"></span>
+                            </div>
+
+                            <!-- Vergi No -->
+                            <div class="col-md-3 d-flex align-items-center flex-wrap" id="bvn">
+                                <button class="btn p-1" data-clipboard="VNText" title="Kopyala">
+                                    <i class="bi bi-cash"></i>
+                                    <strong>Vergi No:</strong>
+                                </button>
+                                <span class="ms-1" id="VNText"></span>
+                            </div>
+                        </div>
+
+                        <!-- İkinci Satır: E-Posta ve Web Sayfası -->
+                        <div class="row gx-3 gy-2">
+                            <!-- E-posta -->
+                            <div class="col-md-6 d-flex align-items-center flex-wrap mb-2" id="bmail">
+                                <button class="btn p-1" data-clipboard="MailText" title="Kopyala">
+                                    <i class="bi bi-at"></i>
+                                    <strong>E-posta:</strong>
+                                </button>
+                                <span class="ms-1" id="MailText"></span>
+                            </div>
+
+                            <!-- Web Sayfası -->
+                            <div class="col-md-6 d-flex align-items-center flex-wrap mb-2" id="bweb">
+                                <button class="btn p-1" data-clipboard="WebText" title="Kopyala">
+                                    <i class="bi bi-link-45deg"></i>
+                                    <strong>Web Sayfası:</strong>
+                                </button>
+                                <span class="ms-1" id="WebText"></span>
+                            </div>
+                        </div>
+
+                        <!-- Üçüncü Satır: KYT, Yetkili Adı, Yetkili Unvanı -->
+                        <div class="row gx-3 gy-2">
+                            <!-- KYT -->
+                            <div class="col-md-4 d-flex align-items-center flex-wrap mb-2" id="bkyt">
+                                <button class="btn p-1" data-clipboard="KYTText" title="Kopyala">
+                                    <i class="bi bi-person-check-fill"></i>
+                                    <strong>KYT:</strong>
+                                </button>
+                                <span class="ms-1" id="KYTText"></span>
+                            </div>
+
+                            <!-- Yetkili Adı -->
+                            <div class="col-md-4 d-flex align-items-center flex-wrap mb-2" id="byadi">
+                                <button class="btn p-1" data-clipboard="YadiText" title="Kopyala">
+                                    <i class="bi bi-person-badge"></i>
+                                    <strong>Yetkili Adı:</strong>
+                                </button>
+                                <span class="ms-1" id="YadiText"></span>
+                            </div>
+
+                            <!-- Yetkili Unvanı -->
+                            <div class="col-md-4 d-flex align-items-center flex-wrap mb-2" id="byunvan">
+                                <button class="btn p-1" data-clipboard="YUnvanText" title="Kopyala">
+                                    <i class="bi bi-file-person"></i>
+                                    <strong>Yetkili Unvanı:</strong>
+                                </button>
+                                <span class="ms-1" id="YUnvanText"></span>
+                            </div>
+                        </div>
+
+                        <!-- Dördüncü Satır: İrtibat Bilgileri -->
+                        <div class="row gx-3 gy-2">
+                            <!-- İrtibat Kişisi -->
+                            <div class="col-md-3 d-flex align-items-center flex-wrap mb-2" id="birtK">
+                                <button class="btn p-1" data-clipboard="irtKText" title="Kopyala">
+                                    <i class="bi bi-file-earmark-person"></i>
+                                    <strong>İrtibat Kişisi:</strong>
+                                </button>
+                                <span class="ms-1" id="irtKText"></span>
+                            </div>
+
+                            <!-- İrtibat Kişisi Unvanı -->
+                            <div class="col-md-3 d-flex align-items-center flex-wrap mb-2" id="birtU">
+                                <button class="btn p-1" data-clipboard="irtUnText" title="Kopyala">
+                                    <i class="bi bi-person-bounding-box"></i>
+                                    <strong> Unvanı:</strong>
+                                </button>
+                                <span class="ms-1" id="irtUnText"></span>
+                            </div>
+
+                            <!-- İrtibat Telefonu -->
+                            <div class="col-md-3 d-flex align-items-center flex-wrap mb-2" id="bitel">
+                                <button class="btn p-1" data-clipboard="ItelText" title="Kopyala">
+                                    <i class="bi bi-phone"></i>
+                                    <strong> Telefonu:</strong>
+                                </button>
+                                <span class="ms-1" id="ItelText"></span>
+                            </div>
+
+                            <!-- İrtibat E-Posta -->
+                            <div class="col-md-3 d-flex align-items-center flex-wrap mb-2" id="bimail">
+                                <button class="btn p-1" data-clipboard="ImailText" title="Kopyala">
+                                    <i class="bi bi-at"></i>
+                                    <strong> E-Posta:</strong>
+                                </button>
+                                <span class="ms-1" id="ImailText"></span>
+                            </div>
+                        </div>
+
+                        <!-- Beşinci Satır: Danışman, Logo, İmza&Kaşe -->
+                        <div class="row gx-3 gy-2">
+                            <!-- Danışman -->
+                            <div class="col-md-4 d-flex align-items-center flex-wrap mb-2" id="bdan">
+                                <button class="btn p-1" data-clipboard="danText" title="Kopyala">
+                                    <i class="bi bi-people-fill"></i>
+                                    <strong>Danışman:</strong>
+                                </button>
+                                <span class="ms-1" id="danText"></span>
+                            </div>
+
+                            <!-- Logo -->
+                            <div class="col-md-4 d-flex align-items-center flex-wrap mb-2" id="blogo">
+                                <button class="btn p-1" data-clipboard="logoText" title="Kopyala">
+                                    <i class="bi bi-postage"></i>
+                                    <strong>Logo:</strong>
+                                </button>
+                                <span class="ms-1" id="logoText"></span>
+                            </div>
+
+                            <!-- İmza & Kaşe -->
+                            <div class="col-md-4 d-flex align-items-center flex-wrap mb-2" id="bkase">
+                                <button class="btn p-1" data-clipboard="kaseText" title="Kopyala">
+                                    <i class="bi bi-file-person"></i>
+                                    <strong>İmza & Kaşe:</strong>
+                                </button>
+                                <span class="ms-1" id="kaseText"></span>
+                            </div>
+                        </div>
+
+                        <!-- Altıncı Satır: Firma Notları -->
+                        <div class="row gx-3 gy-2">
+                            <!-- Firma Notları -->
+                            <div class="col-12 d-flex align-items-center flex-wrap mb-2" id="bnot">
+                                <button class="btn p-1" data-clipboard="NotText" title="Kopyala">
+                                    <i class="bi bi-stickies"></i>
+                                    <strong>Firma Notları:</strong>
+                                </button>
+                                <span class="ms-1" id="NotText"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- Card Body Bitiş -->
+            </div> <!-- Card Bitiş -->
+        </div> <!-- Carousel Item 1 Bitiş -->
+
+        <!-- Carousel Item 2: Düzenleme -->
+        <div class="carousel-item">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Düzenle</h5>
+                    <a class="btn btn-primary btn-sm" href="#" id="prevCard" data-bs-target="#companyCarousel"
+                        data-bs-slide="prev">Bilgiler</a>
+                </div>
+                <div class="card-body">
+                    <!-- Yükleme Animasyonu -->
+                    <div id="loading-edit" class="card-loading-wrapper d-none">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                    <!-- İçerik Alanı -->
+                    <div id="content-edit" style="opacity: 0; pointer-events: none;">
+                        <!-- Firma ID ve Unvan -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-1 form-floating">
+                                <input type="text" class="form-control" id="firma-id" placeholder="ID" disabled>
+                                <label for="firma-id"><i class="bi bi-hash me-2"></i>ID</label>
+                            </div>
+                            <div class="col-md-11 form-floating">
+                                <input type="text" class="form-control" id="unvanInput" name="unvan"
+                                    placeholder="Unvan">
+                                <label for="unvanInput"><i class="bi bi-building me-2"></i>Unvan</label>
+                            </div>
+                        </div>
+
+                        <!-- Adres, Şehir ve Ülke Bilgisi Yan Yana -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <div class="form-floating flex-grow-1">
+                                        <input type="text" class="form-control" id="adresInput" name="adres"
+                                            placeholder="Adres">
+                                        <label for="adresInput"><i class="bi bi-map me-2"></i>Adres</label>
+                                    </div>
+                                    <span class="input-group-text"> - </span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <div class="form-floating flex-grow-1">
+                                        <input type="text" class="form-control" id="sehirInput" name="sehir"
+                                            placeholder="Şehir">
+                                        <label for="sehirInput"><i class="bi bi-geo-alt me-2"></i>Şehir</label>
+                                    </div>
+                                    <span class="input-group-text"> / </span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <div class="form-floating flex-grow-1">
+                                        <input type="text" class="form-control" id="ulkeInput" name="ulke"
+                                            placeholder="Ülke">
+                                        <label for="ulkeInput"><i
+                                                class="bi bi-globe-europe-africa me-2"></i>Ülke</label>
+                                    </div>
+                                    <button type="button"
+                                        class="btn btn-outline-info dropdown-toggle dropdown-toggle-split"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span class="visually-hidden">Country Dropdown</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <button
+                                                class="dropdown-item d-flex align-items-center gap-2 bi bi-file-earmark-arrow-up"
+                                                id="adresBuyuk">Türkçe Büyük Harf</button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                class="dropdown-item d-flex align-items-center gap-2 bi bi-file-earmark-arrow-up"
+                                                id="addressBig">İngilizce Büyük Harf</button>
+                                        </li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li>
+                                            <button
+                                                class="dropdown-item d-flex align-items-center gap-2 btn btn-outline-danger bi bi-flag"
+                                                id="addTurkiye">Türkiye Ekle</button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Şube Adresi -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-12 form-floating">
+                                <input type="text" class="form-control" id="yazismaInput" name="yazisma"
+                                    placeholder="Şube Adresi">
+                                <label for="yazismaInput"><i class="bi bi-buildings me-2"></i>Şube Adresi</label>
+                            </div>
+                        </div>
+
+                        <!-- Türkçe Kapsam -->
+                        <div class="input-group mb-3">
+                            <div class="form-floating">
+                                <textarea class="form-control" placeholder="Türkçe sertifika kapsamı" id="kapsamInput"
+                                    name="kapsam" style="height: 100px"></textarea>
+                                <label for="kapsamInput"><i class="bi bi-journal-text me-2"></i>Türkçe Kapsam</label>
+                            </div>
+                            <button type="button" class="btn btn-outline-info dropdown-toggle dropdown-toggle-split"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="visually-hidden">Kapsam Dropdown</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <button class="dropdown-item d-flex align-items-center gap-2" id="kapsamBuyuk">
+                                        <i class="bi bi-file-earmark-arrow-up"></i> Türkçe Büyük Harf
+                                    </button>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li>
+                                    <button class="dropdown-item d-flex align-items-center gap-2" id="kapsamToScope">
+                                        <i class="bi bi-translate"></i> İngilizceye Çevir
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- İngilizce Kapsam -->
+                        <div class="input-group mb-3">
+                            <div class="form-floating">
+                                <textarea class="form-control" placeholder="İngilizce sertifika kapsamı" id="scopeInput"
+                                    name="scope" style="height: 100px"></textarea>
+                                <label for="scopeInput" class="bi bi-journal-text"> İngilizce Kapsam</label>
+                            </div>
+                            <button type="button" class="btn btn-outline-info dropdown-toggle dropdown-toggle-split"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="visually-hidden">Scope Dropdown</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <button class="dropdown-item d-flex align-items-center gap-2" id="scopeBig">
+                                        <i class="bi bi-file-earmark-arrow-up"></i> İngilizce Büyük Harf
+                                    </button>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li>
+                                    <button class="dropdown-item d-flex align-items-center gap-2" id="scopeToKapsam">
+                                        <i class="bi bi-translate"></i> Türkçeye Çevir
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Telefon, Faks, E-Posta Bilgisi Yan Yana -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="telefonInput" name="tel"
+                                    placeholder="Telefon">
+                                <label for="telefonInput"><i class="bi bi-telephone me-2"></i>Telefon</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="faxInput" name="faks" placeholder="Faks">
+                                <label for="faxInput"><i class="bi bi-telephone-plus me-2"></i>Faks</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <input type="email" class="form-control" id="emailInput" name="mail"
+                                    placeholder="E-Posta">
+                                <label for="emailInput"><i class="bi bi-at me-2"></i>E-Posta</label>
+                            </div>
+                        </div>
+
+                        <!-- İnternet Sayfası, Vergi Dairesi, Vergi Numarası Yan Yana -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="wwwInput" name="www"
+                                    placeholder="Internet Sayfası">
+                                <label for="wwwInput"><i class="bi bi-link-45deg me-2"></i>Internet Sayfası</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="vergiDInput" name="vergiD"
+                                    placeholder="Vergi Dairesi">
+                                <label for="vergiDInput"><i class="bi bi-wallet2 me-2"></i>Vergi Dairesi</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="vergiNInput" name="vergiN"
+                                    placeholder="Vergi Numarası">
+                                <label for="vergiNInput"><i class="bi bi-cash me-2"></i>Vergi Numarası</label>
+                            </div>
+                        </div>
+
+                        <!-- Yönetim Temsilcisi, Yetkili Adı, Yetkili Unvanı Yan Yana -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="kytInput" name="kyt"
+                                    placeholder="Yönetim Temsilcisi">
+                                <label for="kytInput"><i class="bi bi-person-check-fill me-2"></i>Yönetim
+                                    Temsilcisi</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="yetkiliInput" name="yetA"
+                                    placeholder="Yetkili Adı">
+                                <label for="yetkiliInput"><i class="bi bi-person-badge me-2"></i>Yetkili Adı</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="yetkiliUnInput" name="yetU"
+                                    placeholder="Yetkili Unvanı">
+                                <label for="yetkiliUnInput"><i class="bi bi-file-person me-2"></i>Yetkili Unvanı</label>
+                            </div>
+                        </div>
+
+                        <!-- İrtibat Bilgileri Yan Yana -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3 form-floating">
+                                <input type="text" class="form-control" id="irtibatInput" name="irtA"
+                                    placeholder="İrtibat Kişisi">
+                                <label for="irtibatInput"><i class="bi bi-file-earmark-person me-2"></i>İrtibat
+                                    Kişisi</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="text" class="form-control" id="iUnvanInput" name="irtU"
+                                    placeholder="İrtibat Kişisi Unvanı">
+                                <label for="iUnvanInput"><i class="bi bi-person-bounding-box me-2"></i>İrtibat Kişisi
+                                    Unvanı</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="text" class="form-control" id="iTelInput" name="irtN"
+                                    placeholder="İrtibat Kişisi Telefonu">
+                                <label for="iTelInput"><i class="bi bi-phone me-2"></i>İrtibat Kişisi Telefonu</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="text" class="form-control" id="iMailInput" name="irtM"
+                                    placeholder="İrtibat Kişisi E-Posta">
+                                <label for="iMailInput"><i class="bi bi-at me-2"></i>İrtibat Kişisi E-Posta</label>
+                            </div>
+                        </div>
+
+                        <!-- Firma Kısa Adı ve Notlar Yan Yana -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3 form-floating">
+                                <input type="text" class="form-control" id="nickInput" name="nick"
+                                    placeholder="Firma Kısa Adı" aria-describedby="nickInputHelp">
+                                <label for="nickInput"><i class="bi bi-arrows-angle-contract me-2"></i>Firma Kısa
+                                    Adı</label>
+                                <div id="nickInputHelp" class="form-text"><i class="bi bi-info-circle me-2"></i>Burada
+                                    belirlediğiniz
+                                    isim ayrıca <strong><em>Klasör Adı</em></strong> olarak kullanılır.</div>
+                            </div>
+                            <div class="col-md-9 form-floating">
+                                <textarea class="form-control" placeholder="Firma Notları" id="notInput" name="not"
+                                    style="height: 100px"></textarea>
+                                <label for="notInput"><i class="bi bi-stickies me-2"></i>Firma Notları</label>
+                            </div>
+                        </div>
+
+                        <!-- Logo, Kaşe ve Danışman Bilgileri -->
+                        <div class="row g-3 mb-3">
+                            <!-- Logo -->
+                            <div class="col-12 col-md-4">
+                                <div class="input-group">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="logoInput" name="logo"
+                                            placeholder="Firma logosu">
+                                        <label for="logoInput"><i class="bi bi-postage me-2"></i>Logo</label>
+                                    </div>
+                                    <button class="btn btn-outline-success btn-lg" id="logoSelect"
+                                        data-input="logoInput" data-filetypes="image/png,image/jpeg,image/gif"
+                                        title="Drive'dan Seç"><i class="bi bi-cloud-check"></i></button>
+                                    <input type="file" id="logoInput_file" hidden>
+                                    <button class="btn btn-outline-success btn-lg" id="logoUpload"
+                                        data-input="logoInput" title="Drive'a Yükle"><i
+                                            class="bi bi-cloud-arrow-up"></i></button>
+                                </div>
+                            </div>
+                            <!-- Kaşe -->
+                            <div class="col-12 col-md-4">
+                                <div class="input-group">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="imzaInput" name="kase"
+                                            placeholder="Firma Kaşe ve İmzası">
+                                        <label for="imzaInput"><i class="bi bi-pencil-square me-2"></i>Kaşe &
+                                            İmza</label>
+                                    </div>
+                                    <button class="btn btn-outline-success btn-lg" id="imzaSelect"
+                                        data-input="imzaInput" data-filetypes="image/png,image/jpeg,image/gif"
+                                        title="Drive'dan Seç"><i class="bi bi-cloud-check"></i></button>
+                                    <input type="file" id="imzaInput_file" hidden>
+                                    <button class="btn btn-outline-success btn-lg" id="imzaUpload"
+                                        data-input="imzaInput" title="Drive'a Yükle"><i
+                                            class="bi bi-cloud-arrow-up"></i></button>
+                                </div>
+                            </div>
+                            <!-- Danışman -->
+                            <div class="col-12 col-md-4 form-floating">
+                                <input class="form-control" list="danList" id="fDanInput" name="danisman"
+                                    placeholder="Danışman">
+                                <label for="fDanInput"><i class="bi bi-people-fill me-2"></i>Danışman</label>
+                                <datalist id="danList"></datalist>
+                            </div>
+                        </div>
+
+                        <!-- Accordion Başlangıcı -->
+                        <div class="accordion" id="accordionExample">
+                            <!-- Çalışma Düzeni -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingOne">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                        Çalışma Düzeni</button>
+                                </h2>
+                                <div id="collapseOne" class="accordion-collapse collapse show"
+                                    aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                                    <div class="container-fluid mb-3">
+                                        <div class="row">
+                                            <div class="col-12 col-md-4 g-3 form-floating">
+                                                <input type="text" class="form-control" id="alanInput" name="alan"
+                                                    placeholder="Alan m2">
+                                                <label for="alanInput"><i class="bi bi-textarea me-2"></i>Alan
+                                                    m2</label>
+                                            </div>
+                                            <div class="col-12 col-md-4 g-3 form-floating">
+                                                <input type="text" class="form-control" id="vardiyaInput" name="vardiya"
+                                                    placeholder="Vardiya Sayısı">
+                                                <label for="vardiyaInput"><i
+                                                        class="bi bi-clock-history me-2"></i>Vardiya Sayısı</label>
+                                            </div>
+                                            <div class="col-12 col-md-4 g-3 form-floating">
+                                                <input type="text" class="form-control" id="departmanInput"
+                                                    name="departman" placeholder="Departman Sayısı">
+                                                <label for="departmanInput"><i
+                                                        class="bi bi-person-lines-fill me-2"></i>Departman
+                                                    Sayısı</label>
+                                            </div>
+                                            <div class="col-12 col-md-2 g-3 form-floating">
+                                                <input type="text" class="form-control" id="tcsInput" name="tcs"
+                                                    placeholder="Toplam Çalışan Sayısı">
+                                                <label for="tcsInput"><i class="bi bi-people me-2"></i>Toplam
+                                                    Çalışan</label>
+                                            </div>
+                                            <div class="col-12 col-md-2 g-3 form-floating">
+                                                <input type="text" class="form-control" id="ycsInput" name="ycs"
+                                                    placeholder="Yönetim Çalışan Sayısı">
+                                                <label for="ycsInput"><i class="bi bi-person-fill-up me-2"></i>Yönetim
+                                                    Çalışan</label>
+                                            </div>
+                                            <div class="col-12 col-md-2 g-3 form-floating">
+                                                <input type="text" class="form-control" id="ucsInput" name="ucs"
+                                                    placeholder="Üretim Çalışan Sayısı">
+                                                <label for="ucsInput"><i class="bi bi-person-fill-gear me-2"></i>Üretim
+                                                    Çalışan</label>
+                                            </div>
+                                            <div class="col-12 col-md-2 g-3 form-floating">
+                                                <input type="text" class="form-control" id="acsInput" name="acs"
+                                                    placeholder="Aynı İşde Çalışan Sayısı">
+                                                <label for="acsInput"><i class="bi bi-person-exclamation me-2"></i>Aynı
+                                                    İş Çalışan</label>
+                                            </div>
+                                            <div class="col-12 col-md-2 g-3 form-floating">
+                                                <input type="text" class="form-control" id="yzcsInput" name="yzcs"
+                                                    placeholder="Yarı Zamanlı Çalışan Sayısı">
+                                                <label for="yzcsInput"><i class="bi bi-person-dash-fill me-2"></i>Yarı
+                                                    Zamanlı</label>
+                                            </div>
+                                            <div class="col-12 col-md-2 g-3 form-floating">
+                                                <input type="text" class="form-control" id="tacsInput" name="tascs"
+                                                    placeholder="Taşeron Çalışan Sayısı">
+                                                <label for="tacsInput"><i class="bi bi-person-x-fill me-2"></i>Taşeron
+                                                    Çalışan</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sınıflandırma -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingTwo">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                        Sınıflandırma</button>
+                                </h2>
+                                <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo"
+                                    data-bs-parent="#accordionExample">
+                                    <div class="accordion-body">
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-12 col-md-3 form-floating">
+                                                <input type="text" class="form-control" id="eaInput" name="ea"
+                                                    placeholder="EA Kodu">
+                                                <label for="eaInput"><i class="bi bi-file-earmark-binary me-2"></i>EA
+                                                    Kodu</label>
+                                            </div>
+                                            <div class="col-12 col-md-3 form-floating">
+                                                <input type="text" class="form-control" id="naceInput" name="nace"
+                                                    placeholder="NACE Kodu">
+                                                <label for="naceInput"><i
+                                                        class="bi bi-file-earmark-binary-fill me-2"></i>NACE
+                                                    Kodu</label>
+                                            </div>
+                                            <div class="col-12 col-md-3 form-floating">
+                                                <input type="text" class="form-control" id="medikalInput" name="medikal"
+                                                    placeholder="Medikal Kodu">
+                                                <label for="medikalInput"><i class="bi bi-heart me-2"></i>Medikal
+                                                    Kodu</label>
+                                            </div>
+                                            <div class="col-12 col-md-3 form-floating">
+                                                <input type="text" class="form-control" id="gidaInput" name="gida"
+                                                    placeholder="Gıda Kodu">
+                                                <label for="gidaInput"><i class="bi bi-cup-straw me-2"></i>Gıda
+                                                    Kodu</label>
+                                            </div>
+                                            <div class="col-12 form-floating">
+                                                <textarea class="form-control" placeholder="Yapılan İşler"
+                                                    id="yapisInput" name="yapis" style="height: 100px"></textarea>
+                                                <label for="yapisInput"><i
+                                                        class="bi bi-journal-bookmark-fill me-2"></i>Yapılan
+                                                    İşler</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CE Kapsam, Test Raporu ve Teknik Dosya -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingThree">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#collapseThree" aria-expanded="false"
+                                        aria-controls="collapseThree"> Doküman ve Teknik Dosya</button>
+                                </h2>
+                                <div id="collapseThree" class="accordion-collapse collapse"
+                                    aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+                                    <div class="accordion-body">
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-4 form-floating">
+                                                <input type="text" class="form-control" id="sinifInput" name="sinif"
+                                                    placeholder="Firma Sınıfı">
+                                                <label for="sinifInput"><i class="bi bi-asterisk me-2"></i>Firma
+                                                    Sınıfı</label>
+                                            </div>
+                                            <div class="col-12 col-md-4 d-flex align-items-center form-check">
+                                                <input class="form-check-input" type="checkbox" value="" id="dokumanCB"
+                                                    name="dokuman">
+                                                <label class="form-check-label ms-2" for="dokumanCB">Firma Dokümanları
+                                                    mevcut mu ?</label>
+                                            </div>
+                                            <div class="col-12 col-md-4 d-flex align-items-center form-check">
+                                                <input class="form-check-input" type="checkbox" value="" id="teknikCB"
+                                                    name="teknik">
+                                                <label class="form-check-label ms-2" for="teknikCB">Teknik Dosyası var
+                                                    mı?</label>
+                                            </div>
+                                            <div class="col-12 form-floating">
+                                                <textarea class="form-control" placeholder="CE Kapsamı" id="tdInput"
+                                                    name="tkapsam" style="height: 100px"></textarea>
+                                                <label for="tdInput"><i class="bi bi-journal-text me-2"></i>Teknik Dosya
+                                                    Kapsamı</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> <!-- Accordion Bitiş -->
+
+                        <!-- Kayıt ve İptal Butonları -->
+                        <div class="d-flex justify-content-end gap-2 mt-3">
+                            <button class="btn btn-outline-info me-2" data-bs-target="#companyCarousel"
+                                data-bs-slide="prev" type="button"><i
+                                    class="bi bi-skip-backward-fill me-2"></i>Geri</button>
+                            <button class="btn btn-outline-danger me-2" id="cancel-company-changes" type="button"><i
+                                    class="bi bi-x-square me-2"></i>İptal</button>
+                            <button class="btn btn-outline-success me-2" id="save-company-changes" type="button"><i
+                                    class="bi bi-check-square me-2"></i>Kaydet</button>
+                        </div>
+                    </div>
+                </div> <!-- Card Body Bitiş -->
+            </div> <!-- Card Bitiş -->
+        </div> <!-- Carousel Item 2 Bitiş -->
+
+    </div> <!-- Carousel Inner Bitiş -->
+
+    <!-- Göstergeler -->
+    <div class="carousel-indicators position-relative">
+        <button aria-current="true" aria-label="Slide 1" class="active" data-bs-slide-to="0"
+            data-bs-target="#companyCarousel" type="button"></button>
+        <button aria-label="Slide 2" data-bs-slide-to="1" data-bs-target="#companyCarousel" type="button"></button>
+    </div> <!-- Göstergeler Bitiş -->
+</div> <!-- Carousel Bitiş -->
+
+<!-- 2.KART: Kısayollar, Denetim Planla ve Takvim Carousel -->
+<div class="carousel carousel-dark slide" data-bs-touch="true" data-bs-interval="false" id="auditCarousel">
+    <div class="carousel-inner">
+        <!-- Kart 1: Kısayollar -->
+        <div class="carousel-item active">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Kısayollar</h5>
+                    <a class="btn btn-primary btn-sm" href="#" data-bs-target="#auditCarousel"
+                        data-bs-slide="next">Denetim
+                        Planla</a>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap flex-column flex-md-row gap-2 align-items-center">
+
+                        <!-- Klasör Aç -->
+                        <div style="display: flex; align-items: center;">
+                            <button class="btn btn-link btn-lg folder-open" aria-label="Firma Klasörünü Aç">
+                                <i class="bi bi-folder2-open fs-2"></i>
+                            </button>
+                        </div>
+
+                        <!-- Doküman Hazırla -->
+                        <div>
+                            <button class="btn btn-light" id="addDocs" aria-label="Dokümanları Hazırlama">
+                                <i class="bi bi-filetype-doc me-2"></i>Doküman Hazırla
+                            </button>
+                        </div>
+
+                        <!-- Sertifika Ekle -->
+                        <div>
+                            <button class="btn btn-light" data-bs-target="#certificateCarousel" data-bs-slide-to="1"
+                                aria-label="Sertifika Ekleme">
+                                <i class="bi bi-file-medical me-2"></i>Sertifika Ekleme
+                            </button>
+                        </div>
+
+                        <!-- Test Ekranına Git -->
+                        <div>
+                            <button class="btn btn-light goToTest" aria-label="Test Ekranına Git">
+                                <i class="bi bi-cpu me-2"></i>Test Ekranına Git
+                            </button>
+                        </div>
+
+                        <!-- Dosya Seç ve PDF Dönüştür -->
+                        <div class="flex-grow-1" style="min-width: 280px;">
+                            <div class="input-group">
+                                <button class="btn btn-outline-info" id="doctopdf" data-input="convertPdfInput"
+                                    data-filetypes="application/vnd.google-apps.document"
+                                    title="İşlenecek Google Dokümanını Seç">
+                                    <i class="bi bi-balloon me-2"></i>Dosya Seç
+                                </button>
+                                <input type="text" class="form-control" id="convertPdfInput"
+                                    placeholder="Google Docs to PDF" readonly>
+                                <button class="btn btn-outline-secondary" type="button" id="convertPDF">
+                                    <i class="bi bi-file-earmark-pdf me-2"></i>Dönüştür
+                                </button>
+                            </div>
+                            <div class="form-text mt-1" id="googleDocFilename">
+                                <i class="bi bi-google me-1"></i>Docs Belgesini Korumalı PDF Olarak Kaydetme
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kart 2: Denetim Planla -->
+        <div class="carousel-item">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Denetim Planla</h5>
+                    <div class="d-flex">
+                        <a class="btn btn-primary btn-sm me-2" href="#" data-bs-target="#auditCarousel"
+                            data-bs-slide="prev">Kısayollar</a>
+                        <a class="btn btn-primary btn-sm" href="#" data-bs-target="#auditCarousel"
+                            data-bs-slide="next">Takvim</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Yükleme Animasyonu -->
+                    <div id="loading-addAudit" class="card-loading-wrapper d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                    <!-- Denetim Ekleme Formu -->
+                    <div id="content-addAudit" style="opacity: 0; pointer-events: none;">
+                        <!-- Standart Seçimi -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4 form-floating">
+                                <select class="form-select" id="xstandartInput">
+                                    <option>Yükleniyor...</option>
+                                </select>
+                                <label for="xstandartInput" class="bi bi-exclude me-2">Standart Seçimi</label>
+                            </div>
+
+                            <!-- Denetim Tipi -->
+                            <div class="col-md-3 form-floating">
+                                <select class="form-select" id="denetimInput">
+                                    <option value="İlk" selected>İlk</option>
+                                    <option value="Gözetim 1">Gözetim 1</option>
+                                    <option value="Gözetim 2">Gözetim 2</option>
+                                    <option value="Yeniden">Yeniden</option>
+                                    <option value="Özel">Özel</option>
+                                    <option value="Tekrar">Tekrar</option>
+                                </select>
+                                <label for="denetimInput" class="bi bi-vr"> Denetim</label>
+                            </div>
+
+                            <!-- Standartlar -->
+                            <div class="col-md-5">
+                                <label class="form-label bi bi-exclude"> Standartlar</label>
+                                <div class="d-flex flex-wrap justify-content-center">
+                                    <div class="form-check me-3">
+                                        <input class="form-check-input" type="checkbox" id="9C">
+                                        <label class="form-check-label" for="9C">9001</label>
+                                    </div>
+                                    <div class="form-check me-3">
+                                        <input class="form-check-input" type="checkbox" id="13C">
+                                        <label class="form-check-label" for="13C">13485</label>
+                                    </div>
+                                    <div class="form-check me-3">
+                                        <input class="form-check-input" type="checkbox" id="14C">
+                                        <label class="form-check-label" for="14C">14001</label>
+                                    </div>
+                                    <div class="form-check me-3">
+                                        <input class="form-check-input" type="checkbox" id="22C">
+                                        <label class="form-check-label" for="22C">22000</label>
+                                    </div>
+                                    <div class="form-check me-3">
+                                        <input class="form-check-input" type="checkbox" id="27C">
+                                        <label class="form-check-label" for="27C">27001</label>
+                                    </div>
+                                    <div class="form-check me-3">
+                                        <input class="form-check-input" type="checkbox" id="45C">
+                                        <label class="form-check-label" for="45C">45001</label>
+                                    </div>
+                                    <div class="form-check me-3">
+                                        <input class="form-check-input" type="checkbox" id="50C">
+                                        <label class="form-check-label" for="50C">50001</label>
+                                    </div>
+                                    <div class="form-check me-3">
+                                        <input class="form-check-input" type="checkbox" id="GMPC">
+                                        <label class="form-check-label" for="GMPC">GMP</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr style="border: 0; border-top: 2px dotted #ccc; margin: 20px 0;">
+
+                        <!-- Aşama 1 -->
+                        <h5 class="fw-bold fst-italic pt-3">Aşama 1</h5>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <div class="form-floating">
+                                        <input type="date" class="form-control" id="a1Basla">
+                                        <label for="a1Basla" class="bi bi-calendar4-event me-2">Başlangıç Tarihi</label>
+                                    </div>
+                                    <button class="btn btn-outline-success btn-lg" id="a1Equal">=</button>
+                                    <button class="btn btn-outline-success btn-lg" id="a1Plus1">+1</button>
+                                    <button class="btn btn-outline-success btn-lg" id="a1Plus2">+2</button>
+                                </div>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="date" class="form-control" id="a1Bitis">
+                                <label for="a1Bitis" class="bi bi-calendar4-week me-2">Bitiş Tarihi</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="text" class="form-control" id="a1Full">
+                                <label for="a1Full" class="bi bi-calendar4-range me-2">Tam Tarih</label>
+                            </div>
+                            <div class="col-md-2 form-floating">
+                                <input type="text" class="form-control" id="a1Manday">
+                                <label for="a1Manday" class="bi bi-calendar2-plus me-2">Adam/Gün</label>
+                            </div>
+                        </div>
+                        <input class="form-control d-none" id="a1Md" type="text" aria-label="readonly input example"
+                            readonly>
+
+                        <!-- Denetçi Seçimleri (Aşama 1) -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4 form-floating">
+                                <select class="form-select" id="leadAuditorInput1">
+                                    <option>Seçim Yapınız...</option>
+                                </select>
+                                <label for="leadAuditorInput1" class="bi bi-person-gear me-2">Baş Denetçi Seçimi</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <select class="form-select" id="secondAuditorInput1">
+                                    <option>Seçim Yapınız...</option>
+                                </select>
+                                <label for="secondAuditorInput1" class="bi bi-person-plus me-2">2. Denetçi
+                                    Seçimi</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <select class="form-select" id="thirdAuditorInput1">
+                                    <option>Seçim Yapınız...</option>
+                                </select>
+                                <label for="thirdAuditorInput1" class="bi bi-person-plus me-2">3. Denetçi Seçimi</label>
+                            </div>
+                        </div>
+
+                        <!-- İsimler ve Kısaltmalar -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6 form-floating">
+                                <input type="text" class="form-control" id="a1Denetciler"
+                                    placeholder="Denetçi İsimleri">
+                                <label for="a1Denetciler" class="bi bi-person-lines-fill me-2">İsimler</label>
+                            </div>
+                            <div class="col-md-6 form-floating">
+                                <input type="text" class="form-control" id="a1KDenetci"
+                                    placeholder="Denetçi Kısaltmaları">
+                                <label for="a1KDenetci" class="bi bi-person-dash-fill me-2">Kısaltmalar</label>
+                            </div>
+                        </div>
+
+                        <hr style="border: 0; border-top: 2px dotted #ccc; margin: 20px 0;">
+
+                        <!-- Aşama 2 -->
+                        <h5 class="fw-bold fst-italic pt-3" id="stage2Title">Aşama 2</h5>
+                        <div class="row g-3 mb-3" id="stage2AreaR1">
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <div class="form-floating">
+                                        <input type="date" class="form-control" id="a2Basla">
+                                        <label for="a2Basla" class="bi bi-calendar4-event me-2">Başlangıç Tarihi</label>
+                                    </div>
+                                    <button class="btn btn-outline-success btn-lg" id="a2Equal">=</button>
+                                    <button class="btn btn-outline-success btn-lg" id="a2Plus1">+1</button>
+                                    <button class="btn btn-outline-success btn-lg" id="a2Plus2">+2</button>
+                                </div>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="date" class="form-control" id="a2Bitis">
+                                <label for="a2Bitis" class="bi bi-calendar4-week me-2">Bitiş Tarihi</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="text" class="form-control" id="a2Full">
+                                <label for="a2Full" class="bi bi-calendar4-range me-2">Tam Tarih</label>
+                            </div>
+                            <div class="col-md-2 form-floating">
+                                <input type="text" class="form-control" id="a2Manday">
+                                <label for="a2Manday" class="bi bi-calendar2-plus me-2">Adam/Gün</label>
+                            </div>
+                        </div>
+                        <input class="form-control d-none" id="a2Md" type="text" aria-label="readonly input example"
+                            readonly>
+
+                        <!-- Denetçi Seçimleri (Aşama 2) -->
+                        <div class="row g-3 mb-3" id="stage2AreaR2">
+                            <div class="col-md-4 form-floating">
+                                <select class="form-select" id="leadAuditorInput2">
+                                    <option>Seçim Yapınız...</option>
+                                </select>
+                                <label for="leadAuditorInput2" class="bi bi-person-gear me-2">Baş Denetçi Seçimi</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <select class="form-select" id="secondAuditorInput2">
+                                    <option>Seçim Yapınız...</option>
+                                </select>
+                                <label for="secondAuditorInput2" class="bi bi-person-plus me-2">2. Denetçi
+                                    Seçimi</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <select class="form-select" id="thirdAuditorInput2">
+                                    <option>Seçim Yapınız...</option>
+                                </select>
+                                <label for="thirdAuditorInput2" class="bi bi-person-plus me-2">3. Denetçi Seçimi</label>
+                            </div>
+                        </div>
+
+                        <!-- İsimler ve Kısaltmalar -->
+                        <div class="row g-3 mb-3" id="stage2AreaR3">
+                            <div class="col-md-6 form-floating">
+                                <input type="text" class="form-control" id="a2Denetciler"
+                                    placeholder="Denetçi İsimleri">
+                                <label for="a2Denetciler" class="bi bi-person-lines-fill me-2">İsimler</label>
+                            </div>
+                            <div class="col-md-6 form-floating">
+                                <input type="text" class="form-control" id="a2KDenetci"
+                                    placeholder="Denetçi Kısaltmaları">
+                                <label for="a2KDenetci" class="bi bi-person-dash-fill me-2">Kısaltmalar</label>
+                            </div>
+                        </div>
+                        <!-- Butonlar -->
+                        <div class="d-flex justify-content-end gap-2 mt-3">
+                            <button class="btn btn-outline-primary me-2" id="clear-audit-button"><i
+                                    class="bi bi-eraser-fill me-2"></i>Formu Temizle</button>
+                            <button class="btn btn-outline-primary me-2" data-bs-target="#auditCarousel"
+                                data-bs-slide-to="2" type="button"><i
+                                    class="bi bi-calendar2-plus me-2"></i>Takvim</button>
+                            <button class="btn btn-primary me-2" id="add-audit-button"><i
+                                    class="bi bi-file-earmark-plus me-2"></i>Denetim Ekle</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kart 3: Takvim -->
+        <div class="carousel-item">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Takvim</h5>
+                    <a class="btn btn-primary btn-sm" href="#" data-bs-target="#auditCarousel"
+                        data-bs-slide="prev">Denetim
+                        Planla</a>
+                </div>
+                <div class="card-body">
+                    <iframe
+                        src="https://calendar.google.com/calendar/embed?src=ukqd4fqmgujdhemc4slhmebgcc%40group.calendar.google.com&ctz=Europe%2FIstanbul"
+                        style="border: 0; width: 100%; height: 500px;" allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Göstergeler -->
+    <div class="carousel-indicators">
+        <button type="button" data-bs-target="#auditCarousel" data-bs-slide-to="0" class="active" aria-current="true"
+            aria-label="Kısayollar"></button>
+        <button type="button" data-bs-target="#auditCarousel" data-bs-slide-to="1" aria-label="Denetim Planla"></button>
+        <button type="button" data-bs-target="#auditCarousel" data-bs-slide-to="2" aria-label="Takvim"></button>
+    </div>
+</div>
+
+<!-- 3. KART // Sertifika Kartı Tasarımı -->
+<div class="carousel carousel-dark slide" data-bs-touch="true" data-bs-interval="false" id="certificateCarousel">
+    <div class="carousel-inner">
+        <!-- Kart 1: Sertifikalar -->
+        <div class="carousel-item active">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Sertifikalar</h5>
+                    <a class="btn btn-primary btn-sm" href="#" id="nextSecondaryCard"
+                        data-bs-target="#certificateCarousel" data-bs-slide="next">Sertifika Ekle</a>
+                </div>
+                <div class="card-body position-relative">
+                    <!-- Spinner (Varsayılan olarak görünür, sadece yükleme sırasında) -->
+                    <div id="loading-certificates" class="card-loading-wrapper d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+
+                    <!-- Sertifika Progress Bar -->
+                    <div id="progressWrapperContainer-certificates"
+                        class="d-none position-absolute top-50 start-50 translate-middle text-center w-100"
+                        style="max-width: 600px;">
+                        <h5 id="progressTitle" class="mb-3">Sertifikalar Yazdırılıyor</h5>
+                        <div class="progress w-100" id="progressWrapper" style="height: 20px;">
+                            <div id="progressBar-certificates"
+                                class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                                style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                    </div>
+
+                    <!-- İçerik Alanı -->
+                    <div id="content-certificates" style="opacity: 0; pointer-events: none;">
+                        <!-- Sertifikalar İçeriği -->
+                        <div class="collapse sticky-top" id="sertifikaUstMenu">
+                            <div class="card card-body">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <!-- Select All Sertifikalar Buton Grubu -->
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <input type="checkbox" class="btn-check" id="selectAllCerts" autocomplete="off">
+                                        <label class="btn btn-outline-success" title="Hepsini Seç / Kaldır"
+                                            for="selectAllCerts">
+                                            <i class="bi bi-check-square"></i>
+                                        </label>
+                                        <button type="button" class="btn btn-success dropdown-toggle"
+                                            data-bs-toggle="dropdown" aria-expanded="false"></button>
+                                        <ul class="dropdown-menu">
+                                            <li><button class="dropdown-item certs-select-active">Aktif Olanları
+                                                    Seç</button></li>
+                                            <li><button class="dropdown-item certs-select-green">Yeşil Olanları
+                                                    Seç</button></li>
+                                            <li><button class="dropdown-item certs-select-yellow">Sarı Olanları
+                                                    Seç</button></li>
+                                            <li><button class="dropdown-item certs-select-inactive">Pasif Olanları
+                                                    Seç</button></li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap align-items-center gap-3">
+                                        <!-- Dil Seçimi -->
+                                        <div class="d-flex align-items-center">
+                                            <span><i class="bi bi-translate me-2"></i>İngilizce</span>
+                                            <div class="form-switch">
+                                                <input type="checkbox" class="form-check-input" id="lang_certs"
+                                                    title="Dil Seçimi">
+                                            </div>
+                                            <label class="ms-2" for="lang_certs">Türkçe</label>
+                                        </div>
+
+                                        <!-- Kapsam Seçimi -->
+                                        <div class="d-flex align-items-center">
+                                            <span><i class="bi bi-journal-text me-2"></i>İmzasız</span>
+                                            <div class="form-switch">
+                                                <input type="checkbox" class="form-check-input" id="sign_certs"
+                                                    title="İmza Seçimi">
+                                            </div>
+                                            <label class="ms-2" for="sign_certs">İmzalı</label>
+                                        </div>
+                                    </div>
+
+                                    <!-- İşlem Butonları -->
+                                    <div class="btn-group btn-group-sm gap-2" role="group">
+                                        <button type="button"
+                                            class="btn btn-outline-info rounded-pill bi bi-arrow-repeat"
+                                            title="Sayfayı Yenile" id="refresh-certificate"></button>
+                                        <button type="button"
+                                            class="btn btn-outline-warning rounded-pill bi bi-folder2-open folder-open"
+                                            title="Dosyayı Aç"></button>
+                                        <button type="button"
+                                            class="btn btn-outline-success rounded-pill bi bi-file-earmark-plus"
+                                            id="prnt-certs" title="Sertifikaları Yazdır"></button>
+                                    </div>
+
+                                    <!-- Silme İşlemleri -->
+                                    <div class="btn-group btn-group-sm gap-2">
+                                        <button type="button"
+                                            class="btn btn-outline-success rounded-pill bi bi-trash3 delete-button-certificate d-none me-2">Onayla</button>
+                                        <button type="button"
+                                            class="btn btn-outline-danger rounded-pill bi bi-trash3 before-delete-button me-2"
+                                            title="Sil">Sil</button>
+                                    </div>
+
+                                    <!-- Diğer İşlemler -->
+                                    <div class="btn-group btn-group-sm gap-2" role="group">
+                                        <button type="button"
+                                            class="btn btn-outline-primary rounded-pill bi bi-patch-check"
+                                            title="Pasif duruma al" id="certS-check"></button>
+                                        <button type="button"
+                                            class="btn btn-outline-secondary rounded-pill bi bi-patch-minus"
+                                            title="Aktif duruma al" id="certS-uncheck"></button>
+                                        <a class="btn btn-outline-danger rounded-pill bi bi-arrow-down-up"
+                                            data-bs-toggle="collapse" href="#sertifikaUstMenu" title="Menüyü Kapat"></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered">
+                                <caption>
+                                    <i class="bi bi-list-ol">&nbsp;</i><span id="certificateCounter"
+                                        class="form-text"></span>
+                                </caption>
+                                <thead style="position: sticky; top: 0">
+                                    <tr>
+                                        <!-- Buton içindeki ikon ayrı olarak kullanıldı -->
+                                        <th scope="col" class="table-primary text-center">
+                                            <a class="btn btn-sm btn-outline-success rounded-pill collapsed"
+                                                data-bs-toggle="collapse" href="#sertifikaUstMenu" role="button"
+                                                aria-expanded="false" aria-controls="collapseExample">
+                                                <i class="bi bi-arrow-down-up"></i>
+                                            </a>
+                                        </th>
+
+                                        <!-- İkonları ayrı <i> etiketi içine aldık -->
+                                        <th scope="col" class="table-primary text-center me-2">
+                                            <i class="bi bi-calendar-day me-2"></i>Belge Tarihi
+                                        </th>
+                                        <th scope="col" class="table-primary text-center me-2">
+                                            <i class="bi bi-exclude me-2"></i>Standart
+                                        </th>
+                                        <th scope="col" class="table-primary text-center me-2">
+                                            <i class="bi bi-award me-2"></i>Sertifika No
+                                        </th>
+                                        <th scope="col" class="table-primary text-center me-2">
+                                            <i class="bi bi-spellcheck me-2"></i>Akredite
+                                        </th>
+                                        <th scope="col" class="table-primary text-center me-2">
+                                            <i class="bi bi-calendar-range me-2"></i>Gözetim Tarihi
+                                        </th>
+                                        <th scope="col" class="table-primary text-center me-2">
+                                            <i class="bi bi-people-fill me-2"></i>Danışman
+                                        </th>
+                                        <th scope="col" class="table-primary text-center me-2">
+                                            <i class="bi bi-sticky me-2"></i>Durum
+                                        </th>
+                                        <th scope="col" class="table-primary d-none text-center me-2">
+                                            <i class="bi bi-shop me-2"></i>Akreditasyon
+                                        </th>
+
+                                        <!-- Sadece ikon içeren hücre -->
+                                        <th scope="col" class="table-primary text-center">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </th>
+                                    </tr>
+
+                                </thead>
+                                <tbody class="table-group-divider" id="certificateResults">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div> <!-- Content Bitiş -->
+                </div> <!-- Card Body Bitiş -->
+            </div> <!-- Card Bitiş -->
+        </div> <!-- Carousel Item Bitiş -->
+
+
+        <!-- Kart 2: Sertifika Ekleme -->
+        <div class="carousel-item">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0" id="sertifikaBaslik">Sertifika Ekleme</h5>
+                    <div class="d-flex">
+                        <a class="btn btn-primary btn-sm me-2" href="#" id="prevSecondaryCard"
+                            data-bs-target="#certificateCarousel" data-bs-slide="prev">Sertifikalar</a>
+                        <a class="btn btn-primary btn-sm" href="#" id="prevSecondaryCard"
+                            data-bs-target="#certificateCarousel" data-bs-slide="next">Son 25</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Yükleme Animasyonu -->
+                    <div id="loading-addCertificate" class="card-loading-wrapper d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                    <!-- Sertifika Ekleme Formu -->
+                    <div id="content-addCertificate" style="opacity: 0; pointer-events: none;">
+
+                        <!-- 1. Satır -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3 form-floating">
+                                <input type="text" class="form-control" id="firmaIdInput" placeholder="Firma ID"
+                                    disabled>
+                                <label for="firmaIdInput" class="bi bi-list-ol"> Firma ID</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <select class="form-select" id="cDenetimInput" aria-label="Denetim Tipini Seç">
+                                    <option value="İlk" selected>İlk</option>
+                                    <option value="Gözetim 1">Gözetim 1</option>
+                                    <option value="Gözetim 2">Gözetim 2</option>
+                                    <option value="Yeniden">Yeniden</option>
+                                    <option value="Özel">Özel</option>
+                                    <option value="Tekrar">Tekrar</option>
+                                </select>
+                                <label for="cDenetimInput" class="bi bi-vr"> Denetim</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <select class="form-select" id="cstandartInput" aria-label="Standart Seçimi"></select>
+                                <label for="cstandartInput" class="bi bi-exclude me-2">Standart</label>
+                            </div>
+                            <div class="col-md-3 form-floating d-none" id="otherStandardContainer">
+                                <input type="text" class="form-control" id="otherStandard" placeholder="Diğer Standart">
+                                <label for="otherStandard" class="bi bi-file-earmark me-2">Diğer Standart</label>
+                            </div>
+                        </div>
+
+                        <!-- 2. Satır -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <div class="input-group">
+                                    <div class="form-floating">
+                                        <input type="date" class="form-control" id="gstInput"
+                                            placeholder="Geçerli Sertifika Tarihi">
+                                        <label for="gstInput" class="bi bi-calendar-day me-2">Geçerli Sertifika
+                                            Tarihi</label>
+                                    </div>
+                                    <button class="btn btn-outline-success btn-lg" id="gtPlus1">+1</button>
+                                </div>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="date" class="form-control" id="gozInput" placeholder="Gözetim Tarihi">
+                                <label for="gozInput" class="bi bi-calendar-range me-2">Gözetim Tarihi</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="date" class="form-control" id="sttInput"
+                                    placeholder="Sertifika Tescil Tarihi">
+                                <label for="sttInput" class="bi bi-calendar-date me-2">Sertifika Tescil Tarihi</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="date" class="form-control" id="sgtInput"
+                                    placeholder="Sertifika Geçerlilik Tarihi">
+                                <label for="sgtInput" class="bi bi-calendar-check me-2">Sertifika Geçerlilik
+                                    Tarihi</label>
+                            </div>
+                        </div>
+
+                        <!-- 3. Satır -->
+                        <div class="row g-3 mb-3">
+                            <!-- Sertifika Numarası -->
+                            <div class="col-md-3 form-floating">
+                                <input type="text" class="form-control" id="sNoInput" placeholder="Sertifika Numarası">
+                                <label for="sNoInput" class="bi bi-card-checklist me-2">Sertifika Numarası</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="text" value="IAKS" class="form-control" id="akreditasyonInput"
+                                    placeholder="Akreditasyon">
+                                <label for="akreditasyonInput" class="bi bi-spellcheck me-2">Akreditasyon</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="text" value="Medicert" class="form-control" id="akrediteInput"
+                                    placeholder="Akredite Kuruluş">
+                                <label for="akrediteInput" class="bi bi-shop me-2">Akredite Kuruluş</label>
+                            </div>
+                            <div class="col-md-3 form-floating">
+                                <input type="text" class="form-control" id="kodInput" placeholder="NACE/ANZSIC Kodu">
+                                <label for="kodInput" class="bi bi-upc-scan me-2">NACE/ANZSIC Kodu</label>
+                            </div>
+                        </div>
+
+                        <!-- 4. Satır -->
+                        <div class="row g-3 mb-3 align-items-center">
+                            <!-- Öneri Sertifika Numarası -->
+                            <div class="col-md-2">
+                                <div class="input-group">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="suggestedCertNoInput"
+                                            placeholder="Öneri Sertifika Numarası" disabled>
+                                        <label for="suggestedCertNoInput"
+                                            class="d-flex align-items-center gap-1 bi bi-lightbulb">Öneri sNo</label>
+                                    </div>
+                                    <button class="btn btn-outline-success btn-lg bi bi-arrow-up-square"
+                                        id="generateSuggestedCertNo" title="Öneri Sertifika Numarası Oluştur"></button>
+                                </div>
+                            </div>
+                            <!-- Logo -->
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="sLogoInput"
+                                            placeholder="Sertifika logosu">
+                                        <label for="sLogoInput"><i class="bi bi-slack me-2"></i>Logo</label>
+                                    </div>
+                                    <button class="btn btn-outline-success btn-lg bi bi-cloud-check" id="sLogoSelect"
+                                        data-input="sLogoInput" data-filetypes="image/png,image/jpeg,image/gif"
+                                        title="Drive'dan Seç"></button>
+                                    <input type="file" id="sLogoInput_file" hidden>
+                                    <button class="btn btn-outline-success btn-lg bi bi-cloud-arrow-up" id="sLogoUpload"
+                                        data-input="sLogoInput" title="Drive'a Yükle"></button>
+                                </div>
+                            </div>
+                            <!-- Danışman -->
+                            <div class="col-md-3 form-floating">
+                                <input class="form-control" list="danList" id="danInput" placeholder="Danışman">
+                                <label for="danInput" class="bi bi-people-fill me-2">Danışman</label>
+                            </div>
+                            <!-- Durum -->
+                            <div class="col-md-3 form-floating">
+                                <input type="text" class="form-control" id="durumInput" placeholder="Durum">
+                                <label for="durumInput" class="bi bi-patch-question me-2">Durum</label>
+                            </div>
+                        </div>
+
+                        <!-- 5. Satır -->
+                        <div class="row g-3 mb-3 align-items-center">
+                            <!-- ISO Tam Adı -->
+                            <div class="col-md-2 form-floating">
+                                <input type="text" class="form-control" id="isoFullinp" placeholder="ISO Tam Adı"
+                                    disabled>
+                                <label for="isoFullinp" class="bi bi-text-paragraph me-2">ISO Tam Adı</label>
+                            </div>
+                            <!-- Firma Kısa Adı ve Buton -->
+                            <div class="col-md-4">
+                                <div class="input-group">
+                                    <div class="form-floating flex-grow-1">
+                                        <input type="text" class="form-control" id="cNickName"
+                                            placeholder="Firma Kısa Adı" readonly>
+                                        <label for="cNickName" class="bi bi-arrows-angle-contract me-2">Firma Kısa
+                                            Adı</label>
+                                    </div>
+                                    <button class="btn btn-outline-danger btn-lg folder-open" id="openNickNameFolder"
+                                        title="Firma Klasörünü aç"><i class="bi bi-folder2-open"></i></button>
+                                </div>
+                            </div>
+                            <!-- Sertifika Kayıt Numarası ve Getir Butonu -->
+                            <div class="col-md-3">
+                                <div class="input-group">
+                                    <div class="form-floating flex-grow-1">
+                                        <input type="text" class="form-control" id="scopeId"
+                                            placeholder="Sertifika Kayıt Numarası">
+                                        <label for="scopeId" class="bi bi-file-earmark-text me-2">Sertifika Kayıt
+                                            No.</label>
+                                    </div>
+                                    <button class="btn btn-outline-secondary bi bi-search me-2" id="getScopebySS"
+                                        title="Kayıt Numarası ile Getir">Getir</button>
+                                </div>
+                            </div>
+                            <!-- Firma Kapsamını Getir Butonu -->
+                            <div class="col-md-3 d-flex align-items-center">
+                                <button class="btn btn-outline-secondary bi bi-body-text w-100 me-2"
+                                    id="scopeCompany-button">Firma Kapsamını Getir</button>
+                            </div>
+                        </div>
+
+                        <!-- Türkçe Kapsam -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <div class="form-floating flex-grow-1">
+                                        <textarea class="form-control" placeholder="Türkçe sertifika kapsamı"
+                                            id="sKapsamInput" style="height: 100px"></textarea>
+                                        <label for="sKapsamInput" class="bi bi-journal-text me-2">Türkçe Kapsam</label>
+                                    </div>
+                                    <button type="button"
+                                        class="btn btn-outline-info dropdown-toggle dropdown-toggle-split"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span class="visually-hidden">Kapsam Dropdown</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <button
+                                                class="dropdown-item d-flex align-items-center gap-2 bi bi-file-earmark-arrow-up"
+                                                id="sKapsamBuyuk">Türkçe Büyük Harf</button>
+                                        </li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li>
+                                            <button
+                                                class="dropdown-item d-flex align-items-center gap-2 bi bi-translate"
+                                                id="sKapsamToScope">İngilizceye Çevir</button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- İngilizce Kapsam -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <div class="form-floating flex-grow-1">
+                                        <textarea class="form-control" placeholder="İngilizce sertifika kapsamı"
+                                            id="sScopeInput" style="height: 100px"></textarea>
+                                        <label for="sScopeInput" class="bi bi-journal-text me-2">İngilizce
+                                            Kapsam</label>
+                                    </div>
+                                    <button type="button"
+                                        class="btn btn-outline-info dropdown-toggle dropdown-toggle-split"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span class="visually-hidden">Scope Dropdown</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <button
+                                                class="dropdown-item d-flex align-items-center gap-2 bi bi-file-earmark-arrow-up"
+                                                id="sScopeBig">İngilizce Büyük Harf</button>
+                                        </li>
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+                                        <li>
+                                            <button
+                                                class="dropdown-item d-flex align-items-center gap-2 bi bi-translate"
+                                                id="sScopeToKapsam">Türkçeye Çevir</button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 8. Satır Notlar -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <textarea class="form-control" id="sNotInput" placeholder="Notlar..."
+                                        style="height: 100px"></textarea>
+                                    <label for="sNotInput" class="bi bi-stickies me-2">Notlar</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 9. Satır Gözetim -->
+                        <div class="row g-3 mb-3 d-none" id="gozetimCheckbox">
+                            <div class="col-md-6 form-floating invisible">
+                                <input type="text" class="form-control" id="sCalendar" placeholder="Takvim">
+                                <label for="sCalendar" class="bi bi-calendar2-date me-2">Takvim</label>
+                            </div>
+                            <div class="col-md-6 d-flex justify-content-end">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="" id="gozetimC">
+                                    <label class="form-check-label" for="gozetimC">Gözetim Yapıldı Mı?</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Butonlar -->
+                        <div class="d-flex justify-content-end gap-2 mt-3">
+                            <button class="btn btn-outline-primary me-2" data-bs-target="#certificateCarousel"
+                                data-bs-slide-to="0" type="button"><i class="bi bi-skip-backward-circle me-2"></i> Geri
+                                (Sertifikalar)</button>
+                            <button class="btn btn-outline-primary me-2" id="clear-certificate-button"><i
+                                    class="bi bi-eraser-fill me-2"></i>Formu Temizle</button>
+                            <button class="btn btn-primary d-none me-2" id="edit-certificate-button"><i
+                                    class="bi bi-file-earmark-text me-2"></i>Sertifikayı Düzenle</button>
+                            <button class="btn btn-primary me-2" id="add-certificate-button"><i
+                                    class="bi bi-file-earmark-plus me-2"></i>Sertifika Ekle</button>
+                        </div>
+                    </div> <!-- Content certificate Bitiş -->
+                </div> <!-- Card Body Bitiş -->
+            </div> <!-- Card Bitiş -->
+        </div> <!-- Carousel Item Bitiş -->
+
+        <!-- Kart 3: Son Sertifikalar -->
+        <div class="carousel-item">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Son Sertifikalar</h5>
+                    <a class="btn btn-primary btn-sm" href="#" data-bs-target="#certificateCarousel"
+                        data-bs-slide="prev">
+                        Sertifika Ekleme
+                    </a>
+                </div>
+                <div class="card-body position-relative">
+                    <!-- Spinner (Varsayılan olarak görünür, sadece yükleme sırasında) -->
+                    <div id="loading-last25" class="card-loading-wrapper d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                    <!-- İçerik Alanı -->
+                    <div id="content-last25">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered">
+                                <thead style="position: sticky; top: 0">
+                                    <tr>
+                                        <th scope="col" class="table-primary bi bi-calendar-day text-center me-2">Belge
+                                            Tarihi</th>
+                                        <th scope="col" class="table-primary bi bi-building me-2 text-center me-2">Firma
+                                            Adı</th>
+                                        <th scope="col" class="table-primary bi bi-exclude text-center me-2">Standart
+                                        </th>
+                                        <th scope="col" class="table-primary bi bi-award-fill text-center me-2">Denetim
+                                        </th>
+                                        <th scope="col" class="table-primary bi bi-award text-center me-2">Sertifika No
+                                        </th>
+                                        <th scope="col" class="table-primary text-center bi bi-pencil-square"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="table-group-divider" id="last25Results">
+                                    <!-- Sertifika içerikleri buraya gelecek -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div> <!-- last25 sonu -->
+                    <!-- Tablonun alt kısmında, aynı satırda sol: ikon & yazı, sağ: buton -->
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <div>
+                            <i class="bi bi-list-ol me-1"></i>
+                            <span class="form-text" id="last25Counter">Sertifikaları görmek için sağdaki butonu
+                                kullanın!</span>
+                        </div>
+                        <button type="button" class="btn btn-primary btn-sm bi bi-arrow-clockwise me-2" id="loadLast25">
+                            Getir / Yenile </button>
+                    </div>
+                </div> <!-- card-body sonu -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Göstergeler -->
+    <div class="carousel-indicators position-relative">
+        <button type="button" data-bs-target="#certificateCarousel" data-bs-slide-to="0" aria-label="Sertifikalar"
+            aria-current="true" class="active"></button>
+        <button type="button" data-bs-target="#certificateCarousel" data-bs-slide-to="1"
+            aria-label="Sertifika Ekle"></button>
+        <button type="button" data-bs-target="#certificateCarousel" data-bs-slide-to="2"
+            aria-label="Son 25 Sertifika"></button>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="fileSelectorModal" tabindex="-1" aria-labelledby="fileSelectorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fileSelectorLabel">Google Drive Dosya Seç</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-group" id="fileList">Dosyalar yükleniyor...</ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4. KART // Test Kartı -->
+<div class="carousel carousel-dark slide" data-bs-touch="true" data-bs-interval="false" id="testCarousel">
+    <div class="carousel-inner">
+        <!-- Carousel Item 1: Testler -->
+        <div class="carousel-item active">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Testler</h5>
+                    <a class="btn btn-primary btn-sm" href="#" id="nextThirdCard" data-bs-target="#testCarousel"
+                        data-bs-slide="next">Test Ekle</a>
+                </div>
+                <div class="card-body">
+                    <!-- Yükleme Animasyonu -->
+                    <div id="loading-tests" class="card-loading-wrapper d-none">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+
+                    <!-- Test Progress Bar -->
+                    <div id="progressWrapperContainer-tests"
+                        class="d-none position-absolute top-50 start-50 translate-middle text-center w-100"
+                        style="max-width: 600px;">
+                        <h5 id="testProgressTitle" class="mb-3">Testler Yazdırılıyor</h5>
+                        <div class="progress w-100" id="testProgressWrapper" style="height: 20px;">
+                            <div id="progressBar-tests" class="progress-bar progress-bar-striped progress-bar-animated"
+                                role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0"
+                                aria-valuemax="100">0%</div>
+                        </div>
+                    </div>
+
+                    <!-- İçerik Alanı -->
+                    <div id="content-tests" style="opacity: 0; pointer-events: none;">
+                        <!-- Test Kartı İçeriği -->
+                        <div class="collapse sticky-top" id="testUstMenu">
+                            <div class="card card-body">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <!-- Select All Tests Buton Grubu -->
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="" id="selectAllTests">
+                                        <label class="form-check-label" for="selectAllTests">Hepsini Seç</label>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap align-items-center gap-3">
+                                        <!-- Dil Seçimi -->
+                                        <div class="d-flex align-items-center">
+                                            <span><i class="bi bi-translate me-2"></i>İngilizce</span>
+                                            <div class="form-switch">
+                                                <input type="checkbox" class="form-check-input" id="lang_tests"
+                                                    title="Dil Seçimi">
+                                            </div>
+                                            <label class="ms-2" for="lang_tests">Türkçe</label>
+                                        </div>
+                                    </div>
+
+                                    <!-- İşlem Butonları -->
+                                    <div class="btn-group btn-group-sm gap-2" role="group">
+                                        <button type="button"
+                                            class="btn btn-outline-info rounded-pill bi bi-arrow-repeat"
+                                            title="Sayfayı Yenile" id="refresh-test"></button>
+                                        <button type="button"
+                                            class="btn btn-outline-warning rounded-pill bi bi-folder2-open folder-open"
+                                            title="Dosyayı Aç"></button>
+                                        <button type="button"
+                                            class="btn btn-outline-success rounded-pill bi bi-arrow-clockwise d-none"
+                                            title="Sayfayı Yenile" id="reload-tests"></button>
+                                        <button type="button"
+                                            class="btn btn-outline-success rounded-pill bi bi-file-earmark-plus"
+                                            title="Testleri Yazdır" id="write-tests"></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered">
+                                <caption><i class="bi bi-list-ol">&nbsp;</i><span id="testCounter"
+                                        class="form-text"></span>
+                                </caption>
+                                <thead style="position: sticky;top: 0">
+                                    <tr>
+                                        <th scope="col" class="table-primary text-center">
+                                            <a class="btn btn-sm btn-outline-success rounded-pill collapsed"
+                                                data-bs-toggle="collapse" href="#testUstMenu" role="button"
+                                                aria-expanded="false" aria-controls="collapseExample">
+                                                <i class="bi bi-arrow-down-up"></i>
+                                            </a>
+                                        </th>
+                                        <th scope="col" class="table-primary text-center text-truncate">
+                                            <i class="bi bi-people-fill me-2"></i>Test Tarihi
+                                        </th>
+                                        <th scope="col" class="table-primary text-center text-truncate">
+                                            <i class="bi bi-calendar-day me-2"></i>Testin Adı
+                                        </th>
+                                        <th scope="col" class="table-primary text-center text-truncate">
+                                            <i class="bi bi-exclude me-2"></i>Marka
+                                        </th>
+                                        <th scope="col" class="table-primary text-center text-truncate">
+                                            <i class="bi bi-shop me-2"></i>Ürün
+                                        </th>
+                                        <th scope="col" class="table-primary text-center">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </th>
+                                        <th scope="col" class="table-primary text-center">
+                                            <i class="bi bi-trash"></i>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="table-group-divider" id="tSearchResults">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carousel Item 2: Yeni Test -->
+        <div class="carousel-item">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Test Ekleme</h5>
+                    <a class="btn btn-primary btn-sm" href="#" id="prevThirdCard" data-bs-target="#testCarousel"
+                        data-bs-slide="prev">Geri</a>
+                </div>
+
+                <div class="card-body position-relative">
+
+                    <!-- Yükleme Animasyonu -->
+                    <div id="loading-addTest"
+                        class="card-loading-wrapper d-none position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75 z-3 rounded">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+
+                    <!-- Tüm İçerik -->
+                    <div id="content-addTest" style="opacity: 1; pointer-events: auto;">
+
+                        <!-- 1. Ürün Bilgisi -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-3">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="urunMarka" placeholder=" ">
+                                    <label for="urunMarka"><i class="bi bi-tag me-2"></i>Marka</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-9">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="urunAdi" placeholder=" ">
+                                    <label for="urunAdi"><i class="bi bi-box-seam me-2"></i>Ürün</label>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="urunKodu" placeholder=" ">
+                                    <label for="urunKodu"><i class="bi bi-123 me-2"></i>Ürün Kısa Kodu</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="urunNo" placeholder=" ">
+                                    <label for="urunNo"><i class="bi bi-hash me-2"></i>Ürün No</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="urunLot" placeholder=" ">
+                                    <label for="urunLot"><i class="bi bi-barcode me-2"></i>Lot</label>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control" id="numuneSayisi" placeholder=" ">
+                                    <label for="numuneSayisi"><i class="bi bi-boxes me-2"></i>Numune Sayısı</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <input type="date" class="form-control" id="uretimTarihi" placeholder=" ">
+                                    <label for="uretimTarihi"><i class="bi bi-calendar-check me-2"></i>Üretim
+                                        Tarihi</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <input type="date" class="form-control" id="numuneSKT" placeholder=" ">
+                                    <label for="numuneSKT"><i class="bi bi-calendar-x me-2"></i>SKT</label>
+                                </div>
+                            </div>
+
+                            <!-- Görsel 1 -->
+                            <div class="col-12 col-md-6">
+                                <div class="input-group">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="gorselBir" name="gorsel1"
+                                            placeholder="Görsel 1" readonly>
+                                        <label for="gorselBir"><i class="bi bi-image me-2"></i>Görsel 1</label>
+                                    </div>
+                                    <button class="btn btn-outline-success btn-lg" id="gorselBirSelect"
+                                        data-input="gorselBir" data-filetypes="image/png,image/jpeg,image/gif"
+                                        title="Drive'dan Seç"><i class="bi bi-cloud-check"></i></button>
+                                    <input type="file" id="gorselBir_file" hidden>
+                                    <button class="btn btn-outline-success btn-lg" id="gorselBirUpload"
+                                        data-input="gorselBir" title="Drive'a Yükle"><i
+                                            class="bi bi-cloud-arrow-up"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Görsel 2 -->
+                            <div class="col-12 col-md-6">
+                                <div class="input-group">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="gorselIki" name="gorsel2"
+                                            placeholder="Görsel 2" readonly>
+                                        <label for="gorselIki"><i class="bi bi-image me-2"></i>Görsel 2</label>
+                                    </div>
+                                    <button class="btn btn-outline-success btn-lg" id="gorselIkiSelect"
+                                        data-input="gorselIki" data-filetypes="image/png,image/jpeg,image/gif"
+                                        title="Drive'dan Seç"><i class="bi bi-cloud-check"></i></button>
+                                    <input type="file" id="gorselIki_file" hidden>
+                                    <button class="btn btn-outline-success btn-lg" id="gorselIkiUpload"
+                                        data-input="gorselIki" title="Drive'a Yükle"><i
+                                            class="bi bi-cloud-arrow-up"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <div class="form-floating">
+                                    <textarea class="form-control" id="urunBilgi" placeholder=" "
+                                        style="height: 100px"></textarea>
+                                    <label for="urunBilgi"><i class="bi bi-info-circle me-2"></i>Ürün Bilgi</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <div class="form-floating">
+                                    <textarea class="form-control" id="urunDetay" placeholder=" "
+                                        style="height: 100px"></textarea>
+                                    <label for="urunDetay"><i class="bi bi-file-text me-2"></i>Detay</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Dropdownlar -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <select id="testKategori" class="form-select">
+                                        <option disabled selected>Yükleniyor...</option>
+                                    </select>
+                                    <label for="testKategori"><i
+                                            class="bi bi-list-columns-reverse me-2"></i>Kategori</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <select id="testDropdown" class="form-select" disabled>
+                                        <option disabled selected>Önce kategori seçin</option>
+                                    </select>
+                                    <label for="testDropdown"><i class="bi bi-card-text me-2"></i>Test
+                                        Açıklaması</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <select id="testDokuman" class="form-select" disabled>
+                                        <option disabled selected>Önce test seçin</option>
+                                    </select>
+                                    <label for="testDokuman"><i class="bi bi-file-earmark-text me-2"></i>Doküman
+                                        Adı</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Testi Ekle Butonu -->
+                        <div class="d-flex justify-content-md-end justify-content-start mb-4">
+                            <button type="button" class="btn btn-outline-primary" id="add-tests"><i
+                                    class="bi bi-plus-circle me-2"></i>Testi Ekle</button>
+                        </div>
+
+                        <!-- 4. Seçilen Test Listesi -->
+                        <ul id="selectedTestList" class="list-group mb-4">
+                            <!-- JS ile doldurulacak -->
+                        </ul>
+
+                        <!-- Test Süresi Karşılaştır Butonu -->
+                        <div class="d-flex justify-content-end mb-4">
+                            <button type="button" class="btn btn-outline-dark" id="hesapla-tests"><i
+                                    class="bi bi-graph-up-arrow me-2"></i>En Uzun Testi Göster</button>
+                        </div>
+
+                        <!-- 5. Test Süreci Bilgileri-->
+                        <div class="row g-3 mb-4">
+                            <!-- Rapor Tarihi (input, col-3) -->
+                            <div class="col-12 col-md-3">
+                                <label for="raporTarihi" class="form-label"><i
+                                        class="bi bi-journal-check me-2"></i>Rapor Tarihi</label>
+                                <input type="date" class="form-control" id="raporTarihi">
+                            </div>
+
+                            <!-- En Uzun Test Süresi (Input-group, col-3) -->
+                            <div class="col-12 col-md-3">
+                                <label for="maxGunSayisi" class="form-label"><i
+                                        class="bi bi-hourglass-split me-2"></i>En Uzun Test Süresi (Gün)</label>
+                                <div class="input-group">
+                                    <button class="btn btn-outline-secondary" id="rtislem" type="button"
+                                        title="Rapor Tarihini Hesapla"><i class="bi bi-arrow-left"></i></button>
+                                    <input type="text" class="form-control" id="maxGunSayisi" disabled>
+                                    <button class="btn btn-outline-secondary" id="uktislem" type="button"
+                                        title="Ürün Kabul Tarihini Hesapla"><i class="bi bi-arrow-right"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Ürün Kabul Tarihi (input, col-3) -->
+                            <div class="col-12 col-md-3">
+                                <label for="urunKabul" class="form-label"><i
+                                        class="bi bi-box-arrow-in-down me-2"></i>Ürün Kabul Tarihi</label>
+                                <input type="date" class="form-control" id="urunKabul">
+                            </div>
+
+                            <!-- Kabul Saat (input, col-3) -->
+                            <div class="col-12 col-md-3">
+                                <label for="kabulSaat" class="form-label"><i class="bi bi-clock me-2"></i>Kabul
+                                    Saat</label>
+                                <input type="time" class="form-control" id="kabulSaat">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <!-- Test Başlangıç (col-3) -->
+                            <div class="col-12 col-md-3">
+                                <label for="testBaslangic" class="form-label"><i
+                                        class="bi bi-calendar-event me-2"></i>Test Başlangıç</label>
+                                <input type="date" class="form-control" id="testBaslangic">
+                            </div>
+
+                            <!-- Seçilen Test Günü (input-group, col-3) -->
+                            <div class="col-12 col-md-3">
+                                <label for="secilenTestGunu" class="form-label"><i
+                                        class="bi bi-hourglass-top me-2"></i>Seçilen Test Günü</label>
+                                <div class="input-group">
+                                    <button class="btn btn-outline-secondary" type="button" id="testbaislem"
+                                        title="Başlangıç Tarihini Hesapla"><i class="bi bi-arrow-left"></i></button>
+                                    <input type="text" class="form-control" id="secilenTestGunu" disabled>
+                                    <button class="btn btn-outline-secondary" type="button" id="testbiislem"
+                                        title="Bitiş Tarihini Hesapla"><i class="bi bi-arrow-right"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Test Bitiş (col-3) -->
+                            <div class="col-12 col-md-3">
+                                <label for="testBitis" class="form-label"><i class="bi bi-calendar-check me-2"></i>Test
+                                    Bitiş</label>
+                                <input type="date" class="form-control" id="testBitis">
+                            </div>
+
+                            <!-- Rapor No (col-3) -->
+                            <div class="col-12 col-md-3">
+                                <label for="raporNo" class="form-label"><i class="bi bi-hash me-2"></i>Rapor No</label>
+                                <input type="text" class="form-control" id="raporNo">
+                            </div>
+                        </div>
+
+                        <!-- En Altta Test Adı ve Öneri Rapor -->
+
+                        <div class="row g-3 mb-4">
+                            <!-- Test Adı (col-9) -->
+                            <div class="col-12 col-md-9">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="secilenTestAdi" placeholder=" "
+                                        disabled>
+                                    <label for="secilenTestAdi"><i class="bi bi-file-text me-2"></i>Test Adı</label>
+                                </div>
+                            </div>
+
+                            <!-- Öneri tNo (col-3) -->
+                            <div class="col-12 col-md-3">
+                                <div class="input-group">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="suggestedTestNoInput"
+                                            placeholder="Öneri Test Numarası" disabled>
+                                        <label for="suggestedTestNoInput"
+                                            class="d-flex align-items-center gap-1 bi bi-lightbulb">Öneri tNo</label>
+                                    </div>
+                                    <button class="btn btn-outline-success btn-lg bi bi-arrow-up-square"
+                                        id="generateSuggestedTestNo" title="Öneri Test Numarası Oluştur"></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. Test Kaydetme Butonu -->
+                        <div class="d-flex justify-content-md-end justify-content-start mb-4">
+                            <button type="button" class="btn btn-outline-primary" id="save-tests"><i
+                                    class="bi bi-floppy2-fill me-2"></i>Testi Kaydet</button>
+                        </div>
+                    </div> <!-- content-addTest sonu -->
+                </div> <!-- card-body sonu -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Göstergeler -->
+    <div class="carousel-indicators position-relative">
+        <button aria-current="true" aria-label="Slide 1" class="active" data-bs-slide-to="0"
+            data-bs-target="#testCarousel" type="button"></button>
+        <button aria-label="Slide 2" data-bs-slide-to="1" data-bs-target="#testCarousel" type="button"></button>
+    </div>
+</div>
+
+<!-- 5. Kart // Proforma ve Draft Ekranı Tasarımı -->
+<!-- Medicert Carousel -->
+<div class="carousel carousel-dark slide" data-bs-touch="true" data-bs-interval="false" id="formCarousel">
+    <div class="carousel-inner">
+        <!-- Carousel Item 1: ISO Başvuru Formu -->
+        <div class="carousel-item active">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Başvuru Formu</h5>
+                    <a class="btn btn-primary btn-sm" href="#" data-bs-target="#formCarousel"
+                        data-bs-slide="next">Proforma</a>
+                </div>
+                <div class="card-body">
+                    <!-- Yükleme Animasyonu -->
+                    <div id="loading-addQuestionnaire" class="card-loading-wrapper d-none">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                    <div id="content-addQuestionnaire" style="opacity: 0; pointer-events: none;">
+                        <!-- ISO Standartları Checkbox'lar (Diğer checkbox dahil) -->
+                        <div class="row g-3">
+                            <div class="col-md-3 col-6 form-check">
+                                <input class="form-check-input" type="checkbox" id="iso9001">
+                                <label class="form-check-label" for="iso9001">ISO 9001</label>
+                            </div>
+                            <div class="col-md-3 col-6 form-check">
+                                <input class="form-check-input" type="checkbox" id="iso13485">
+                                <label class="form-check-label" for="iso13485">ISO 13485</label>
+                            </div>
+                            <div class="col-md-3 col-6 form-check">
+                                <input class="form-check-input" type="checkbox" id="iso14001">
+                                <label class="form-check-label" for="iso14001">ISO 14001</label>
+                            </div>
+                            <div class="col-md-3 col-6 form-check">
+                                <input class="form-check-input" type="checkbox" id="iso22000">
+                                <label class="form-check-label" for="iso22000">ISO 22000</label>
+                            </div>
+                            <div class="col-md-3 col-6 form-check">
+                                <input class="form-check-input" type="checkbox" id="iso27001">
+                                <label class="form-check-label" for="iso27001">ISO 27001</label>
+                            </div>
+                            <div class="col-md-3 col-6 form-check">
+                                <input class="form-check-input" type="checkbox" id="iso45001">
+                                <label class="form-check-label" for="iso45001">ISO 45001</label>
+                            </div>
+                            <div class="col-md-3 col-6 form-check">
+                                <input class="form-check-input" type="checkbox" id="iso50001">
+                                <label class="form-check-label" for="iso50001">ISO 50001</label>
+                            </div>
+                            <div class="col-md-3 col-6 form-check">
+                                <input class="form-check-input" type="checkbox" id="iso22716">
+                                <label class="form-check-label" for="iso22716">ISO 22716 (GMP)</label>
+                            </div>
+                            <div class="col-md-3 col-6 form-check">
+                                <input class="form-check-input" type="checkbox" id="iso10002">
+                                <label class="form-check-label" for="iso10002">ISO 10002</label>
+                            </div>
+                            <div class="col-md-3 col-6 form-check">
+                                <input class="form-check-input" type="checkbox" id="iso93eec">
+                                <label class="form-check-label" for="iso93eec">2017/745/EU</label>
+                            </div>
+                            <div class="col-md-3 col-6 form-check">
+                                <input class="form-check-input" type="checkbox" id="otherCheckbox">
+                                <label class="form-check-label" for="otherCheckbox">Diğer</label>
+                            </div>
+                        </div>
+
+                        <!-- Yeni Input ve Select öğeleri (form-floating yapısı ile) -->
+                        <div class="row g-3 mt-3">
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="digerInput"
+                                        placeholder="Standartları Belirt" disabled>
+                                    <label for="digerInput">Diğer Standartlar</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <select class="form-select" id="notifiedBody">
+                                        <option value="IAS" selected>IAS</option>
+                                        <option value="TURKAK">Türkak</option>
+                                        <option value="NA">Non-Acc</option>
+                                    </select>
+                                    <label for="exampleSelect">Akreditasyon</label>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <div class="form-floating">
+                                    <select class="form-select" id="accCompany">
+                                        <option value="Inspect" selected>Inspect</option>
+                                        <option value="Medicert">Medicert</option>
+                                    </select>
+                                    <label for="exampleSelect">Belgelendirme Firması</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Başvuru Formu Butonu (ayrı satır) -->
+                        <div class="d-flex justify-content-end mt-3">
+                            <button class="btn btn-primary btn-sm bi bi-ui-checks me-2" id="basvuru-formu">
+                                Başvuru Formu Doldur
+                            </button>
+                        </div>
+                    </div><!-- content End -->
+                </div> <!-- card-body End -->
+            </div> <!-- card End -->
+        </div> <!-- Carousel Item 1 End -->
+
+        <!-- Carousel Item 2: Proforma -->
+        <div class="carousel-item">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Medicert Proforma</h5>
+                    <div class="d-flex">
+                        <a class="btn btn-primary btn-sm me-2" href="#" data-bs-target="#formCarousel"
+                            data-bs-slide="prev">Başvuru
+                            Formu</a>
+                        <a class="btn btn-primary btn-sm" href="#" data-bs-target="#formCarousel"
+                            data-bs-slide="next">Draft ve
+                            Sözleşme</a>
+                    </div>
+                </div>
+                <div class="card-body" style="position: relative;">
+                    <!-- Yükleme Animasyonu -->
+                    <div id="loading-addProforma" class="card-loading-wrapper d-none">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                    <div id="content-addProforma" style="opacity: 0; pointer-events: none;">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="table-primary text-center"><i
+                                                class="bi bi-people-fill me-2"></i> Proforma
+                                            Tarihi</th>
+                                        <th scope="col" class="table-primary text-center"><i
+                                                class="bi bi-calendar-day me-2"></i> Konu</th>
+                                        <th scope="col" class="table-primary text-center"><i
+                                                class="bi bi-exclude me-2"></i> KDV Hariç</th>
+                                        <th scope="col" class="table-primary text-center"><i
+                                                class="bi bi-shop me-2"></i> KDV Oranı</th>
+                                        <th scope="col" class="table-primary text-center"><i
+                                                class="bi bi-award me-2"></i> KDV Tutarı</th>
+                                        <th scope="col" class="table-primary text-center"><i
+                                                class="bi bi-spellcheck me-2"></i> Toplam Fiyat
+                                        </th>
+                                        <th scope="col" class="table-primary text-center"><i
+                                                class="bi bi-pencil-square"></i></th>
+                                        <th scope="col" class="table-primary text-center"><i class="bi bi-trash"></i>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="proformaResults"></tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div>
+                                <i class="bi bi-list-ol me-1"></i>
+                                <span class="form-text" id="proformaCounter">Firmaya Ait Proforma Faturalar</span>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm bi bi-arrow-clockwise"
+                                id="loadProforma"> Getir / Yenile </button>
+                        </div>
+                        <hr style="border: 0; border-top: 2px dotted #ccc; margin: 20px 0;">
+                        <div class="row g-3">
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="kdv-haric" placeholder="KDV Hariç">
+                                <label for="kdv-haric"> KDV Hariç</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="kdv-oran" placeholder="KDV Oranı"
+                                    value="20">
+                                <label for="kdv-oran"> KDV Oranı</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="kdv-tutar" placeholder="KDV Tutarı">
+                                <label for="kdv-tutar"> KDV Tutarı</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="toplam-fiyat" placeholder="Toplam Fiyat">
+                                <label for="toplam-fiyat"> Toplam Fiyat</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <input type="text" class="form-control" id="para-birimi" placeholder="Para Birimi">
+                                <label for="para-birimi"> Para Birimi</label>
+                            </div>
+                            <div class="col-md-4 form-floating">
+                                <input type="date" class="form-control" id="pro-tarih" placeholder="Proforma Tarihi">
+                                <label for="pro-tarih"> Proforma Tarihi</label>
+                            </div>
+                            <div class="col-md-12 form-floating">
+                                <textarea class="form-control" id="pro-konu" rows="3"
+                                    placeholder="Proforma İçeriği"></textarea>
+                                <label for="pro-konu"> Proforma İçeriği</label>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 mt-3">
+                                <button class="btn btn-outline-secondary" type="button" id="proforma-kaydet"><i
+                                        class="bi bi-save me-2"></i>Kaydet</button>
+                                <button class="btn btn-outline-secondary" type="button" id="proforma-goster"><i
+                                        class="bi bi-eye me-2"></i>Göster</button>
+                            </div>
+                        </div>
+                    </div> <!-- content-addProforma End -->
+                </div> <!-- card-body End for Proforma -->
+            </div> <!-- card End for Proforma -->
+        </div> <!-- Carousel Item 2 End -->
+
+        <!-- Carousel Item 3: Draft ve Sözleşme -->
+        <div class="carousel-item">
+            <div class="card position-relative shadow-sm border-0 col-11 col-md-8 col-lg-6 mx-auto">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Draft ve Sözleşme</h5>
+                    <div class="d-flex">
+                        <a class="btn btn-primary btn-sm me-2 d-flex align-items-center" href="#"
+                            data-bs-target="#formCarousel" data-bs-slide="prev">Proforma</a>
+                        <a class="btn btn-primary btn-sm" href="#" data-bs-target="#formCarousel"
+                            data-bs-slide="next">Başvuru
+                            Formu</a>
+                    </div>
+                </div>
+                <div class="card-body position-relative">
+                    <!-- Tek Yükleme Alanı (Fonksiyonla uyumlu) -->
+                    <div id="loading-draftSozlesme" class="card-loading-wrapper d-none">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                    <!-- İçerik Alanı -->
+                    <div id="content-draftSozlesme" class="row g-3">
+                        <h6>Draft Oluştur</h6>
+                        <div class="col-md-6">
+                            <label for="pstandartInput" class="form-label"><i class="bi bi-file-richtext me-2"></i>
+                                Standart Seçimi</label>
+                            <select class="form-select" id="pstandartInput"></select>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="draftLang" id="draftTr" value="TR">
+                                <label class="form-check-label" for="draftTr">Türkçe Draft</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="draftLang" id="draftEn" value="EN"
+                                    checked>
+                                <label class="form-check-label" for="draftEn">İngilizce Draft</label>
+                            </div>
+                            <button class="btn btn-outline-warning" type="button" id="draft-yap">Draft Oluştur</button>
+                        </div>
+                        <hr style="border: 0; border-top: 2px dotted #ccc; margin: 20px 0;">
+                        <h6>Sözleşme Oluştur</h6>
+                        <div class="row g-3">
+                            <div class="col-md-2 form-floating">
+                                <input type="date" class="form-control" id="soz-tarih">
+                                <label for="soz-tarih" class="bi bi-calendar me-2">Tarih</label>
+                            </div>
+                            <div class="col-md-2 form-floating">
+                                <input type="text" class="form-control" id="soz-fiyat">
+                                <label for="soz-fiyat" class="bi bi-currency-exchange me-2">Ücret</label>
+                            </div>
+                            <div class="col-md-8 form-floating">
+                                <input type="text" class="form-control" id="soz-konu">
+                                <label for="soz-konu" class="bi bi-textarea-resize me-2">Sözleşme Konusu</label>
+                            </div>
+                            <div class="col-md-12 text-end">
+                                <button class="btn btn-outline-success bi bi-save me-2" type="button"
+                                    id="sozlesme-kaydet">Kaydet</button>
+                            </div>
+                        </div>
+                    </div> <!-- content-draftSozlesme End -->
+                </div> <!-- card-body End for Draft ve Sözleşme -->
+            </div> <!-- card End for Draft ve Sözleşme -->
+        </div> <!-- Carousel Item 3 End -->
+    </div> <!-- carousel-inner End -->
+
+    <!-- Göstergeler -->
+    <div class="carousel-indicators position-relative">
+        <button type="button" class="active" data-bs-slide-to="0" data-bs-target="#formCarousel" aria-current="true"
+            aria-label="Slide 1"></button>
+        <button type="button" data-bs-slide-to="1" data-bs-target="#formCarousel" aria-label="Slide 2"></button>
+        <button type="button" data-bs-slide-to="2" data-bs-target="#formCarousel" aria-label="Slide 3"></button>
+    </div>
+</div> <!-- carousel End -->

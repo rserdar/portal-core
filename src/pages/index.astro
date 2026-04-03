@@ -1,0 +1,194 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+
+/**
+ * 🏠 Dashboard Overview
+ * 
+ * Portalın ana sayfası. Özet bilgiler ve hızlı aksiyon kartları içerir.
+ */
+
+const stats = [
+	{ label: "Toplam Firma", value: "1,248", change: "+12%", icon: "briefcase" },
+	{ label: "Aktif Sertifika", value: "856", change: "+5%", icon: "award" },
+	{ label: "Bekleyen Denetim", value: "24", change: "-2", icon: "calendar" },
+	{ label: "Yeni Başvuru", value: "8", change: "Yeni", icon: "plus-circle" },
+];
+
+const quickActions = [
+	{ title: "Yeni Firma Ekle", desc: "Sisteme yeni bir müşteri kaydet.", href: "/company/add" },
+	{ title: "Sertifika Sorgula", desc: "Mevcut sertifikaları görüntüle.", href: "/search" },
+	{ title: "Doküman Üret", desc: "ISO doküman seti hazırlayın.", href: "/docs" },
+];
+---
+
+<DashboardLayout title="Genel Bakış">
+	<!-- Stats Grid -->
+	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+		<!-- Toplam Firma -->
+		<div class="glass p-6 rounded-2xl hover:border-indigo-500/30 transition group">
+			<div class="flex items-center justify-between mb-4">
+				<div class="w-10 h-10 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+				</div>
+				<span class="text-xs font-medium px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400">Canlı</span>
+			</div>
+			<h3 class="text-sm font-medium text-gray-400">Toplam Firma</h3>
+			<p class="text-2xl font-bold mt-1 text-white" id="stat-companies">0</p>
+		</div>
+
+		<!-- Aktif Sertifika -->
+		<div class="glass p-6 rounded-2xl hover:border-emerald-500/30 transition group">
+			<div class="flex items-center justify-between mb-4">
+				<div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/><path d="M12 14c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8Z"/></svg>
+				</div>
+				<span class="text-xs font-medium px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400">+%100</span>
+			</div>
+			<h3 class="text-sm font-medium text-gray-400">Aktif Sertifika</h3>
+			<p class="text-2xl font-bold mt-1 text-white" id="stat-certificates">0</p>
+		</div>
+
+		<!-- Bekleyen Gözetim -->
+		<div class="glass p-6 rounded-2xl hover:border-amber-500/30 transition group">
+			<div class="flex items-center justify-between mb-4">
+				<div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+				</div>
+				<span class="text-xs font-medium px-2 py-1 rounded-full bg-amber-500/10 text-amber-400" id="stat-pending-badge">Kritik</span>
+			</div>
+			<h3 class="text-sm font-medium text-gray-400">Gözetim Bekleyen</h3>
+			<p class="text-2xl font-bold mt-1 text-white" id="stat-pending-count">0</p>
+		</div>
+
+		<!-- Son Senkronizasyon -->
+		<div class="glass p-6 rounded-2xl hover:border-blue-500/30 transition group">
+			<div class="flex items-center justify-between mb-4">
+				<div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+				</div>
+				<span class="text-[10px] uppercase font-bold text-gray-500" id="sync-status-text">Bağlı</span>
+			</div>
+			<h3 class="text-sm font-medium text-gray-400">Veri Durumu</h3>
+			<p class="text-xs font-bold mt-2 text-indigo-400" id="last-sync-label">Senkronize Ediliyor...</p>
+		</div>
+	</div>
+
+	<!-- Main Content Grid -->
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+		<!-- Quick Actions -->
+		<div class="lg:col-span-2 space-y-6">
+			<h2 class="text-xl font-bold px-1 text-white">Hızlı Aksiyonlar</h2>
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				{quickActions.map((action) => (
+					<a href={action.href} class="glass p-5 rounded-2xl flex items-center justify-between hover:bg-white/5 transition group">
+						<div>
+							<h3 class="font-bold text-white group-hover:text-indigo-400 transition">{action.title}</h3>
+							<p class="text-xs text-gray-500 mt-1">{action.desc}</p>
+						</div>
+						<svg class="text-gray-600 group-hover:text-indigo-400 transition" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+					</a>
+				))}
+			</div>
+
+			<!-- Recent Activity Placeholder -->
+			<div class="glass p-6 rounded-3xl mt-8">
+				<h2 class="text-lg font-bold mb-6 text-white">Son İşlemler</h2>
+				<div class="space-y-4">
+					{[1, 2, 3].map(() => (
+						<div class="flex items-center justify-between py-3 border-b border-white/5 last:border-0 hover:bg-white/5 rounded-xl px-2 transition-all cursor-pointer">
+							<div class="flex items-center gap-4">
+								<div class="w-10 h-10 rounded-full bg-gray-800/50 border border-white/5 flex items-center justify-center">
+									<svg class="text-indigo-400" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+								</div>
+								<div>
+									<p class="text-sm font-bold text-white">Firma Sertifikası Oluşturuldu</p>
+									<p class="text-xs text-gray-500">Astro Nun - ISO 9001:2015</p>
+								</div>
+							</div>
+							<span class="text-xs text-gray-500">2 saat önce</span>
+						</div>
+					))}
+				</div>
+			</div>
+		</div>
+
+		<!-- Side Panel (Summary/Tips) -->
+		<div class="space-y-6">
+			<div class="glass p-8 rounded-3xl bg-indigo-600/10 border-indigo-500/20 relative overflow-hidden group">
+				<div class="absolute -right-8 -bottom-8 w-32 h-32 bg-indigo-600/20 rounded-full blur-3xl group-hover:bg-indigo-600/40 transition"></div>
+				<h3 class="text-lg font-bold text-indigo-400 mb-2 italic">Pro Tip</h3>
+				<p class="text-sm text-gray-300 relative z-10 leading-relaxed">
+					Doküman üretme modülünde "Otomatik Doldur" özelliğini kullanarak tüm İK ve Kalite formlarını tek tıkla hazırlayabilirsiniz.
+				</p>
+			</div>
+
+			<div class="glass p-6 rounded-3xl">
+				<h3 class="text-md font-bold mb-4 text-white">Sistem Durumu</h3>
+				<div class="space-y-3">
+					<div class="flex items-center justify-between text-xs">
+						<span class="text-gray-400">Cloudflare Worker</span>
+						<span class="text-emerald-400 flex items-center gap-1">
+							<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Çevrimiçi
+						</span>
+					</div>
+					<div class="flex items-center justify-between text-xs">
+						<span class="text-gray-400">Google Apps Script</span>
+						<span class="text-emerald-400 flex items-center gap-1">
+							<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Çevrimiçi
+						</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</DashboardLayout>
+
+<script>
+  import { $companies, $certificates, $lastSyncTime, $syncStatus } from '../lib/store';
+  import { SyncManager } from '../lib/sync';
+
+  // Elementler
+  const statCompanies = document.getElementById('stat-companies');
+  const statCertificates = document.getElementById('stat-certificates');
+  const statPendingCount = document.getElementById('stat-pending-count');
+  const statPendingBadge = document.getElementById('stat-pending-badge');
+  const syncStatusText = document.getElementById('sync-status-text');
+  const lastSyncLabel = document.getElementById('last-sync-label');
+
+  // 📡 Store'ları Dinle
+  $companies.subscribe(val => {
+    if (statCompanies) statCompanies.textContent = val.length.toString();
+  });
+
+  $certificates.subscribe(val => {
+    if (statCertificates) {
+        const activeCount = val.filter(c => String(c["Gözetim"]) === "TRUE").length;
+        statCertificates.textContent = activeCount.toString();
+    }
+    if (statPendingCount) {
+        const pendingCount = val.filter(c => String(c["Gözetim"]) === "FALSE").length;
+        statPendingCount.textContent = pendingCount.toString();
+        
+        if (statPendingBadge) {
+            statPendingBadge.textContent = pendingCount > 0 ? 'Kritik' : 'Temiz';
+            statPendingBadge.className = `text-xs font-medium px-2 py-1 rounded-full ${pendingCount > 0 ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}`;
+        }
+    }
+  });
+
+  $lastSyncTime.subscribe(val => {
+      if (lastSyncLabel && val) {
+          lastSyncLabel.textContent = `Son Güncelleme: ${new Date(val).toLocaleTimeString('tr-TR')}`;
+      }
+  });
+
+  $syncStatus.subscribe(status => {
+      if (syncStatusText) {
+          syncStatusText.textContent = status === 'syncing' ? 'GÜNCELLENİYOR...' : 'BAĞLI';
+          syncStatusText.className = `text-[10px] uppercase font-bold ${status === 'syncing' ? 'text-amber-400 animate-pulse' : 'text-gray-500'}`;
+      }
+  });
+
+  // 🚀 Senkronizasyonu Başlat
+  SyncManager.init();
+</script>

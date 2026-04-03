@@ -1,0 +1,286 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Sertifika Yönetimi">
+  <div class="space-y-6">
+
+    <!-- 🎛️ Filtreleme Paneli -->
+    <div class="glass p-5 rounded-3xl border-white/5 shadow-xl space-y-4">
+
+      <!-- Üst satır: Sync + Bulk Actions -->
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div id="sync-indicator" class="flex items-center gap-2 px-3 py-1.5 glass rounded-lg border-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]"></span>
+          Güncel
+        </div>
+
+        <!-- Bulk Actions (JS ile gösterilir) -->
+        <div id="bulk-actions" class="hidden items-center gap-3 glass px-4 py-2 rounded-xl border border-indigo-500/30 animate-fade-in">
+          <span id="selected-count" class="text-[10px] font-black text-indigo-400">0 SEÇİLİ</span>
+          <div class="h-4 w-px bg-white/10"></div>
+          <button id="bulk-done-btn" class="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-wider px-2 py-1 rounded-lg hover:bg-emerald-500/10">
+            ✓ Gözetim Yapıldı
+          </button>
+          <div class="h-4 w-px bg-white/10"></div>
+          <button id="bulk-pending-btn" class="text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors uppercase tracking-wider px-2 py-1 rounded-lg hover:bg-amber-500/10">
+            ⏸ Beklemeye Al
+          </button>
+        </div>
+      </div>
+
+      <!-- Alt satır: Arama + Filtreler (AYNI GLASS KART İÇİNDE) -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div class="md:col-span-2 relative group">
+          <input
+            type="text"
+            id="global-search"
+            placeholder="Firma, Standart veya Belge No ile ara..."
+            class="w-full bg-white/5 border border-white/10 rounded-xl px-11 py-3 text-sm focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all text-white placeholder:text-gray-600"
+          />
+          <svg class="absolute left-3.5 top-3.5 text-gray-500 group-focus-within:text-indigo-400 transition-colors pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
+
+        <select id="standard-filter" class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 text-gray-300 appearance-none cursor-pointer transition-all">
+          <option value="">Tüm Standartlar</option>
+          <option value="9001">ISO 9001</option>
+          <option value="14001">ISO 14001</option>
+          <option value="45001">ISO 45001</option>
+          <option value="22000">ISO 22000</option>
+          <option value="27001">ISO 27001</option>
+          <option value="13485">ISO 13485</option>
+          <option value="10002">ISO 10002</option>
+        </select>
+
+        <select id="status-filter" class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 text-gray-300 appearance-none cursor-pointer transition-all">
+          <option value="">Tüm Durumlar</option>
+          <option value="TRUE">Aktif (Gözetim Tamam)</option>
+          <option value="FALSE">Bekliyor (Gözetim Gerekli)</option>
+        </select>
+      </div>
+
+    </div><!-- /.glass filter panel — KAPATILDI -->
+
+    <!-- 📊 Veri Tablosu -->
+    <div class="glass rounded-3xl overflow-hidden border-white/10 shadow-2xl">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-white/5 bg-white/5 text-gray-500">
+              <th class="px-6 py-4 w-10">
+                <input type="checkbox" id="select-all" class="w-4 h-4 rounded border-gray-700 text-indigo-600 bg-transparent cursor-pointer">
+              </th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-indigo-400/80">Durum</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Firma</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Standart</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Belge No</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-center">Gözetim Tarihi</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-right">İşlemler</th>
+            </tr>
+          </thead>
+          <tbody id="cert-table-body" class="divide-y divide-white/5">
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Yükleniyor -->
+      <div id="table-loader" class="px-8 py-32 flex flex-col items-center justify-center gap-4">
+        <div class="w-12 h-12 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+        <p class="text-sm text-gray-500 animate-pulse font-medium">Sertifikalar yükleniyor...</p>
+      </div>
+
+      <!-- Boş Durum -->
+      <div id="empty-state" class="hidden px-8 py-32 flex flex-col items-center justify-center gap-4">
+        <div class="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-gray-600">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+        </div>
+        <p class="text-lg font-bold text-gray-500">Sertifika bulunamadı</p>
+        <p class="text-xs text-gray-600">Filtre kriterlerinizi değiştirmeyi deneyin.</p>
+      </div>
+    </div>
+
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api } from '../lib/api';
+  import { $certificates, $syncStatus } from '../lib/store';
+  import { SyncManager } from '../lib/sync';
+
+  const tableBody = document.getElementById('cert-table-body');
+  const tableLoader = document.getElementById('table-loader');
+  const emptyState = document.getElementById('empty-state');
+  const globalSearch = document.getElementById('global-search') as HTMLInputElement;
+  const standardFilter = document.getElementById('standard-filter') as HTMLSelectElement;
+  const statusFilter = document.getElementById('status-filter') as HTMLSelectElement;
+  const syncIndicator = document.getElementById('sync-indicator');
+
+  let filters = { search: '', standard: '', status: '' };
+
+  $certificates.subscribe(certs => {
+    if (certs && certs.length > 0) {
+      tableLoader?.classList.add('hidden');
+      renderTable(certs);
+    }
+  });
+
+  $syncStatus.subscribe(status => {
+    if (!syncIndicator) return;
+    const dot = syncIndicator.querySelector('span');
+    const text = syncIndicator.lastChild;
+    if (status === 'syncing') {
+      if (dot) { dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse'; }
+      if (text) text.textContent = ' GÜNCELLENİYOR';
+    } else {
+      if (dot) { dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]'; }
+      if (text) text.textContent = ' GÜNCEL';
+    }
+  });
+
+  function renderTable(data: readonly any[]) {
+    if (!tableBody) return;
+
+    const filtered = data.filter((item: any) => {
+      const matchSearch = (item["Firma Adı"] + item["ID"] + item["Sertifika No"]).toLowerCase().includes(filters.search.toLowerCase());
+      const matchStd = !filters.standard || item["Standart"]?.includes(filters.standard);
+      const matchStatus = !filters.status || String(item["Gözetim"]) === filters.status;
+      return matchSearch && matchStd && matchStatus;
+    });
+
+    tableBody.innerHTML = '';
+
+    if (filtered.length === 0) {
+      emptyState?.classList.remove('hidden');
+      return;
+    }
+    emptyState?.classList.add('hidden');
+
+    filtered.forEach((item: any) => {
+      const isOk = String(item["Gözetim"]) === "TRUE";
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-white/[0.03] transition-colors group border-l-2 border-l-transparent hover:border-l-indigo-600/50';
+
+      tr.innerHTML = `
+        <td class="px-6 py-4">
+          <input type="checkbox" class="cert-checkbox w-4 h-4 rounded border-gray-700 text-indigo-600 bg-transparent cursor-pointer" data-id="${item["ID"]}">
+        </td>
+        <td class="px-6 py-4">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full flex-shrink-0 ${isOk ? 'bg-emerald-500 shadow-[0_0_6px_#10b981]' : 'bg-amber-500 shadow-[0_0_6px_#f59e0b]'}"></span>
+            <span class="text-[10px] font-bold ${isOk ? 'text-emerald-400' : 'text-amber-400'}">${isOk ? 'AKTİF' : 'BEKLİYOR'}</span>
+          </div>
+        </td>
+        <td class="px-6 py-4">
+          <div class="text-sm font-semibold text-white group-hover:text-indigo-300 transition-colors leading-tight">${item["Firma Adı"] || '-'}</div>
+          <div class="text-[10px] text-gray-600 font-mono mt-0.5">${item["Danışman"] || ''}</div>
+        </td>
+        <td class="px-6 py-4">
+          <span class="text-xs font-bold text-indigo-300/80 bg-indigo-500/10 px-2.5 py-1 rounded-lg">${item["Standart"] || '-'}</span>
+        </td>
+        <td class="px-6 py-4 text-xs text-gray-500 font-mono">${item["Sertifika No"] || '-'}</td>
+        <td class="px-6 py-4 text-center">
+          <div class="text-sm text-white font-semibold">${item["Sertifika Gözetim Tarihi"] || '-'}</div>
+          <div class="text-[10px] text-gray-600 mt-0.5">${item["Sertifika Tarihi"] || ''}</div>
+        </td>
+        <td class="px-6 py-4 text-right">
+          <div class="flex items-center justify-end gap-2 translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
+            <button class="folder-btn p-2 glass rounded-lg text-gray-500 hover:text-indigo-400 hover:border-indigo-500/30 transition-all" title="Drive Klasörü" data-nick="${item["Firma Adı"]}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93l-1-1A2 2 0 0 0 9.6 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"/></svg>
+            </button>
+            <button class="pdf-btn p-2 glass rounded-lg text-gray-500 hover:text-rose-400 hover:border-rose-500/30 transition-all" title="PDF Dönüştür" data-id="${item["ID"]}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </button>
+          </div>
+        </td>
+      `;
+      tableBody.appendChild(tr);
+    });
+
+    attachTableActions();
+  }
+
+  // --- TOPLU İŞLEMLER ---
+  const selectAll = document.getElementById('select-all') as HTMLInputElement;
+  const bulkActionsBar = document.getElementById('bulk-actions');
+  const selectedCountDisplay = document.getElementById('selected-count');
+  const bulkDoneBtn = document.getElementById('bulk-done-btn');
+  const bulkPendingBtn = document.getElementById('bulk-pending-btn');
+
+  function updateBulkUI() {
+    const checked = document.querySelectorAll('.cert-checkbox:checked');
+    if (selectedCountDisplay) selectedCountDisplay.textContent = `${checked.length} SEÇİLİ`;
+    if (checked.length > 0) {
+      bulkActionsBar?.classList.remove('hidden');
+      bulkActionsBar?.classList.add('flex');
+    } else {
+      bulkActionsBar?.classList.add('hidden');
+      bulkActionsBar?.classList.remove('flex');
+      if (selectAll) selectAll.checked = false;
+    }
+  }
+
+  selectAll?.addEventListener('change', (e) => {
+    const isChecked = (e.target as HTMLInputElement).checked;
+    document.querySelectorAll('.cert-checkbox').forEach(cb => {
+      (cb as HTMLInputElement).checked = isChecked;
+    });
+    updateBulkUI();
+  });
+
+  tableBody?.addEventListener('change', (e) => {
+    if ((e.target as HTMLElement).classList.contains('cert-checkbox')) {
+      updateBulkUI();
+    }
+  });
+
+  async function callBulkUpdate(status: boolean) {
+    const checked = Array.from(document.querySelectorAll('.cert-checkbox:checked'))
+      .map(cb => (cb as HTMLElement).dataset.id);
+    if (checked.length === 0) return;
+    if (!confirm(`${checked.length} adet belgenin gözetim durumunu güncellemek istediğinizden emin misiniz?`)) return;
+    const res = await api.call('updateSurveillance', { ids: checked, status });
+    if (res.success) {
+      alert('İşlem Başarılı!');
+      window.location.reload();
+    } else {
+      alert('Hata: ' + res.error);
+    }
+  }
+
+  bulkDoneBtn?.addEventListener('click', () => callBulkUpdate(true));
+  bulkPendingBtn?.addEventListener('click', () => callBulkUpdate(false));
+
+  function attachTableActions() {
+    document.querySelectorAll('.folder-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const nick = (e.currentTarget as HTMLElement).dataset.nick;
+        const res = await api.call('getFolderId', { nickname: nick });
+        if (res.success) window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
+      });
+    });
+    document.querySelectorAll('.pdf-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = (e.currentTarget as HTMLElement).dataset.id;
+        const btnEl = e.currentTarget as HTMLElement;
+        btnEl.classList.add('animate-spin', 'text-rose-500');
+        alert('PDF Dönüştürme başlatıldı. Lütfen Drive klasörünü kontrol edin.');
+        btnEl.classList.remove('animate-spin', 'text-rose-500');
+      });
+    });
+  }
+
+  globalSearch?.addEventListener('input', (e) => {
+    filters.search = (e.target as HTMLInputElement).value;
+    renderTable($certificates.get());
+  });
+  standardFilter?.addEventListener('change', (e) => {
+    filters.standard = (e.target as HTMLSelectElement).value;
+    renderTable($certificates.get());
+  });
+  statusFilter?.addEventListener('change', (e) => {
+    filters.status = (e.target as HTMLSelectElement).value;
+    renderTable($certificates.get());
+  });
+
+  SyncManager.init();
+</script>

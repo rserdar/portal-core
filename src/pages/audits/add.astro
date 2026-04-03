@@ -1,0 +1,214 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+
+/**
+ * 📅 Denetim Planlama & Takvim Kaydı
+ * 
+ * Yeni denetimleri planlayan ve Google Takvim (Aşama 1-2) 
+ * etkinliklerini otomatik oluşturan akıllı form.
+ */
+---
+
+<DashboardLayout title="Yeni Denetim Planla">
+  <div class="max-w-5xl mx-auto space-y-8 pb-20">
+    
+    <div class="flex items-center gap-4 px-2">
+      <a href="/audits" class="p-2 glass rounded-xl text-gray-500 hover:text-indigo-400 transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </a>
+      <h1 class="text-2xl font-black text-white">Denetim Planlaması</h1>
+    </div>
+
+    <!-- 🏢 1. Firma & Temel Bilgiler -->
+    <section class="glass p-8 rounded-3xl space-y-6">
+      <h2 class="text-lg font-bold border-b border-white/5 pb-4">Temel Bilgiler</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-2 relative group">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Firma Seçimi</label>
+          <input type="text" id="company-search" list="company-list" placeholder="Firma Arayın..." class="form-input" />
+          <datalist id="company-list"></datalist>
+        </div>
+
+        <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Denetim Tipi</label>
+            <select id="audit-type" class="form-input">
+                <option value="Gözetim">Gözetim</option>
+                <option value="Yenileme">Yenileme</option>
+                <option value="İlk Belgelendirme">İlk Belgelendirme</option>
+                <option value="Kapsam Genişletme">Kapsam Genişletme</option>
+            </select>
+        </div>
+
+        <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Standart</label>
+            <input type="text" id="audit-standard" placeholder="Örn: 9001:2015" class="form-input" />
+        </div>
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- 📅 Aşama 1 -->
+        <section class="glass p-8 rounded-3xl space-y-6 border-indigo-500/10">
+            <h2 class="text-lg font-bold text-indigo-400 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                Aşama 1 Denetimi
+            </h2>
+            
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Başlangıç Tarihi</label>
+                        <input type="date" id="a1-start" class="form-input" />
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Bitiş Tarihi</label>
+                        <input type="date" id="a1-end" class="form-input" />
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Denetçi İsmi / Takvim Başlığı</label>
+                    <input type="text" id="a1-auditor" placeholder="Takvimde görünecek başlık" class="form-input" />
+                </div>
+            </div>
+        </section>
+
+        <!-- 📅 Aşama 2 -->
+        <section class="glass p-8 rounded-3xl space-y-6 border-emerald-500/10">
+            <h2 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Aşama 2 Denetimi
+            </h2>
+            
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Başlangıç Tarihi</label>
+                        <input type="date" id="a2-start" class="form-input" />
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-500 uppercase">Bitiş Tarihi</label>
+                        <input type="date" id="a2-end" class="form-input" />
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Denetçi İsmi / Takvim Başlığı</label>
+                    <input type="text" id="a2-auditor" placeholder="Takvimde görünecek başlık" class="form-input" />
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ☑️ Sertifika Kapsamı (Logolar) -->
+    <section class="glass p-8 rounded-3xl space-y-6">
+        <h2 class="text-lg font-bold border-b border-white/5 pb-4">Denetim Kapsamı</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+            {['QMS', 'MDD', 'EMS', 'OHS', 'FSMS', 'ISMS', 'ENGY', 'GMP'].map(std => (
+                <label class="flex flex-col items-center gap-2 p-4 glass border-white/5 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group">
+                    <input type="checkbox" name="scope" value={std} class="w-4 h-4 rounded border-gray-800 text-indigo-600 focus:ring-indigo-500 bg-transparent" />
+                    <span class="text-[10px] font-black text-gray-500 group-hover:text-white transition-colors">{std}</span>
+                </label>
+            ))}
+        </div>
+    </section>
+
+    <!-- 🚀 Submit Button -->
+    <div class="flex justify-end pt-4 pb-20">
+        <button id="save-audit-btn" class="px-12 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-xl shadow-indigo-600/20 transition-all flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            DENETİMİ TAKVİME EKLE VE KAYDET
+        </button>
+    </div>
+
+  </div>
+</DashboardLayout>
+
+<style is:global>
+  @reference "../../styles/index.css";
+
+  .form-input {
+    @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all;
+  }
+</style>
+
+<script>
+  import { api } from '../../lib/api';
+  import { $companies } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
+
+  const companySearch = document.getElementById('company-search') as HTMLInputElement;
+  const companyList = document.getElementById('company-list');
+  const saveBtn = document.getElementById('save-audit-btn') as HTMLButtonElement;
+
+  let selectedCompany: any = null;
+
+  // 📡 Store'u Dinle
+  $companies.subscribe(companies => {
+    if (companyList) {
+      companyList.innerHTML = '';
+      companies.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = `${c.nickname} (M${c.id})`;
+        companyList.appendChild(opt);
+      });
+    }
+  });
+
+  companySearch?.addEventListener('input', (e) => {
+    const val = (e.target as HTMLInputElement).value;
+    const match = $companies.get().find(c => `${c.nickname} (M${c.id})` === val);
+    if (match) selectedCompany = match;
+  });
+
+  // 🚀 Kaydet
+  saveBtn?.addEventListener('click', async () => {
+    if (!selectedCompany) return alert('Lütfen bir firma seçin.');
+
+    const auditData = {
+        nick: selectedCompany.nickname,
+        firmano: selectedCompany.id,
+        standart: (document.getElementById('audit-standard') as HTMLInputElement).value,
+        denetim: (document.getElementById('audit-type') as HTMLSelectElement).value,
+        
+        a1kDenet: (document.getElementById('a1-auditor') as HTMLInputElement).value,
+        a1Basla: (document.getElementById('a1-start') as HTMLInputElement).value,
+        a1Bitis: (document.getElementById('a1-end') as HTMLInputElement).value,
+        a1Denetci: (document.getElementById('a1-auditor') as HTMLInputElement).value,
+        a1Full: (document.getElementById('a1-auditor') as HTMLInputElement).value,
+
+        a2kDenet: (document.getElementById('a2-auditor') as HTMLInputElement).value,
+        a2Basla: (document.getElementById('a2-start') as HTMLInputElement).value,
+        a2Bitis: (document.getElementById('a2-end') as HTMLInputElement).value,
+        a2Denetci: (document.getElementById('a2-auditor') as HTMLInputElement).value,
+        a2Full: (document.getElementById('a2-auditor') as HTMLInputElement).value,
+
+        // Kapsamlar
+        qms: (document.querySelector('input[value="QMS"]') as HTMLInputElement).checked,
+        mdd: (document.querySelector('input[value="MDD"]') as HTMLInputElement).checked,
+        ems: (document.querySelector('input[value="EMS"]') as HTMLInputElement).checked,
+        ohs: (document.querySelector('input[value="OHS"]') as HTMLInputElement).checked,
+        fsms: (document.querySelector('input[value="FSMS"]') as HTMLInputElement).checked,
+        isms: (document.querySelector('input[value="ISMS"]') as HTMLInputElement).checked,
+        engy: (document.querySelector('input[value="ENGY"]') as HTMLInputElement).checked,
+        gmp: (document.querySelector('input[value="GMP"]') as HTMLInputElement).checked
+    };
+
+    if (!auditData.standart) return alert('Lütfen standart bilgisini girin.');
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = "GÖNDERİLİYOR...";
+
+    const res = await api.call('scheduleAudit', { data: auditData });
+
+    if (res.success) {
+        alert("✅ Denetim başarıyla planlandı ve Takvim'e işlendi!");
+        window.location.href = '/audits';
+    } else {
+        alert("Hata: " + res.error);
+        saveBtn.disabled = false;
+        saveBtn.textContent = "DENETİMİ TAKVİME EKLE VE KAYDET";
+    }
+  });
+
+  SyncManager.init();
+</script>

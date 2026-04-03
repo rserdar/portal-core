@@ -1,0 +1,177 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+
+/**
+ * 📊 Denetim Takvimi & Planlama
+ * 
+ * Yaklaşan denetimleri listeleyen, denetçi atamalarını ve 
+ * Aşama 1-2 süreçlerini takip eden ana modül.
+ */
+---
+
+<DashboardLayout title="Denetim Takvimi">
+  <div class="max-w-7xl mx-auto space-y-8 pb-20">
+    
+    <!-- 🏗️ Header & Action -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-2">
+        <div>
+            <h1 class="text-3xl font-black text-white tracking-tight">Denetim Takvimi</h1>
+            <p class="text-gray-500 text-sm mt-1">Planlanmış denetimleri ve denetçi atamalarını yönetin.</p>
+        </div>
+        <a href="/audits/add" class="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/20 transition-all group">
+            <svg class="group-hover:rotate-90 transition-transform" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            YENİ DENETİM PLANLA
+        </a>
+    </div>
+
+    <!-- 🔍 Filtreler -->
+    <section class="glass p-4 rounded-3xl flex flex-wrap gap-4 items-center border-white/5">
+        <div class="flex-1 relative group min-w-[200px]">
+            <input 
+              type="text" 
+              id="audit-search" 
+              placeholder="Firma veya denetçi ara..." 
+              class="w-full bg-white/5 border border-white/10 rounded-xl px-10 py-3 text-sm focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
+            />
+            <svg class="absolute left-3 top-3 text-gray-500 group-focus-within:text-indigo-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
+        
+        <select id="filter-type" class="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-300 outline-none focus:ring-2 focus:ring-indigo-500/50">
+            <option value="">Tüm Denetim Tipleri</option>
+            <option value="Gözetim">Gözetim</option>
+            <option value="Yenileme">Yenileme</option>
+            <option value="İlk Belgelendirme">İlk Belgelendirme</option>
+        </select>
+
+        <div class="h-8 w-px bg-white/5 hidden md:block"></div>
+
+        <div class="flex items-center gap-2 text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">
+            <span id="audit-count">0</span> Denetim Listeleniyor
+        </div>
+    </section>
+
+    <!-- 📊 Denetim Tablosu -->
+    <div class="glass rounded-3xl overflow-hidden border-white/5 shadow-2xl">
+        <div class="overflow-x-auto text-[13px]">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-white/5 bg-white/5 text-gray-400">
+                        <th class="px-6 py-4 font-bold uppercase tracking-widest">Firma / Nick</th>
+                        <th class="px-6 py-4 font-bold uppercase tracking-widest">Standart / Tip</th>
+                        <th class="px-6 py-4 font-bold uppercase tracking-widest">Aşama 1</th>
+                        <th class="px-6 py-4 font-bold uppercase tracking-widest">Aşama 2</th>
+                        <th class="px-6 py-4 font-bold uppercase tracking-widest text-right">Aksiyon</th>
+                    </tr>
+                </thead>
+                <tbody id="audit-table-body" class="divide-y divide-white/5">
+                    <!-- Reaktif Veriler -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Loader -->
+        <div id="table-loader" class="px-8 py-32 text-center flex flex-col items-center justify-center gap-4">
+            <div class="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+            <p class="text-sm text-gray-500 animate-pulse font-medium">Güncel denetimler alınıyor...</p>
+        </div>
+        
+        <!-- Boş Durum -->
+        <div id="no-results" class="hidden px-8 py-32 text-center flex flex-col items-center justify-center gap-4">
+            <div class="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+            </div>
+            <p class="text-lg font-bold text-gray-500">Planlanmış denetim bulunamadı.</p>
+        </div>
+    </div>
+
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api } from '../../lib/api';
+
+  const tableBody = document.getElementById('audit-table-body');
+  const tableLoader = document.getElementById('table-loader');
+  const noResults = document.getElementById('no-results');
+  const searchInput = document.getElementById('audit-search') as HTMLInputElement;
+  const filterType = document.getElementById('filter-type') as HTMLSelectElement;
+  const auditCount = document.getElementById('audit-count');
+
+  let allAudits: any[] = [];
+
+  // 📡 Verileri Yükle
+  async function loadAudits() {
+    if (!tableBody || !tableLoader || !noResults) return;
+
+    const res = await api.call('getAudits');
+    tableLoader.classList.add('hidden');
+
+    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+      allAudits = res.data;
+      renderTable(allAudits);
+    } else {
+      noResults.classList.remove('hidden');
+    }
+  }
+
+  function renderTable(data: any[]) {
+    if (!tableBody || !auditCount) return;
+
+    const searchTerm = searchInput.value.toLowerCase();
+    const selectedType = filterType.value;
+
+    const filtered = data.filter(audit => {
+      const matchSearch = (audit.nick + audit.firmaNo + (audit.denetci1 || '')).toLowerCase().includes(searchTerm);
+      const matchType = !selectedType || audit.denetimTipi === selectedType;
+      return matchSearch && matchType;
+    });
+
+    tableBody.innerHTML = '';
+    auditCount.textContent = filtered.length.toString();
+
+    filtered.forEach(audit => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-white/5 transition-colors group';
+      
+      tr.innerHTML = `
+        <td class="px-6 py-5">
+            <div class="flex flex-col">
+                <span class="font-bold text-white group-hover:text-indigo-400 transition-colors">${audit.nick}</span>
+                <span class="text-[10px] text-gray-500 font-mono tracking-tighter">ID: ${audit.firmaNo}</span>
+            </div>
+        </td>
+        <td class="px-6 py-5">
+            <div class="flex flex-col">
+                <span class="text-indigo-400 font-bold uppercase text-[11px] tracking-tight">ISO ${audit.standart}</span>
+                <span class="text-xs text-gray-500">${audit.denetimTipi}</span>
+            </div>
+        </td>
+        <td class="px-6 py-5">
+            <div class="flex flex-col">
+                <span class="text-white font-medium">${audit.a1Tarih || '-'}</span>
+                <span class="text-[10px] text-gray-500 italic">${audit.denetci1 || 'Atanmadı'}</span>
+            </div>
+        </td>
+        <td class="px-6 py-5">
+            <div class="flex flex-col">
+                <span class="text-white font-medium">${audit.a2Tarih || '-'}</span>
+                <span class="text-[10px] text-gray-500 italic">${audit.denetci2 || 'Atanmadı'}</span>
+            </div>
+        </td>
+        <td class="px-6 py-5 text-right">
+            <button class="p-2 glass rounded-lg text-gray-500 hover:text-indigo-400 transition-colors opacity-0 group-hover:opacity-100">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+            </button>
+        </td>
+      `;
+      tableBody.appendChild(tr);
+    });
+  }
+
+  // ⌨️ Event Listeners
+  searchInput?.addEventListener('input', () => renderTable(allAudits));
+  filterType?.addEventListener('change', () => renderTable(allAudits));
+
+  // Başlat
+  loadAudits();
+</script>

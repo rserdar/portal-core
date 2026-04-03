@@ -1,0 +1,84 @@
+---
+/**
+ * 🧱 Dashboard Layout
+ * 
+ * Tüm portal sayfaları için ortak yapıyı kurar.
+ * Sol tarafta Sidebar, üstte Header ve ortada değişken içerik alanını yönetir.
+ */
+
+import Sidebar from '../components/Sidebar.astro';
+import Header from '../components/Header.astro';
+import '../styles/index.css';
+
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="tr">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Medicert Astro Portal - Profesyonel Yönetim Sistemi" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title} | Astro Portal</title>
+	</head>
+	<body class="bg-[#030712] text-gray-100 antialiased overflow-hidden">
+		<!-- Mesh Background -->
+		<div class="bg-mesh pointer-events-none" aria-hidden="true"></div>
+
+		<div class="dashboard-layout h-screen overflow-hidden">
+			<!-- Sidebar -->
+			<Sidebar activePath={currentPath} />
+
+			<!-- Main Container -->
+			<div class="main-container h-full overflow-hidden flex flex-col">
+				<Header title={title} />
+				
+				<!-- Content Area -->
+				<main class="content-area overflow-y-auto custom-scrollbar flex-1 relative">
+					<div class="max-w-7xl mx-auto w-full animate-fade-in">
+						<slot />
+					</div>
+
+					<footer class="mt-20 py-8 border-t border-white/5 text-center text-sm text-gray-500">
+						<p>&copy; 2026 Medicert Astro Portal. Tüm hakları saklıdır.</p>
+					</footer>
+				</main>
+			</div>
+		</div>
+
+		<style is:global>
+			/* Custom Scrollbar for Content Area */
+			.custom-scrollbar::-webkit-scrollbar {
+				width: 6px;
+			}
+			.custom-scrollbar::-webkit-scrollbar-track {
+				background: transparent;
+			}
+			.custom-scrollbar::-webkit-scrollbar-thumb {
+				background: rgba(255, 255, 255, 0.05);
+				border-radius: 10px;
+			}
+			.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+				background: rgba(255, 255, 255, 0.1);
+			}
+		</style>
+
+		<script>
+			// Mobile Sidebar Toggle Logic (Gelecekte eklenecek)
+			const toggleBtn = document.getElementById('mobile-sidebar-toggle');
+			if (toggleBtn) {
+				toggleBtn.addEventListener('click', () => {
+					console.log('Mobile sidebar toggle clicked');
+					// Toggle logic here
+				});
+			}
+		</script>
+	</body>
+</html>

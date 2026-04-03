@@ -1,0 +1,34 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Yetkisiz Erişim">
+  <section class="min-h-[65vh] flex items-center justify-center">
+    <div class="glass rounded-3xl border border-amber-400/20 p-8 md:p-12 max-w-3xl w-full relative overflow-hidden">
+      <div class="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-amber-500/10 blur-3xl"></div>
+      <div class="absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-cyan-500/10 blur-3xl"></div>
+
+      <div class="relative">
+        <p class="text-xs uppercase tracking-[0.25em] text-amber-300/80">Access Control</p>
+        <h1 class="text-3xl md:text-4xl font-extrabold mt-3 text-white">Yetkisiz Erişim</h1>
+        <p class="text-gray-300 mt-4 leading-relaxed">
+          Bu içeriği görüntülemek için yetkiniz bulunmuyor olabilir. Hesap erişimlerinizi kontrol edip tekrar deneyin.
+        </p>
+
+        <div class="mt-7 flex flex-wrap gap-3">
+          <a
+            href="https://myaccount.google.com/security-checkup"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-primary"
+          >
+            Güvenlik Kontrolü
+          </a>
+          <a href="/" class="btn glass border border-white/10 text-gray-200 hover:text-white">
+            Dashboard'a Dön
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</DashboardLayout>

@@ -1,0 +1,217 @@
+<div class="container py-4">
+    <div class="card shadow-sm border-0 mx-auto" style="max-width: 1200px;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Filtreleme Ekranı</h5>
+        </div>
+        <div class="card-body p-4">
+            <!-- Tarih Sütunu Seç Dropdown -->
+            <div class="row g-3 mb-3">
+                <div class="col-12 col-md-2 form-floating">
+                    <select id="dateColumnSelect" class="form-select">
+                        <option value="" disabled>Tarih Sütunu Seç</option>
+                        <option value="sertifika-tarihi">Sertifika Tarihi</option>
+                        <option value="gozetim-tarihi" selected>Gözetim Tarihi</option>
+                    </select>
+                    <label for="dateColumnSelect" class="bi bi-calendar"> Tarih Sütunu Seç</label>
+                </div>
+
+                <div class="col-12 col-md-2 form-floating">
+                    <input id="startDate" type="date" class="form-control" placeholder="Başlangıç tarihi girin">
+                    <label for="startDate" class="bi bi-calendar-event"> Başlangıç Tarihi</label>
+                </div>
+
+                <div class="col-12 col-md-2 form-floating">
+                    <input id="endDate" type="date" class="form-control" placeholder="Bitiş tarihi girin">
+                    <label for="endDate" class="bi bi-calendar-x"> Bitiş Tarihi</label>
+                </div>
+
+                <div class="col-12 col-md-3 form-floating">
+                    <input class="form-control" list="danListesi" id="danInput" placeholder="Danışman">
+                    <label for="danInput" class="bi bi-person"> Danışman</label>
+                    <datalist id="danListesi">
+                        <!-- Dinamik olarak danışman isimleri buraya yüklenecek -->
+                    </datalist>
+                </div>
+
+                <div class="col-12 col-md-3 d-flex align-items-center">
+                    <input id="supervisionCheck" type="checkbox" class="form-check-input me-2">
+                    <label for="supervisionCheck" class="form-check-label">Pasif olan sertifikaları gizle.</label>
+                </div>
+            </div>
+
+            <!-- Filtreleme Ayarları -->
+            <div class="row g-3 mb-3 align-items-center">
+                <div class="col-12 col-md-3 form-floating">
+                    <select id="filter-field" class="form-select">
+                        <option></option>
+                        <option value="Firma Adı">Firma</option>
+                        <option value="Standart">Standart</option>
+                        <option value="Akreditasyon">Akreditasyon</option>
+                        <option value="Akredite">Akredite</option>
+                        <option value="Kapsam">Kapsam</option>
+                        <option value="Scope">Scope</option>
+                    </select>
+                    <label for="filter-field" class="bi bi-filter-square"> Filtre Alanı</label>
+                </div>
+
+                <div class="col-12 col-md-3 form-floating">
+                    <select id="filter-type" class="form-select">
+                        <option value="=">=</option>
+                        <option value="<">
+                            << /option>
+                        <option value="<=">
+                            <=< /option>
+                        <option value=">">></option>
+                        <option value=">=">>=</option>
+                        <option value="!=">!=</option>
+                        <option value="like">like</option>
+                    </select>
+                    <label for="filter-type" class="bi bi-filter-square-fill"> Filtre Türü</label>
+                </div>
+
+                <div class="col-12 col-md-3 form-floating">
+                    <input id="filter-value" type="text" class="form-control" placeholder="Filtre Değeri">
+                    <label for="filter-value" class="bi bi-funnel"> Filtre Değeri</label>
+                </div>
+
+                <div class="col-12 col-md-3 d-flex justify-content-center">
+                    <button id="filter-clear" class="btn btn-outline-secondary bi bi-x-circle w-100"> Filtreyi
+                        Temizle</button>
+                </div>
+            </div>
+
+            <!-- Sütunlar bölümünde accordion -->
+            <div class="accordion mb-3" id="columnAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                            Sütun Gizleme Seçenekleri
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne"
+                        data-bs-parent="#columnAccordion">
+                        <div class="accordion-body">
+                            <div class="row g-2">
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2"
+                                        data-column="Sertifika Gözetim Tarihi" checked id="checkbox1">
+                                    <label for="checkbox1" class="me-2">Gözetim Tarihi</label>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2" data-column="Firma Adı" checked
+                                        id="checkbox2">
+                                    <label for="checkbox2" class="me-2">Firma</label>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2" data-column="Danışman" checked
+                                        id="checkbox3">
+                                    <label for="checkbox3" class="me-2">Danışman</label>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2" data-column="Standart" checked
+                                        id="checkbox4">
+                                    <label for="checkbox4" class="me-2">Standart</label>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2" data-column="Sertifika No" checked
+                                        id="checkbox5">
+                                    <label for="checkbox5" class="me-2">Sertifika No</label>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2" data-column="Akreditasyon" checked
+                                        id="checkbox6">
+                                    <label for="checkbox6" class="me-2">Akreditasyon</label>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2" data-column="Notlar" checked
+                                        id="checkbox7">
+                                    <label for="checkbox7" class="me-2">Notlar</label>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2" data-column="Gözetim" checked
+                                        id="checkbox8">
+                                    <label for="checkbox8">Gözetim</label>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2" data-column="Sertifika Tarihi"
+                                        unchecked id="checkbox9">
+                                    <label for="checkbox9">Sertifika Tarihi</label>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2" data-column="Kapsam" unchecked
+                                        id="checkbox10">
+                                    <label for="checkbox10">Kapsam</label>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2" data-column="Scope" unchecked
+                                        id="checkbox11">
+                                    <label for="checkbox11">Scope</label>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <input type="checkbox" class="column-toggle me-2" data-column="Akredite" unchecked
+                                        id="checkbox12">
+                                    <label for="checkbox12">Akredite</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Yeni Akordiyon: PDF ve Excel Olarak İndirme -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            Dışarı Aktarma Seçenekleri
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo"
+                        data-bs-parent="#columnAccordion">
+                        <div class="accordion-body">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-3">
+                                    <button id="table-print" class="btn btn-outline-danger w-100 bi bi-printer">
+                                        Yazdır</button>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <button id="download-excel"
+                                        class="btn btn-outline-success w-100 bi bi-file-earmark-excel"> Excel Olarak
+                                        İndir</button>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <button id="send-table-mail"
+                                        class="btn btn-outline-info w-100 bi bi-envelope-arrow-down"> Mail Olarak
+                                        Yolla</button>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <button id="download-html"
+                                        class="btn btn-outline-secondary w-100 bi bi-filetype-html"> Html Olarak
+                                        İndir</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Veri Tablosu -->
+    <div class="card mt-4 shadow-sm border-0 mx-auto" style="max-width: 1200px;">
+        <div class="card-body p-4">
+            <div id="data-table" class="table-responsive-lg">
+                <!-- Dinamik veri tablosu burada yüklenecek -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Uyarılar için bir bölüm -->
+    <div id="table-alerts" class="mt-3"></div>
+
+
+    <div class="mt-3">
+        <button id="getConsultantDataBtn" class="btn btn-outline-danger w-100 bi bi-printer"> Deneme</button>
+    </div>
+</div>
