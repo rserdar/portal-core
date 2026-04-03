@@ -1,9 +1,10 @@
 /**
- * 🛰️ Astro Portal: Cloudflare Worker Proxy
+ * 🛰️ Medicert Portal: Cloudflare Worker Proxy (V1)
  * 
- * Bu dosya, Cloudflare Worker panelinize yapıştıracağınız koddur.
- * Görevi: Astro'dan gelen istekleri karşılamak, CORS sorunlarını çözmek
- * ve güvenli bir şekilde Google Apps Script (GAS) API'nize iletmektir.
+ * Bu kodu doğrudan Cloudflare Worker panelinize yapıştırabilirsiniz.
+ * 
+ * Görevi: Frontend'den (Astro) gelen istekleri karşılamak, 
+ * CORS ayarlarını yönetmek ve güvenli bir şekilde GAS API'ye iletmektir.
  */
 
 export default {
@@ -11,7 +12,7 @@ export default {
     // 🌐 İzin Verilen Kaynaklar (CORS)
     const allowedOrigins = [
       "https://portal.pages.dev", // Sizin Cloudflare Pages domaininiz
-      "http://localhost:4321"     // Yerel geliştirme için
+      "http://localhost:4321"     // Yerel geliştirme ortamınız
     ];
 
     const origin = request.headers.get("Origin");
@@ -27,28 +28,20 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // 🛡️ Basit Güvenlik Kontrolü (İptal edebilirsiniz veya API anahtarı ekleyebilirsiniz)
-    // const authHeader = request.headers.get("Authorization");
-    // if (authHeader !== `Bearer ${env.API_KEY || "YOUR_SECRET_KEY"}`) {
-    //   return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-    //     status: 401, 
-    //     headers: { ...corsHeaders, "Content-Type": "application/json" } 
-    //   });
-    // }
-
-    // 🔗 Google Apps Script URL'si
-    // Not: Bu URL'yi Cloudflare Worker panelindeki "Settings -> Variables" kısmına eklemeniz önerilir.
-    // Değişken adı: GAS_API_URL
-    const gasApiUrl = env.GAS_API_URL || "BURAYA_GOOGLE_APPS_SCRIPT_WEB_APP_URL_YAPISTIRIN";
-
     if (request.method === "POST") {
       try {
         const body = await request.json();
 
-        // 🔑 API Key'i Worker Secret'tan inject et (Frontend'den gelmiyor)
-        body.apiKey = env.API_KEY || "";
+        // 🔗 GAS_API_URL ve API_KEY: 
+        // Bunları Cloudflare Worker panelindeki "Settings -> Variables" kısmından ekleyin.
+        const gasApiUrl = env.GAS_API_URL;
+        body.apiKey = env.API_KEY || "mc-portal-3.0_8a2d7f9e4c1b5a6c3d2e1f0b9a8c7d6e"; 
 
-        // GAS'a yönlendir (doPost çağrısı yapar)
+        if (!gasApiUrl) {
+          throw new Error("GAS_API_URL 'Settings -> Variables' kısmında tanımlanmamış.");
+        }
+
+        // 🚀 Google Apps Script'e yönlendirme yap (doPost çağrısı tetiklenir)
         const gasResponse = await fetch(gasApiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -62,14 +55,14 @@ export default {
         });
 
       } catch (err) {
-        return new Response(JSON.stringify({ success: false, error: "Worker Hatası: " + err.message }), {
+        return new Response(JSON.stringify({ success: false, error: "Proxy Hatası: " + err.message }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     }
 
-    return new Response("🚀 Astro Portal Proxy is active. Use POST requests.", {
+    return new Response("🚀 Cloudflare Worker Proxy is active. Use POST requests.", {
       headers: { ...corsHeaders, "Content-Type": "text/plain" },
     });
   },
