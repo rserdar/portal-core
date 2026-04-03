@@ -456,6 +456,13 @@ function gdfCertificate() {
   return ws.getRange(2,1, ws.getLastRow()-1,21).getDisplayValues();
 }
 
+function getCertificatesByFirmaId(firmaId) {
+  const allCerts = gdfCertificate();
+  const firmIdStr = String(firmaId).toLowerCase();
+  // Sheets indeksinde r[2] Firma No'dur (0-tabanlı indekste 2. sütun)
+  return allCerts.filter(r => String(r[2]).toLowerCase() === firmIdStr);
+}
+
 function getCertificateById(id) {
   const ss = openTargetSpreadsheet();
   const ws = ss.getSheetByName("Sertifika");

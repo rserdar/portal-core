@@ -13,8 +13,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   <div class="max-w-4xl mx-auto space-y-8 pb-20">
     
     <!-- 🏢 1. Firma Seçimi -->
-    <section class="glass p-8 rounded-3xl space-y-6">
-      <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+    <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
+      <div class="flex items-center gap-3 border-b border-border-main pb-4">
         <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"/><path d="M5 21V7"/><path d="M19 21V7"/><path d="M9 7v1"/><path d="M15 7v1"/><path d="M9 12v1"/><path d="M15 12v1"/><path d="M9 17v1"/><path d="M15 17v1"/></svg>
         </div>
@@ -27,20 +27,20 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           id="company-search" 
           list="company-list" 
           placeholder="İşlem yapılacak firmayı arayın..." 
-          class="w-full bg-white/5 border border-white/10 rounded-xl px-12 py-4 text-lg focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
+          class="w-full bg-surface-hover border border-border-main rounded-xl px-12 py-4 text-lg focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
         />
         <svg class="absolute left-4 top-4.5 text-gray-500 group-focus-within:text-indigo-400 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <datalist id="company-list"></datalist>
       </div>
 
-      <div id="selected-company-info" class="hidden glass p-4 rounded-2xl border-indigo-500/20 bg-indigo-500/5 transition-all animate-fade-in">
+      <div id="selected-company-info" class="hidden bg-surface border border-primary/20 p-4 rounded-2xl bg-primary/5 transition-all animate-fade-in">
         <div class="flex justify-between items-center">
             <div>
                 <p class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Seçili Firma</p>
                 <h3 id="display-unvan" class="font-bold text-lg text-white"></h3>
                 <p id="display-id" class="text-xs text-gray-500 font-mono"></p>
             </div>
-            <button id="clear-selection" class="p-2 hover:bg-white/5 rounded-lg text-gray-500 hover:text-red-400 transition-colors">
+            <button id="clear-selection" class="p-2 hover:bg-surface-hover rounded-lg text-gray-500 hover:text-red-400 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             </button>
         </div>
@@ -48,8 +48,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     </section>
 
     <!-- 👤 2. Sorumlu Kişiler -->
-    <section class="glass p-8 rounded-3xl space-y-6 opacity-50 pointer-events-none transition-all duration-500" id="section-responsibles">
-       <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+    <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 opacity-50 pointer-events-none transition-all duration-500" id="section-responsibles">
+       <div class="flex items-center gap-3 border-b border-border-main pb-4">
         <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
@@ -59,26 +59,26 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase">Depo / Sevkiyat</label>
-            <input type="text" id="resp-depo" class="form-input" placeholder="Ad Soyad">
+            <input type="text" id="resp-depo" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ad Soyad">
         </div>
         <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase">Üretim / Planlama</label>
-            <input type="text" id="resp-uretim" class="form-input" placeholder="Ad Soyad">
+            <input type="text" id="resp-uretim" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ad Soyad">
         </div>
         <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase">Mali İşler</label>
-            <input type="text" id="resp-mali" class="form-input" placeholder="Ad Soyad">
+            <input type="text" id="resp-mali" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ad Soyad">
         </div>
         <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase">Kalite Kontrol</label>
-            <input type="text" id="resp-kalite" class="form-input" placeholder="Ad Soyad">
+            <input type="text" id="resp-kalite" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ad Soyad">
         </div>
       </div>
     </section>
 
     <!-- 🏗️ 3. Set Seçimi & Üretim -->
-    <section class="glass p-8 rounded-3xl space-y-6 opacity-50 pointer-events-none transition-all duration-500" id="section-sets">
-       <div class="flex items-center gap-3 border-b border-white/5 pb-4">
+    <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 opacity-50 pointer-events-none transition-all duration-500" id="section-sets">
+       <div class="flex items-center gap-3 border-b border-border-main pb-4">
         <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         </div>
@@ -86,7 +86,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       </div>
 
       <div class="flex flex-col md:flex-row gap-4">
-        <select id="set-select" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white outline-none focus:ring-2 focus:ring-orange-500/50">
+        <select id="set-select" class="flex-1 bg-surface-hover border border-border-main rounded-xl px-4 py-4 text-white outline-none focus:ring-2 focus:ring-orange-500/50">
             <option value="" disabled selected>Doküman Seti Seçiniz...</option>
         </select>
         <button id="generate-btn" class="px-10 py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl shadow-lg shadow-orange-600/20 transition-all flex items-center justify-center gap-3 group">
@@ -106,7 +106,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                 <span id="progress-percent" class="text-3xl font-black text-indigo-400">0%</span>
             </div>
         </div>
-        <div class="h-4 bg-white/5 rounded-full overflow-hidden border border-white/10">
+        <div class="h-4 bg-surface border border-border-main rounded-full overflow-hidden">
             <div id="progress-bar" class="h-full bg-gradient-to-r from-indigo-600 to-purple-600 w-0 transition-all duration-500"></div>
         </div>
       </div>
@@ -115,13 +115,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   </div>
 </DashboardLayout>
 
-<style is:global>
-  @reference "../../styles/index.css";
-
-  .form-input {
-    @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm;
-  }
-</style>
 
 <script>
   import { api } from '../../lib/api';
@@ -281,3 +274,4 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+

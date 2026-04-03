@@ -39,6 +39,23 @@ const AuditService = {
   },
 
   /**
+   * Belirli bir firmaya ait denetim kayıtlarını satır bazında döner.
+   * Firma detay ekranındaki tablo/grid kullanımı için 2D row formatı korunur.
+   */
+  getByFirmaId: function(firmaId) {
+    try {
+      const allRows = BaseService.getRawData("Denetim");
+      if (!allRows || allRows.length === 0) return [];
+
+      // C sütunu: Firma No (0-index: 2)
+      return allRows.filter(r => String(r[2]) === String(firmaId));
+    } catch (e) {
+      BaseService.logError("getByFirmaId", e);
+      return [];
+    }
+  },
+
+  /**
    * Yeni bir denetim planlar ve takvime işler.
    */
   scheduleAudit: function(auditInfo) {

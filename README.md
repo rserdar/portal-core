@@ -1,58 +1,46 @@
-# 🚀 Medicert Portal: Modernization Project
+# 🛰️ Medicert Portal (v5.1.0 - Velocity Update)
 
-Bu proje, geleneksel bir Google Apps Script (GAS) portalının, yüksek performanslı ve modern bir **Astro 6.x**, **Tailwind CSS** ve **Cloudflare Workers** mimarisine dönüştürülmesini kapsar.
+Bu proje, geleneksel bir Google Apps Script (GAS) altyapısının, **Astro 6.x**, **Tailwind CSS v4** ve **Cloudflare Workers** mimarisiyle yeniden doğuşudur. Yüksek veri yoğunluğu, milisaniyelik yanıt süreleri ve modern bir kurumsal arayüz (WOW Phase) hedeflenerek geliştirilmiştir.
 
-## 🏗️ Mimari Tasarım (Architectural Overview)
+---
 
-Portal, "Decoupled" (Ayrıştırılmış) bir mimari üzerine kurulmuştur. Bu sayede frontend hızı ile GAS'ın kurumsal yetenekleri en verimli şekilde birleştirilmiştir.
+## 🏗️ Mimari Tasarım (V5.1.0)
 
-### 1. Frontend: Astro + Tailwind CSS
-- **Hız:** Statik site oluşturma (SSG) ve adaya dayalı (Islands) mimari ile milisaniyelik sayfa geçişleri.
-- **Tasarım:** Modern "Glassmorphism" ve "Dark Mode" odaklı premium kullanıcı deneyimi.
-- **State Management:** Veriler **Nano Stores** üzerinden reaktif olarak yönetilir ve **IndexedDB**'de (idb-keyval) yerel olarak saklanır.
+Portal, "Decoupled" (Ayrıştırılmış) bir mimari üzerine kurulu olup, "Cache-Aside" stratejisiyle GAS'ın limitlerini ortadan kaldırır.
 
-### 2. Middleware: Cloudflare Worker Proxy
-- **Güvenlik:** GAS API anahtarlarını gizleyerek güvenli bir köprü (proxy) görevi görür.
-- **Performans:** İstekleri optimize eder ve CORS sorunlarını ortadan kaldırır.
+### 1. Frontend: Astro 6.x + Saf Tailwind
+- **Saf Tailwind (Pure Tailwind):** Tüm UI, Tailwind utility sınıfları ve opak arka planlar (`bg-surface`) ile yönetilir. Glassmorphism efektleri, okunabilirlik ve yüksek kontrast için optimize edilmiştir.
+- **Islands Architecture:** Sadece etkileşimli bileşenlerin (Arama, Senkronizasyon, Formlar) istemci tarafında (JS) çalışmasıyla maksimum sayfa hızı sağlanır.
+- **State Management:** Veriler **Nanostores** üzerinden reaktif olarak yönetilir ve **IndexedDB**'de (idb-keyval) yerel olarak saklanır.
 
-### 3. Backend: Modular GAS API
-Monolitik `.gs` dosyaları, S.O.L.I.D prensiplerine uygun olarak servis bazlı modüllere ayrılmıştır:
-- **`BaseService.gs`:** Merkezi e-tablo erişimi ve hata yönetimi.
-- **`CompanyService.gs`:** Firma CRUD ve akıllı senkronizasyon verisi hazırlığı.
-- **`CertificateService.gs`:** Sertifika sorgulama ve durum yönetimi.
+### 2. Middleware: Cloudflare Worker + KV Cache (0ms Latency)
+- **Edge Caching:** Okuma ağırlıklı tüm işlemler (Firma Listesi, Sertifikalar) Cloudflare KV üzerinden servis edilir.
+- **Security Proxy:** GAS API anahtarlarını tarayıcıdan saklayarak güvenli bir katman oluşturur.
+- **Smart Indexing:** Bulk Sync sırasında firma-sertifika ilişkileri KV üzerinde önceden indekslenir.
+
+### 3. Backend: Modular GAS API V2
+Google Apps Script mülkü, servis bazlı modüllere (S.O.L.I.D) ayrılmıştır:
+- **`CompanyService.gs`:** Firma yönetimi ve akıllı senkronizasyon verisi hazırlığı.
 - **`AuditService.gs`:** Google Takvim entegreli denetim planlama ve otomasyon.
-- **`DocumentService.gs`:** Toplu doküman üretim motoru (Batch Processing).
-- **`PDFService.gs`:** Akıllı PDF dönüştürme ve iLovePDF fallback desteği.
+- **`SyncService.gs`:** Toplu veri paketleme ve `LAST_UPDATE` versiyonlama yönetimi.
+- **`BaseService.gs`:** Merkezi e-tablo erişimi, hata yönetimi ve logging.
 
 ---
 
-## 🎖️ Temel Modüller ve Yetenekler
+## 🚀 Öne Çıkan Özellikler
 
-### 📊 Dinamik Dashboard
-- Sisteme kayıtlı firma ve aktif sertifika sayılarını canlı olarak gösterir.
-- Son başarılı senkronizasyon zamanını ve sistem sağlığını (Status) takip eder.
+### 🔍 Akıllı Arama & Sayfalama (V5.1.0)
+- **Smart Search (@ Operatörü):** `Firma Adı @ Şehir` (Örn: `Medicert @ İzmir`) yazarak konuma duyarlı filtreleme.
+- **Pagination:** 20, 50 veya 100'lük dinamik sayfalama seçenekleri ile binlerce kayıt arasında akıcı gezinti.
+- **Indestructible Search:** Firma ünvanı, markası veya ID'si üzerinden anlık arama desteği.
 
-### 🎖️ Akıllı Sertifika Yönetimi
-- **Instant Search:** Binlerce sertifika arasında sıfır gecikme ile arama.
-- **Bulk Action:** Birden fazla sertifikayı seçip toplu "Gözetim Yapıldı" güncellemesi yapma.
-- **Calendar Sync:** Gözetim durumuna göre etkinliklerin otomatik olarak "Arşiv" veya "Ana" takvimler arasında taşınması.
+### 🔄 Gelişmiş Senkronizasyon (Smart Sync)
+- **Bulk Sync (KV):** Dashboard üzerinden tek tuşla tüm e-tablo verisini CF Edge noktalarına saniyeler içinde taşıma.
+- **Automatic Timestamping:** Her senkronizasyon işleminde otomatik güncellenen `LAST_UPDATE` damgasıyla tarayıcı tarafında hatasız güncel veri garantisi.
 
-### 📝 Doküman Üretim Motoru
-- **Batch UI:** 10+ dokümanı aynı anda üretirken süreci bir progres bar (ilerleme çubuğu) üzerinden izleme.
-- **Template Engine:** Departman sorumlularının isimlerini şablonlara (Google Doc) otomatik gömme.
-
-### 📅 Denetim ve Planlama (Otorobot v2)
-- **Phase 1 & 2:** Denetimleri planlarken otomatik Google Takvim etkinlikleri oluşturma.
-- **Timeline:** Yaklaşan tüm denetimleri görsel bir listede takip etme.
-
----
-
-## 🔄 Senkronizasyon Stratejisi (Smart Sync)
-
-Portal, **IndexedDB** kullanarak "Offline-First" yaklaşımını benimser:
-1. **İlklendirme:** Sayfa açıldığında yerel hafızadaki veriler yüklenir.
-2. **Arka Plan Sync:** `SyncManager`, GAS tarafındaki `syncCheck` servisini sorgular; veri değişikliği varsa sadece değişen kısımları (incremental load) günceller.
-3. **Manuel Boost:** "Verileri Eşitle" butonu ile her zaman en taze veriye erişilebilir.
+### 📅 Otorobot & Doküman Motoru
+- **Doküman Üretimi:** Google Docs şablonlarını kullanarak toplu ISO sertifika ve denetim raporu hazırlama.
+- **Takvim Entegrasyonu:** Denetim tarihlerini otomatik olarak Google Takvim'e işleme ve durum güncellemeleriyle etkinlik taşıma.
 
 ---
 
@@ -60,21 +48,26 @@ Portal, **IndexedDB** kullanarak "Offline-First" yaklaşımını benimser:
 
 ### Yerel Çalıştırma
 ```bash
+# Bağımlılıkları yükle
 npm install
+
+# Geliştirme sunucusunu başlat
 npm run dev
 ```
 
-### Dağıtım (Deployment)
-- **Frontend:** Cloudflare Pages veya Vercel üzerine otomatik dağıtılır.
-- **Backend (GAS):** Servis dosyaları `.gs` uzantısıyla Google Apps Script editörüne kopyalanarak yayınlanır.
+### Dağıtım (Production)
+- **Worker Deployment:** `wrangler deploy` ile CF Worker proxy yayınlanır.
+- **UI Deployment:** Astro build çıktısı Cloudflare Pages üzerinden servis edilir.
+- **GAS Setup:** `/src/gas/api/` altındaki dosyalar Google Apps Script editörüne kopyalanır ve web uygulaması olarak yayınlanır.
 
 ---
 
-## 📈 Gelecek Yol Haritası (Future Roadmap)
-- [ ] **AI Search:** Firma verilerini doğal dille sorgulayabilen asistan entegrasyonu.
-- [ ] **Mobile App:** PWA (Progressive Web App) desteği ile mobil uygulama deneyimi.
-- [ ] **Advanced Reporting:** PDF formatında aylık performans ve denetim raporu üretimi.
+## 📊 Veri Stratejisi
+- **Single Source of Truth:** Google Sheets.
+- **Fast Read:** Cloudflare KV (Workers).
+- **Offline-First:** Browser IndexedDB.
 
 ---
-**Geliştirici:** Antigravity AI
-**Firma:** Medicert Ürün ve Sistem Belgelendirme
+**Geliştirici:** Antigravity AI  
+**Müşteri:** Medicert Ürün ve Sistem Belgelendirme  
+**Sürüm:** 5.1.0 (Velocity Phase)

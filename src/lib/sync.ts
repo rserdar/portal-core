@@ -10,6 +10,7 @@ import { $companies, $certificates, $syncStatus, $lastSyncTime } from './store';
  */
 
 export const SyncManager = {
+  _syncPromise: null as Promise<void> | null,
   /**
    * Uygulama başladığında çalışır. 
    * Veriyi yerelden yükler, sonra arka planda güncel mi diye bakar.
@@ -30,17 +31,20 @@ export const SyncManager = {
       console.log('[Sync] Loaded data from IndexedDB.');
     }
 
-    // 2. Senkronizasyon kontrolü yap
-    await this.checkAndSync();
+    // 2. Senkronizasyonu arka planda başlat (UI bloklanmasın)
+    void this.checkAndSync();
   },
 
   /**
    * Sunucudaki veriyle yerel veriyi karşılaştırır.
    */
   checkAndSync: async function() {
-    $syncStatus.set('syncing');
-    
-    try {
+    if (this._syncPromise) return this._syncPromise;
+
+    this._syncPromise = (async () => {
+      $syncStatus.set('syncing');
+      
+      try {
       // 1. Sunucu durumunu kontrol et (Timestamp check)
       const checkResponse = await api.call('syncCheck');
       
@@ -83,11 +87,16 @@ export const SyncManager = {
         console.log('[Sync] Local data is up to date.');
       }
 
-      $syncStatus.set('idle');
-    } catch (e) {
-      console.error('[Sync] Sync failed:', e);
-      $syncStatus.set('error');
-    }
+        $syncStatus.set('idle');
+      } catch (e) {
+        console.error('[Sync] Sync failed:', e);
+        $syncStatus.set('error');
+      } finally {
+        this._syncPromise = null;
+      }
+    })();
+
+    return this._syncPromise;
   },
 
   /**

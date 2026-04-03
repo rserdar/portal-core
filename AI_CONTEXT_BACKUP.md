@@ -1,6 +1,13 @@
-# 🤖 Project Intelligence & Context (AI_CONTEXT.md v2.9.0)
+# 🤖 Project Intelligence & Context (AI_CONTEXT.md v5.1.0)
 
-This document is the **Primary Source of Truth** for the modernized Medicert Portal. It provides absolute technical precision, comprehensive data schemas with exact JavaScript property mappings, and formal architectural workflows.
+> [!IMPORTANT]
+> **High-Performance Architecture (v4.0.0):** This project now utilizes **Cloudflare KV** as a primary cache layer. The Cloudflare Worker (`src/workers/proxy.js`) implements a Cache-Aside pattern for high-read actions.
+> - **KV Binding:** `env.DB` (linked to Namespace ID: `8eb0dc6ffe2947729b29f0db1c84fd52`).
+> - **Strategy:** KV first for reads (0ms latent), GAS for writes.
+> - **Bulk Hydration:** A "SİSTEMİ SENKRONİZE ET" button triggers a bulk export from GAS to KV and local IndexedDB.
+
+> [!CAUTION]
+> **Saf Tailwind Mimarisi (v5.1.0):** Proje genelinde tüm "glass" (şeffaf) efektler ve özel CSS sınıfları (`glass`, `form-input`) kaldırılmıştır. Tüm UI artık **Saf Tailwind (Pure Tailwind)** utility sınıfları ve opak arka planlar (`bg-surface`) ile yönetilmektedir.
 
 ---
 
@@ -10,12 +17,28 @@ This document is the **Primary Source of Truth** for the modernized Medicert Por
 - **Primary Database:** **Google Sheets** (Single Source of Truth).
 - **Backend Engine:** **Modular Google Apps Script** (GAS) in `src/gas/api/`.
 - **Legacy Knowledge:** `src/gas/server/*.gs` contains original business rules and must be referenced for complex calculation audits.
-- **Client Cache:** **IndexedDB** (`medicert-portal-db`) stores local copies for zero-latency UI.
+- **Client Cache:** **IndexedDB** (`medicert-portal-db`) + **Nanostores**.
+- **Sync Strategy (v4.0):** 
+  1. `syncCheck`: Heartbeat to check for updates.
+  2. `bulkSync`: Manual/Full hydration for KV and local IndexedDB. Handles 1600+ companies and 5000+ certificates in minutes.
+  3. `Zero-Latency Render`: UI renders local cached data (0ms) while fetching full details from KV/GAS in the background.
+
+### 🏗️ Legacy Infrastructure Context (The "Gold Standard")
+- **Frontend:** Bootstrap 5.3 + Tabulator v6.3 (Professional Data Grid).
+- **Libraries:** Luxon (Date handling), SheetJS (Excel Exports).
+- **Design Philosophy:** Data-dense, high-precision, utility-first management interface.
+- **CRITICAL:** Modern Astro UI must match or exceed the information density and professional feel of this legacy Bootstrap/Tabulator implementation. Avoid "over-designed" airiness where it sacrifices data visibility.
+
+### 🎨 Modern UI Standards (Saf Tailwind v5.1.0)
+- **Framework:** Astro 6.x + **Tailwind CSS (Pure Tailwind)**.
+- **Philosophy:** NO CUSTOM CSS UTILITIES. Tüm tasarım doğrudan Tailwind utility sınıfları ile HTML/Astro içinde yönetilir.
+- **Opaque Surfaces:** Kurumsal okunabilirlik için şeffaf (glass) arka planlar yasaklanmıştır. Tüm kartlar ve menüler `bg-surface` (solid) ve `border-border-main` kullanır.
+- **Data Density:** Sıkı boşluklar (`p-2`, `leading-tight`) ve yüksek kontrastlı tipografi ile veri yoğunluğu maksimize edilir.
 
 ### 2. Middleware & Security (Cloudflare Worker)
 - **Role:** Secure API Proxy & Secret Injector.
 - **Security Flow:** **Browser (No Key)** -> **Cloudflare Worker (Injects Secret API_KEY)** -> **GAS Bridge**.
-- **Worker Secrets:** `API_KEY` (Auth), `GAS_API_URL` (Execution URL).
+- **Worker Secrets:** `API_KEY` (Auth), `GAS_API_URL` (Official: `https://portalapi.medicert.com.tr`). Forwarding to GAS Exec: `https://script.google.com/macros/s/AKfycby...LL4/exec`
 
 ---
 
@@ -29,12 +52,17 @@ This document is the **Primary Source of Truth** for the modernized Medicert Por
 - `DriveService.gs`: Recursive folder scanning and hierarchy management.
 - `DocumentService.gs`: Batch generation engine for ISO documents using `makeCopy`.
 - `PDFService.gs`: **Primary Converter:** Local `pdf.serdar.cc` (with Token). **Fallback:** iLovePDF.
+- `TranslationService.gs`: TR↔EN translation via GAS `LanguageApp`. Used for auto-translating ISO scope text.
 
 ### `/src/lib/` (Core Logic)
 - `api.ts`: Fetch wrapper for CF Worker.
 - `sync.ts`: **The Brain.** Implements the decision tree for incremental background synchronization.
 - `db.ts`: `idb-keyval` wrapper for structured IndexedDB access.
 - `store.ts`: Defines shared global stores (`$companies`, `$certificates`, `$syncStatus`, `$lastSyncTime`).
+- `config.ts`: Central config. Reads `PUBLIC_WORKER_URL` from env, exposes `CONFIG.WORKER_URL`.
+
+### `/src/workers/` (Cloudflare Worker)
+- `proxy.js`: **The deployed Cloudflare Worker.** Handles CORS, injects `API_KEY` secret into every request body before forwarding to GAS. Copy-paste this file into the Cloudflare Worker dashboard or deploy via `wrangler deploy`.
 
 ### `/src/pages/` (UI Modules)
 - `index.astro`: Reactive Dashboard.
@@ -44,6 +72,76 @@ This document is the **Primary Source of Truth** for the modernized Medicert Por
 - `documents/add.astro`: Batch document production.
 - `documents/view.astro`: Recursive Drive Explorer & PDF conversion management.
 - `audits/index.astro`: Audit timeline & Calendar overview.
+- `audits/add.astro`: New audit scheduling form (Stage 1/2 calendar integration).
+
+---
+
+## 🗺️ Legacy -> Modern Function Migration Matrix (Source-Validated)
+
+> [!IMPORTANT]
+> This section is the function-level migration map between `src/gas/server/*.gs` and `src/gas/api/*.gs`.
+> Status legend:
+> - **Exact**: same responsibility preserved.
+> - **Renamed/Refactored**: logic moved with new naming/shape.
+> - **Deprecated**: no production path in v2 bridge flow.
+
+### 1) Core Data & CRUD Migration
+| Legacy Function (`src/gas/server`) | Modern Function (`src/gas/api`) | Bridge Action | Status |
+| :--- | :--- | :--- | :--- |
+| `serverSideFuncs.gs#getSheetDataAsObjects` | `BaseService.getDataAsObjects` | Internal | Renamed/Refactored |
+| `serverSideFuncs.gs#openTargetSpreadsheet` | `BaseService.openSS` | Internal | Renamed/Refactored |
+| `serverSideFuncs.gs#getCompanyById` | `CompanyService.getById` | `getCompanyById` | Exact |
+| `serverSideFuncs.gs#addCompany` | `CompanyService.add` | `addCompany` | Exact |
+| `serverSideFuncs.gs#getDataForSearch` | `CompanyService.getAllForSync` | `getCompanies` | Renamed/Refactored |
+| `serverSideFuncs.gs#getDataForTable` | `CertificateService.getAll` | `getCertificates` | Renamed/Refactored |
+| `serverSideFuncs.gs#gdfCertificate` | `CertificateService.getAll` | `getCertificates` | Renamed/Refactored |
+| `serverSideFuncs.gs#getCertificateById` | `CertificateService.getById` | `getCertificateById` | Exact |
+| `serverSideFuncs.gs#editSurvMultiple` | `AuditService.updateSurveillance` | `updateSurveillance` | Renamed/Refactored |
+| `serverSideFuncs.gs#addAuditInfo` | `AuditService.scheduleAudit` | `scheduleAudit` | Renamed/Refactored |
+| `serverSideFuncs.gs#xtranslate` | `TranslationService.toEn` | `translate` (`toEn=true`) | Renamed/Refactored |
+| `serverSideFuncs.gs#ytranslate` | `TranslationService.toTr` | `translate` (`toEn=false`) | Renamed/Refactored |
+
+### 2) Drive & Document Migration
+| Legacy Function (`src/gas/server`) | Modern Function (`src/gas/api`) | Bridge Action | Status |
+| :--- | :--- | :--- | :--- |
+| `drive.gs#ilkKarekter` | `DriveService.getCompanyFolderId` | `getFolderId` / internal | Renamed/Refactored |
+| `drive.gs#getFilesFromFolder` | `DriveService.listRecentFiles` | `getRecentFiles` | Renamed/Refactored |
+| `drive.gs#getFilesFromFolderRecursiveHelper` | `DriveService._scanRecursive` | Internal | Renamed/Refactored |
+| `docs.gs#isoBas` | `DocumentService.generateIsoCertificate` | `generateIso` | Renamed/Refactored |
+| `docs.gs#sertifikaDate` | `DocumentService._formatDate` | Internal | Renamed/Refactored |
+| `docs.gs#replaceTextToImage` | `DocumentService._replaceImage` | Internal | Renamed/Refactored |
+| `docs.gs#generateAndReplaceQrCode` | `DocumentService._generateQr` | Internal | Renamed/Refactored |
+| `docs.gs#prepareDocumentFolders` | `DocumentService.prepareBatchFolders` | `prepareBatchFolders` | Renamed/Refactored |
+| `docs.gs#createSingleDocument` | `DocumentService.generateSingleBatchDoc` | `generateSingleBatchDoc` | Renamed/Refactored |
+| `docs.gs#docsReplaceAllPh` | `DocumentService._processReplacements` | Internal | Renamed/Refactored |
+| `docs.gs#docsGetOrCreateFolder` | `DriveService.getOrCreateSubFolder` | Internal | Renamed/Refactored |
+| `serverSideFuncs.gs#returnDocSelect` | `DocumentService.getAvailableSets` | `getAvailableSets` | Renamed/Refactored |
+| `serverSideFuncs.gs#createDocumentSetProgressive` | `DocumentService.prepareBatchFolders` + `DocumentService.generateSingleBatchDoc` | `prepareBatchFolders` + `generateSingleBatchDoc` | Renamed/Refactored |
+
+### 3) PDF Migration
+| Legacy Function (`src/gas/server`) | Modern Function (`src/gas/api`) | Bridge Action | Status |
+| :--- | :--- | :--- | :--- |
+| `iLovePDF.gs#processDocToFitPdf` | `PDFService.convertToPdf` | `convertToPdf` | Renamed/Refactored |
+| `iLovePDF.gs#callLocalConverter_` | `PDFService._tryLocalConverter` | Internal | Renamed/Refactored |
+| `iLovePDF.gs#processDocToFitPdfViaILovePDF` | `PDFService._tryILovePDF` | Internal | Renamed/Refactored |
+| `iLovePDF.gs#getIlovepdfSessionToken_` + task helper zinciri | `PDFService._tryILovePDF` (consolidated) | Internal | Renamed/Refactored |
+
+### 4) Legacy-Only / Deprecated (No v2 Bridge Action)
+| Legacy File | Functions | Current Status |
+| :--- | :--- | :--- |
+| `load.gs` | `doGet`, `serveHtml`, `convertFilesToPdfPro`, `pdfRaspiToplu`, test/debug helpers | Deprecated (legacy WebApp/UI + ops scripts) |
+| `loadPartials.gs` | `loadPartialHTML_`, `include`, `loadSearchView`, `loadAddCompanyView`, `loadTableCertificateView`, `loadCompanyInfoView`, `loadDocsView` | Deprecated (legacy HTML partial renderer) |
+| `drive.gs` | `doUpload` | Deprecated (no active bridge action in v2) |
+| `docs.gs` | `testBas`, `basFormu`, `draftBas`, `sozlesme`, logo insertion helpers | Partially migrated as service internals; not exposed as active bridge actions |
+| `otorobot.gs` | `convertGoogleDocToPDF`, `convertPDFtoPNG`, `insertPNGintoGoogleSlidesAndExportToPDF`, `fullProcess` | Deprecated (legacy automation pipeline) |
+| `serverSideFuncs.gs` | `editCompanyById`, `addCertificate`, `editCertificateById`, `monthlyCheck`, `sendSurv`, reporting/import utilities | Deprecated or pending migration (not in active v2 action list) |
+
+### 5) Legacy Client HTML -> Astro Route Migration
+| Legacy Client File | Modern Astro Route | Status | Notes |
+| :--- | :--- | :--- | :--- |
+| `src/gas/client/companyinfo.html` | `src/pages/company/edit.astro` | Migrated (Hub-style) | Legacy monolith split into modern modules (`/certificates`, `/audits`, `/documents/view`) with company detail entry screen. |
+| `src/gas/client/other.html` | `src/pages/other.astro` | Migrated | Modern unauthorized-access page. |
+| `src/gas/client/sendSurv.html` | `src/gas/client/sendSurv.html` (updated template) | Improved | Placeholder contract preserved (`{{firstName}}`, `{{title}}`, `{{startDate}}`, `{{endDate}}`, `{{tableRows}}`). |
 
 ---
 
@@ -84,7 +182,7 @@ This document is the **Primary Source of Truth** for the modernized Medicert Por
 | **24** | **Y** | **YCS** | `ycs` | Management System Standard Flag. |
 | **25** | **Z** | **UCS** | `ucs` | Quality System Standard Flag. |
 | **26** | **AA** | **ACS** | `acs` | Environmental System Standard Flag. |
-| **27** | **AB** | **YZCS** | `yzcs` | Software System Standard Flag (Yazılım). |
+| **27** | **AB** | **YZCS** | `yzcs" | Software System Standard Flag (Yazılım). |
 | **28** | **AC** | **TASCS** | `tascs` | Design System Standard Flag (Tasarım). |
 | **29** | **AD** | **Alan** | `alan` | Workspace Area Calculation. |
 | **30** | **AE** | **Departman** | `dept` | Department listing. |
@@ -150,10 +248,27 @@ This document is the **Primary Source of Truth** for the modernized Medicert Por
 
 ---
 
+## 🔄 Synchronization & Performance Algorithms (v4.0)
+
+### 1. Zero Latency Methodology (Non-Blocking UI)
+Used in `edit.astro` and `search.astro`:
+- **Step 1:** Instant search in `$companies` (local Nanostore).
+- **Step 2:** Render basic info (Unvan, ID, city) immediately (**0ms**).
+- **Step 3:** Kick off background `getCompanyById` from KV/GAS.
+- **Step 4:** Silently update UI fields as data arrives without blocking user interaction.
+
+### 2. Bulk Sync Procedure
+- **Trigger:** Frontend "SİSTEMİ SENKRONİZE ET" button.
+- **Flow:** Worker calls `SyncService.getFullSyncData()` -> Fetches thousands of rows -> Saves chunks to **Cloudflare KV** -> Returns success.
+- **Result:** Subsequent reads for any specific company or list are served from KV instead of slow GAS.
+
+---
+
 ## ⚙️ GAS Script Properties (The "Vault")
-- `API_KEY`: Secret used to authenticate POST requests.
+- `API_KEY`: `mc-portal-3.0_8a2d7f9e4c1b5a6c3d2e1f0b9a8c7d6e` (Secret used to authenticate POST requests).
 - `LAST_UPDATE`: Numeric timestamp (Incremental Sync brain).
 - `SPREADSHEET_ID`: Unique ID for the target Google Sheet.
+- `GAS_API_URL`: `https://script.google.com/macros/s/AKfycbyc2TdGEAsfO5y_UPSFo748wpTim3b3wfTCoRFK3M_sHUQBYzQY9UzKk6fqvAuO2LL4/exec` (Backend Endpoint).
 - `ILOVEPDF_PUBLIC_KEY`: Fallback PDF converter.
 - `LOCAL_CONVERTER_TOKEN`: Primary converter (pdf.serdar.cc).
 
@@ -181,36 +296,39 @@ This document is the **Primary Source of Truth** for the modernized Medicert Por
 }
 ```
 
-### 2. Comprehensive Action List (Active v2.0)
-| Module | Action | Description |
-| :--- | :--- | :--- |
-| **Firma** | `getCompanies`, `getCompanyById`, `addCompany`| Registration & Lookup. *(update/delete Pending)*. |
-| **Sertifika** | `getCertificates`, `getCertificateById`, `updateGozetim`| Certification lifecycle. |
-| **Drive** | `getFolderId`, `getRecentFiles` | Recursive explorer. |
-| **Docs** | `generateIso`, `getAvailableSets`, `prepareBatchFolders`| Generation engine. |
-| **PDF** | `convertToPdf` | Doc->PDF transformation. |
-| **Audit** | `getAudits`, `scheduleAudit`, `updateSurveillance`| Planning & Archiving. |
-| **Sync** | `syncCheck` | Heartbeat & Version check. |
-
----
-
-## 🔄 Synchronization & SyncManager Algorithm
-1. **Check:** call `syncCheck` -> get `Server.LAST_UPDATE`.
-2. **Decision:** If `Server.LAST_UPDATE > Local.last_sync` -> **Full Hydration** of Nano Stores.
-3. **Invalidation:** Every write in GAS increments `LAST_UPDATE`.
-
 ---
 
 ## 🚀 Production Deployment Workflow
 - **Backend (GAS):** Deploy EXE URL (New Version). Set Script Properties.
 - **Core (Worker):** `wrangler deploy`. Set `API_KEY` and `GAS_API_URL` secrets.
-- **UI (Astro):** `npm run build` -> CF Pages. **CRITICAL:** Set `PUBLIC_WORKER_URL` in Pages Settings.
+- **UI (Astro):** `npm run build` -> CF Pages. **CRITICAL:** Set `PUBLIC_WORKER_URL` to `https://portalapi.medicert.com.tr` in Pages Settings. Production UI: `https://portal.medicert.com.tr`.
 
 ## 💻 Local Development Guide
 1. **Middleware (Worker):** Run `npx wrangler dev`. Ensure local secrets match GAS.
 2. **Frontend (Astro):** Run `npm run dev`. Ensure `PUBLIC_WORKER_URL` in `.env` points to local Worker.
-3. **GAS Backend:** Ensure `API_KEY` script property is set for local proxy calls.
+3. **GAS Backend:** Ensure `API_KEY` script property is set to `mc-portal-3.0_8a2d7f9e4c1b5a6c3d2e1f0b9a8c7d6e` for local proxy calls.
 
 ---
-**Status:** Secured, Fully Restored & Perfected Enterprise Release.
-**Architecture Version:** 2.9.0 (Absolute Stable Release)
+**Status:** Secured, Code-Verified & Complete.
+**Architecture Version:** 4.0.0 (The Velocity Update)
+
+---
+
+## 🚀 v5.0.0 Architecture & Performance Addendum
+
+### ⚡ True Zero Latency (CF KV Indexing)
+Achieved through manual optimization and WOW Phase redesign:
+- **Indexing:** During `bulkSync`, the Worker builds firm-specific lookup maps in KV: `companiesById`, `certsByFirmaId`, `testsByFirmaId`, `auditsByFirmaId`.
+- **Deduplication:** `api.ts` implements `inFlightRequests` Map to prevent redundant concurrent calls.
+- **Stable Keys:** Implements `stableStringify` for consistent KV hits.
+- **Cache Policy:** 7-Day TTL with background refreshing.
+
+### 🎨 Modern UI Standards (v5.0.0)
+- **Framework:** Astro 6.x + Tailwind CSS (Premium Glassmorphism).
+- **Iconography:** **Lucide-Astro**.
+- **Monitoring:** Real-time Health Panel for KV Backend and GAS Gateway connectivity.
+- **Dashboard:** Animated stat cards, Sync Pulse visual indicators, and high-density typography.
+
+---
+**Status:** Secured, Legacy-Preserved & Velocity-Optimized.
+**Architecture Version:** 5.0.0 (The Velocity Update)

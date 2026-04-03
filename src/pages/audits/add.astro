@@ -13,26 +13,26 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   <div class="max-w-5xl mx-auto space-y-8 pb-20">
     
     <div class="flex items-center gap-4 px-2">
-      <a href="/audits" class="p-2 glass rounded-xl text-gray-500 hover:text-indigo-400 transition-all">
+      <a href="/audits" class="p-2 bg-surface border border-border-main shadow-sm rounded-xl text-muted hover:text-primary transition-all">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
       </a>
       <h1 class="text-2xl font-black text-white">Denetim Planlaması</h1>
     </div>
 
     <!-- 🏢 1. Firma & Temel Bilgiler -->
-    <section class="glass p-8 rounded-3xl space-y-6">
-      <h2 class="text-lg font-bold border-b border-white/5 pb-4">Temel Bilgiler</h2>
+    <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
+      <h2 class="text-lg font-bold border-b border-border-main pb-4">Temel Bilgiler</h2>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="space-y-2 relative group">
           <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Firma Seçimi</label>
-          <input type="text" id="company-search" list="company-list" placeholder="Firma Arayın..." class="form-input" />
+          <input type="text" id="company-search" list="company-list" placeholder="Firma Arayın..." class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" />
           <datalist id="company-list"></datalist>
         </div>
 
         <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Denetim Tipi</label>
-            <select id="audit-type" class="form-input">
+            <select id="audit-type" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden">
                 <option value="Gözetim">Gözetim</option>
                 <option value="Yenileme">Yenileme</option>
                 <option value="İlk Belgelendirme">İlk Belgelendirme</option>
@@ -42,14 +42,14 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
         <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Standart</label>
-            <input type="text" id="audit-standard" placeholder="Örn: 9001:2015" class="form-input" />
+            <input type="text" id="audit-standard" placeholder="Örn: 9001:2015" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" />
         </div>
       </div>
     </section>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- 📅 Aşama 1 -->
-        <section class="glass p-8 rounded-3xl space-y-6 border-indigo-500/10">
+        <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 border-indigo-500/10">
             <h2 class="text-lg font-bold text-indigo-400 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
                 Aşama 1 Denetimi
@@ -59,22 +59,22 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-2">
                         <label class="text-[10px] font-bold text-gray-500 uppercase">Başlangıç Tarihi</label>
-                        <input type="date" id="a1-start" class="form-input" />
+                        <input type="date" id="a1-start" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" />
                     </div>
                     <div class="space-y-2">
                         <label class="text-[10px] font-bold text-gray-500 uppercase">Bitiş Tarihi</label>
-                        <input type="date" id="a1-end" class="form-input" />
+                        <input type="date" id="a1-end" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" />
                     </div>
                 </div>
                 <div class="space-y-2">
                     <label class="text-[10px] font-bold text-gray-500 uppercase">Denetçi İsmi / Takvim Başlığı</label>
-                    <input type="text" id="a1-auditor" placeholder="Takvimde görünecek başlık" class="form-input" />
+                    <input type="text" id="a1-auditor" placeholder="Takvimde görünecek başlık" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" />
                 </div>
             </div>
         </section>
 
         <!-- 📅 Aşama 2 -->
-        <section class="glass p-8 rounded-3xl space-y-6 border-emerald-500/10">
+        <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 border-emerald-500/10">
             <h2 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 Aşama 2 Denetimi
@@ -84,27 +84,27 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-2">
                         <label class="text-[10px] font-bold text-gray-500 uppercase">Başlangıç Tarihi</label>
-                        <input type="date" id="a2-start" class="form-input" />
+                        <input type="date" id="a2-start" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" />
                     </div>
                     <div class="space-y-2">
                         <label class="text-[10px] font-bold text-gray-500 uppercase">Bitiş Tarihi</label>
-                        <input type="date" id="a2-end" class="form-input" />
+                        <input type="date" id="a2-end" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" />
                     </div>
                 </div>
                 <div class="space-y-2">
                     <label class="text-[10px] font-bold text-gray-500 uppercase">Denetçi İsmi / Takvim Başlığı</label>
-                    <input type="text" id="a2-auditor" placeholder="Takvimde görünecek başlık" class="form-input" />
+                    <input type="text" id="a2-auditor" placeholder="Takvimde görünecek başlık" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" />
                 </div>
             </div>
         </section>
     </div>
 
     <!-- ☑️ Sertifika Kapsamı (Logolar) -->
-    <section class="glass p-8 rounded-3xl space-y-6">
-        <h2 class="text-lg font-bold border-b border-white/5 pb-4">Denetim Kapsamı</h2>
+    <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
+        <h2 class="text-lg font-bold border-b border-border-main pb-4">Denetim Kapsamı</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
             {['QMS', 'MDD', 'EMS', 'OHS', 'FSMS', 'ISMS', 'ENGY', 'GMP'].map(std => (
-                <label class="flex flex-col items-center gap-2 p-4 glass border-white/5 rounded-2xl cursor-pointer hover:bg-white/5 transition-all group">
+                <label class="flex flex-col items-center gap-2 p-4 bg-surface border border-border-main rounded-2xl cursor-pointer hover:bg-surface-hover transition-all group">
                     <input type="checkbox" name="scope" value={std} class="w-4 h-4 rounded border-gray-800 text-indigo-600 focus:ring-indigo-500 bg-transparent" />
                     <span class="text-[10px] font-black text-gray-500 group-hover:text-white transition-colors">{std}</span>
                 </label>
@@ -123,13 +123,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   </div>
 </DashboardLayout>
 
-<style is:global>
-  @reference "../../styles/index.css";
-
-  .form-input {
-    @apply w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all;
-  }
-</style>
 
 <script>
   import { api } from '../../lib/api';
@@ -212,3 +205,5 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
   SyncManager.init();
 </script>
+
+

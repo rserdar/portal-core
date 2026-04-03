@@ -1,34 +1,172 @@
 ---
+import { Icon } from "astro-icon/components";
+import { Image } from "astro:assets";
+import logoImage from "../assets/images/Medicert-Logo-sm.webp";
+import ThemeToggle from "./ThemeToggle.astro";
+import SearchOverlay from "./SearchOverlay.astro";
+
 /**
- * 🏷️ Header Component
- * 
- * Dashboard'ın üst kısmında yer alan, sayfa başlığı ve arama çubuğu içeren bileşen.
+ * 👑 Management Command Center Header (v6.8.0 - Ready)
  */
 
-const { title = "Dashboard" } = Astro.props;
+const pathname = Astro.url.pathname;
+
+const menuItems = [
+  { name: "Anasayfa", href: "/", icon: "mdi:home" },
+  { 
+    name: "Firmalar", 
+    href: "/search", 
+    icon: "mdi:office-building", 
+    dropdown: [
+      { name: "Yeni Firma Ekle", href: "/company/add", icon: "mdi:office-building-plus" },
+    ]
+  },
+  { name: "Sertifikalar", href: "/certificates", icon: "mdi:certificate-outline" },
+  { name: "Dokümanlar", href: "/documents/view", icon: "mdi:file-document-box-multiple-outline" },
+];
 ---
 
-<header class="glass-header sticky top-0 z-40 px-8 py-4 flex items-center justify-between">
-  <div class="flex items-center gap-4">
-    <button class="lg:hidden p-2 glass rounded-lg" id="mobile-sidebar-toggle">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-    </button>
-    <h1 class="text-2xl font-bold tracking-tight">{title}</h1>
+<header id="medicert-header" class="bg-header-bg/95 backdrop-blur-md border-b border-border-main fixed w-full top-0 z-50 font-sans transition-all duration-400 ease-in-out">
+  <div class="max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-8">
+    <div id="header-inner" class="flex justify-between items-center h-[90px] transition-all duration-400 ease-in-out">
+      <div class="flex-shrink-0 flex items-center">
+        <a href="/"><Image id="header-logo" src={logoImage} alt="Medicert Portal" class="h-12 md:h-14 w-auto transition-all duration-400 ease-in-out drop-shadow-sm" loading="eager" /></a>
+      </div>
+
+      <nav class="hidden lg:flex flex-1 justify-center gap-x-1 h-full items-stretch relative z-10">
+        {menuItems.map((item) => {
+          const isActive = pathname === item.href || (item.dropdown && item.dropdown.some(d => pathname === d.href));
+          return item.dropdown ? (
+            <div class="relative group flex items-center h-full">
+              <a href={item.href} class={`text-[13px] font-bold uppercase tracking-tight px-8 flex items-center transition-all relative h-full hover:text-primary group border-t-[4px] ${isActive ? "text-primary border-primary" : "text-main border-transparent hover:border-primary"}`}>
+                <Icon name={item.icon} class="w-5 h-5 mr-2 opacity-70" />
+                {item.name}
+                <Icon name="mdi:chevron-down" class="ml-1 h-4 w-4 opacity-50 group-hover:rotate-180 transition-transform" />
+              </a>
+              <div class="absolute top-full left-1/2 -translate-x-1/2 hidden group-hover:block w-72 z-50 pt-1 animate-fade-in translate-y-0">
+                <div class="bg-surface shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-border-main rounded-2xl p-2.5 text-left overflow-hidden ring-1 ring-white/5">
+                  <div class="h-1 w-40 bg-primary/40 mx-auto rounded-full mb-3 opacity-60"></div>
+                  {item.dropdown.map((drop) => (
+                    <a href={drop.href} class="flex items-center w-full px-4 py-3 text-main hover:text-primary hover:bg-primary/10 transition-all rounded-xl group/item">
+                      <div class="w-9 h-9 rounded-lg bg-surface-hover flex items-center justify-center mr-3 group-hover/item:bg-primary/20 transition-colors">
+                        <Icon name={drop.icon} class="w-5 h-5 text-muted group-hover/item:text-primary transition-colors" />
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="text-[14px] font-extrabold tracking-tight">{drop.name}</span>
+                        <span class="text-[10px] text-muted font-bold uppercase opacity-60">Hızlı Erişim</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <a href={item.href} class={`text-[13px] font-bold uppercase tracking-tight px-8 flex items-center transition-all relative h-full hover:text-primary border-t-[4px] ${isActive ? "text-primary border-primary" : "text-main border-transparent hover:border-primary"}`}>
+              <Icon name={item.icon} class="w-5 h-5 mr-2 opacity-70" />
+              {item.name}
+            </a>
+          );
+        })}
+      </nav>
+
+      <div class="hidden lg:flex items-center justify-end space-x-2 flex-shrink-0 relative z-20 h-full text-main">
+        <button id="search-open-btn" class="p-2.5 rounded-xl text-muted hover:text-primary hover:bg-surface transition-all" title="Arama (Ctrl+K)"><Icon name="mdi:magnify" class="w-6 h-6" /></button>
+        <div class="relative group flex items-center">
+          <button class="p-2.5 rounded-xl text-muted hover:text-primary hover:bg-surface transition-all relative">
+            <Icon name="mdi:bell-outline" class="w-6 h-6" /><span class="absolute top-2.5 right-2.5 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span></span>
+          </button>
+        </div>
+        <div class="px-1 h-full flex items-center"><ThemeToggle /></div>
+        <a href="/settings" class="p-2.5 rounded-xl text-muted hover:text-primary hover:bg-surface transition-all" title="Ayarlar"><Icon name="mdi:cog-outline" class="w-6 h-6" /></a>
+        <div class="w-px h-8 bg-border-main mx-2"></div>
+        <div class="flex items-center gap-3 pl-2 group cursor-pointer">
+          <div class="flex flex-col items-end"><span class="text-[12px] font-black group-hover:text-primary transition-colors uppercase">ADMIN</span><span class="text-[10px] font-bold text-muted tracking-widest uppercase">Süper Yetkili</span></div>
+          <div class="relative"><div class="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-primary-hover p-[2px]"><div class="w-full h-full rounded-full bg-surface flex items-center justify-center overflow-hidden border-2 border-transparent"><span class="text-xs font-black text-primary">MC</span></div></div><div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-surface rounded-full"></div></div>
+        </div>
+      </div>
+      <div class="lg:hidden flex items-center gap-2">
+        <button data-search-open class="p-2.5 bg-surface border border-border-main shadow-sm rounded-xl text-muted hover:text-primary"><Icon name="mdi:magnify" class="h-6 w-6" /></button>
+        <button id="mobile-menu-button" class="p-2.5 bg-surface border border-border-main shadow-sm rounded-xl text-muted"><Icon name="mdi:menu" class="h-7 w-7" id="menu-icon-open" /><Icon name="mdi:close" class="hidden h-7 w-7" id="menu-icon-close" /></button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Mobil Menü -->
+  <div id="mobile-menu" class="hidden lg:hidden bg-surface border-t border-border-main overflow-hidden transition-all duration-300">
+    <div class="px-4 py-4 space-y-1">
+      {menuItems.map((item) => (
+        <div class="flex flex-col">
+          <a href={item.href} class="flex items-center px-4 py-3 text-sm font-bold text-main hover:bg-surface rounded-xl uppercase tracking-tight transition-colors">
+            <Icon name={item.icon} class="w-5 h-5 mr-3 opacity-70" />
+            {item.name}
+          </a>
+          {item.dropdown && (
+            <div class="pl-12 space-y-1 pb-2">
+              {item.dropdown.map((drop) => (
+                <a href={drop.href} class="flex items-center px-4 py-2 text-xs font-semibold text-muted hover:text-primary transition-colors uppercase">
+                  {drop.name}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
   </div>
 
-  <div class="flex items-center gap-4">
-    <div class="hidden md:flex items-center glass rounded-full px-4 py-2 border-white/5 focus-within:border-indigo-500/50 transition">
-      <svg class="text-gray-400" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" placeholder="Firma ara..." class="bg-transparent border-none focus:outline-none focus:ring-0 ml-2 text-sm text-white w-48 lg:w-64" />
-    </div>
-
-    <div class="flex items-center gap-2">
-      <button class="p-2 glass rounded-full text-gray-400 hover:text-white transition">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-      </button>
-      <button class="p-2 glass rounded-full text-gray-400 hover:text-white transition">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
-    </div>
-  </div>
+  <SearchOverlay />
 </header>
+<script>
+  function initHeader() {
+    const header = document.getElementById("medicert-header") as HTMLElement | null;
+    const headerInner = document.getElementById("header-inner") as HTMLElement | null;
+    const mobileBtn = document.getElementById("mobile-menu-button") as HTMLButtonElement | null;
+    const mobileMenu = document.getElementById("mobile-menu") as HTMLElement | null;
+    const iconOpen = document.getElementById("menu-icon-open") as HTMLElement | null;
+    const iconClose = document.getElementById("menu-icon-close") as HTMLElement | null;
+    let isCompact = false;
+    let scrollRaf: number | null = null;
+
+    const applyHeaderState = () => {
+      if (!header || !headerInner) return;
+      const shouldCompact = window.scrollY > 15;
+      if (isCompact === shouldCompact) return;
+      isCompact = shouldCompact;
+      if (shouldCompact) {
+        header.classList.add("shadow-xl");
+        headerInner.classList.replace("h-[90px]", "h-[70px]");
+      } else {
+        header.classList.remove("shadow-xl");
+        headerInner.classList.replace("h-[70px]", "h-[90px]");
+      }
+    };
+
+    const handleScroll = () => {
+      if (scrollRaf !== null) return;
+      scrollRaf = window.requestAnimationFrame(() => {
+        scrollRaf = null;
+        applyHeaderState();
+      });
+    };
+
+    const onMobileToggle = () => {
+      if (!mobileMenu || !iconOpen || !iconClose) return;
+      mobileMenu.classList.toggle("hidden");
+      iconOpen.classList.toggle("hidden");
+      iconClose.classList.toggle("hidden");
+      document.body.classList.toggle("overflow-hidden");
+    };
+
+    if (mobileBtn) {
+      mobileBtn.addEventListener("click", onMobileToggle);
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    applyHeaderState();
+  }
+
+  document.addEventListener("astro:page-load", initHeader);
+  initHeader();
+</script>
+
+

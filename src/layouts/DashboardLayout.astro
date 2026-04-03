@@ -6,7 +6,6 @@
  * Sol tarafta Sidebar, üstte Header ve ortada değişken içerik alanını yönetir.
  */
 
-import Sidebar from '../components/Sidebar.astro';
 import Header from '../components/Header.astro';
 import '../styles/index.css';
 
@@ -15,7 +14,6 @@ interface Props {
 }
 
 const { title } = Astro.props;
-const currentPath = Astro.url.pathname;
 ---
 
 <!doctype html>
@@ -27,58 +25,38 @@ const currentPath = Astro.url.pathname;
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title} | Astro Portal</title>
+		<script is:inline>
+			(() => {
+				const stored = localStorage.getItem('theme');
+				const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				const resolvedDark = stored === 'light' ? false : stored === 'system' ? systemDark : true;
+				document.documentElement.classList.toggle('dark', resolvedDark);
+				document.documentElement.dataset.theme = stored || 'dark';
+			})();
+		</script>
 	</head>
-	<body class="bg-[#030712] text-gray-100 antialiased overflow-hidden">
+	<body class="antialiased overflow-x-hidden min-h-screen">
 		<!-- Mesh Background -->
 		<div class="bg-mesh pointer-events-none" aria-hidden="true"></div>
 
-		<div class="dashboard-layout h-screen overflow-hidden">
-			<!-- Sidebar -->
-			<Sidebar activePath={currentPath} />
+		<!-- Main Page Structure (No Sidebar) -->
+		<div class="min-h-screen flex flex-col">
+			<Header title={title} />
+			
+			<!-- Content Area -->
+			<main class="content-area overflow-y-auto custom-scrollbar flex-1 relative">
+				<div class="max-w-7xl mx-auto w-full px-4 lg:px-8 py-8 animate-fade-in">
+					<slot />
+				</div>
 
-			<!-- Main Container -->
-			<div class="main-container h-full overflow-hidden flex flex-col">
-				<Header title={title} />
-				
-				<!-- Content Area -->
-				<main class="content-area overflow-y-auto custom-scrollbar flex-1 relative">
-					<div class="max-w-7xl mx-auto w-full animate-fade-in">
-						<slot />
-					</div>
-
-					<footer class="mt-20 py-8 border-t border-white/5 text-center text-sm text-gray-500">
-						<p>&copy; 2026 Medicert Astro Portal. Tüm hakları saklıdır.</p>
-					</footer>
-				</main>
-			</div>
+				<footer class="mt-20 py-8 border-t border-border-main text-center text-sm text-muted">
+					<p>&copy; 2026 Medicert Astro Portal. Tüm hakları saklıdır.</p>
+				</footer>
+			</main>
 		</div>
 
-		<style is:global>
-			/* Custom Scrollbar for Content Area */
-			.custom-scrollbar::-webkit-scrollbar {
-				width: 6px;
-			}
-			.custom-scrollbar::-webkit-scrollbar-track {
-				background: transparent;
-			}
-			.custom-scrollbar::-webkit-scrollbar-thumb {
-				background: rgba(255, 255, 255, 0.05);
-				border-radius: 10px;
-			}
-			.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-				background: rgba(255, 255, 255, 0.1);
-			}
-		</style>
 
-		<script>
-			// Mobile Sidebar Toggle Logic (Gelecekte eklenecek)
-			const toggleBtn = document.getElementById('mobile-sidebar-toggle');
-			if (toggleBtn) {
-				toggleBtn.addEventListener('click', () => {
-					console.log('Mobile sidebar toggle clicked');
-					// Toggle logic here
-				});
-			}
-		</script>
 	</body>
 </html>
+
+

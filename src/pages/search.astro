@@ -2,65 +2,84 @@
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 
 /**
- * 🔍 Firma Arama (Sıfır Gecikmeli)
+ * 🔍 Firma Arama (v3.0.0 - Professional Grid)
  * 
- * Bu sayfa Nano Stores ve IndexedDB üzerinden verileri yerel olarak okur.
- * Senkronizasyon arka planda SyncManager tarafından yönetilir.
+ * Legacy main.html + search.html mantığıyla yeniden tasarlandı.
+ * Yüksek veri yoğunluğu, Türkçe karakter duyarlı filtreleme ve kurumsal UI.
  */
 ---
 
 <DashboardLayout title="Firma Ara">
-  <div class="space-y-6">
-    <!-- Header/Search Control -->
-    <div class="flex flex-col md:flex-row gap-4 items-center justify-between glass p-6 rounded-2xl border-white/5 shadow-xl">
-      <div class="flex items-center gap-4 flex-1 w-full">
-        <div class="w-12 h-12 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-400 group-focus-within:scale-110 transition-transform">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        </div>
-        <div class="flex-1">
-          <input 
-            type="text" 
-            id="search-input" 
-            placeholder="Aramak için yazınız..." 
-            class="bg-transparent border-none focus:outline-none focus:ring-0 text-lg text-white w-full placeholder:text-gray-600"
-          />
-        </div>
+  <div class="space-y-4">
+    <!-- Arama Kontrol Alanı (Legacy Arama Kutusu Dengi) -->
+    <div class="bg-surface border border-border-main shadow-lg p-5 rounded-2xl flex flex-col md:flex-row items-center justify-center gap-4">
+      <div class="flex items-center gap-3 bg-indigo-600/20 px-4 py-2 rounded-full border border-indigo-500/30">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-indigo-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">Arama</span>
       </div>
       
-      <div class="flex items-center gap-3">
-        <div id="sync-indicator" class="flex items-center gap-2 px-4 py-2 glass rounded-xl border-white/5 text-xs text-gray-500">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]"></span>
-          Senkronize
-        </div>
-        <div class="text-sm font-bold text-gray-400 px-4 py-2 glass rounded-xl border-white/5">
-          Sonuç: <span id="result-count" class="text-indigo-400">0</span>
+      <div class="flex-1 w-full max-w-2xl relative">
+        <input 
+          type="search" 
+          id="searchInput" 
+          placeholder="Aramak için ünvan, şehir veya ID yazınız... (İpucu: Firma @ Şehir)" 
+          class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main placeholder:text-muted focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all shadow-inner"
+        />
+      </div>
+
+      <div class="flex items-center gap-3 shrink-0">
+        <span id="searchCounter" class="text-sm font-mono font-bold text-muted bg-surface-hover px-3 py-1.5 rounded-lg border border-border-main shadow-sm">0</span>
+        <div id="sync-indicator" class="flex items-center gap-2 px-3 py-1.5 bg-surface border border-border-main rounded-lg text-[10px] uppercase font-bold tracking-tighter text-muted">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>
+          ONLINE
         </div>
       </div>
     </div>
 
-    <!-- Table Container -->
-    <div class="glass rounded-3xl overflow-hidden border-white/10 shadow-2xl backdrop-blur-3xl">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-white/5 bg-white/5 text-gray-400">
-              <th class="px-8 py-5 text-xs font-bold uppercase tracking-widest text-indigo-400/70">#</th>
-              <th class="px-8 py-5 text-xs font-bold uppercase tracking-widest">Firma Ünvanı</th>
-              <th class="px-8 py-5 text-xs font-bold uppercase tracking-widest">Klasör / Kısa Ad</th>
-              <th class="px-8 py-5 text-xs font-bold uppercase tracking-widest">Şehir</th>
-              <th class="px-8 py-5 text-xs font-bold uppercase tracking-widest text-right">İşlemler</th>
+    <div class="bg-surface border border-border-main shadow-2xl rounded-2xl overflow-hidden relative">
+      <div class="overflow-x-auto min-h-[400px]">
+        <table class="w-full text-left border-collapse align-middle">
+          <thead class="bg-surface-hover border-b border-border-main">
+            <tr class="text-[11px] font-bold uppercase tracking-widest text-muted">
+              <th class="px-5 py-4 text-center w-12">#</th>
+              <th class="px-5 py-4">Unvan</th>
+              <th class="px-5 py-4">Klasör</th>
+              <th class="px-5 py-4 text-center w-40">Şehir</th>
+              <th class="px-5 py-4 text-center w-28">Gözat</th>
+              <th class="px-5 py-4 text-center w-28">Sil</th>
             </tr>
           </thead>
-          <tbody id="company-table-body" class="divide-y divide-white/5">
-            <!-- Data rows injected by Store -->
+          <tbody id="searchResults" class="divide-y divide-border-main">
+            <!-- Dinamik içerik buraya gelecek -->
           </tbody>
         </table>
       </div>
       
-      <!-- Empty/Initial State Loader -->
-      <div id="table-loader" class="px-8 py-32 text-center flex flex-col items-center justify-center gap-4">
-        <div class="w-12 h-12 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-        <p class="text-sm text-gray-500 animate-pulse font-medium">Veritabanı senkronize ediliyor...</p>
+      <!-- Loader (Legacy Modal/Spinner Dengi) -->
+      <div id="table-loader" class="py-20 text-center flex flex-col items-center justify-center gap-3">
+        <div class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        <p class="text-xs font-bold text-muted tracking-widest uppercase animate-pulse">Veri Senkronize Ediliyor</p>
+      </div>
+
+      <!-- Pagination Bar (v4.1.0) -->
+      <div id="pagination-container" class="bg-surface-hover border-t border-border-main px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 hidden">
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold text-muted uppercase tracking-widest">SAYFA:</span>
+            <span id="page-indicator" class="text-xs font-black text-primary bg-primary/10 px-3 py-1 rounded-md border border-primary/20">1 / 1</span>
+          </div>
+          <div class="flex items-center gap-3 border-l border-border-main pl-6">
+            <span class="text-[10px] font-bold text-muted uppercase tracking-widest">GÖSTER:</span>
+            <select id="pageSizeSelect" class="bg-surface border border-border-main rounded-lg px-2 py-1 text-[11px] font-bold text-main outline-none focus:ring-1 focus:ring-primary/40 transition-all cursor-pointer">
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+        <div id="pagination-controls" class="flex items-center gap-1.5">
+          <!-- Butonlar JS ile buraya gelecek -->
+        </div>
       </div>
     </div>
   </div>
@@ -68,114 +87,278 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
 <script>
   import { api } from '../lib/api';
-  import { DB } from '../lib/db';
   import { $companies, $syncStatus } from '../lib/store';
   import { SyncManager } from '../lib/sync';
 
-  const tableBody = document.getElementById('company-table-body');
-  const tableLoader = document.getElementById('table-loader');
-  const searchInput = document.getElementById('search-input');
-  const resultCount = document.getElementById('result-count');
+  const resultsBody = document.getElementById('searchResults') as HTMLTableSectionElement;
+  const loader = document.getElementById('table-loader');
+  const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+  const counter = document.getElementById('searchCounter');
   const syncIndicator = document.getElementById('sync-indicator');
+  const tableLoader = document.getElementById('table-loader');
+  const pageSizeSelect = document.getElementById('pageSizeSelect') as HTMLSelectElement;
 
-  let currentSearchTerm = '';
+  let currentTerm = '';
+  let currentPage = 1;
+  let pageSize = 20;
 
-  // 📡 Store'u Dinle (Reaktif Tablo)
-  $companies.subscribe((companies) => {
-    if (companies && companies.length > 0) {
-      if (tableLoader) tableLoader.classList.add('hidden');
-      filterAndRender(companies, currentSearchTerm);
+  // 📡 Store ve Sync Yönetimi
+  $companies.subscribe(data => {
+    if (data && data.length > 0) {
+      if (loader) loader.classList.add('hidden');
+      renderResults(data, currentTerm);
     }
   });
 
-  // 🔄 Sync Durumunu Dinle
-  $syncStatus.subscribe((status) => {
-    if (syncIndicator) {
-      const dot = syncIndicator.querySelector('span');
-      const text = syncIndicator.lastChild;
-      
-      if (status === 'syncing') {
-        dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
-        text.textContent = ' Güncelleniyor...';
-      } else if (status === 'idle') {
-        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]';
-        text.textContent = ' Senkronize';
-      } else {
-        dot.className = 'w-2 h-2 rounded-full bg-red-500';
-        text.textContent = ' Hata';
+  $syncStatus.subscribe(status => {
+    if (!syncIndicator) return;
+    const dot = syncIndicator.querySelector('span');
+    const textNode = syncIndicator.lastChild;
+    if (!dot || !textNode) return;
+
+    if (status === 'syncing') {
+      dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse';
+      textNode.textContent = ' GÜNCELLENİYOR';
+    } else {
+      dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+      textNode.textContent = ' ONLINE';
+    }
+  });
+
+  // 🧼 Normalleştirme (Legacy normalizeString Dengi)
+  function normalize(str: any): string {
+    if (!str) return '';
+    return str.toString()
+      .toLocaleLowerCase('tr-TR')
+      .replace(/ı/g, 'i')
+      .replace(/ğ/g, 'g')
+      .replace(/ü/g, 'u')
+      .replace(/ş/g, 's')
+      .replace(/ö/g, 'o')
+      .replace(/ç/g, 'c')
+      .trim();
+  }
+
+  function pickField(company: any, keys: string[], fallback = ''): string {
+    for (const key of keys) {
+      const value = company?.[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return String(value).trim();
       }
     }
-  });
+    return fallback;
+  }
 
-  // 🖼️ Tablo Render Mantığı
-  function filterAndRender(data, term) {
-    if (!tableBody) return;
+  function mapCompany(company: any) {
+    const id = pickField(company, ['id', 'ID', 'Firma No', 'firmaNo', 'firma_no', 'no']);
+    const unvan = pickField(company, ['unvan', 'Unvan', 'UNVAN', 'firmaUnvan', 'firma_unvan'], '-');
     
-    const filtered = data.filter(row => {
-      const text = `${row.nickname} ${row.unvan} ${row.city} ${row.id}`.toLocaleLowerCase('tr-TR');
-      return text.includes(term.toLocaleLowerCase('tr-TR'));
-    });
+    // 🏷️ Optimize Edilmiş Nickname/Marka Eşleşmesi
+    const nickname = pickField(company, [
+      'Markası', 'Marka Adı', 'Kısa Adı', 'Kısa Ad', 'Marka', 'marka', 
+      'Nickname', 'nickname', 'Firma Adı', 'unvan'
+    ], '-');
+    
+    const city = pickField(company, ['city', 'City', 'CITY', 'il', 'İl', 'sehir', 'şehir'], '-');
+    
+    // 🔍 Sadeleştirilmiş Arama Kapsamı
+    const searchStr = normalize(`${unvan} ${nickname} ${id}`);
 
-    tableBody.innerHTML = '';
-    resultCount.textContent = filtered.length;
+    return { id, unvan, nickname, city, searchStr };
+  }
 
-    filtered.forEach((row, index) => {
+  // 🖼️ Render (Pagination & Grid Management)
+  function renderResults(companies: readonly any[], term: string) {
+    const resultsBody = document.getElementById('searchResults') as HTMLTableSectionElement;
+    const paginationContainer = document.getElementById('pagination-container');
+    const counter = document.getElementById('searchCounter');
+    if (!resultsBody || !counter || !paginationContainer) return;
+    
+    // 1. Akıllı Filtreleme (@ Operatörü)
+    const normalizedTerm = normalize(term);
+    const mapped = companies.map(mapCompany);
+    
+    let filtered;
+    if (normalizedTerm.includes('@')) {
+      const [namePart, cityPart] = normalizedTerm.split('@').map(s => s.trim());
+      filtered = mapped.filter(c => {
+        const nameMatch = c.searchStr.includes(namePart);
+        const cityMatch = normalize(c.city).includes(cityPart);
+        return nameMatch && cityMatch;
+      });
+    } else {
+      filtered = mapped.filter(c => {
+        const haystack = `${c.searchStr} ${normalize(c.city)}`;
+        return haystack.includes(normalizedTerm);
+      });
+    }
+
+    counter.textContent = filtered.length.toString();
+
+    // 2. Pagination Parçalama
+    const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    
+    const start = (currentPage - 1) * pageSize;
+    const paginatedItems = filtered.slice(start, start + pageSize);
+
+    // 3. Render Tablo Gövdesi
+    resultsBody.innerHTML = '';
+    
+    if (paginatedItems.length === 0) {
+      resultsBody.innerHTML = `<tr><td colspan="6" class="py-20 text-center text-muted uppercase font-bold tracking-widest text-[10px]">EŞLEŞEN KAYIT BULUNAMADI</td></tr>`;
+      paginationContainer.classList.add('hidden');
+      return;
+    }
+
+    paginationContainer.classList.remove('hidden');
+    renderPaginationUI(filtered.length);
+    const pageIndicator = document.getElementById('page-indicator');
+    if (pageIndicator) pageIndicator.textContent = `${currentPage} / ${totalPages}`;
+
+    paginatedItems.forEach((c) => {
       const tr = document.createElement('tr');
-      tr.className = 'hover:bg-white/5 transition-all group border-l-2 border-l-transparent hover:border-l-indigo-600';
+      tr.className = 'hover:bg-surface-hover transition-colors group text-sm';
+      const safeId = c.id || '';
       
       tr.innerHTML = `
-        <td class="px-8 py-5 text-sm font-mono text-gray-600">${index + 1}</td>
-        <td class="px-8 py-5">
-          <div class="text-[15px] font-bold text-white group-hover:text-indigo-400 transition-colors">${row.unvan || '-'}</div>
-          <div class="text-[10px] text-gray-600 mt-1 uppercase font-mono tracking-wider">${row.id}</div>
+        <td class="px-5 py-3 text-center text-muted font-mono text-xs">${safeId || '-'}</td>
+        <td class="px-5 py-3 text-left">
+          <a href="/company/edit?id=${encodeURIComponent(safeId)}" class="block group/link">
+            <div class="font-bold text-main group-hover/link:text-primary transition-colors uppercase tracking-tight">${c.unvan || '-'}</div>
+            <div class="text-[10px] text-muted uppercase tracking-tighter mt-0.5 group-hover/link:text-primary transition-colors opacity-80">${c.nickname || '-'}</div>
+          </a>
         </td>
-        <td class="px-8 py-5">
-          <button class="folder-btn inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-xs font-bold text-gray-300 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-lg" data-nickname="${row.nickname}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
-            ${row.nickname || 'KLASÖR'}
-          </button>
-        </td>
-        <td class="px-8 py-5 text-sm text-gray-400 font-medium">${row.city || '-'}</td>
-        <td class="px-8 py-5 text-right">
-          <div class="flex items-center justify-end gap-3 translate-x-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
-            <a href="/company/edit?id=${encodeURIComponent(row.id)}" class="p-2.5 glass rounded-xl text-gray-400 hover:text-indigo-400 hover:border-indigo-400/50 transition shadow-inner">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 5-3-3H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-            </a>
+        <td class="px-5 py-3">
+          <div class="max-w-[180px] overflow-hidden">
+            <button class="folder-btn flex items-center gap-2 text-primary hover:text-primary-hover font-bold underline decoration-primary/30 underline-offset-4 decoration-dashed whitespace-nowrap" data-nickname="${c.nickname}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+              <span class="truncate text-xs">${c.nickname || 'AÇ'}</span>
+            </button>
           </div>
+        </td>
+        <td class="px-5 py-3 text-center text-muted font-medium text-xs tracking-tight">${c.city || '-'}</td>
+        <td class="px-5 py-3 text-center">
+          <a href="/company/edit?id=${encodeURIComponent(safeId)}" class="inline-flex items-center justify-center px-4 py-1.5 border border-primary/30 rounded-lg text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-sm">
+            GÖZAT
+          </a>
+        </td>
+        <td class="px-5 py-3 text-center">
+          <button class="delete-btn px-4 py-1.5 border border-rose-500/20 rounded-lg text-xs font-bold text-rose-500/70 hover:bg-rose-500 hover:text-white transition-all shadow-sm" data-id="${safeId}">
+            SİL
+          </button>
         </td>
       `;
       
-      tableBody.appendChild(tr);
+      resultsBody.appendChild(tr);
     });
 
-    attachActions();
+    attachEvents();
   }
 
-  function attachActions() {
-    document.querySelectorAll('.folder-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const nickname = e.currentTarget.dataset.nickname;
-        btn.classList.add('opacity-50', 'pointer-events-none');
-        const response = await api.call('getFolderId', { nickname });
-        btn.classList.remove('opacity-50', 'pointer-events-none');
-        
-        if (response.success && response.data) {
-          window.open(`https://drive.google.com/drive/folders/${response.data}`, '_blank');
-        } else {
-          alert('Klasör bulunamadı.');
+  function renderPaginationUI(totalCount: number) {
+    const controls = document.getElementById('pagination-controls');
+    if (!controls) return;
+    
+    const totalPages = Math.ceil(totalCount / pageSize) || 1;
+    controls.innerHTML = '';
+
+    // "Önceki" Butonu
+    const prevBtn = document.createElement('button');
+    prevBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>`;
+    prevBtn.className = `p-1.5 rounded-lg border border-border-main transition-all ${currentPage > 1 ? 'text-primary hover:bg-primary/10' : 'text-muted opacity-30 cursor-not-allowed'}`;
+    prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; refreshUI(); } };
+    controls.appendChild(prevBtn);
+
+    // Dinamik Sayfa Numaraları (Sadece komşuları ve baş/son gösterelim)
+    let range: number[] = [];
+    const delta = 1;
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+            range.push(i);
         }
-      });
+    }
+
+    let last: number | null = null;
+    range.forEach(i => {
+        if (last && i - last > 1) {
+            const dots = document.createElement('span');
+            dots.textContent = '...';
+            dots.className = 'px-2 text-muted text-xs';
+            controls.appendChild(dots);
+        }
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i.toString();
+        pageBtn.className = `w-8 h-8 rounded-lg border text-xs font-black transition-all ${
+            i === currentPage 
+            ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' 
+            : 'border-border-main text-muted hover:text-primary hover:bg-primary/10'
+        }`;
+        pageBtn.onclick = () => { currentPage = i; refreshUI(); };
+        controls.appendChild(pageBtn);
+        last = i;
+    });
+
+    // "Sonraki" Butonu
+    const nextBtn = document.createElement('button');
+    nextBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`;
+    nextBtn.className = `p-1.5 rounded-lg border border-border-main transition-all ${currentPage < totalPages ? 'text-primary hover:bg-primary/10' : 'text-muted opacity-30 cursor-not-allowed'}`;
+    nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; refreshUI(); } };
+    controls.appendChild(nextBtn);
+  }
+
+  function refreshUI() {
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Opsiyonel: Tablo genişse tablo başına scroll
+    renderResults($companies.get(), currentTerm);
+  }
+
+  function attachEvents() {
+    // Klasör Aç
+    document.querySelectorAll('.folder-btn').forEach(el => {
+      const btn = el as HTMLButtonElement;
+      btn.onclick = async () => {
+        const nick = btn.dataset.nickname;
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<div class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>';
+        const res = await api.call('getFolderId', { nickname: nick });
+        btn.innerHTML = originalContent;
+        if (res.success && res.data) window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
+      };
+    });
+
+    // Silme (İki aşamalı onayla)
+    document.querySelectorAll('.delete-btn').forEach(el => {
+      const btn = el as HTMLButtonElement;
+      btn.onclick = () => {
+        if (btn.textContent?.trim() === 'SİL') {
+          btn.textContent = 'ONAYLA?';
+          btn.classList.add('bg-red-600', 'text-white', 'border-red-600');
+          setTimeout(() => {
+            btn.textContent = 'SİL';
+            btn.classList.remove('bg-red-600', 'text-white', 'border-red-600');
+          }, 3000);
+        } else {
+          // api.call('deleteCompany', { id: btn.dataset.id });
+          console.log('Delete target:', btn.dataset.id);
+        }
+      };
     });
   }
 
-  // 🔍 Arama Olayı
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      currentSearchTerm = e.target.value;
-      filterAndRender($companies.get(), currentSearchTerm);
-    });
-  }
+  // 🔍 Arama Event
+  searchInput?.addEventListener('input', (e) => {
+    const target = e.target as HTMLInputElement;
+    currentTerm = target.value;
+    currentPage = 1; // Her aramada sayfayı sıfırla
+    renderResults($companies.get(), currentTerm);
+  });
 
-  // 🚀 Başlat
+  // ⚙️ Page Size Event
+  pageSizeSelect?.addEventListener('change', () => {
+    pageSize = parseInt(pageSizeSelect.value);
+    currentPage = 1;
+    refreshUI();
+  });
+
   SyncManager.init();
 </script>

@@ -62,5 +62,23 @@ const CertificateService = {
       BaseService.logError("updateGozetim", e);
       return { success: false, error: e.message };
     }
+  },
+
+  /**
+   * Belirli bir firmaya ait sertifikaları dizi olarak döner.
+   * edit.astro içindeki indeksleme (row[0], row[3] vb.) ile uyumludur.
+   */
+  getByFirmaId: function(firmaId) {
+    try {
+      const allRows = BaseService.getRawData(this.sheetName);
+      if (!allRows || allRows.length === 0) return [];
+
+      // Sütun 2: Firma No (AI_CONTEXT-v3.1.0'a göre)
+      const filtered = allRows.filter(r => String(r[2]) === String(firmaId));
+      return filtered;
+    } catch (e) {
+      BaseService.logError("getByFirmaId", e);
+      return [];
+    }
   }
 };

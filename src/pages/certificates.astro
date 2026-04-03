@@ -6,17 +6,17 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   <div class="space-y-6">
 
     <!-- 🎛️ Filtreleme Paneli -->
-    <div class="glass p-5 rounded-3xl border-white/5 shadow-xl space-y-4">
+    <div class="bg-surface border border-border-main shadow-xl p-5 rounded-3xl space-y-4">
 
       <!-- Üst satır: Sync + Bulk Actions -->
       <div class="flex items-center justify-between gap-4 flex-wrap">
-        <div id="sync-indicator" class="flex items-center gap-2 px-3 py-1.5 glass rounded-lg border-white/5 text-[10px] uppercase tracking-wider text-gray-500 font-bold">
+        <div id="sync-indicator" class="flex items-center gap-2 px-3 py-1.5 bg-surface border border-border-main rounded-lg text-[10px] uppercase tracking-wider text-gray-500 font-bold">
           <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]"></span>
           Güncel
         </div>
 
         <!-- Bulk Actions (JS ile gösterilir) -->
-        <div id="bulk-actions" class="hidden items-center gap-3 glass px-4 py-2 rounded-xl border border-indigo-500/30 animate-fade-in">
+        <div id="bulk-actions" class="hidden items-center gap-3 bg-surface border border-primary/30 px-4 py-2 rounded-xl animate-fade-in">
           <span id="selected-count" class="text-[10px] font-black text-indigo-400">0 SEÇİLİ</span>
           <div class="h-4 w-px bg-white/10"></div>
           <button id="bulk-done-btn" class="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-wider px-2 py-1 rounded-lg hover:bg-emerald-500/10">
@@ -62,7 +62,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     </div><!-- /.glass filter panel — KAPATILDI -->
 
     <!-- 📊 Veri Tablosu -->
-    <div class="glass rounded-3xl overflow-hidden border-white/10 shadow-2xl">
+    <div class="bg-surface border border-border-main shadow-2xl rounded-3xl overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
@@ -184,10 +184,10 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         </td>
         <td class="px-6 py-4 text-right">
           <div class="flex items-center justify-end gap-2 translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
-            <button class="folder-btn p-2 glass rounded-lg text-gray-500 hover:text-indigo-400 hover:border-indigo-500/30 transition-all" title="Drive Klasörü" data-nick="${item["Firma Adı"]}">
+            <button class="folder-btn p-2 bg-surface border border-border-main shadow-sm rounded-lg text-muted hover:text-primary transition-all" title="Drive Klasörü" data-nick="${item["Firma Adı"]}">
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93l-1-1A2 2 0 0 0 9.6 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"/></svg>
             </button>
-            <button class="pdf-btn p-2 glass rounded-lg text-gray-500 hover:text-rose-400 hover:border-rose-500/30 transition-all" title="PDF Dönüştür" data-id="${item["ID"]}">
+            <button class="pdf-btn p-2 bg-surface border border-border-main shadow-sm rounded-lg text-muted hover:text-rose-400 transition-all" title="PDF Dönüştür" data-id="${item["ID"]}">
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
             </button>
           </div>

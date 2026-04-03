@@ -1,0 +1,115 @@
+---
+import { Icon } from 'astro-icon/components';
+
+/**
+ * 🌓 ThemeToggle Component - Pure Tailwind Edition
+ */
+
+export interface Props {
+  direction?: 'down' | 'up';
+}
+
+const { direction = 'down' } = Astro.props;
+
+const positioningClass = direction === 'up' ? "bottom-full mb-3" : "top-[105%] mt-2";
+const borderClass = direction === 'up' ? "border-b-[3px] rounded-t-xl" : "border-t-[3px] rounded-b-xl";
+---
+
+<div class="relative h-full flex items-center group/switcher">
+  <button 
+    id="theme-toggle-btn"
+    type="button" 
+    class="flex items-center gap-2 px-3 py-2 rounded-xl bg-transparent border border-transparent hover:bg-surface hover:border-border-main text-muted hover:text-primary transition-all active:scale-95 duration-200"
+  >
+    <Icon name="mdi:theme-light-dark" class="w-5 h-5 opacity-70 group-hover/switcher:opacity-100" />
+    <span class="theme-current-label text-[11px] font-black uppercase tracking-[0.04em] hidden xl:block">Koyu</span>
+  </button>
+
+  <div id="theme-dropdown" class={`absolute ${positioningClass} right-0 w-48 z-[60] hidden animate-fade-in translate-y-1`}>
+    <div class="bg-surface shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-border-main rounded-2xl p-2 overflow-hidden ring-1 ring-white/5">
+      <div class="h-1 w-24 bg-primary/40 mx-auto rounded-full mb-2 opacity-60"></div>
+      <button data-theme-value="light" class="theme-item w-full flex items-center px-4 py-2.5 text-[13px] font-bold text-main hover:bg-primary/10 hover:text-primary transition-all rounded-xl text-left uppercase tracking-tight">
+        <Icon name="mdi:white-balance-sunny" class="w-4 h-4 mr-3 opacity-60"/>Açık
+      </button>
+      <button data-theme-value="dark" class="theme-item w-full flex items-center px-4 py-2.5 text-[13px] font-bold text-main hover:bg-primary/10 hover:text-primary transition-all rounded-xl text-left uppercase tracking-tight">
+        <Icon name="mdi:weather-night" class="w-4 h-4 mr-3 opacity-60"/>Koyu
+      </button>
+      <button data-theme-value="system" class="theme-item w-full flex items-center px-4 py-2.5 text-[13px] font-bold text-main hover:bg-primary/10 hover:text-primary transition-all rounded-xl text-left uppercase tracking-tight">
+        <Icon name="mdi:laptop" class="w-4 h-4 mr-3 opacity-60"/>Sistem
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function applyTheme(theme: string) {
+    const effectiveTheme = theme || 'dark';
+    const isDark = effectiveTheme === 'dark' || (effectiveTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.dataset.theme = effectiveTheme;
+    localStorage.setItem('theme', effectiveTheme);
+    return effectiveTheme;
+  }
+
+  function updateUI(currentTheme: string) {
+    const items = document.querySelectorAll('.theme-item') as NodeListOf<HTMLButtonElement>;
+    const labelEl = document.querySelector('.theme-current-label');
+    
+    items.forEach((item) => {
+      const val = item.getAttribute('data-theme-value');
+      const isActive = val === currentTheme;
+      item.classList.toggle('bg-primary/15', isActive);
+      item.classList.toggle('text-primary', isActive);
+      item.classList.toggle('font-black', isActive);
+    });
+
+    if (labelEl) {
+      const labels: Record<string, string> = { light: 'Açık', dark: 'Koyu', system: 'Sistem' };
+      labelEl.textContent = labels[currentTheme] || 'Koyu';
+    }
+  }
+
+  function initTheme() {
+    const btn = document.getElementById('theme-toggle-btn') as HTMLButtonElement | null;
+    const dropdown = document.getElementById('theme-dropdown') as HTMLElement | null;
+    const items = document.querySelectorAll('.theme-item') as NodeListOf<HTMLButtonElement>;
+    
+    if (!btn || !dropdown) return;
+
+    const currentTheme = localStorage.getItem('theme') || 'dark';
+    applyTheme(currentTheme);
+    updateUI(currentTheme);
+
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle('hidden');
+    };
+
+    items.forEach(item => {
+      item.onclick = () => {
+        const theme = item.getAttribute('data-theme-value') || 'dark';
+        applyTheme(theme);
+        updateUI(theme);
+        dropdown.classList.add('hidden');
+      };
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!dropdown.classList.contains('hidden') && !dropdown.contains(e.target as Node)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    window.matchMedia('(prefers-color-scheme: dark)').onchange = (e) => {
+      if (localStorage.getItem('theme') === 'system') {
+        document.documentElement.classList.toggle('dark', e.matches);
+      }
+    };
+  }
+
+  document.addEventListener('astro:page-load', initTheme);
+  initTheme();
+</script>
+
+

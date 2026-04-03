@@ -56,6 +56,21 @@ function doPost(e) {
         result.success = true;
         break;
 
+      case "getCertificatesByFirmaId":
+        result.data = CertificateService.getByFirmaId(params.firmaId || params.id);
+        result.success = true;
+        break;
+
+      case "getTestsByFirmaId":
+        result.data = TestService.getByFirmaId(params.firmaId || params.id);
+        result.success = true;
+        break;
+
+      case "getAuditsByFirmaId":
+        result.data = AuditService.getByFirmaId(params.firmaId || params.id);
+        result.success = true;
+        break;
+
       case "updateGozetim":
         const updRes = CertificateService.updateGozetim(params.id, params.status);
         result.success = updRes.success;
@@ -136,6 +151,11 @@ function doPost(e) {
         result.data = {
           lastUpdate: PropertiesService.getScriptProperties().getProperty("LAST_UPDATE") || "0"
         };
+        result.success = true;
+        break;
+
+      case "getFullSyncData":
+        result.data = SyncService.getFullExport();
         result.success = true;
         break;
 

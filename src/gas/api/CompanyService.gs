@@ -13,14 +13,7 @@ const CompanyService = {
    */
   getAllForSync: function() {
     try {
-      const data = BaseService.getDataAsObjects(this.sheetName);
-      // Sadece senkronizasyon için gerekli sütunları filtrele (ID, Kısa Ad, Unvan, İl)
-      return data.map(item => ({
-        id: item["Firma No"],
-        nickname: item["Firma Adı"],
-        unvan: item["Unvan"],
-        city: item["İl"]
-      }));
+      return BaseService.getDataAsObjects(this.sheetName);
     } catch (e) {
       BaseService.logError("getAllForSync", e);
       return [];
@@ -32,8 +25,24 @@ const CompanyService = {
    */
   getById: function(id) {
     try {
-      const data = BaseService.getDataAsObjects(this.sheetName);
-      return data.find(item => String(item["Firma No"]) === String(id)) || null;
+      const ss = BaseService.openSS();
+      const ws = ss.getSheetByName(this.sheetName);
+      const lastRow = ws.getLastRow();
+      if (lastRow < 2) return null;
+
+      // 1. ID Sütununda ara (Zeki Arama)
+      const ids = ws.getRange(2, 1, lastRow - 1, 1).getValues().flat();
+      const rowIndex = ids.findIndex(rowId => String(rowId) === String(id));
+      
+      if (rowIndex === -1) return null;
+
+      // 2. Sadece o satırı getir (Performans)
+      const dataRow = ws.getRange(rowIndex + 2, 1, 1, ws.getLastColumn()).getDisplayValues()[0];
+      const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0].map(h => String(h).trim());
+
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = dataRow[i]);
+      return obj;
     } catch (e) {
       BaseService.logError("getById", e);
       return null;

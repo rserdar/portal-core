@@ -13,20 +13,20 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   <div class="max-w-6xl mx-auto space-y-8 pb-20">
     
     <!-- 🏢 1. Firma Seçimi & Klasör Butonu -->
-    <section class="glass p-8 rounded-3xl flex flex-col md:flex-row items-center gap-6">
+    <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl flex flex-col md:flex-row items-center gap-6">
       <div class="flex-1 relative group w-full">
         <input 
           type="text" 
           id="company-search" 
           list="company-list" 
           placeholder="Dokümanlarını görmek istediğiniz firmayı arayın..." 
-          class="w-full bg-white/5 border border-white/10 rounded-xl px-12 py-4 text-lg focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
+          class="w-full bg-surface-hover border border-border-main rounded-xl px-12 py-4 text-lg focus:ring-2 focus:ring-primary/50 outline-none transition-all"
         />
         <svg class="absolute left-4 top-4.5 text-gray-500 group-focus-within:text-indigo-400 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <datalist id="company-list"></datalist>
       </div>
       
-      <button id="open-folder-btn" class="hidden md:flex items-center gap-2 px-8 py-4 glass border-white/10 rounded-xl text-gray-400 hover:text-indigo-400 hover:border-indigo-500/30 transition-all font-bold">
+      <button id="open-folder-btn" class="hidden md:flex items-center gap-2 px-8 py-4 bg-surface border border-border-main shadow-sm rounded-xl text-muted hover:text-primary transition-all font-bold">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93l-1-1A2 2 0 0 0 9.6 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"/></svg>
         DOKÜMAN KLASÖRÜNÜ AÇ
       </button>
@@ -39,12 +39,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                 <h2 id="result-title" class="text-xl font-bold text-white">Dokümanlar</h2>
                 <p class="text-xs text-gray-500 mt-1">Seçili firmaya ait üretilmiş güncel dosyalar.</p>
             </div>
-            <div id="file-count" class="px-4 py-1.5 glass rounded-full border-white/10 text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+            <div id="file-count" class="px-4 py-1.5 bg-surface border border-border-main shadow-sm rounded-full text-[10px] font-black text-primary uppercase tracking-widest">
                 0 DOSYA
             </div>
         </div>
 
-        <div class="glass rounded-3xl overflow-hidden border-white/5 shadow-2xl">
+        <div class="bg-surface border border-border-main shadow-2xl rounded-3xl overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
@@ -173,11 +173,11 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         </td>
         <td class="px-6 py-5 text-right">
           <div class="flex items-center justify-end gap-2 translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
-            <a href="${file.url}" target="_blank" class="p-2 glass rounded-lg text-gray-400 hover:text-indigo-400 transition" title="Drive'da Aç">
+            <a href="${file.url}" target="_blank" class="p-2 bg-surface shadow-sm border border-border-main rounded-lg text-muted hover:text-primary transition" title="Drive'da Aç">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </a>
             ${isDoc ? `
-                <button class="pdf-convert-btn p-2 glass rounded-lg text-gray-400 hover:text-rose-400 transition" data-id="${file.id}" title="PDF'e Dönüştür">
+                <button class="pdf-convert-btn p-2 bg-surface shadow-sm border border-border-main rounded-lg text-muted hover:text-rose-400 transition" data-id="${file.id}" title="PDF'e Dönüştür">
                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                 </button>
             ` : ''}
