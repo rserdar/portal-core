@@ -1,4 +1,4 @@
-# 🤖 Project Intelligence & Context (AI_CONTEXT.md v2.9.0)
+# 🤖 Project Intelligence & Context (AI_CONTEXT.md v3.0.0 - Production Ready)
 
 This document is the **Primary Source of Truth** for the modernized Medicert Portal. It provides absolute technical precision, comprehensive data schemas with exact JavaScript property mappings, and formal architectural workflows.
 
@@ -15,7 +15,7 @@ This document is the **Primary Source of Truth** for the modernized Medicert Por
 ### 2. Middleware & Security (Cloudflare Worker)
 - **Role:** Secure API Proxy & Secret Injector.
 - **Security Flow:** **Browser (No Key)** -> **Cloudflare Worker (Injects Secret API_KEY)** -> **GAS Bridge**.
-- **Worker Secrets:** `API_KEY` (Auth), `GAS_API_URL` (Execution URL - Official: `https://portalapi.medicert.com.tr`).
+- **Worker Secrets:** `API_KEY` (Auth), `GAS_API_URL` (Official: `https://portalapi.medicert.com.tr`). Forwarding to GAS Exec: `https://script.google.com/macros/s/AKfycby...LL4/exec`
 
 ---
 
@@ -226,9 +226,10 @@ This document is the **Primary Source of Truth** for the modernized Medicert Por
 ---
 
 ## ⚙️ GAS Script Properties (The "Vault")
-- `API_KEY`: Secret used to authenticate POST requests.
+- `API_KEY`: `mc-portal-3.0_8a2d7f9e4c1b5a6c3d2e1f0b9a8c7d6e` (Secret used to authenticate POST requests).
 - `LAST_UPDATE`: Numeric timestamp (Incremental Sync brain).
 - `SPREADSHEET_ID`: Unique ID for the target Google Sheet.
+- `GAS_API_URL`: `https://script.google.com/macros/s/AKfycbyc2TdGEAsfO5y_UPSFo748wpTim3b3wfTCoRFK3M_sHUQBYzQY9UzKk6fqvAuO2LL4/exec` (Backend Endpoint).
 - `ILOVEPDF_PUBLIC_KEY`: Fallback PDF converter.
 - `LOCAL_CONVERTER_TOKEN`: Primary converter (pdf.serdar.cc).
 
@@ -280,7 +281,7 @@ This document is the **Primary Source of Truth** for the modernized Medicert Por
 ## 🚀 Production Deployment Workflow
 - **Backend (GAS):** Deploy EXE URL (New Version). Set Script Properties.
 - **Core (Worker):** `wrangler deploy`. Set `API_KEY` and `GAS_API_URL` secrets.
-- **UI (Astro):** `npm run build` -> CF Pages. **CRITICAL:** Set `PUBLIC_WORKER_URL` in Pages Settings.
+- **UI (Astro):** `npm run build` -> CF Pages. **CRITICAL:** Set `PUBLIC_WORKER_URL` to `https://portalapi.medicert.com.tr` in Pages Settings. Production UI: `https://portal.medicert.com.tr`.
 
 ## 💻 Local Development Guide
 1. **Middleware (Worker):** Run `npx wrangler dev`. Ensure local secrets match GAS.
