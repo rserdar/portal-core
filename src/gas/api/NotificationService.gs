@@ -134,8 +134,12 @@ const NotificationService = {
       if (!consWs) throw new Error("Consultants sayfası bulunamadı.");
 
       const today = new Date();
-      const startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const endDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+      // Aralık/Ocak geçişlerinde de net davranış için: [geçen ayın 1'i, +2 ayın 1'i)
+      const firstDayCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const startDate = new Date(firstDayCurrentMonth);
+      startDate.setMonth(startDate.getMonth() - 1);
+      const endDate = new Date(firstDayCurrentMonth);
+      endDate.setMonth(endDate.getMonth() + 2);
 
       // Consultants
       const consLastRow = consWs.getLastRow();
@@ -215,9 +219,18 @@ const NotificationService = {
         matchCount++;
       });
 
+      const recipients = Object.values(consultantsData).filter(rec => rec.data && rec.data.length > 0);
+      const quotaRemaining = MailApp.getRemainingDailyQuota();
+      const reserve = 2; // manuel/operasyonel mail ihtiyaçları için güvenlik payı
+      const maxSend = Math.max(0, quotaRemaining - reserve);
+
       let sent = 0;
-      Object.values(consultantsData).forEach(rec => {
-        if (!rec.data || rec.data.length === 0) return;
+      let skippedByQuota = 0;
+      recipients.forEach((rec, idx) => {
+        if (idx >= maxSend) {
+          skippedByQuota++;
+          return;
+        }
         const res = this.sendSurveillanceEmail({
           firstName: rec.firstName,
           fullName: rec.fullName,
@@ -230,7 +243,13 @@ const NotificationService = {
         if (res.success) sent++;
       });
 
-      return { success: true, sent: sent, matchedRows: matchCount };
+      return {
+        success: true,
+        sent: sent,
+        matchedRows: matchCount,
+        quotaRemaining: quotaRemaining,
+        skippedByQuota: skippedByQuota
+      };
     } catch (e) {
       BaseService.logError("runMonthlyCheck", e);
       return { success: false, error: e.message };

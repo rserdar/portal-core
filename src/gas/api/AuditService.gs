@@ -9,6 +9,15 @@ const AuditService = {
   CALENDAR_SOURCE:  "d43d3fe59ccf1ff2e9ef23eb1fcbec9e8caf68568b733e3f9e8c8bc53d91c09e@group.calendar.google.com",
   CALENDAR_ARCHIVE: "b5768ed3d388c17023448785350956fd1dbe2987eaaf4362d2e1c7d5f5627746@group.calendar.google.com",
 
+  _calendarId: function(key) {
+    const prop = PropertiesService.getScriptProperties().getProperty(key);
+    if (prop && String(prop).trim()) return String(prop).trim();
+    if (key === "CALENDAR_MAIN") return this.CALENDAR_MAIN;
+    if (key === "CALENDAR_SOURCE") return this.CALENDAR_SOURCE;
+    if (key === "CALENDAR_ARCHIVE") return this.CALENDAR_ARCHIVE;
+    return "";
+  },
+
   _valueFromInfo: function(auditInfo, aliases, fallback) {
     const list = Array.isArray(aliases) ? aliases : [aliases];
     for (const key of list) {
@@ -309,7 +318,7 @@ const AuditService = {
         let a2EventId = null;
 
         try {
-          const cal = CalendarApp.getCalendarById(this.CALENDAR_MAIN);
+          const cal = CalendarApp.getCalendarById(this._calendarId("CALENDAR_MAIN"));
           if (cal) {
             if (auditInfo.a1kDenet && auditInfo.a1Basla && auditInfo.a1Bitis) {
               const a1Start = this._parseDateTime(auditInfo.a1Basla, "09:00");
@@ -380,7 +389,7 @@ const AuditService = {
         const currentInfo = this._extractAuditInfoFromRow(headers, currentRow);
         const merged = Object.assign({}, currentInfo, auditInfo || {});
 
-        const cal = CalendarApp.getCalendarById(this.CALENDAR_MAIN);
+        const cal = CalendarApp.getCalendarById(this._calendarId("CALENDAR_MAIN"));
 
         const a1Start = this._parseDateTime(merged.a1Basla, "09:00");
         const a1End = this._parseDateTime(merged.a1Bitis, "17:00");
@@ -425,8 +434,8 @@ const AuditService = {
         if (gozetimCol < 1) throw new Error("Gözetim sütunu bulunamadı.");
 
         const data = ws.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();
-        const sourceCal  = CalendarApp.getCalendarById(this.CALENDAR_SOURCE);
-        const archiveCal = CalendarApp.getCalendarById(this.CALENDAR_ARCHIVE);
+        const sourceCal  = CalendarApp.getCalendarById(this._calendarId("CALENDAR_SOURCE"));
+        const archiveCal = CalendarApp.getCalendarById(this._calendarId("CALENDAR_ARCHIVE"));
 
         ids.forEach(id => {
           const rowIndex = data.findIndex(r => String(r[idCol - 1]) === String(id));
@@ -459,6 +468,7 @@ const AuditService = {
    * Yeni event ID'yi döner — çağıran bunu sheet'e yazmalıdır.
    */
   _moveCalendarEvent: function(eventId, status, sourceCal, archiveCal) {
+    let newEvent = null;
     try {
       const fromCal = status ? sourceCal : archiveCal;
       const toCal   = status ? archiveCal : sourceCal;
@@ -468,7 +478,7 @@ const AuditService = {
 
       const guests = event.getGuestList().map(g => g.getEmail()).join(",");
 
-      const newEvent = toCal.createEvent(
+      newEvent = toCal.createEvent(
         event.getTitle(),
         event.getStartTime(),
         event.getEndTime(),
@@ -485,7 +495,14 @@ const AuditService = {
         newEvent.addPopupReminder(10080);
       }
 
-      event.deleteEvent();
+      try {
+        event.deleteEvent();
+      } catch (deleteErr) {
+        // Eski event silinemezse duplicate bırakmamak için yeni event'i geri al.
+        try { if (newEvent) newEvent.deleteEvent(); } catch (_) {}
+        BaseService.logError("_moveCalendarEvent:deleteOriginalFailed", deleteErr, { eventId: eventId });
+        return eventId;
+      }
       return newEvent.getId();
     } catch (e) {
       BaseService.logError("_moveCalendarEvent", e);

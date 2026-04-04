@@ -10,8 +10,8 @@ const PDFService = {
     const props = PropertiesService.getScriptProperties();
     return {
       LOCAL_URL:       "https://pdf.serdar.cc/convert",
-      LOCAL_TOKEN:     props.getProperty("LOCAL_CONVERTER_TOKEN")  || "Q8rTx7vN9kWmA2bZ4FgJ5pLuYeHsX3Cd",
-      ILOVEPDF_PUBLIC: props.getProperty("ILOVEPDF_PUBLIC_KEY")    || "project_public_445629acdb077f7202b604b2c5859168_1u4gCa494db1d1a9f50f949698c9eb98fd698",
+      LOCAL_TOKEN:     props.getProperty("LOCAL_CONVERTER_TOKEN")  || "",
+      ILOVEPDF_PUBLIC: props.getProperty("ILOVEPDF_PUBLIC_KEY")    || "",
       DPI: 600
     };
   },
@@ -40,6 +40,9 @@ const PDFService = {
   _tryLocalConverter: function(file, name) {
     try {
       const config = this.getSettings();
+      if (!config.LOCAL_TOKEN) {
+        return { success: false, error: "LOCAL_CONVERTER_TOKEN tanımlı değil." };
+      }
       const pdfBlob = file.getAs("application/pdf");
       pdfBlob.setName(name + "_local_input.pdf");
 
@@ -126,6 +129,9 @@ const PDFService = {
     if (cached) return cached;
 
     const config = this.getSettings();
+    if (!config.ILOVEPDF_PUBLIC) {
+      throw new Error("ILOVEPDF_PUBLIC_KEY tanımlı değil.");
+    }
     const response = UrlFetchApp.fetch("https://api.ilovepdf.com/v1/auth", {
       method: "post",
       contentType: "application/json",

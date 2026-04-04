@@ -15,7 +15,12 @@ function doPost(e) {
   try {
     const requestData = JSON.parse(e.postData.contents);
     const apiSecret = requestData.apiKey || ""; // Cloudflare Worker will send this
-    const systemSecret = PropertiesService.getScriptProperties().getProperty("API_KEY") || "mc-portal-3.0_8a2d7f9e4c1b5a6c3d2e1f0b9a8c7d6e";
+    const systemSecret = PropertiesService.getScriptProperties().getProperty("API_KEY") || "";
+
+    if (!systemSecret) {
+      result.error = "Sunucu API_KEY yapılandırması eksik.";
+      return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+    }
 
     if (apiSecret !== systemSecret) {
       result.error = "Yetkisiz Erişim (Invalid API Key)";
