@@ -73,8 +73,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
             <div class="flex items-center justify-between">
               <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Türkçe Kapsam</label>
               <div class="flex gap-2">
-                <button type="button" class="action-chip" onclick="window.convertCase('kapsam', 'tr')">TR BÜYÜK</button>
-                <button type="button" class="action-chip text-indigo-400" onclick="window.translateField('kapsam', 'scope')">İngilizceye Çevir</button>
+                <button type="button" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold hover:bg-surface-hover transition-all" onclick="window.convertCase('kapsam', 'tr')">TR BÜYÜK</button>
+                <button type="button" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold text-primary hover:bg-surface-hover transition-all" onclick="window.translateField('kapsam', 'scope')">İngilizceye Çevir</button>
               </div>
             </div>
             <textarea name="kapsam" id="kapsam-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden min-h-[100px]" placeholder="Sertifika kapsamını giriniz..."></textarea>
@@ -199,7 +199,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       </section>
 
       <!-- sticky: Footer Actions -->
-      <div class="sticky bottom-8 z-50 bg-surface border border-border-main shadow-xl p-4 rounded-2xl flex items-center justify-between border border-border-main shadow-2xl backdrop-blur-2xl">
+      <div class="sticky bottom-8 z-50 bg-surface border border-border-main shadow-2xl p-4 rounded-2xl flex items-center justify-between">
         <button type="button" id="cancel-btn" class="px-6 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-surface-hover transition font-bold text-sm">İPTAL</button>
         <div class="flex gap-4">
           <button type="submit" id="submit-btn" class="px-8 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
@@ -267,14 +267,13 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     
     if (sourceInput && targetInput && sourceInput.value) {
       targetInput.placeholder = "Çeviriliyor...";
-      const response = await api.call('translate', { 
-        text: sourceInput.value, 
-        toEn: fromField === 'kapsam' 
-      });
+      const toEn = fromField === 'kapsam';
+      const response = await api.translate(sourceInput.value, toEn);
+      
       if (response.success) {
         targetInput.value = response.data;
       } else {
-        alert("Çeviri hatası oluştu.");
+        alert("Çeviri hatası oluştu: " + response.error);
       }
       targetInput.placeholder = "";
     }

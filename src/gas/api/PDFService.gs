@@ -1,35 +1,33 @@
 /**
- * 📄 PDFService: PDF Dönüştürme ve Birleştirme
- * 
+ * 📄 PDFService: PDF Dönüştürme
+ *
  * Google Dokümanlarını PDF'e dönüştürür.
- * Akıllı Fallback: Local Converter -> iLovePDF
+ * Akıllı Fallback: Local Converter (pdf.serdar.cc) → iLovePDF
  */
 
 const PDFService = {
-  // ⚙️ Konfigürasyon (PropertiesService'den okunur)
   getSettings: function() {
     const props = PropertiesService.getScriptProperties();
     return {
-      LOCAL_URL: "https://pdf.serdar.cc/convert",
-      LOCAL_TOKEN: props.getProperty("LOCAL_CONVERTER_TOKEN") || "Q8rTx7vN9kWmA2bZ4FgJ5pLuYeHsX3Cd",
-      ILOVEPDF_PUBLIC: props.getProperty("ILOVEPDF_PUBLIC_KEY") || "project_public_445629acdb077f7202b604b2c5859168_1u4gCa494db1d1a9f50f949698c9eb98fd698",
+      LOCAL_URL:       "https://pdf.serdar.cc/convert",
+      LOCAL_TOKEN:     props.getProperty("LOCAL_CONVERTER_TOKEN")  || "Q8rTx7vN9kWmA2bZ4FgJ5pLuYeHsX3Cd",
+      ILOVEPDF_PUBLIC: props.getProperty("ILOVEPDF_PUBLIC_KEY")    || "project_public_445629acdb077f7202b604b2c5859168_1u4gCa494db1d1a9f50f949698c9eb98fd698",
       DPI: 600
     };
   },
 
   /**
-   * Dokümanı PDF'e dönüştürür (Eski processDocToFitPdf).
+   * Dokümanı PDF'e dönüştürür.
+   * Önce lokal servisi dener, başarısız olursa iLovePDF'e geçer.
    */
   convertToPdf: function(docId) {
     try {
       const docFile = DriveApp.getFileById(docId);
       const docName = docFile.getName();
-      
-      // 1. Önce Lokal Servisi Dene
+
       const localResult = this._tryLocalConverter(docFile, docName);
       if (localResult.success) return localResult;
 
-      // 2. Başarısız olursa iLovePDF Fallback
       return this._tryILovePDF(docFile, docName);
     } catch (e) {
       BaseService.logError("convertToPdf", e);
@@ -37,60 +35,200 @@ const PDFService = {
     }
   },
 
-  /**
-   * 🏠 Lokal Dönüştürücü (pdf.serdar.cc)
-   */
+  // ─── Local Converter ────────────────────────────────────────────────────────
+
   _tryLocalConverter: function(file, name) {
     try {
       const config = this.getSettings();
-      const pdfBlob = file.getAs('application/pdf');
-      const url = `${config.LOCAL_URL}?token=${config.LOCAL_TOKEN}&dpi=${config.DPI}`;
-      
+      const pdfBlob = file.getAs("application/pdf");
+      pdfBlob.setName(name + "_local_input.pdf");
+
+      const url = `${config.LOCAL_URL}?token=${encodeURIComponent(config.LOCAL_TOKEN)}&dpi=${config.DPI}`;
       const boundary = "Boundary_" + Utilities.getUuid();
-      const payload = this._createMultipartPayload(pdfBlob, boundary);
-      
+      const payload = this._buildMultipart(pdfBlob, boundary);
+
       const response = UrlFetchApp.fetch(url, {
         method: "post",
         contentType: "multipart/form-data; boundary=" + boundary,
         payload: payload,
-        muteHttpExceptions: true
+        muteHttpExceptions: true,
+        timeoutMilliseconds: 180000
       });
 
-      if (response.getResponseCode() === 200) {
-        const finalBlob = response.getBlob();
-        finalBlob.setName(name + ".pdf");
-        const parentFolder = file.getParents().next();
-        const newFile = parentFolder.createFile(finalBlob);
-        
-        return { success: true, url: newFile.getUrl(), method: "local" };
+      if (response.getResponseCode() !== 200) {
+        return { success: false, error: "Lokal servis hata kodu: " + response.getResponseCode() };
       }
-      return { success: false, error: "Lokal servis hata kodu: " + response.getResponseCode() };
+
+      const finalBlob = response.getBlob();
+      if (!finalBlob || finalBlob.getContentType() !== "application/pdf") {
+        return { success: false, error: "Lokal servis geçerli PDF dönmedi." };
+      }
+
+      finalBlob.setName(name + ".pdf");
+      const parentFolder = file.getParents().hasNext() ? file.getParents().next() : DriveApp.getRootFolder();
+      const saved = parentFolder.createFile(finalBlob);
+      return { success: true, url: saved.getUrl(), method: "local" };
     } catch (e) {
       return { success: false, error: e.message };
     }
   },
 
-  /**
-   * ☁️ iLovePDF Fallback (API)
-   */
+  // ─── iLovePDF Fallback ──────────────────────────────────────────────────────
+
   _tryILovePDF: function(file, name) {
-    // iLovePDF API implementasyonu (Auth, Task, Upload, Process, Download)
-    // Bu kısım iLovePDF.gs içindeki mantığın modernize edilmiş halidir.
     try {
-      // API call simülasyonu / Modernize edilmiş iLovePDF Logic
-      // (Önceki iLovePDF.gs mantığı buraya metodlar halinde eklenir)
-      return { success: false, error: "iLovePDF Fallback şu an konfigürasyon bekliyor." };
+      const pdfBlob = file.getAs("application/pdf");
+      pdfBlob.setName(name + "_temp_for_ilovepdf.pdf");
+
+      const parentFolder = file.getParents().hasNext() ? file.getParents().next() : DriveApp.getRootFolder();
+      const sessionToken = this._ilovepdfGetToken();
+
+      // Adım 1: PDF → JPG
+      const pdfToJpgTask = this._ilovepdfStartTask(sessionToken, "pdfjpg");
+      const uploadedPdf = this._ilovepdfUpload(sessionToken, pdfToJpgTask.task, pdfToJpgTask.server, pdfBlob);
+      const jpgResult = this._ilovepdfProcess(
+        sessionToken, pdfToJpgTask.task, pdfToJpgTask.server,
+        uploadedPdf.server_filename, pdfBlob.getName(), "pdfjpg"
+      );
+      if (jpgResult.status !== "TaskSuccess") {
+        throw new Error("iLovePDF pdfjpg başarısız: " + jpgResult.status);
+      }
+      const jpgBlob = this._ilovepdfDownload(sessionToken, pdfToJpgTask.task, pdfToJpgTask.server);
+      jpgBlob.setName(jpgResult.download_filename || (name + ".jpg"));
+
+      // Adım 2: JPG → PDF
+      const imgToPdfTask = this._ilovepdfStartTask(sessionToken, "imagepdf");
+      const uploadedJpg = this._ilovepdfUpload(sessionToken, imgToPdfTask.task, imgToPdfTask.server, jpgBlob);
+      const pdfResult = this._ilovepdfProcess(
+        sessionToken, imgToPdfTask.task, imgToPdfTask.server,
+        uploadedJpg.server_filename, jpgBlob.getName(), "imagepdf",
+        { pagesize: "fit", margin: 0, orientation: "portrait", merge_after: true }
+      );
+      if (pdfResult.status !== "TaskSuccess") {
+        throw new Error("iLovePDF imagepdf başarısız: " + pdfResult.status);
+      }
+      const finalBlob = this._ilovepdfDownload(sessionToken, imgToPdfTask.task, imgToPdfTask.server);
+      finalBlob.setName(name + ".pdf");
+
+      const saved = parentFolder.createFile(finalBlob);
+      return { success: true, url: saved.getUrl(), method: "ilovepdf" };
     } catch (e) {
       return { success: false, error: e.message };
     }
   },
 
-  /**
-   * 🏗️ Helper: Multipart Form Data
-   */
-  _createMultipartPayload: function(blob, boundary) {
-    const dataPrefix = "--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"" + blob.getName() + "\"\r\nContent-Type: " + blob.getContentType() + "\r\n\r\n";
-    const dataSuffix = "\r\n--" + boundary + "--\r\n";
-    return Utilities.newBlob(dataPrefix).getBytes().concat(blob.getBytes()).concat(Utilities.newBlob(dataSuffix).getBytes());
+  // ─── iLovePDF API Helpers ───────────────────────────────────────────────────
+
+  _ilovepdfGetToken: function() {
+    const cache = CacheService.getScriptCache();
+    const cacheKey = "ILOVEPDF_SESSION_TOKEN_V1";
+    const cached = cache.get(cacheKey);
+    if (cached) return cached;
+
+    const config = this.getSettings();
+    const response = UrlFetchApp.fetch("https://api.ilovepdf.com/v1/auth", {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify({ public_key: config.ILOVEPDF_PUBLIC }),
+      muteHttpExceptions: true
+    });
+
+    if (response.getResponseCode() !== 200) {
+      throw new Error("iLovePDF token alınamadı. Kod: " + response.getResponseCode());
+    }
+
+    const token = JSON.parse(response.getContentText()).token;
+    if (!token) throw new Error("iLovePDF token yanıtta bulunamadı.");
+
+    cache.put(cacheKey, token, 55 * 60);
+    return token;
+  },
+
+  _ilovepdfStartTask: function(token, toolName) {
+    const response = UrlFetchApp.fetch("https://api.ilovepdf.com/v1/start/" + toolName, {
+      method: "get",
+      headers: { Authorization: "Bearer " + token },
+      muteHttpExceptions: true
+    });
+    if (response.getResponseCode() !== 200) {
+      throw new Error(`iLovePDF '${toolName}' görevi başlatılamadı. Kod: ` + response.getResponseCode());
+    }
+    const data = JSON.parse(response.getContentText());
+    if (!data.task || !data.server) throw new Error(`iLovePDF '${toolName}' yanıtı eksik.`);
+    return data;
+  },
+
+  _ilovepdfUpload: function(token, taskId, server, blob) {
+    const boundary = "Boundary_" + Utilities.getUuid();
+    const filename = blob.getName() || "file.pdf";
+    const prefix =
+      "--" + boundary + "\r\nContent-Disposition: form-data; name=\"task\"\r\n\r\n" + taskId + "\r\n" +
+      "--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"" +
+      encodeURIComponent(filename) + "\"\r\nContent-Type: " + (blob.getContentType() || "application/octet-stream") + "\r\n\r\n";
+    const suffix = "\r\n--" + boundary + "--\r\n";
+    const payload = Utilities.newBlob(prefix).getBytes().concat(blob.getBytes()).concat(Utilities.newBlob(suffix).getBytes());
+
+    const response = UrlFetchApp.fetch("https://" + server + "/v1/upload", {
+      method: "post",
+      contentType: "multipart/form-data; boundary=" + boundary,
+      payload: payload,
+      headers: { Authorization: "Bearer " + token },
+      muteHttpExceptions: true,
+      timeoutMilliseconds: 180000
+    });
+    if (response.getResponseCode() !== 200) {
+      throw new Error("iLovePDF yükleme başarısız. Kod: " + response.getResponseCode());
+    }
+    const data = JSON.parse(response.getContentText());
+    if (!data.server_filename) throw new Error("iLovePDF yükleme yanıtı eksik.");
+    return data;
+  },
+
+  _ilovepdfProcess: function(token, taskId, server, serverFilename, outputName, toolName, options) {
+    const payload = Object.assign(
+      { task: taskId, tool: toolName, files: [{ server_filename: serverFilename, filename: outputName }] },
+      options || {}
+    );
+    const response = UrlFetchApp.fetch("https://" + server + "/v1/process", {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      headers: { Authorization: "Bearer " + token },
+      muteHttpExceptions: true,
+      timeoutMilliseconds: 180000
+    });
+    if (response.getResponseCode() !== 200) {
+      throw new Error(`iLovePDF işlem (${toolName}) başarısız. Kod: ` + response.getResponseCode());
+    }
+    return JSON.parse(response.getContentText());
+  },
+
+  _ilovepdfDownload: function(token, taskId, server) {
+    const response = UrlFetchApp.fetch("https://" + server + "/v1/download/" + taskId, {
+      method: "get",
+      headers: { Authorization: "Bearer " + token },
+      muteHttpExceptions: true,
+      timeoutMilliseconds: 180000
+    });
+    if (response.getResponseCode() !== 200) {
+      throw new Error("iLovePDF indirme başarısız. Kod: " + response.getResponseCode());
+    }
+    const blob = response.getBlob();
+    // Content-Disposition header'dan dosya adını al
+    const disposition = response.getHeaders()["Content-Disposition"] || "";
+    const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="([^"]+)"/i);
+    if (match) {
+      try { blob.setName(decodeURIComponent(match[1] || match[2])); } catch (_) {}
+    }
+    return blob;
+  },
+
+  // ─── Multipart Helper ───────────────────────────────────────────────────────
+
+  _buildMultipart: function(blob, boundary) {
+    const prefix = "--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"" +
+      encodeURIComponent(blob.getName()) + "\"\r\nContent-Type: " + blob.getContentType() + "\r\n\r\n";
+    const suffix = "\r\n--" + boundary + "--\r\n";
+    return Utilities.newBlob(prefix).getBytes().concat(blob.getBytes()).concat(Utilities.newBlob(suffix).getBytes());
   }
 };

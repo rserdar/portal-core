@@ -14,6 +14,14 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]"></span>
           Güncel
         </div>
+        <div class="flex items-center gap-2">
+          <button id="export-csv-btn" class="px-3 py-2 rounded-lg border border-border-main bg-surface text-[10px] font-black uppercase tracking-wider text-muted hover:text-primary transition-all">
+            CSV Dışa Aktar
+          </button>
+          <button id="export-excel-btn" class="px-3 py-2 rounded-lg border border-border-main bg-surface text-[10px] font-black uppercase tracking-wider text-muted hover:text-emerald-400 transition-all">
+            Excel Dışa Aktar
+          </button>
+        </div>
 
         <!-- Bulk Actions (JS ile gösterilir) -->
         <div id="bulk-actions" class="hidden items-center gap-3 bg-surface border border-primary/30 px-4 py-2 rounded-xl animate-fade-in">
@@ -75,6 +83,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
               <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Standart</th>
               <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Belge No</th>
               <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-center">Gözetim Tarihi</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Not</th>
               <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-right">İşlemler</th>
             </tr>
           </thead>
@@ -114,8 +123,37 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   const standardFilter = document.getElementById('standard-filter') as HTMLSelectElement;
   const statusFilter = document.getElementById('status-filter') as HTMLSelectElement;
   const syncIndicator = document.getElementById('sync-indicator');
+  const exportCsvBtn = document.getElementById('export-csv-btn') as HTMLButtonElement;
+  const exportExcelBtn = document.getElementById('export-excel-btn') as HTMLButtonElement;
 
   let filters = { search: '', standard: '', status: '' };
+
+  function pickValue(item: any, aliases: string[], fallback = '') {
+    for (const key of aliases) {
+      if (item && item[key] !== undefined && item[key] !== null && String(item[key]).trim() !== '') {
+        return String(item[key]);
+      }
+    }
+    return fallback;
+  }
+
+  function pickExistingField(item: any, aliases: string[], fallback: string) {
+    for (const key of aliases) {
+      if (item && Object.prototype.hasOwnProperty.call(item, key)) return key;
+    }
+    return fallback;
+  }
+
+  function escHtml(v: any) {
+    return String(v ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function escAttr(v: any) {
+    return escHtml(v).replace(/"/g, "&quot;");
+  }
 
   $certificates.subscribe(certs => {
     if (certs && certs.length > 0) {
@@ -137,15 +175,25 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     }
   });
 
+  function getFilteredData(data: readonly any[]) {
+    return data.filter((item: any) => {
+      const firma = pickValue(item, ["Firma Adı", "Nickname", "nick"]);
+      const id = pickValue(item, ["ID", "id"]);
+      const certNo = pickValue(item, ["Sertifika No", "sNo", "SNo", "sno"]);
+      const standart = pickValue(item, ["Standart", "standard"]);
+      const gozetim = pickValue(item, ["Gözetim", "Gözetim Conf.", "gozetimConfirmed"], "FALSE").toUpperCase();
+
+      const matchSearch = `${firma}${id}${certNo}`.toLowerCase().includes(filters.search.toLowerCase());
+      const matchStd = !filters.standard || standart.includes(filters.standard);
+      const matchStatus = !filters.status || gozetim === filters.status;
+      return matchSearch && matchStd && matchStatus;
+    });
+  }
+
   function renderTable(data: readonly any[]) {
     if (!tableBody) return;
 
-    const filtered = data.filter((item: any) => {
-      const matchSearch = (item["Firma Adı"] + item["ID"] + item["Sertifika No"]).toLowerCase().includes(filters.search.toLowerCase());
-      const matchStd = !filters.standard || item["Standart"]?.includes(filters.standard);
-      const matchStatus = !filters.status || String(item["Gözetim"]) === filters.status;
-      return matchSearch && matchStd && matchStatus;
-    });
+    const filtered = getFilteredData(data);
 
     tableBody.innerHTML = '';
 
@@ -156,13 +204,36 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     emptyState?.classList.add('hidden');
 
     filtered.forEach((item: any) => {
-      const isOk = String(item["Gözetim"]) === "TRUE";
+      const id = pickValue(item, ["ID", "id"]);
+      const firma = pickValue(item, ["Firma Adı", "Nickname", "nick"], "-");
+      const danisman = pickValue(item, ["Danışman", "dan"], "");
+      const standart = pickValue(item, ["Standart", "standard"], "-");
+      const certNo = pickValue(item, ["Sertifika No", "sNo", "SNo", "sno"], "-");
+      const gozetimTarihi = pickValue(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ"], "");
+      const sertifikaTarihi = pickValue(item, ["Sertifika Tarihi", "gst", "GST"], "");
+      const note = pickValue(item, ["Not", "not"], "");
+      const gozetim = pickValue(item, ["Gözetim", "Gözetim Conf.", "gozetimConfirmed"], "FALSE").toUpperCase();
+      const isOk = gozetim === "TRUE";
+
+      const gozetimField = pickExistingField(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ"], "goz");
+      const noteField = pickExistingField(item, ["Not", "not"], "Not");
+      const idAttr = escAttr(id);
+      const firmaHtml = escHtml(firma);
+      const danismanHtml = escHtml(danisman);
+      const standartHtml = escHtml(standart);
+      const certNoHtml = escHtml(certNo);
+      const gozetimTarihiAttr = escAttr(gozetimTarihi);
+      const sertifikaTarihiHtml = escHtml(sertifikaTarihi);
+      const noteAttr = escAttr(note);
+      const gozetimFieldAttr = escAttr(gozetimField);
+      const noteFieldAttr = escAttr(noteField);
+
       const tr = document.createElement('tr');
       tr.className = 'hover:bg-white/[0.03] transition-colors group border-l-2 border-l-transparent hover:border-l-indigo-600/50';
 
       tr.innerHTML = `
         <td class="px-6 py-4">
-          <input type="checkbox" class="cert-checkbox w-4 h-4 rounded border-gray-700 text-indigo-600 bg-transparent cursor-pointer" data-id="${item["ID"]}">
+          <input type="checkbox" class="cert-checkbox w-4 h-4 rounded border-gray-700 text-indigo-600 bg-transparent cursor-pointer" data-id="${idAttr}">
         </td>
         <td class="px-6 py-4">
           <div class="flex items-center gap-2">
@@ -171,23 +242,45 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           </div>
         </td>
         <td class="px-6 py-4">
-          <div class="text-sm font-semibold text-white group-hover:text-indigo-300 transition-colors leading-tight">${item["Firma Adı"] || '-'}</div>
-          <div class="text-[10px] text-gray-600 font-mono mt-0.5">${item["Danışman"] || ''}</div>
+          <div class="text-sm font-semibold text-white group-hover:text-indigo-300 transition-colors leading-tight">${firmaHtml}</div>
+          <div class="text-[10px] text-gray-600 font-mono mt-0.5">${danismanHtml}</div>
         </td>
         <td class="px-6 py-4">
-          <span class="text-xs font-bold text-indigo-300/80 bg-indigo-500/10 px-2.5 py-1 rounded-lg">${item["Standart"] || '-'}</span>
+          <span class="text-xs font-bold text-indigo-300/80 bg-indigo-500/10 px-2.5 py-1 rounded-lg">${standartHtml}</span>
         </td>
-        <td class="px-6 py-4 text-xs text-gray-500 font-mono">${item["Sertifika No"] || '-'}</td>
+        <td class="px-6 py-4 text-xs text-gray-500 font-mono">${certNoHtml}</td>
         <td class="px-6 py-4 text-center">
-          <div class="text-sm text-white font-semibold">${item["Sertifika Gözetim Tarihi"] || '-'}</div>
-          <div class="text-[10px] text-gray-600 mt-0.5">${item["Sertifika Tarihi"] || ''}</div>
+          <input
+            type="text"
+            class="inline-surv w-32 bg-surface border border-border-main rounded-md px-2 py-1 text-xs text-main text-center"
+            data-id="${idAttr}"
+            data-field="${gozetimFieldAttr}"
+            data-original="${gozetimTarihiAttr}"
+            value="${gozetimTarihiAttr}"
+            placeholder="dd.MM.yyyy"
+          />
+          <div class="text-[10px] text-gray-600 mt-1">${sertifikaTarihiHtml}</div>
+        </td>
+        <td class="px-6 py-4">
+          <input
+            type="text"
+            class="inline-note w-full min-w-[180px] bg-surface border border-border-main rounded-md px-2 py-1 text-xs text-main"
+            data-id="${idAttr}"
+            data-field="${noteFieldAttr}"
+            data-original="${noteAttr}"
+            value="${noteAttr}"
+            placeholder="Kısa not..."
+          />
         </td>
         <td class="px-6 py-4 text-right">
           <div class="flex items-center justify-end gap-2 translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
-            <button class="folder-btn p-2 bg-surface border border-border-main shadow-sm rounded-lg text-muted hover:text-primary transition-all" title="Drive Klasörü" data-nick="${item["Firma Adı"]}">
+            <button class="save-inline-btn p-2 bg-surface border border-border-main shadow-sm rounded-lg text-muted hover:text-emerald-400 transition-all" title="Satırı Kaydet" data-id="${idAttr}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            </button>
+            <button class="folder-btn p-2 bg-surface border border-border-main shadow-sm rounded-lg text-muted hover:text-primary transition-all" title="Drive Klasörü" data-nick="${escAttr(firma)}">
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93l-1-1A2 2 0 0 0 9.6 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"/></svg>
             </button>
-            <button class="pdf-btn p-2 bg-surface border border-border-main shadow-sm rounded-lg text-muted hover:text-rose-400 transition-all" title="PDF Dönüştür" data-id="${item["ID"]}">
+            <button class="pdf-btn p-2 bg-surface border border-border-main shadow-sm rounded-lg text-muted hover:text-rose-400 transition-all" title="PDF Dönüştür" data-id="${idAttr}">
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
             </button>
           </div>
@@ -251,6 +344,45 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   bulkPendingBtn?.addEventListener('click', () => callBulkUpdate(false));
 
   function attachTableActions() {
+    document.querySelectorAll('.save-inline-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = (e.currentTarget as HTMLElement).dataset.id;
+        if (!id) return;
+        const survInput = document.querySelector(`.inline-surv[data-id="${id}"]`) as HTMLInputElement | null;
+        const noteInput = document.querySelector(`.inline-note[data-id="${id}"]`) as HTMLInputElement | null;
+        if (!survInput && !noteInput) return;
+
+        const btnEl = e.currentTarget as HTMLElement;
+        btnEl.classList.add('text-emerald-400');
+        try {
+          if (survInput) {
+            const curr = survInput.value.trim();
+            const orig = (survInput.dataset.original || '').trim();
+            if (curr !== orig) {
+              const field = survInput.dataset.field || 'goz';
+              const res = await api.updateCertificateField(id, field, curr);
+              if (!res.success) throw new Error(res.error || 'Gözetim tarihi güncellenemedi');
+              survInput.dataset.original = curr;
+            }
+          }
+          if (noteInput) {
+            const curr = noteInput.value.trim();
+            const orig = (noteInput.dataset.original || '').trim();
+            if (curr !== orig) {
+              const field = noteInput.dataset.field || 'Not';
+              const res = await api.updateCertificateField(id, field, curr);
+              if (!res.success) throw new Error(res.error || 'Not güncellenemedi');
+              noteInput.dataset.original = curr;
+            }
+          }
+        } catch (err: any) {
+          alert('Kaydetme hatası: ' + (err?.message || String(err)));
+        } finally {
+          btnEl.classList.remove('text-emerald-400');
+        }
+      });
+    });
+
     document.querySelectorAll('.folder-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         const nick = (e.currentTarget as HTMLElement).dataset.nick;
@@ -280,6 +412,79 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   statusFilter?.addEventListener('change', (e) => {
     filters.status = (e.target as HTMLSelectElement).value;
     renderTable($certificates.get());
+  });
+
+  function toCsvValue(v: any) {
+    const s = String(v ?? '');
+    if (s.includes('"') || s.includes(',') || s.includes('\n')) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  }
+
+  function getExportRows() {
+    const filtered = getFilteredData($certificates.get());
+    return filtered.map((item: any) => ({
+      id: pickValue(item, ["ID", "id"]),
+      firma: pickValue(item, ["Firma Adı", "Nickname", "nick"]),
+      standart: pickValue(item, ["Standart", "standard"]),
+      belgeNo: pickValue(item, ["Sertifika No", "sNo", "SNo", "sno"]),
+      gozetim: pickValue(item, ["Gözetim", "Gözetim Conf.", "gozetimConfirmed"], "FALSE").toUpperCase(),
+      gozetimTarihi: pickValue(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ"]),
+      sertifikaTarihi: pickValue(item, ["Sertifika Tarihi", "gst", "GST"]),
+      not: pickValue(item, ["Not", "not"]),
+      danisman: pickValue(item, ["Danışman", "dan"])
+    }));
+  }
+
+  function downloadFile(filename: string, content: string, mime: string) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  exportCsvBtn?.addEventListener('click', () => {
+    const rows = getExportRows();
+    const headers = ['ID', 'Firma', 'Standart', 'Belge No', 'Gözetim', 'Gözetim Tarihi', 'Sertifika Tarihi', 'Not', 'Danışman'];
+    const lines = [headers.join(',')];
+    rows.forEach(r => {
+      lines.push([
+        toCsvValue(r.id),
+        toCsvValue(r.firma),
+        toCsvValue(r.standart),
+        toCsvValue(r.belgeNo),
+        toCsvValue(r.gozetim),
+        toCsvValue(r.gozetimTarihi),
+        toCsvValue(r.sertifikaTarihi),
+        toCsvValue(r.not),
+        toCsvValue(r.danisman)
+      ].join(','));
+    });
+    downloadFile(`Sertifikalar_${new Date().toISOString().slice(0,10)}.csv`, '\uFEFF' + lines.join('\n'), 'text/csv;charset=utf-8;');
+  });
+
+  exportExcelBtn?.addEventListener('click', () => {
+    const rows = getExportRows();
+    const tableHtml = `
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Firma</th><th>Standart</th><th>Belge No</th><th>Gözetim</th><th>Gözetim Tarihi</th><th>Sertifika Tarihi</th><th>Not</th><th>Danışman</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `<tr><td>${r.id}</td><td>${r.firma}</td><td>${r.standart}</td><td>${r.belgeNo}</td><td>${r.gozetim}</td><td>${r.gozetimTarihi}</td><td>${r.sertifikaTarihi}</td><td>${r.not}</td><td>${r.danisman}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+    const html = `<html><head><meta charset="utf-8" /></head><body>${tableHtml}</body></html>`;
+    downloadFile(`Sertifikalar_${new Date().toISOString().slice(0,10)}.xls`, html, 'application/vnd.ms-excel;charset=utf-8;');
   });
 
   SyncManager.init();

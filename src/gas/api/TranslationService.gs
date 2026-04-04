@@ -1,33 +1,44 @@
 /**
- * 🌍 TranslationService: Dil ve Çeviri İşlemleri
+ * 🌍 TranslationService: Dil ve Çeviri İşlemleri (Modernize Edilmiş)
  * 
- * Google Apps Script'in LanguageApp özelliğini kullanarak kapsam/scope çevirisi yapar.
+ * Google Apps Script'in LanguageApp özelliğini kullanarak 
+ * kapsam/scope metinlerini otomatik olarak çevirir.
  */
 
 const TranslationService = {
   /**
-   * Metni Türkçeden İngilizceye çevirir.
+   * Genel çeviri metodu. 
+   * @param {string} text Çevrilecek metin
+   * @param {string} targetLang Hedef dil ('en', 'tr' vb.)
+   * @param {string} sourceLang Kaynak dil (Opsiyonel)
    */
-  toEn: function(text) {
+  translate: function(text, targetLang, sourceLang = '') {
     try {
-      if (!text) return "";
-      return LanguageApp.translate(text, 'tr', 'en');
+      if (!text || typeof text !== 'string') return "";
+      
+      const cleanText = text.trim();
+      if (!cleanText) return "";
+
+      // LanguageApp.translate(text, source, target)
+      // sourceLang boş bırakılırsa Google otomatik algılar.
+      return LanguageApp.translate(cleanText, sourceLang, targetLang);
     } catch (e) {
-      BaseService.logError("toEn", e);
-      return text;
+      BaseService.logError(`translate(${targetLang})`, e);
+      return text; // Hata durumunda orijinal metni dön
     }
   },
 
   /**
-   * Metni İngilizceden Türkçeye çevirir.
+   * Metni Türkçeden İngilizceye çevirir (Geriye dönük uyumluluk).
+   */
+  toEn: function(text) {
+    return this.translate(text, 'en', 'tr');
+  },
+
+  /**
+   * Metni İngilizceden Türkçeye çevirir (Geriye dönük uyumluluk).
    */
   toTr: function(text) {
-    try {
-      if (!text) return "";
-      return LanguageApp.translate(text, 'en', 'tr');
-    } catch (e) {
-      BaseService.logError("toTr", e);
-      return text;
-    }
+    return this.translate(text, 'tr', 'en');
   }
 };

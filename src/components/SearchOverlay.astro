@@ -18,7 +18,7 @@ import { Icon } from "astro-icon/components";
       <input
         id="search-input"
         type="text"
-        placeholder="Firma adı, no veya şehir ara..."
+        placeholder="Firma adı, no veya şehir ara... (İpucu: Firma @ Şehir)"
         autocomplete="off"
         spellcheck="false"
         class="flex-1 bg-transparent border-none outline-none text-2xl font-bold text-main placeholder:text-muted/40 placeholder:font-medium tracking-tight"
@@ -142,22 +142,41 @@ import { Icon } from "astro-icon/components";
   function filterCompanies(query: string) {
     const normalizedQuery = normalizeText(query);
     if (!normalizedQuery) return [];
-    const queryTokens = normalizedQuery.split(/\s+/).filter(Boolean);
+    const hasAtOperator = normalizedQuery.includes("@");
+    const [namePartRaw, cityPartRaw] = hasAtOperator
+      ? normalizedQuery.split("@").map((s) => s.trim())
+      : [normalizedQuery, ""];
+    const namePart = namePartRaw || "";
+    const cityPart = cityPartRaw || "";
+    const queryTokens = hasAtOperator
+      ? namePart.split(/\s+/).filter(Boolean)
+      : normalizedQuery.split(/\s+/).filter(Boolean);
 
     const scored = companies.map((company) => {
       const model = buildCompanyModel(company);
       const searchStr = normalizeText(`${model.nickname} ${model.fullName} ${model.city} ${model.idValue}`);
-      
-      if (!queryTokens.every(token => searchStr.includes(token))) return null;
+
+      if (hasAtOperator) {
+        const cityNorm = normalizeText(model.city);
+        const nameMatch = queryTokens.length ? queryTokens.every((token) => searchStr.includes(token)) : true;
+        const cityMatch = cityPart ? cityNorm.includes(cityPart) : true;
+        if (!(nameMatch && cityMatch)) return null;
+      } else {
+        if (!queryTokens.every(token => searchStr.includes(token))) return null;
+      }
 
       let score = 0;
       const nNick = normalizeText(model.nickname);
       const nFull = normalizeText(model.fullName);
+      const primaryQuery = hasAtOperator ? namePart : normalizedQuery;
       
-      if (nNick.startsWith(normalizedQuery)) score += 100;
-      else if (nNick.includes(normalizedQuery)) score += 80;
-      if (nFull.startsWith(normalizedQuery)) score += 70;
-      if (model.idValue.toString().includes(normalizedQuery)) score += 50;
+      if (primaryQuery) {
+        if (nNick.startsWith(primaryQuery)) score += 100;
+        else if (nNick.includes(primaryQuery)) score += 80;
+        if (nFull.startsWith(primaryQuery)) score += 70;
+        if (String(model.idValue).includes(primaryQuery)) score += 50;
+      }
+      if (hasAtOperator && cityPart && normalizeText(model.city).startsWith(cityPart)) score += 40;
 
       return { model, score };
     }).filter((item): item is { model: any, score: number } => item !== null);
@@ -173,7 +192,7 @@ import { Icon } from "astro-icon/components";
 
     return scored.slice(0, 15).map(({ model }) => ({
       ...model,
-      url: `/company/edit?id=${encodeURIComponent(model.idValue)}`,
+      url: `/company?id=${encodeURIComponent(model.idValue)}`,
       accent: getAccent(`${model.nickname}-${model.city}`)
     }));
   }

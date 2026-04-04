@@ -19,18 +19,18 @@
   --border-color: rgba(255, 255, 255, 0.08);
   --text-color: #f9fafb;
   --muted-text: #94a3b8;
-  
+
   --primary: #0088cc;
   --primary-hover: #38bdf8;
   --primary-glow: rgba(0, 136, 204, 0.4);
-  
+
   --emerald: #10b981;
   --amber: #f59e0b;
   --rose: #f43f5e;
-  
+
   --font-heading: 'Outfit', sans-serif;
   --font-body: 'Inter', sans-serif;
-  
+
   --header-height: 90px;
 }
 
@@ -44,6 +44,7 @@
   --text-color: #0f172a;
   --muted-text: #475569;
 }
+
 body {
   background-color: var(--bg-color);
   color: var(--text-color);
@@ -60,7 +61,7 @@ body {
   width: 100%;
   height: 100%;
   z-index: -10;
-  background: 
+  background:
     radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 45%),
     radial-gradient(circle at 100% 0%, rgba(168, 85, 247, 0.1) 0%, transparent 45%),
     radial-gradient(circle at 50% 100%, rgba(236, 72, 153, 0.05) 0%, transparent 45%);
@@ -81,7 +82,10 @@ body {
 }
 
 /* High-Density Typography */
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   font-family: var(--font-heading);
   letter-spacing: -0.02em;
 }
@@ -90,25 +94,34 @@ h1, h2, h3, h4 {
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--surface-color);
   border-radius: 10px;
   border: 1px solid var(--border-color);
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--primary);
 }
 
 /* Animations */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {
   animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-

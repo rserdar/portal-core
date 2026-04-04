@@ -77,6 +77,36 @@ const DriveService = {
   },
 
   /**
+   * Base64 dosyayı firma klasörüne yükler (legacy doUpload).
+   */
+  uploadFile: function(fileObj, firmNickName) {
+    try {
+      if (!firmNickName) throw new Error("Firma kısa adı boş.");
+      if (!fileObj || !fileObj.data) throw new Error("Yüklenecek dosya verisi eksik.");
+
+      const folderId = this.getCompanyFolderId(firmNickName);
+      const folder = DriveApp.getFolderById(folderId);
+
+      const fileName = fileObj.fileName || fileObj.name || "upload.bin";
+      const mimeType = fileObj.mimeType || "application/octet-stream";
+      const rawData = String(fileObj.data || "");
+      const base64Data = rawData.includes(",") ? rawData.split(",").pop() : rawData;
+      const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType, fileName);
+      const file = folder.createFile(blob);
+
+      return {
+        success: true,
+        fileName: file.getName(),
+        fileId: file.getId(),
+        url: file.getUrl()
+      };
+    } catch (e) {
+      BaseService.logError("uploadFile", e);
+      return { success: false, error: e.message };
+    }
+  },
+
+  /**
    * Recursive Tarama (Private Helper)
    */
   _scanRecursive: function(folder, mimeTypes) {

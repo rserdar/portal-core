@@ -2,9 +2,9 @@ import { get, set, del, keys } from 'idb-keyval';
 
 /**
  * 🗄️ Database Manager: IndexedDB Wrapper
- * 
- * Tarayıcıda büyük veri setlerini (Binlerce firma/sertifika)
- * saklamak için yüksek performanslı IndexedDB kullanır.
+ *
+ * KV-primary mimaride tarayıcı tarafı kısa süreli okuma cache'i.
+ * Bu katman kalıcı ana veri kaynağı değil, hızlandırma katmanıdır.
  */
 
 export const DB = {

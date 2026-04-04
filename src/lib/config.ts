@@ -1,15 +1,14 @@
 /**
  * 🛠️ Astro Portal Configuration
- * 
- * Cloudflare Worker URL ve diğer çevresel yapılandırmaları burada tutun.
- * Geliştirme aşamasında localhost, üretimde ise kendi Worker URL'nizi kullanın.
+ *
+ * Cloudflare Worker endpoint ve uygulama meta bilgileri.
+ * Üretimde PUBLIC_WORKER_URL zorunlu olmalı.
  */
 
 export const CONFIG = {
-  // Cloudflare Worker URL'nizi buraya yapıştırın
-  // Örn: https://portal-proxy.rserdar.workers.dev
+  // Örn: https://portalapi.medicert.com.tr
   WORKER_URL: import.meta.env.PUBLIC_WORKER_URL || "http://localhost:8787",
   
   APP_NAME: "Astro Portal",
-  VERSION: "1.0.0",
+  VERSION: "5.4.0",
 };

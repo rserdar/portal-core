@@ -1,0 +1,608 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import {
+  Building2, MapPin, Phone, Mail, Globe, ChevronRight,
+  FileText, Award, ClipboardList, Pencil, ArrowLeft,
+  Users, Briefcase, BadgeCheck, Layers, AlertCircle
+} from 'lucide-astro';
+
+/**
+ * 🏢 Firma Profil Sayfası
+ * URL: /company?id=42
+ */
+---
+
+<DashboardLayout title="Firma Profili">
+
+  <!-- Back + skeleton header -->
+  <div class="max-w-6xl mx-auto pb-20 space-y-6">
+
+    <!-- Navigation -->
+    <div class="flex items-center gap-3">
+      <a href="/search" class="flex items-center gap-2 text-xs font-bold text-muted hover:text-primary transition-colors group">
+        <ArrowLeft size={14} class="group-hover:-translate-x-1 transition-transform" />
+        Firma Listesi
+      </a>
+      <span class="text-border-main">/</span>
+      <span class="text-xs font-bold text-muted" id="breadcrumb-nick">Yükleniyor...</span>
+    </div>
+
+    <!-- Hero Card -->
+    <div class="bg-surface border border-border-main shadow-2xl rounded-[2.5rem] p-8 relative overflow-hidden" id="hero-card">
+      <!-- Background glow -->
+      <div class="absolute -right-10 -top-10 w-60 h-60 bg-indigo-600/5 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Loading state -->
+      <div id="hero-skeleton" class="animate-pulse space-y-4">
+        <div class="flex items-start justify-between">
+          <div class="space-y-3">
+            <div class="h-3 bg-surface-hover rounded w-24"></div>
+            <div class="h-8 bg-surface-hover rounded w-72"></div>
+            <div class="h-4 bg-surface-hover rounded w-48"></div>
+          </div>
+          <div class="flex gap-2">
+            <div class="h-10 w-28 bg-surface-hover rounded-xl"></div>
+            <div class="h-10 w-28 bg-surface-hover rounded-xl"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real content -->
+      <div id="hero-content" class="hidden">
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+          <div class="space-y-3 relative z-10">
+            <!-- ID + badges -->
+            <div class="flex flex-wrap items-center gap-2" id="hero-badges"></div>
+            <!-- Nick -->
+            <h1 class="text-3xl font-extrabold text-main tracking-tight leading-tight" id="hero-nick"></h1>
+            <!-- Unvan -->
+            <p class="text-sm font-semibold text-muted" id="hero-unvan"></p>
+            <!-- Location -->
+            <div class="flex items-center gap-2 text-xs text-muted" id="hero-location">
+              <MapPin size={12} class="text-indigo-400 flex-shrink-0" />
+              <span id="hero-address-short"></span>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="flex flex-wrap gap-3 relative z-10 flex-shrink-0" id="hero-actions">
+            <a id="btn-edit" href="#" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-2xl shadow-[0_4px_15px_rgba(79,70,229,0.3)] transition-all">
+              <Pencil size={14} />
+              Düzenle
+            </a>
+            <a href="/documents/view" class="flex items-center gap-2 px-5 py-2.5 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-xs font-bold rounded-2xl transition-all">
+              <FileText size={14} />
+              Doküman Üret
+            </a>
+            <a id="btn-add-audit" href="#" class="flex items-center gap-2 px-5 py-2.5 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-xs font-bold rounded-2xl transition-all">
+              <ClipboardList size={14} />
+              Denetim Planla
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="info-grid">
+
+      <!-- Kapsam Card (span 2) -->
+      <div class="lg:col-span-2 bg-surface border border-border-main shadow-xl p-7 rounded-[2rem]">
+        <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
+          <div class="w-9 h-9 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 flex-shrink-0">
+            <Layers size={16} />
+          </div>
+          <h3 class="text-sm font-black uppercase tracking-widest text-main">Kapsam</h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <p class="text-[10px] font-bold text-muted uppercase tracking-widest">Türkçe Kapsam</p>
+            <p class="text-sm text-main leading-relaxed italic" id="info-kapsam"><span class="text-muted opacity-40">—</span></p>
+          </div>
+          <div class="space-y-2">
+            <p class="text-[10px] font-bold text-muted uppercase tracking-widest">İngilizce Scope</p>
+            <p class="text-sm text-main leading-relaxed italic" id="info-scope"><span class="text-muted opacity-40">—</span></p>
+          </div>
+        </div>
+        <div class="mt-5 pt-4 border-t border-border-main space-y-2" id="sube-row">
+          <p class="text-[10px] font-bold text-muted uppercase tracking-widest">Şube / Yazışma Adresi</p>
+          <p class="text-sm text-main" id="info-sube"><span class="text-muted opacity-40">—</span></p>
+        </div>
+      </div>
+
+      <!-- İletişim Card -->
+      <div class="bg-surface border border-border-main shadow-xl p-7 rounded-[2rem]">
+        <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">
+            <Phone size={16} />
+          </div>
+          <h3 class="text-sm font-black uppercase tracking-widest text-main">İletişim</h3>
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-start gap-3">
+            <Phone size={12} class="text-muted mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="text-[10px] font-bold text-muted uppercase tracking-wider">Telefon / Faks</p>
+              <p class="text-sm font-semibold text-main mt-0.5" id="info-tel-faks">—</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <Mail size={12} class="text-muted mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="text-[10px] font-bold text-muted uppercase tracking-wider">E-Posta</p>
+              <p class="text-sm font-semibold text-main mt-0.5 break-all" id="info-mail">—</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <Globe size={12} class="text-muted mt-0.5 flex-shrink-0" />
+            <div>
+              <p class="text-[10px] font-bold text-muted uppercase tracking-wider">Web</p>
+              <p class="text-sm font-semibold text-main mt-0.5" id="info-web">—</p>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-border-main space-y-1">
+            <p class="text-[10px] font-bold text-muted uppercase tracking-wider">Vergi Dairesi / No</p>
+            <p class="text-sm font-semibold text-main" id="info-vergi">—</p>
+          </div>
+          <div class="pt-2 border-t border-border-main space-y-1">
+            <p class="text-[10px] font-bold text-muted uppercase tracking-wider">Danışman</p>
+            <p class="text-sm font-semibold text-indigo-400" id="info-dan">—</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Yetkililer (full width) -->
+      <div class="lg:col-span-3 bg-surface border border-border-main shadow-xl p-7 rounded-[2rem]">
+        <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 flex-shrink-0">
+            <Users size={16} />
+          </div>
+          <h3 class="text-sm font-black uppercase tracking-widest text-main">Yetkililer & Kişiler</h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5">
+            <p class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">KYT / Yönetim Temsilcisi</p>
+            <p class="text-sm font-bold text-main" id="info-kyt">—</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5">
+            <p class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Yetkili</p>
+            <p class="text-sm font-bold text-main" id="info-yetkili">—</p>
+            <p class="text-[11px] text-muted" id="info-yetkili-unvan"></p>
+          </div>
+          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5">
+            <p class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">İrtibat Kişisi</p>
+            <p class="text-sm font-bold text-main" id="info-irtibat">—</p>
+            <p class="text-[11px] text-muted" id="info-irtibat-detail"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Firma Detayları (NACE, EA, Çalışan) -->
+    <div class="bg-surface border border-border-main shadow-xl p-7 rounded-[2rem]" id="details-card">
+      <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
+        <div class="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
+          <Briefcase size={16} />
+        </div>
+        <h3 class="text-sm font-black uppercase tracking-widest text-main">Firma Detayları</h3>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4" id="details-grid">
+        <!-- Injected by JS -->
+      </div>
+      <div class="mt-5 pt-4 border-t border-border-main space-y-2" id="yapis-row">
+        <p class="text-[10px] font-bold text-muted uppercase tracking-widest">Yapılan İşler</p>
+        <p class="text-sm text-main leading-relaxed" id="info-yapis"><span class="text-muted opacity-40">—</span></p>
+      </div>
+    </div>
+
+    <!-- Sertifikalar -->
+    <div class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
+      <div class="flex items-center justify-between p-7 border-b border-border-main">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">
+            <Award size={16} />
+          </div>
+          <h3 class="text-sm font-black uppercase tracking-widest text-main">Sertifikalar</h3>
+          <span id="cert-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"></span>
+        </div>
+        <a id="btn-add-cert" href="#" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black rounded-xl transition-all">
+          + Sertifika Ekle
+        </a>
+      </div>
+
+      <div id="cert-skeleton" class="p-7 animate-pulse space-y-3">
+        {[1,2,3].map(() => (
+          <div class="flex gap-4">
+            <div class="h-3 bg-surface-hover rounded flex-1"></div>
+            <div class="h-3 bg-surface-hover rounded w-20"></div>
+            <div class="h-3 bg-surface-hover rounded w-24"></div>
+            <div class="h-3 bg-surface-hover rounded w-16"></div>
+          </div>
+        ))}
+      </div>
+
+      <div id="cert-list-wrapper" class="hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="border-b border-border-main">
+                <th class="px-7 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Standart</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Sertifika No</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Belge Tarihi</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Gözetim T.</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Akreditasyon</th>
+                <th class="px-4 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest">Durum</th>
+              </tr>
+            </thead>
+            <tbody id="cert-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="cert-empty" class="hidden p-10 text-center">
+        <BadgeCheck size={32} class="mx-auto text-muted opacity-20 mb-3" />
+        <p class="text-sm font-bold text-muted">Bu firmaya ait sertifika bulunamadı.</p>
+      </div>
+    </div>
+
+    <!-- Denetimler -->
+    <div class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
+      <div class="flex items-center justify-between p-7 border-b border-border-main">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
+            <ClipboardList size={16} />
+          </div>
+          <h3 class="text-sm font-black uppercase tracking-widest text-main">Denetimler</h3>
+          <span id="audit-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"></span>
+        </div>
+        <a id="btn-audit-link" href="/audits/add" class="flex items-center gap-2 px-4 py-2 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-[11px] font-bold rounded-xl transition-all">
+          + Denetim Planla
+        </a>
+      </div>
+
+      <div id="audit-skeleton" class="p-7 animate-pulse space-y-3">
+        {[1,2].map(() => (
+          <div class="flex gap-4">
+            <div class="h-3 bg-surface-hover rounded w-20"></div>
+            <div class="h-3 bg-surface-hover rounded flex-1"></div>
+            <div class="h-3 bg-surface-hover rounded w-28"></div>
+          </div>
+        ))}
+      </div>
+
+      <div id="audit-list-wrapper" class="hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="border-b border-border-main">
+                <th class="px-7 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Standart</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Tür</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">A1 Tarihi</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">A2 Tarihi</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Baş Denetçi</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="audit-empty" class="hidden p-10 text-center">
+        <AlertCircle size={32} class="mx-auto text-muted opacity-20 mb-3" />
+        <p class="text-sm font-bold text-muted">Bu firmaya ait denetim kaydı bulunamadı.</p>
+      </div>
+    </div>
+
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api } from '../../lib/api';
+  import { $certificates } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+  /** Bir objeden birden fazla olası key ile değer okur */
+  function g(obj: Record<string, any>, ...keys: string[]): string {
+    for (const k of keys) {
+      const v = obj?.[k];
+      if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+    }
+    return '';
+  }
+
+  function setEl(id: string, value: string) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (value) {
+      el.textContent = value;
+    } else {
+      el.innerHTML = '<span class="text-muted opacity-30">—</span>';
+    }
+  }
+
+  function badge(text: string, cls: string) {
+    return `<span class="text-[10px] font-bold px-2.5 py-1 rounded-full border ${cls}">${text}</span>`;
+  }
+
+  // ─── URL Param ────────────────────────────────────────────────────────────────
+
+  const params = new URLSearchParams(location.search);
+  const firmaId = params.get('id') || '';
+
+  if (!firmaId) {
+    document.getElementById('hero-skeleton')!.innerHTML = '<p class="text-sm text-rose-400 font-bold">Geçersiz firma ID.</p>';
+  }
+
+  // ─── Load Company ─────────────────────────────────────────────────────────────
+
+  async function loadCompany() {
+    const res = await api.call('getCompanyById', { id: firmaId });
+    const c = res?.data;
+    if (!c) {
+      document.getElementById('hero-skeleton')!.innerHTML = '<p class="text-sm text-rose-400 font-bold">Firma bulunamadı (ID: ' + firmaId + ')</p>';
+      return;
+    }
+
+    // Normalize key lookup
+    const nick    = g(c, 'Firma Adı', 'Nick', 'nick', 'FirmaAdi');
+    const unvan   = g(c, 'Unvan', 'unvan');
+    const il      = g(c, 'İl', 'Il', 'Şehir', 'Sehir', 'il', 'sehir');
+    const ulke    = g(c, 'Ülke', 'Ulke', 'ulke');
+    const adres   = g(c, 'Adres', 'adres');
+    const yazisma = g(c, 'Yazışma Adresi', 'YazismaAdresi', 'yazisma', 'Şube Adresi');
+    const kapsam  = g(c, 'Türkçe Kapsam', 'Sertifika Kapsamı (TR)', 'Kapsam', 'kapsam');
+    const scope   = g(c, 'İngilizce Kapsam', 'Sertifika Kapsamı (EN)', 'Scope', 'scope');
+    const tel     = g(c, 'Telefon', 'Tel', 'tel');
+    const faks    = g(c, 'Faks', 'faks');
+    const mail    = g(c, 'Mail', 'mail', 'E-Posta');
+    const web     = g(c, 'İnternet', 'Web', 'www', 'web');
+    const vergiD  = g(c, 'Vergi Dairesi', 'VergiDairesi', 'vergiD');
+    const vergiN  = g(c, 'Vergi Numarası', 'VergiNumarasi', 'vergiN');
+    const kyt     = g(c, 'KYT', 'Kalite Yönetim Temsilcisi', 'kyt');
+    const yetA    = g(c, 'Yetkili Adı', 'YetkiliAdi', 'yetA');
+    const yetU    = g(c, 'Yetkili Ünvanı', 'YetkiliUnvani', 'yetU');
+    const irtA    = g(c, 'İrtibat Kişisi', 'IrtibatKisi', 'irtA');
+    const irtU    = g(c, 'İrtibat Ünvanı', 'IrtibatUnvani', 'irtU');
+    const irtN    = g(c, 'İrtibat Tel', 'IrtibatKisiNumarasi', 'irtN');
+    const irtM    = g(c, 'İrtibat Mail', 'IrtibatKisisMail', 'irtM');
+    const dan     = g(c, 'Danışman', 'Danisman', 'dan', 'danisman');
+    const nace    = g(c, 'NACE', 'nace');
+    const ea      = g(c, 'EA', 'ea');
+    const tcs     = g(c, 'Toplam Çalışan Sayısı', 'Toplam Calisan', 'TCS', 'tcs');
+    const yapis   = g(c, 'Yapılan İş', 'YapilanIs', 'yapis');
+    const not_    = g(c, 'Firma Not', 'Not', 'not');
+
+    // Update breadcrumb
+    const breadcrumb = document.getElementById('breadcrumb-nick');
+    if (breadcrumb) breadcrumb.textContent = nick || `Firma #${firmaId}`;
+
+    // Update page title
+    document.title = `${nick || 'Firma'} | Astro Portal`;
+
+    // Hero badges
+    const badgesEl = document.getElementById('hero-badges');
+    if (badgesEl) {
+      let html = badge(`M${firmaId}`, 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20');
+      if (il) html += badge(il, 'bg-surface-hover text-muted border-border-main');
+      if (dan) html += badge(dan, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20');
+      badgesEl.innerHTML = html;
+    }
+
+    setEl('hero-nick', nick);
+    setEl('hero-unvan', unvan);
+
+    const adresShort = [adres, il, ulke].filter(Boolean).join(' — ');
+    setEl('hero-address-short', adresShort);
+
+    // Edit link
+    const btnEdit = document.getElementById('btn-edit') as HTMLAnchorElement | null;
+    if (btnEdit) btnEdit.href = `/company/edit?id=${firmaId}`;
+
+    const btnAddAudit = document.getElementById('btn-add-audit') as HTMLAnchorElement | null;
+    if (btnAddAudit) btnAddAudit.href = `/audits/add?firmaId=${firmaId}`;
+
+    // Kapsam
+    setEl('info-kapsam', kapsam);
+    setEl('info-scope', scope);
+    const subeRow = document.getElementById('sube-row');
+    if (yazisma) { setEl('info-sube', yazisma); }
+    else if (subeRow) { subeRow.classList.add('hidden'); }
+
+    // İletişim
+    const telFaks = [tel, faks].filter(Boolean).join(' / ');
+    setEl('info-tel-faks', telFaks);
+    setEl('info-mail', mail);
+    setEl('info-web', web);
+    const vergi = [vergiD, vergiN].filter(Boolean).join(' — ');
+    setEl('info-vergi', vergi);
+    setEl('info-dan', dan);
+
+    // Yetkililer
+    setEl('info-kyt', kyt);
+    setEl('info-yetkili', yetA);
+    setEl('info-yetkili-unvan', yetU);
+    setEl('info-irtibat', irtA);
+    const irtDetail = [irtU, irtN, irtM].filter(Boolean).join(' • ');
+    setEl('info-irtibat-detail', irtDetail);
+
+    // Firma Detayları
+    const detailsGrid = document.getElementById('details-grid');
+    if (detailsGrid) {
+      const details = [
+        { label: 'NACE', value: nace },
+        { label: 'EA', value: ea },
+        { label: 'Toplam Çalışan', value: tcs },
+        { label: 'Notlar', value: not_, span: true },
+      ].filter(d => d.value);
+
+      detailsGrid.innerHTML = details.map(d => `
+        <div class="${d.span ? 'md:col-span-2' : ''} p-4 rounded-2xl bg-surface-hover border border-border-main">
+          <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">${d.label}</p>
+          <p class="text-sm font-semibold text-main">${d.value}</p>
+        </div>`).join('');
+    }
+
+    setEl('info-yapis', yapis);
+    if (!yapis) { document.getElementById('yapis-row')?.classList.add('hidden'); }
+
+    // Show hero
+    document.getElementById('hero-skeleton')?.classList.add('hidden');
+    document.getElementById('hero-content')?.classList.remove('hidden');
+  }
+
+  // ─── Load Certificates ────────────────────────────────────────────────────────
+
+  function renderCerts(certData: any[]) {
+    const skeleton = document.getElementById('cert-skeleton');
+    const wrapper  = document.getElementById('cert-list-wrapper');
+    const empty    = document.getElementById('cert-empty');
+    const tbody    = document.getElementById('cert-tbody');
+    const count    = document.getElementById('cert-count');
+
+    skeleton?.classList.add('hidden');
+
+    if (!certData.length) {
+      empty?.classList.remove('hidden');
+      return;
+    }
+
+    if (count) count.textContent = String(certData.length);
+
+    // Certs from store are objects; certs from API are raw rows
+    const isRaw = Array.isArray(certData[0]);
+
+    const rows = certData.map(c => {
+      let standart, sertNo, belgeTarihi, gozT, akreditasyon, gozetimConf;
+      if (isRaw) {
+        // Raw row: [id, nick, firmaNo, standart, sertNo, belgeTarihi?, ...]
+        standart    = c[3]  || '';
+        sertNo      = c[4]  || '';
+        belgeTarihi = c[5]  || '';
+        gozT        = c[6]  || '';
+        akreditasyon= c[14] || '';
+        gozetimConf = String(c[19] || '').toUpperCase() === 'TRUE';
+      } else {
+        standart    = g(c, 'Standart', 'standart');
+        sertNo      = g(c, 'Sertifika No', 'sertNo', 'SertifikaNo');
+        belgeTarihi = g(c, 'Sertifika Tarihi', 'Belge Tarihi', 'sTarihi');
+        gozT        = g(c, 'Gözetim Tarihi', 'sGozetimT', 'GözetimTarihi');
+        akreditasyon= g(c, 'Akreditasyon', 'akrn', 'akreditasyon');
+        gozetimConf = String(g(c, 'Gözetim Conf.', 'gozetimConf')).toUpperCase() === 'TRUE';
+      }
+
+      const statusHtml = gozetimConf
+        ? `<span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">AKTİF</span>`
+        : `<span class="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] font-bold">GÖZETİM</span>`;
+
+      return `<tr class="border-b border-border-main hover:bg-surface-hover transition-colors">
+        <td class="px-7 py-3.5 font-bold text-main">${standart || '—'}</td>
+        <td class="px-4 py-3.5 text-muted font-mono">${sertNo || '—'}</td>
+        <td class="px-4 py-3.5 text-muted">${belgeTarihi || '—'}</td>
+        <td class="px-4 py-3.5 text-muted">${gozT || '—'}</td>
+        <td class="px-4 py-3.5 text-muted">${akreditasyon || '—'}</td>
+        <td class="px-4 py-3.5 text-center">${statusHtml}</td>
+      </tr>`;
+    }).join('');
+
+    if (tbody) tbody.innerHTML = rows;
+    wrapper?.classList.remove('hidden');
+
+    // Update add cert link
+    const btnAddCert = document.getElementById('btn-add-cert') as HTMLAnchorElement | null;
+    if (btnAddCert) btnAddCert.href = `/certificates?add=1&firmaId=${firmaId}`;
+  }
+
+  // ─── Load Audits ──────────────────────────────────────────────────────────────
+
+  async function loadAudits() {
+    const res = await api.call('getAuditsByFirmaId', { firmaId });
+    const skeleton = document.getElementById('audit-skeleton');
+    const wrapper  = document.getElementById('audit-list-wrapper');
+    const empty    = document.getElementById('audit-empty');
+    const tbody    = document.getElementById('audit-tbody');
+    const count    = document.getElementById('audit-count');
+
+    skeleton?.classList.add('hidden');
+
+    const audits: any[] = res?.data || [];
+
+    if (!audits.length) {
+      empty?.classList.remove('hidden');
+      return;
+    }
+
+    if (count) count.textContent = String(audits.length);
+
+    const isRaw = Array.isArray(audits[0]);
+
+    const rows = audits.map(a => {
+      let standart, tur, a1Basla, a1Bitis, a2Basla, a2Bitis, a1Lead;
+      if (isRaw) {
+        standart = a[3] || '';
+        tur      = a[4] || '';
+        a1Basla  = a[9] || '';
+        a1Bitis  = a[10] || '';
+        a2Basla  = a[15] || '';
+        a2Bitis  = a[16] || '';
+        a1Lead   = a[6] || '';
+      } else {
+        standart = g(a, 'standart', 'Standart');
+        tur      = g(a, 'denetimTipi', 'Denetim Tipi');
+        a1Basla  = g(a, 'a1Basla');
+        a1Bitis  = g(a, 'a1Bitis');
+        a2Basla  = g(a, 'a2Basla');
+        a2Bitis  = g(a, 'a2Bitis');
+        a1Lead   = g(a, 'a1Lead', 'A1 Lead');
+      }
+
+      const a1Range = a1Basla ? `${a1Basla}${a1Bitis && a1Bitis !== a1Basla ? ' → ' + a1Bitis : ''}` : '—';
+      const a2Range = a2Basla ? `${a2Basla}${a2Bitis && a2Bitis !== a2Basla ? ' → ' + a2Bitis : ''}` : '—';
+
+      return `<tr class="border-b border-border-main hover:bg-surface-hover transition-colors">
+        <td class="px-7 py-3.5 font-bold text-main">${standart || '—'}</td>
+        <td class="px-4 py-3.5 text-muted">${tur || '—'}</td>
+        <td class="px-4 py-3.5 text-muted font-mono text-[11px]">${a1Range}</td>
+        <td class="px-4 py-3.5 text-muted font-mono text-[11px]">${a2Range}</td>
+        <td class="px-4 py-3.5 text-muted">${a1Lead || '—'}</td>
+      </tr>`;
+    }).join('');
+
+    if (tbody) tbody.innerHTML = rows;
+    wrapper?.classList.remove('hidden');
+  }
+
+  // ─── Certificates from Store ──────────────────────────────────────────────────
+
+  function loadCertsFromStore(certs: readonly any[]) {
+    const filtered = (certs as any[]).filter(c => {
+      const no = g(c, 'Firma No', 'FirmaNo', 'firmaNo');
+      return String(no) === String(firmaId);
+    });
+    renderCerts(filtered);
+  }
+
+  // ─── Boot ─────────────────────────────────────────────────────────────────────
+
+  if (firmaId) {
+    SyncManager.init().then(() => {
+      // Once store is ready, filter certs
+      const certs = $certificates.get();
+      if (certs.length > 0) {
+        loadCertsFromStore(certs);
+      } else {
+        // Fallback: fetch from API
+        api.call('getCertificatesByFirmaId', { firmaId }).then(res => {
+          renderCerts(res?.data || []);
+        });
+      }
+    });
+
+    $certificates.subscribe(certs => {
+      if (certs.length > 0) loadCertsFromStore(certs);
+    });
+
+    Promise.all([loadCompany(), loadAudits()]);
+  }
+</script>

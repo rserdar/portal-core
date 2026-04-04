@@ -1,975 +1,569 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
-import { readFileSync } from 'node:fs';
+import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
 
-const legacyCompanyInfoHtml = readFileSync('src/gas/client/companyinfo.html', 'utf-8');
-const legacyIds = Array.from(new Set(Array.from(legacyCompanyInfoHtml.matchAll(/id="([^"]+)"/g)).map((match: any) => match[1]))).sort();
+/**
+ * ✏️ Firma Düzenleme Sayfası
+ * URL: /company/edit?id=42
+ *
+ * CompanyService.update() ile kayıt günceller.
+ * Alan isimlerini _buildRowByHeaders ile eşleşecek şekilde gönderir.
+ */
 ---
 
-<DashboardLayout title="Firma Kontrol Merkezi">
-  <div class="legacy-dark mx-auto max-w-6xl space-y-10 px-4 pb-16">
-    <div id="companyCarousel" class="stack-card rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="carousel-track relative overflow-hidden">
-        <section data-slide class="block">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <div class="flex items-center gap-2">
-              <h5 id="nickText" class="text-base italic text-slate-700">Firma Bilgileri</h5>
-              <span id="firma-id-badge" class="rounded-full bg-rose-100 px-2 py-0.5 font-mono text-xs text-rose-700">ID: -</span>
-            </div>
-            <button id="nextCard" type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Düzenle</button>
-          </div>
-          <div class="relative px-4 py-4 text-sm text-slate-700">
-            <div id="loading-company" class="card-loading-wrapper absolute inset-0 z-10 hidden items-center justify-center bg-white/80">
-              <div class="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-r-transparent"></div>
-            </div>
-            <div id="content-company" class="space-y-2">
-              <div class="flex flex-wrap items-start gap-2"><span class="font-semibold">Unvan:</span><span id="unvanText"></span></div>
-              <div class="flex flex-wrap items-start gap-2"><span class="font-semibold">Adres:</span><span><span id="adresText"></span> - <span id="sehirText"></span> / <span id="ulkeText"></span></span></div>
-              <div id="sube-adres-view" class="hidden flex flex-wrap items-start gap-2"><span class="font-semibold">Şube Adresi:</span><span id="yazismaText"></span></div>
-              <div class="flex flex-wrap items-start gap-2"><span class="font-semibold">Kapsam:</span><span id="kapsamText" class="italic"></span></div>
-              <div class="flex flex-wrap items-start gap-2"><span class="font-semibold">Scope:</span><span id="scopeText" class="italic"></span></div>
+<DashboardLayout title="Firma Düzenle">
+  <div class="max-w-5xl mx-auto pb-24">
 
-              <div class="grid grid-cols-1 gap-2 pt-1 md:grid-cols-4">
-                <div id="btel"><span class="font-semibold">Telefon:</span> <span id="TelText"></span></div>
-                <div id="bfax"><span class="font-semibold">Fax:</span> <span id="FaxText"></span></div>
-                <div id="bvd"><span class="font-semibold">Vergi Dairesi:</span> <span id="VDText"></span></div>
-                <div id="bvn"><span class="font-semibold">Vergi No:</span> <span id="VNText"></span></div>
-              </div>
-
-              <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
-                <div id="bmail"><span class="font-semibold">E-posta:</span> <span id="MailText"></span></div>
-                <div id="bweb"><span class="font-semibold">Web Sayfası:</span> <span id="WebText"></span></div>
-              </div>
-
-              <div class="grid grid-cols-1 gap-2 md:grid-cols-3">
-                <div id="bkyt"><span class="font-semibold">KYT:</span> <span id="KYTText"></span></div>
-                <div id="byadi"><span class="font-semibold">Yetkili Adı:</span> <span id="YadiText"></span></div>
-                <div id="byunvan"><span class="font-semibold">Yetkili Unvanı:</span> <span id="YUnvanText"></span></div>
-              </div>
-
-              <div class="grid grid-cols-1 gap-2 md:grid-cols-4">
-                <div id="birtK"><span class="font-semibold">İrtibat Kişisi:</span> <span id="irtKText"></span></div>
-                <div id="birtU"><span class="font-semibold">Unvanı:</span> <span id="irtUnText"></span></div>
-                <div id="bitel"><span class="font-semibold">Telefonu:</span> <span id="ItelText"></span></div>
-                <div id="bimail"><span class="font-semibold">E-Posta:</span> <span id="ImailText"></span></div>
-              </div>
-
-              <div class="grid grid-cols-1 gap-2 md:grid-cols-3">
-                <div id="bdan"><span class="font-semibold">Danışman:</span> <span id="danText"></span></div>
-                <div id="blogo"><span class="font-semibold">Logo:</span> <span id="logoText"></span></div>
-                <div id="bkase"><span class="font-semibold">İmza & Kaşe:</span> <span id="kaseText"></span></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section data-slide class="hidden">
-          <form id="edit-form">
-            <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-              <h5 class="text-base font-medium text-slate-700">Düzenle</h5>
-              <button id="prevCard" type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Bilgiler</button>
-            </div>
-            <div id="content-edit" class="relative space-y-3 px-4 py-4">
-              <div id="loading-edit" class="card-loading-wrapper absolute inset-0 z-10 hidden items-center justify-center bg-white/80">
-                <div class="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-r-transparent"></div>
-              </div>
-
-              <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
-                <label class="relative md:col-span-1">
-                  <input id="firma-id" disabled class="peer w-full rounded-md border border-slate-300 bg-slate-100 px-3 pb-2 pt-5 text-sm" />
-                  <span class="floating-label">ID</span>
-                </label>
-                <label class="relative md:col-span-11">
-                  <input id="unvanInput" class="peer field" />
-                  <span class="floating-label">Unvan</span>
-                </label>
-              </div>
-
-              <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <div class="flex items-stretch">
-                  <label class="relative grow">
-                    <input id="adresInput" class="peer field" />
-                    <span class="floating-label">Adres</span>
-                  </label>
-                  <span class="inline-flex items-center px-2 text-slate-400">-</span>
-                </div>
-                <div class="flex items-stretch">
-                  <label class="relative grow">
-                    <input id="sehirInput" class="peer field" />
-                    <span class="floating-label">Şehir</span>
-                  </label>
-                  <span class="inline-flex items-center px-2 text-slate-400">/</span>
-                </div>
-                <div class="flex items-stretch gap-1">
-                  <label class="relative grow">
-                    <input id="ulkeInput" class="peer field" />
-                    <span class="floating-label">Ülke</span>
-                  </label>
-                  <button type="button" id="adresBuyuk" class="rounded-md border border-slate-500 px-2 text-[11px]">TR BÜYÜK</button>
-                  <button type="button" id="addressBig" class="rounded-md border border-slate-500 px-2 text-[11px]">EN BÜYÜK</button>
-                  <button type="button" id="addTurkiye" class="rounded-md border border-rose-500 px-2 text-[11px] text-rose-400">TR Ekle</button>
-                </div>
-              </div>
-
-              <label class="relative block">
-                <input id="yazismaInput" class="peer field" />
-                <span class="floating-label">Şube Adresi</span>
-              </label>
-
-              <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div class="flex items-stretch gap-1">
-                  <label class="relative grow">
-                    <textarea id="kapsamInput" class="peer min-h-[110px] w-full rounded-md border border-slate-300 px-3 pb-2 pt-5 text-sm"></textarea>
-                    <span class="floating-label">Türkçe Kapsam</span>
-                  </label>
-                  <div class="flex flex-col gap-1">
-                    <button type="button" id="kapsamBuyuk" class="rounded-md border border-slate-500 px-2 py-1 text-[11px]">BÜYÜK</button>
-                    <button type="button" id="kapsamToScope" class="rounded-md border border-sky-500 px-2 py-1 text-[11px] text-sky-300">EN Çevir</button>
-                  </div>
-                </div>
-                <div class="flex items-stretch gap-1">
-                  <label class="relative grow">
-                    <textarea id="scopeInput" class="peer min-h-[110px] w-full rounded-md border border-slate-300 px-3 pb-2 pt-5 text-sm"></textarea>
-                    <span class="floating-label">İngilizce Kapsam</span>
-                  </label>
-                  <div class="flex flex-col gap-1">
-                    <button type="button" id="scopeBig" class="rounded-md border border-slate-500 px-2 py-1 text-[11px]">BÜYÜK</button>
-                    <button type="button" id="scopeToKapsam" class="rounded-md border border-sky-500 px-2 py-1 text-[11px] text-sky-300">TR Çevir</button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <label class="relative"><input id="telefonInput" class="peer field" /><span class="floating-label">Telefon</span></label>
-                <label class="relative"><input id="faxInput" class="peer field" /><span class="floating-label">Faks</span></label>
-                <label class="relative"><input id="emailInput" class="peer field" /><span class="floating-label">E-Posta</span></label>
-              </div>
-
-              <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <label class="relative"><input id="wwwInput" class="peer field" /><span class="floating-label">İnternet</span></label>
-                <label class="relative"><input id="vergiDInput" class="peer field" /><span class="floating-label">Vergi Dairesi</span></label>
-                <label class="relative"><input id="vergiNInput" class="peer field" /><span class="floating-label">Vergi Numarası</span></label>
-              </div>
-
-              <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <label class="relative"><input id="kytInput" class="peer field" /><span class="floating-label">Yönetim Temsilcisi</span></label>
-                <label class="relative"><input id="yetkiliInput" class="peer field" /><span class="floating-label">Yetkili Adı</span></label>
-                <label class="relative"><input id="yetkiliUnInput" class="peer field" /><span class="floating-label">Yetkili Ünvanı</span></label>
-              </div>
-
-              <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
-                <label class="relative"><input id="irtibatInput" class="peer field" /><span class="floating-label">İrtibat</span></label>
-                <label class="relative"><input id="iUnvanInput" class="peer field" /><span class="floating-label">İrtibat Ünvan</span></label>
-                <label class="relative"><input id="iTelInput" class="peer field" /><span class="floating-label">İrtibat Tel</span></label>
-                <label class="relative"><input id="iMailInput" class="peer field" /><span class="floating-label">İrtibat Mail</span></label>
-              </div>
-
-              <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
-                <div class="md:col-span-3">
-                  <label class="relative block">
-                    <input id="nickInput" class="peer field" aria-describedby="nickInputHelp" />
-                    <span class="floating-label">Firma Kısa Adı</span>
-                  </label>
-                  <p id="nickInputHelp" class="mt-1 text-[11px] text-slate-400">Bu alan klasör adı olarak kullanılır.</p>
-                </div>
-                <label class="relative md:col-span-9">
-                  <textarea id="notInput" class="peer min-h-[100px] w-full rounded-md border border-slate-300 px-3 pb-2 pt-5 text-sm"></textarea>
-                  <span class="floating-label">Firma Notları</span>
-                </label>
-              </div>
-
-              <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                <div class="flex items-stretch gap-1">
-                  <label class="relative grow"><input id="logoInput" class="peer field" /><span class="floating-label">Logo</span></label>
-                  <button id="logoSelect" type="button" class="rounded-md border border-emerald-500 px-2 text-[11px] text-emerald-300">Seç</button>
-                  <input type="file" id="logoInput_file" hidden />
-                  <button id="logoUpload" type="button" class="rounded-md border border-emerald-500 px-2 text-[11px] text-emerald-300">Yükle</button>
-                </div>
-                <div class="flex items-stretch gap-1">
-                  <label class="relative grow"><input id="imzaInput" class="peer field" /><span class="floating-label">Kaşe & İmza</span></label>
-                  <button id="imzaSelect" type="button" class="rounded-md border border-emerald-500 px-2 text-[11px] text-emerald-300">Seç</button>
-                  <input type="file" id="imzaInput_file" hidden />
-                  <button id="imzaUpload" type="button" class="rounded-md border border-emerald-500 px-2 text-[11px] text-emerald-300">Yükle</button>
-                </div>
-                <label class="relative">
-                  <input id="fDanInput" class="peer field" list="danList" />
-                  <span class="floating-label">Danışman</span>
-                  <datalist id="danList"></datalist>
-                </label>
-              </div>
-
-              <div id="accordionExample" class="space-y-3 rounded-lg border border-slate-700/70 p-3">
-                <details open class="rounded-md border border-slate-700/60 bg-slate-900/40">
-                  <summary id="headingOne" class="cursor-pointer px-3 py-2 text-sm font-semibold text-sky-300">Çalışma Düzeni</summary>
-                  <div id="collapseOne" class="grid grid-cols-1 gap-3 px-3 pb-3 pt-1 md:grid-cols-10">
-                    <label class="relative md:col-span-4"><input id="alanInput" class="peer field" /><span class="floating-label">Alan m2</span></label>
-                    <label class="relative md:col-span-3"><input id="vardiyaInput" class="peer field" /><span class="floating-label">Vardiya</span></label>
-                    <label class="relative md:col-span-3"><input id="departmanInput" class="peer field" /><span class="floating-label">Departman</span></label>
-                    <label class="relative md:col-span-2"><input id="tcsInput" class="peer field" /><span class="floating-label">Toplam Çalışan</span></label>
-                    <label class="relative md:col-span-2"><input id="ycsInput" class="peer field" /><span class="floating-label">Yönetim</span></label>
-                    <label class="relative md:col-span-2"><input id="ucsInput" class="peer field" /><span class="floating-label">Üretim</span></label>
-                    <label class="relative md:col-span-2"><input id="acsInput" class="peer field" /><span class="floating-label">Aynı İş</span></label>
-                    <label class="relative md:col-span-1"><input id="yzcsInput" class="peer field" /><span class="floating-label">Yarı Z.</span></label>
-                    <label class="relative md:col-span-1"><input id="tacsInput" class="peer field" /><span class="floating-label">Taşeron</span></label>
-                  </div>
-                </details>
-
-                <details class="rounded-md border border-slate-700/60 bg-slate-900/40">
-                  <summary id="headingTwo" class="cursor-pointer px-3 py-2 text-sm font-semibold text-sky-300">Sınıflandırma</summary>
-                  <div id="collapseTwo" class="grid grid-cols-1 gap-3 px-3 pb-3 pt-1 md:grid-cols-4">
-                    <label class="relative"><input id="eaInput" class="peer field" /><span class="floating-label">EA</span></label>
-                    <label class="relative"><input id="naceInput" class="peer field" /><span class="floating-label">NACE</span></label>
-                    <label class="relative"><input id="medikalInput" class="peer field" /><span class="floating-label">Medikal</span></label>
-                    <label class="relative"><input id="gidaInput" class="peer field" /><span class="floating-label">Gıda</span></label>
-                    <label class="relative md:col-span-4">
-                      <textarea id="yapisInput" class="peer min-h-[90px] w-full rounded-md border border-slate-300 px-3 pb-2 pt-5 text-sm"></textarea>
-                      <span class="floating-label">Yapılan İşler</span>
-                    </label>
-                  </div>
-                </details>
-
-                <details class="rounded-md border border-slate-700/60 bg-slate-900/40">
-                  <summary id="headingThree" class="cursor-pointer px-3 py-2 text-sm font-semibold text-sky-300">Doküman ve Teknik Dosya</summary>
-                  <div id="collapseThree" class="grid grid-cols-1 gap-3 px-3 pb-3 pt-1 md:grid-cols-4">
-                    <label class="relative"><input id="sinifInput" class="peer field" /><span class="floating-label">Firma Sınıfı</span></label>
-                    <label class="inline-flex items-center gap-2 pt-2 text-sm text-slate-300"><input id="dokumanCB" type="checkbox" class="h-4 w-4" />Firma Dokümanları mevcut mu?</label>
-                    <label class="inline-flex items-center gap-2 pt-2 text-sm text-slate-300"><input id="teknikCB" type="checkbox" class="h-4 w-4" />Teknik Dosyası var mı?</label>
-                    <label class="relative md:col-span-4">
-                      <textarea id="tdInput" class="peer min-h-[90px] w-full rounded-md border border-slate-300 px-3 pb-2 pt-5 text-sm"></textarea>
-                      <span class="floating-label">Teknik Dosya Kapsamı</span>
-                    </label>
-                  </div>
-                </details>
-              </div>
-
-              <div class="flex justify-end gap-2 border-t border-slate-200 pt-3">
-                <button data-bs-target="#companyCarousel" data-bs-slide="prev" type="button" class="rounded-md border border-sky-400 px-3 py-1.5 text-xs font-semibold text-sky-300">Geri</button>
-                <button id="cancel-company-changes" type="button" class="rounded-md border border-rose-400 px-3 py-1.5 text-xs font-semibold text-rose-300">İptal</button>
-                <button id="save-company-changes" type="submit" class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">Kaydet</button>
-              </div>
-            </div>
-          </form>
-        </section>
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center gap-3">
+        <a id="btn-back" href="/company" class="flex items-center gap-2 text-xs font-bold text-muted hover:text-primary transition-colors group">
+          <ArrowLeft size={14} class="group-hover:-translate-x-1 transition-transform" />
+          Geri
+        </a>
+        <span class="text-border-main">/</span>
+        <span class="text-xs font-bold text-muted" id="header-nick">Yükleniyor...</span>
       </div>
-      <div class="flex items-center justify-center gap-2 border-t border-slate-200 px-4 py-3">
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-800"></button>
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-300"></button>
+      <div class="flex items-center gap-2">
+        <a id="btn-view" href="#" class="px-4 py-2 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-xs font-bold rounded-xl transition-all">
+          Profil Görüntüle
+        </a>
+        <button id="btn-save" type="button" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-2xl shadow-[0_4px_15px_rgba(79,70,229,0.3)] transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+          <Save size={14} />
+          <span id="save-label">Kaydet</span>
+        </button>
       </div>
     </div>
 
-    <div id="auditCarousel" class="stack-card rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="carousel-track relative overflow-hidden">
-        <section data-slide class="block">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <h5 class="text-sm font-semibold text-slate-700">Kısayollar</h5>
-            <button data-next type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Denetim Planla</button>
+    <!-- Loading overlay (before data arrives) -->
+    <div id="form-skeleton" class="space-y-6">
+      {[1,2,3,4].map(() => (
+        <div class="bg-surface border border-border-main rounded-3xl p-8 animate-pulse">
+          <div class="h-4 bg-surface-hover rounded w-48 mb-6"></div>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="h-10 bg-surface-hover rounded-xl col-span-2"></div>
+            <div class="h-10 bg-surface-hover rounded-xl"></div>
           </div>
-          <div class="grid grid-cols-2 gap-3 px-4 py-4 md:grid-cols-5">
-            <button id="addDocs" class="rounded-lg border border-slate-200 p-3 text-sm text-slate-700 hover:bg-slate-50">Döküman Hazırla</button>
-            <button id="doctopdf" class="rounded-lg border border-slate-200 p-3 text-sm text-slate-700 hover:bg-slate-50">Docs to PDF</button>
-            <button id="add-certificate-button" class="rounded-lg border border-slate-200 p-3 text-sm text-slate-700 hover:bg-slate-50">Sertifika Ekle</button>
-            <button id="add-tests" class="rounded-lg border border-slate-200 p-3 text-sm text-slate-700 hover:bg-slate-50">Test Ekle</button>
-            <button id="add-audit-button" class="rounded-lg border border-slate-200 p-3 text-sm text-slate-700 hover:bg-slate-50">Denetim Ekle</button>
-          </div>
-          <div class="grid grid-cols-1 gap-3 border-t border-slate-200 px-4 py-4 md:grid-cols-3">
-            <input id="convertPdfInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Google Docs Linki" />
-            <input id="googleDocFilename" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Dosya Adı" />
-            <button id="convertPDF" class="rounded-md bg-slate-700 px-3 py-2 text-xs font-semibold text-white">Dönüştür</button>
-          </div>
-        </section>
+        </div>
+      ))}
+    </div>
 
-        <section data-slide class="hidden">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <h5 class="text-sm font-semibold text-slate-700">Denetim Planla</h5>
+    <!-- Toast -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+
+    <form id="edit-form" class="hidden space-y-8">
+      <!-- Hidden ID -->
+      <input type="hidden" id="f-id" name="id" />
+
+      <!-- ── 1. Genel Bilgiler ─────────────────────────────────────────── -->
+      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
+        <div class="flex items-center gap-3 border-b border-border-main pb-4">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"/><path d="M5 21V7"/><path d="M19 21V7"/></svg>
+          </div>
+          <h2 class="text-base font-bold">Genel Bilgiler</h2>
+        </div>
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Firma Ünvanı</label>
+          <input type="text" id="f-unvan" name="unvan" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Örn: ABC Teknolojileri Ltd. Şti." />
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Firma Kısa Adı (Nick / Klasör Adı)</label>
+            <input type="text" id="f-nick" name="nickname" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Örn: ABC Teknoloji" />
+            <p class="text-[10px] text-indigo-400/70 italic leading-tight">* Google Drive klasör adı olarak kullanılır.</p>
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Danışman</label>
+            <select id="f-dan" name="dan" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold appearance-none">
+              <option value="">Seçiniz...</option>
+            </select>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Firma Notları</label>
+          <textarea id="f-not" name="not" rows={3} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[80px]" placeholder="Dahili notlar..."></textarea>
+        </div>
+      </section>
+
+      <!-- ── 2. Adres & Kapsam ────────────────────────────────────────── -->
+      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
+        <div class="flex items-center gap-3 border-b border-border-main pb-4">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <h2 class="text-base font-bold">Adres & Kapsam</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Şehir / Ülke</label>
             <div class="flex gap-2">
-              <button data-prev type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white">Kısayollar</button>
-              <button data-next type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white">Takvim</button>
+              <input type="text" id="f-sehir" name="sehir" class="flex-1 bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Şehir" />
+              <input type="text" id="f-ulke" name="ulke" class="flex-1 bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ülke" />
             </div>
           </div>
-          <div id="content-addAudit" class="relative grid grid-cols-1 gap-3 px-4 py-4 md:grid-cols-4">
-            <div id="loading-addAudit" class="card-loading-wrapper absolute inset-0 z-10 hidden items-center justify-center bg-white/80"><div class="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-r-transparent"></div></div>
-            <input id="cNickName" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Firma" />
-            <input id="cstandartInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Standart" />
-            <input id="cDenetimInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Denetim" />
-            <input id="a1Basla" type="date" class="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            <input id="a1Bitis" type="date" class="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            <input id="a1Manday" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="A1 Manday" />
-            <input id="a1KDenetci" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="A1 Başdenetçi" />
-            <input id="a2Basla" type="date" class="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            <input id="a2Bitis" type="date" class="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            <input id="a2Manday" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="A2 Manday" />
-            <input id="a2KDenetci" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="A2 Başdenetçi" />
-            <button id="clear-audit-button" class="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">Temizle</button>
+          <div class="md:col-span-2 space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Tam Adres</label>
+            <input type="text" id="f-adres" name="adres" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Merkez Adres" />
           </div>
-        </section>
+        </div>
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Şube / Yazışma Adresi</label>
+          <input type="text" id="f-yazisma" name="yazisma" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Varsa şube adresi..." />
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Türkçe Kapsam</label>
+              <div class="flex gap-2">
+                <button type="button" id="btn-kapsam-big" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold hover:bg-surface-hover transition-all">BÜYÜK</button>
+                <button type="button" id="btn-kapsam-translate" class="px-3 py-1 bg-surface border border-indigo-500/30 rounded-lg text-[10px] font-bold text-indigo-400 hover:bg-surface-hover transition-all">İngilizceye Çevir</button>
+              </div>
+            </div>
+            <textarea id="f-kapsam" name="kapsam" rows={4} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[100px]" placeholder="Sertifika kapsamı (TR)..."></textarea>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">İngilizce Scope</label>
+              <div class="flex gap-2">
+                <button type="button" id="btn-scope-big" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold hover:bg-surface-hover transition-all">BIG</button>
+                <button type="button" id="btn-scope-translate" class="px-3 py-1 bg-surface border border-indigo-500/30 rounded-lg text-[10px] font-bold text-indigo-400 hover:bg-surface-hover transition-all">Türkçeye Çevir</button>
+              </div>
+            </div>
+            <textarea id="f-scope" name="scope" rows={4} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[100px]" placeholder="Certificate scope (EN)..."></textarea>
+          </div>
+        </div>
+      </section>
 
-        <section data-slide class="hidden">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <h5 class="text-sm font-semibold text-slate-700">Takvim</h5>
-            <button data-prev type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white">Geri</button>
+      <!-- ── 3. İletişim ──────────────────────────────────────────────── -->
+      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
+        <div class="flex items-center gap-3 border-b border-border-main pb-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.68 9.82a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
-          <div class="px-4 py-4 text-sm text-slate-600">Takvim görünümü bu kartta listelenecek.</div>
-        </section>
-      </div>
-      <div class="flex items-center justify-center gap-2 border-t border-slate-200 px-4 py-3">
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-800"></button>
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-300"></button>
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-300"></button>
+          <h2 class="text-base font-bold">İletişim</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Telefon</label>
+            <input type="text" id="f-tel" name="tel" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Faks</label>
+            <input type="text" id="f-faks" name="faks" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">E-Posta</label>
+            <input type="email" id="f-mail" name="mail" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Web Sitesi</label>
+            <input type="text" id="f-www" name="www" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Vergi Dairesi</label>
+            <input type="text" id="f-vergiD" name="vergiD" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Vergi Numarası</label>
+            <input type="text" id="f-vergiN" name="vergiN" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 4. Yetkililer ────────────────────────────────────────────── -->
+      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
+        <div class="flex items-center gap-3 border-b border-border-main pb-4">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h2 class="text-base font-bold">Yetkililer & Kişiler</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">KYT / Yönetim Temsilcisi</label>
+            <input type="text" id="f-kyt" name="kyt" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yetkili Adı</label>
+            <input type="text" id="f-yetA" name="yetA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yetkili Ünvanı</label>
+            <input type="text" id="f-yetU" name="yetU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">İrtibat Kişisi</label>
+            <input type="text" id="f-irtA" name="irtA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">İrtibat Ünvanı</label>
+            <input type="text" id="f-irtU" name="irtU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">İrtibat Tel</label>
+            <input type="text" id="f-irtN" name="irtN" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">İrtibat Mail</label>
+            <input type="email" id="f-irtM" name="irtM" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 5. Çalışma Düzeni ────────────────────────────────────────── -->
+      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
+        <div class="flex items-center gap-3 border-b border-border-main pb-4">
+          <div class="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <h2 class="text-base font-bold">Çalışma Düzeni</h2>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Toplam Çalışan</label>
+            <input type="number" id="f-tcs" name="tcs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yönetim</label>
+            <input type="number" id="f-ycs" name="ycs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Üretim</label>
+            <input type="number" id="f-ucs" name="ucs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yarı Zamanlı</label>
+            <input type="number" id="f-yzcs" name="yzcs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Taşeron</label>
+            <input type="number" id="f-tascs" name="tascs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Alan (m²)</label>
+            <input type="text" id="f-alan" name="alan" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Vardiya</label>
+            <input type="text" id="f-vardiya" name="vardiya" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Departman Sayısı</label>
+            <input type="text" id="f-dept" name="dept" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 6. Sınıflandırma ─────────────────────────────────────────── -->
+      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
+        <div class="flex items-center gap-3 border-b border-border-main pb-4">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </div>
+          <h2 class="text-base font-bold">Sınıflandırma</h2>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">NACE</label>
+            <input type="text" id="f-nace" name="nace" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">EA</label>
+            <input type="text" id="f-ea" name="ea" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2 md:col-span-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yapılan İşler</label>
+            <input type="text" id="f-yapis" name="yapis" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+        </div>
+      </section>
+
+    </form>
+
+    <!-- Sticky Save Footer -->
+    <div id="save-footer" class="fixed bottom-0 left-0 right-0 z-40 pointer-events-none hidden">
+      <div class="max-w-5xl mx-auto px-4 lg:px-8 pb-6 pointer-events-auto">
+        <div class="bg-surface/90 backdrop-blur-xl border border-border-main shadow-2xl rounded-2xl px-6 py-4 flex items-center justify-between">
+          <p class="text-xs font-bold text-muted" id="footer-company-name">Değişiklikler kaydedilmedi</p>
+          <div class="flex items-center gap-3">
+            <button type="button" id="btn-cancel" class="px-4 py-2 bg-surface-hover border border-border-main hover:border-rose-500/30 text-rose-400 text-xs font-bold rounded-xl transition-all">
+              İptal
+            </button>
+            <button type="button" id="btn-save-footer" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-xl shadow-[0_4px_15px_rgba(79,70,229,0.3)] transition-all">
+              <Save size={14} />
+              Değişiklikleri Kaydet
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div id="certificateCarousel" class="stack-card rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="carousel-track relative overflow-hidden">
-        <section data-slide class="block">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <h5 class="text-sm font-semibold text-slate-700">Sertifikalar</h5>
-            <div class="flex items-center gap-2">
-              <p id="certificateCounter" class="text-xs text-slate-500"></p>
-              <button id="btn-refresh-certs" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">Getir / Yenile</button>
-              <button data-next type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white">Sertifika Ekleme</button>
-            </div>
-          </div>
-          <div id="content-certificates" class="relative overflow-x-auto">
-            <div id="loading-certificates" class="card-loading-wrapper absolute inset-0 z-10 hidden items-center justify-center bg-white/80"><div class="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-r-transparent"></div></div>
-            <table class="w-full min-w-[900px] border-collapse text-left text-xs">
-              <thead class="bg-slate-100 text-slate-700">
-                <tr><th class="p-3">#</th><th class="p-3">Belge Tarihi</th><th class="p-3">Standart</th><th class="p-3">Sertifika No</th><th class="p-3">Akredite</th><th class="p-3">Gözetim Tarihi</th><th class="p-3">Danışman</th><th class="p-3">Durum</th><th class="p-3 text-right">İşlem</th></tr>
-              </thead>
-              <tbody id="cert-list"><tr><td colspan="9" class="p-8 text-center text-slate-500">Veriler yükleniyor...</td></tr></tbody>
-            </table>
-          </div>
-        </section>
-        <section data-slide class="hidden">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <h5 id="sertifikaBaslik" class="text-sm font-semibold text-slate-700">Sertifika Ekleme</h5>
-            <div class="flex gap-2">
-              <button data-prev type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white">Sertifikalar</button>
-              <button data-next type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white">Son Sertifikalar</button>
-            </div>
-          </div>
-          <div id="content-addCertificate" class="relative grid grid-cols-1 gap-3 px-4 py-4 md:grid-cols-4">
-            <div id="loading-addCertificate" class="card-loading-wrapper absolute inset-0 z-10 hidden items-center justify-center bg-white/80"><div class="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-r-transparent"></div></div>
-            <input id="firmaIdInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Firma No" />
-            <input id="xstandartInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Standart" />
-            <input id="sNoInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Sertifika No" />
-            <input id="gstInput" type="date" class="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            <input id="gozInput" type="date" class="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            <input id="sttInput" type="date" class="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            <input id="sgtInput" type="date" class="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            <input id="akreditasyonInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Akreditasyon" />
-            <input id="akrediteInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Akredite" />
-            <input id="danInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Danışman" />
-            <input id="durumInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Durum" />
-            <button id="clear-certificate-button" class="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">Temizle</button>
-          </div>
-        </section>
-        <section data-slide class="hidden">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <h5 class="text-sm font-semibold text-slate-700">Son Sertifikalar</h5>
-            <button data-prev type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white">Geri</button>
-          </div>
-          <div id="content-last25" class="relative overflow-x-auto px-4 py-4">
-            <div id="loading-last25" class="card-loading-wrapper absolute inset-0 z-10 hidden items-center justify-center bg-white/80"><div class="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-r-transparent"></div></div>
-            <table class="w-full border-collapse text-xs">
-              <thead class="bg-slate-100 text-slate-700"><tr><th class="p-3">No</th><th class="p-3">Firma</th><th class="p-3">Standart</th><th class="p-3">Tarih</th></tr></thead>
-              <tbody id="certificateResults"><tr><td colspan="4" class="p-6 text-center text-slate-500">Kayıt yok</td></tr></tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-      <div class="flex items-center justify-center gap-2 border-t border-slate-200 px-4 py-3">
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-800"></button>
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-300"></button>
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-300"></button>
-      </div>
-    </div>
-
-    <div id="testCarousel" class="stack-card rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="carousel-track relative overflow-hidden">
-        <section data-slide class="block">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <h5 class="text-sm font-semibold text-slate-700">Testler</h5>
-            <div class="flex items-center gap-2">
-              <p id="testCounter" class="text-xs text-slate-500"></p>
-              <button id="btn-refresh-tests" class="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">Yenile</button>
-              <button data-next type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Test Ekle</button>
-            </div>
-          </div>
-          <div id="content-tests" class="relative overflow-x-auto px-4 py-4">
-            <div id="loading-tests" class="card-loading-wrapper absolute inset-0 z-10 hidden items-center justify-center bg-white/80"><div class="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-r-transparent"></div></div>
-            <table class="w-full border-collapse text-left text-xs">
-              <thead class="bg-slate-100 text-slate-700">
-                <tr><th class="p-3">#</th><th class="p-3">Tarih</th><th class="p-3">Test</th><th class="p-3">Marka</th><th class="p-3">Ürün</th></tr>
-              </thead>
-              <tbody id="test-list"><tr><td colspan="4" class="p-6 text-center text-slate-500">Henüz test kaydı yok.</td></tr></tbody>
-            </table>
-          </div>
-        </section>
-        <section data-slide class="hidden">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <h5 class="text-sm font-semibold text-slate-700">Test Ekle</h5>
-            <button data-prev type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Liste</button>
-          </div>
-          <div id="content-addTest" class="relative grid grid-cols-1 gap-3 px-4 py-4 md:grid-cols-3">
-            <div id="loading-addTest" class="card-loading-wrapper absolute inset-0 z-10 hidden items-center justify-center bg-white/80"><div class="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-r-transparent"></div></div>
-            <input id="testDateInput" type="date" class="rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            <input id="testSinifInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Sınıf" />
-            <input id="testMedikalInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Medikal" />
-            <input id="testGidaInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Gıda" />
-            <input id="suggestedTestNoInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Önerilen No" />
-            <button id="generateSuggestedTestNo" class="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">No Öner</button>
-            <button id="hesapla-tests" class="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">Hesapla</button>
-            <button id="save-tests" class="rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white">Kaydet</button>
-          </div>
-        </section>
-      </div>
-      <div class="flex items-center justify-center gap-2 border-t border-slate-200 px-4 py-3">
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-800"></button>
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-300"></button>
-      </div>
-    </div>
-
-    <div id="formCarousel" class="stack-card rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="carousel-track relative overflow-hidden">
-        <section data-slide class="block">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3"><h5 class="text-sm font-semibold text-slate-700">Başvuru Formu</h5><button data-next type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Proforma</button></div>
-          <div id="content-addQuestionnaire" class="relative grid grid-cols-2 gap-3 px-4 py-4 text-sm md:grid-cols-4">
-            <div id="loading-addQuestionnaire" class="card-loading-wrapper absolute inset-0 z-10 hidden items-center justify-center bg-white/80"><div class="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-r-transparent"></div></div>
-            <label class="flex items-center gap-2"><input type="checkbox" id="iso9001" />ISO 9001</label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="iso13485" />ISO 13485</label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="iso14001" />ISO 14001</label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="iso22000" />ISO 22000</label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="iso27001" />ISO 27001</label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="iso45001" />ISO 45001</label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="iso50001" />ISO 50001</label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="iso22716" />ISO 22716</label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="iso10002" />ISO 10002</label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="iso93eec" />2017/745/EU</label>
-            <label class="flex items-center gap-2"><input type="checkbox" id="otherCheckbox" />Diğer</label>
-            <input id="accCompany" class="rounded-md border border-slate-300 px-3 py-2 text-sm" placeholder="Belgelendirme Firması" />
-            <button id="basvuru-formu" class="rounded-md bg-indigo-600 px-3 py-2 text-xs font-semibold text-white">Başvuru Formu Doldur</button>
-          </div>
-        </section>
-        <section data-slide class="hidden">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3"><h5 class="text-sm font-semibold text-slate-700">Proforma</h5><div class="flex gap-2"><button data-prev type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Başvuru</button><button data-next type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Draft</button></div></div>
-          <div id="content-addProforma" class="relative grid grid-cols-1 gap-3 px-4 py-4 md:grid-cols-3">
-            <div id="loading-addProforma" class="card-loading-wrapper absolute inset-0 z-10 hidden items-center justify-center bg-white/80"><div class="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-r-transparent"></div></div>
-            <label class="relative"><input class="peer field" id="kdv-haric" /><span class="floating-label">KDV Hariç</span></label>
-            <label class="relative"><input class="peer field" id="kdv-oran" value="20" /><span class="floating-label">KDV Oranı</span></label>
-            <label class="relative"><input class="peer field" id="kdv-tutar" /><span class="floating-label">KDV Tutarı</span></label>
-            <label class="relative"><input class="peer field" id="toplam-fiyat" /><span class="floating-label">Toplam Fiyat</span></label>
-            <label class="relative"><input class="peer field" id="para-birimi" /><span class="floating-label">Para Birimi</span></label>
-            <label class="relative"><input class="peer field" id="pro-tarih" type="date" /><span class="floating-label">Tarih</span></label>
-            <label class="relative md:col-span-3"><textarea class="peer w-full rounded-md border border-slate-300 px-3 pb-2 pt-5 text-sm" id="pro-konu"></textarea><span class="floating-label">Proforma Konusu</span></label>
-            <button id="proforma-kaydet" class="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">Kaydet</button>
-            <button id="proforma-goster" class="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">Göster</button>
-          </div>
-        </section>
-        <section data-slide class="hidden">
-          <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3"><h5 class="text-sm font-semibold text-slate-700">Draft ve Sözleşme</h5><button data-prev type="button" class="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Proforma</button></div>
-          <div id="content-draftSozlesme" class="relative grid grid-cols-1 gap-3 px-4 py-4 md:grid-cols-3">
-            <div id="loading-draftSozlesme" class="card-loading-wrapper absolute inset-0 z-10 hidden items-center justify-center bg-white/80"><div class="h-7 w-7 animate-spin rounded-full border-2 border-amber-500 border-r-transparent"></div></div>
-            <select id="pstandartInput" class="rounded-md border border-slate-300 px-3 py-2 text-sm"><option>Standart Seç</option></select>
-            <label class="flex items-center gap-2 text-sm"><input type="radio" name="draftLang" id="draftTr" value="TR" />Türkçe Draft</label>
-            <label class="flex items-center gap-2 text-sm"><input type="radio" name="draftLang" id="draftEn" value="EN" checked />İngilizce Draft</label>
-            <button id="draft-yap" class="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700">Draft Oluştur</button>
-            <label class="relative"><input class="peer field" id="soz-tarih" type="date" /><span class="floating-label">Tarih</span></label>
-            <label class="relative"><input class="peer field" id="soz-fiyat" /><span class="floating-label">Ücret</span></label>
-            <label class="relative"><input class="peer field" id="soz-konu" /><span class="floating-label">Konu</span></label>
-            <button id="sozlesme-kaydet" class="rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white">Kaydet</button>
-          </div>
-        </section>
-      </div>
-      <div class="flex items-center justify-center gap-2 border-t border-slate-200 px-4 py-3">
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-800"></button>
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-300"></button>
-        <button data-indicator class="h-2 w-2 rounded-full bg-slate-300"></button>
-      </div>
-    </div>
-    <div id="legacy-hooks" class="hidden"></div>
-    <script id="legacy-ids-data" type="application/json" set:html={JSON.stringify(legacyIds)}></script>
   </div>
 </DashboardLayout>
 
-<style is:global>
-  @reference "../../styles/index.css";
-  .legacy-dark .stack-card {
-    @apply relative isolate my-3 overflow-hidden rounded-2xl;
-    background:
-      radial-gradient(120% 140% at 0% 0%, rgba(56, 189, 248, 0.08) 0%, rgba(15, 23, 42, 0.04) 45%, rgba(2, 6, 23, 0.85) 100%),
-      linear-gradient(180deg, rgba(15, 23, 42, 0.92) 0%, rgba(2, 6, 23, 0.96) 100%);
-    box-shadow:
-      0 14px 34px rgba(2, 6, 23, 0.55),
-      inset 0 1px 0 rgba(148, 163, 184, 0.08),
-      inset 0 -1px 0 rgba(15, 23, 42, 0.7);
-  }
-
-  .legacy-dark .stack-card + .stack-card {
-    @apply mt-8;
-  }
-
-  .legacy-dark .stack-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    border-radius: inherit;
-    border: 1px solid rgba(56, 189, 248, 0.16);
-    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.7);
-  }
-
-  .legacy-dark .stack-card > .carousel-track {
-    @apply overflow-visible;
-  }
-
-  .legacy-dark .stack-card > .carousel-track > section > div:first-child {
-    @apply border-b border-sky-500/20;
-    background:
-      linear-gradient(90deg, rgba(14, 116, 144, 0.3) 0%, rgba(15, 23, 42, 0.55) 40%, rgba(15, 23, 42, 0.2) 100%);
-    box-shadow: inset 0 -1px 0 rgba(14, 165, 233, 0.08);
-  }
-
-  .legacy-dark .stack-card > .carousel-track > section > div:first-child h5 {
-    @apply tracking-wide text-sky-300;
-    text-shadow: 0 0 14px rgba(56, 189, 248, 0.22);
-  }
-
-  .legacy-dark .stack-card > .carousel-track > section > div:nth-child(2) {
-    @apply bg-slate-950/25;
-  }
-
-  .legacy-dark .stack-card > .carousel-track > section > div:nth-child(2) table {
-    @apply rounded-none;
-  }
-
-  .legacy-dark .stack-card > .carousel-track > section > div:nth-child(2) thead {
-    background: linear-gradient(90deg, rgba(30, 41, 59, 0.88) 0%, rgba(15, 23, 42, 0.92) 100%);
-  }
-
-  .legacy-dark .stack-card > .carousel-track > section > div:nth-child(2) tbody tr:hover {
-    @apply bg-sky-900/10;
-  }
-
-  .legacy-dark .stack-card > .flex.items-center.justify-center {
-    @apply border-t border-sky-500/15 py-2;
-    background:
-      linear-gradient(180deg, rgba(15, 23, 42, 0.28) 0%, rgba(2, 6, 23, 0.7) 100%);
-  }
-
-  .legacy-dark #auditCarousel .carousel-track,
-  .legacy-dark #certificateCarousel .carousel-track,
-  .legacy-dark #testCarousel .carousel-track,
-  .legacy-dark #formCarousel .carousel-track {
-    min-height: 170px;
-  }
-
-  .legacy-dark #companyCarousel .carousel-track {
-    min-height: 360px;
-  }
-
-  .legacy-dark .stack-card [data-slide] {
-    @apply block;
-  }
-
-  .legacy-dark .stack-card [data-slide].hidden {
-    @apply hidden;
-  }
-
-  .legacy-dark .stack-card button {
-    @apply transition-all duration-200;
-  }
-
-  .legacy-dark .stack-card button.bg-blue-600,
-  .legacy-dark .stack-card button.bg-indigo-600,
-  .legacy-dark .stack-card button.bg-emerald-600 {
-    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.22);
-  }
-
-  .legacy-dark .stack-card button.bg-blue-600:hover,
-  .legacy-dark .stack-card button.bg-indigo-600:hover {
-    @apply -translate-y-px;
-    box-shadow: 0 10px 26px rgba(2, 132, 199, 0.32);
-  }
-
-  .legacy-dark #companyCarousel,
-  .legacy-dark #auditCarousel,
-  .legacy-dark #certificateCarousel,
-  .legacy-dark #testCarousel,
-  .legacy-dark #formCarousel {
-    @apply border-slate-700/70 bg-slate-900/70 shadow-xl shadow-black/30 backdrop-blur;
-  }
-
-  .legacy-dark #companyCarousel > .carousel-track > section,
-  .legacy-dark #auditCarousel > .carousel-track > section,
-  .legacy-dark #certificateCarousel > .carousel-track > section,
-  .legacy-dark #testCarousel > .carousel-track > section,
-  .legacy-dark #formCarousel > .carousel-track > section {
-    @apply text-slate-200;
-  }
-
-  .legacy-dark .border-slate-200 {
-    @apply border-slate-700/70;
-  }
-
-  .legacy-dark .bg-white {
-    @apply bg-slate-900/70;
-  }
-
-  .legacy-dark .bg-slate-100 {
-    @apply bg-slate-800;
-  }
-
-  .legacy-dark .text-slate-700 {
-    @apply text-slate-100;
-  }
-
-  .legacy-dark .text-slate-600 {
-    @apply text-slate-300;
-  }
-
-  .legacy-dark .text-slate-500 {
-    @apply text-slate-400;
-  }
-
-  .legacy-dark .hover\:bg-slate-50:hover {
-    @apply bg-slate-800/80;
-  }
-
-  .legacy-dark .hover\:bg-slate-100:hover {
-    @apply bg-slate-800/80;
-  }
-
-  .legacy-dark .card-loading-wrapper {
-    @apply bg-slate-950/70;
-  }
-
-  .legacy-dark input:not([type="checkbox"]):not([type="radio"]),
-  .legacy-dark textarea,
-  .legacy-dark select {
-    @apply border-slate-600 bg-slate-950/80 text-slate-100 placeholder:text-slate-500;
-  }
-
-  .legacy-dark table thead {
-    @apply bg-slate-800 text-slate-300;
-  }
-
-  .legacy-dark table tbody tr {
-    @apply border-slate-800;
-  }
-
-  .legacy-dark [data-indicator].bg-slate-300 {
-    @apply bg-slate-600;
-  }
-
-  .legacy-dark [data-indicator].bg-slate-800 {
-    @apply bg-sky-400;
-  }
-
-  .field {
-    @apply w-full rounded-md border border-slate-300 px-3 pb-2 pt-5 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-100;
-  }
-
-  .floating-label {
-    @apply pointer-events-none absolute left-3 top-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500;
-  }
-
-  label:has(.field:focus) .floating-label,
-  label:has(textarea:focus) .floating-label {
-    @apply text-blue-600;
-  }
-</style>
-
 <script>
   import { api } from '../../lib/api';
-  import { $companies } from '../../lib/store';
 
-  const firmaId = new URLSearchParams(window.location.search).get('id');
-  const el = (id: string) => document.getElementById(id);
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-  function setText(id: string, value: any) {
-    const node = el(id);
-    if (node) node.textContent = value || 'Bilgi Yok';
-  }
-
-  function setInput(id: string, value: any) {
-    const node = el(id);
-    if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
-      node.value = value || '';
+  function g(obj: Record<string, any>, ...keys: string[]): string {
+    for (const k of keys) {
+      const v = obj?.[k];
+      if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
     }
+    return '';
   }
 
-  function initCarousel(rootId: string) {
-    const root = el(rootId);
-    if (!root) return;
+  function val(id: string): string {
+    return (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value?.trim() || '';
+  }
 
-    const slides = Array.from(root.querySelectorAll('[data-slide]'));
-    const dots = Array.from(root.querySelectorAll('[data-indicator]'));
-    if (!slides.length) return;
+  function setVal(id: string, value: string) {
+    const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+    if (el) el.value = value;
+  }
 
-    let index = 0;
-
-    const render = () => {
-      slides.forEach((slide, i) => {
-        slide.classList.toggle('hidden', i !== index);
-        slide.classList.toggle('block', i === index);
-      });
-      dots.forEach((dot, i) => {
-        dot.classList.toggle('bg-slate-800', i === index);
-        dot.classList.toggle('bg-slate-300', i !== index);
-      });
+  function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const colors = {
+      success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+      error:   'border-rose-500/30 bg-rose-500/10 text-rose-300',
+      info:    'border-indigo-500/30 bg-indigo-500/10 text-indigo-300',
     };
-
-    root.querySelectorAll('[data-next]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        index = (index + 1) % slides.length;
-        render();
-      });
-    });
-
-    root.querySelectorAll('[data-prev]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        index = (index - 1 + slides.length) % slides.length;
-        render();
-      });
-    });
-
-    dots.forEach((dot, i) => {
-      dot.addEventListener('click', () => {
-        index = i;
-        render();
-      });
-    });
-
-    render();
-    return { goTo: (toIndex: number) => { index = Math.max(0, Math.min(toIndex, slides.length - 1)); render(); } };
+    const toast = document.createElement('div');
+    toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border backdrop-blur-md shadow-2xl text-sm font-bold max-w-sm translate-y-4 opacity-0 transition-all duration-300 ${colors[type]}`;
+    toast.innerHTML = message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      toast.classList.remove('translate-y-4', 'opacity-0');
+    }));
+    setTimeout(() => {
+      toast.classList.add('translate-y-4', 'opacity-0');
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
   }
 
-  function bindMainCarousel(mainCarousel: any) {
-    el('nextCard')?.addEventListener('click', () => mainCarousel?.goTo(1));
-    el('prevCard')?.addEventListener('click', () => mainCarousel?.goTo(0));
-    el('cancel-company-changes')?.addEventListener('click', () => mainCarousel?.goTo(0));
+  // ─── URL Param ────────────────────────────────────────────────────────────────
 
-    el('edit-form')?.addEventListener('submit', (event) => {
-      event.preventDefault();
-      alert('UI kart yapısı taşındı. Kayıt API aksiyonu ayrıca bağlanacak.');
-    });
-  }
+  const params = new URLSearchParams(location.search);
+  const firmaId = params.get('id') || '';
 
-  function ensureLegacyHooks() {
-    const dataEl = el('legacy-ids-data');
-    const ids = dataEl?.textContent ? JSON.parse(dataEl.textContent) : [];
-    const hookRoot = el('legacy-hooks');
-    if (!hookRoot) return;
+  // Update back/view links
+  const btnBack = document.getElementById('btn-back') as HTMLAnchorElement | null;
+  const btnView = document.getElementById('btn-view') as HTMLAnchorElement | null;
+  if (btnBack) btnBack.href = firmaId ? `/company?id=${firmaId}` : '/search';
+  if (btnView) btnView.href = firmaId ? `/company?id=${firmaId}` : '/search';
 
-    ids.forEach((id: string) => {
-      if (!el(id)) {
-        const span = document.createElement('span');
-        span.id = id;
-        hookRoot.appendChild(span);
-      }
+  // ─── Load Consultants ─────────────────────────────────────────────────────────
+
+  async function loadConsultants(currentDan: string) {
+    const res = await api.call('getConsultants');
+    const select = document.getElementById('f-dan') as HTMLSelectElement | null;
+    if (!select || !res?.data) return;
+    const consultants: string[] = res.data;
+    select.innerHTML = '<option value="">Seçiniz...</option>';
+    consultants.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d;
+      if (d === currentDan) opt.selected = true;
+      select.appendChild(opt);
     });
   }
 
-  function renderCompany(company: any) {
-    if (!company) return;
+  // ─── Populate Form ────────────────────────────────────────────────────────────
 
-    // 🏷️ Başlık ve Badge
-    const nick = company['Firma Adı'] || company.Nickname || company.nickname || 'Firma Bilgileri';
-    setText('nickText', nick);
-    setText('firma-id-badge', `ID: ${firmaId || '-'}`);
-
-    // 🏢 Temel Bilgiler
-    setText('unvanText', company['Unvan'] || company.unvan);
-    setText('adresText', company['Adres'] || company.address);
-    setText('sehirText', company['İl'] || company.city);
-    setText('ulkeText', company['Ülke'] || company.country);
-    setText('kapsamText', company['Türkçe Kapsam'] || company.kapsam);
-    setText('scopeText', company['İngilizce Kapsam'] || company.scope);
-    
-    // 📞 İletişim
-    setText('TelText', company['Telefon'] || company.phone);
-    setText('FaxText', company['Faks'] || company.fax);
-    setText('MailText', company['Mail'] || company.mail);
-    setText('WebText', company['İnternet'] || company.web);
-
-    // 🧾 Vergi ve Resmi
-    setText('VDText', company['Vergi Dairesi'] || company.taxOffice);
-    setText('VNText', company['Vergi Numarası'] || company.taxNumber);
-    setText('KYTText', company['KYT']);
-
-    // 👤 Yetkililer
-    setText('YadiText', company['Yetkili Adı']);
-    setText('YUnvanText', company['Yetkili Unvanı']);
-    setText('irtKText', company['İrtibat Kişisi']);
-    setText('irtUnText', company['İrtibat Unvanı']);
-    setText('ItelText', company['İrtibat Tel']);
-    setText('ImailText', company['İrtibat Mail']);
-    setText('danText', company['Danışman']);
-
-    // 🖼️ Logo & Yazışma
-    if (company['Yazışma Adresi']) {
-      setText('yazismaText', company['Yazışma Adresi']);
-      el('sube-adres-view')?.classList.remove('hidden');
-    }
-
-    // 📝 FORM INPUTLARI (Düzenleme Modu İçin)
-    setInput('firma-id', String(firmaId || ''));
-    setInput('unvanInput', company['Unvan']);
-    setInput('adresInput', company['Adres']);
-    setInput('sehirInput', company['İl']);
-    setInput('ulkeInput', company['Ülke']);
-    setInput('telefonInput', company['Telefon']);
-    setInput('faxInput', company['Faks']);
-    setInput('emailInput', company['Mail']);
-    setInput('vergiDInput', company['Vergi Dairesi']);
-    setInput('vergiNInput', company['Vergi Numarası']);
-    setInput('wwwInput', company['İnternet']);
-    setInput('kytInput', company['KYT']);
-    setInput('yetkiliInput', company['Yetkili Adı']);
-    setInput('yetkiliUnInput', company['Yetkili Unvanı']);
-    setInput('irtibatInput', company['İrtibat Kişisi']);
-    setInput('iUnvanInput', company['İrtibat Unvanı']);
-    setInput('iTelInput', company['İrtibat Tel']);
-    setInput('iMailInput', company['İrtibat Mail']);
-    setInput('danInput', company['Danışman']);
-    setInput('yazismaInput', company['Yazışma Adresi']);
-    setInput('nickInput', nick);
-    setInput('kapsamInput', company['Türkçe Kapsam']);
-    setInput('scopeInput', company['İngilizce Kapsam']);
-  }
-
-  async function loadCertificates() {
-    const grid = el('cert-list');
-    if (!grid) return;
-
-    grid.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-slate-500">Yükleniyor...</td></tr>';
-
-    try {
-      if (!firmaId) return;
-      const res = await api.getCertificatesByFirmaId(firmaId);
-      if (!res.success || !Array.isArray(res.data)) {
-        grid.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-rose-600">Sertifika verileri alınamadı.</td></tr>';
-        return;
-      }
-
-      const rows = res.data;
-      const counter = el('certificateCounter');
-      if (counter) counter.textContent = `Sertifika Sayısı: ${rows.length}`;
-
-      if (!rows.length) {
-        grid.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-slate-500">Sertifika kaydı bulunamadı.</td></tr>';
-        return;
-      }
-
-      grid.innerHTML = rows.map((row) => {
-        const standard = row[3] === 'Diğer' ? (row[20] || 'Diğer') : (row[3] || '-');
-        return `
-          <tr class="border-t border-slate-200 text-slate-700">
-            <td class="p-3">${row[0] || '-'}</td>
-            <td class="p-3">${row[6] || '-'}</td>
-            <td class="p-3">${standard}</td>
-            <td class="p-3">${row[5] || '-'}</td>
-            <td class="p-3">${row[14] || '-'}</td>
-            <td class="p-3">${row[7] || '-'}</td>
-            <td class="p-3">${row[16] || '-'}</td>
-            <td class="p-3">${row[17] || '-'}</td>
-            <td class="p-3 text-right"><button class="rounded border border-slate-300 px-2 py-1 text-[11px] text-slate-600">Detay</button></td>
-          </tr>
-        `;
-      }).join('');
-    } catch (error) {
-      console.error(error);
-      grid.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-rose-600">Sistem hatası oluştu.</td></tr>';
-    }
-  }
-
-  async function loadTests() {
-    const grid = el('test-list');
-    if (!grid) return;
-
-    grid.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-500">Yükleniyor...</td></tr>';
-
-    try {
-      if (!firmaId) return;
-      const res = await api.getTestsByFirmaId(firmaId);
-      if (!res.success || !Array.isArray(res.data)) {
-        grid.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-rose-600">Test verileri alınamadı.</td></tr>';
-        return;
-      }
-
-      const rows = res.data;
-      const counter = el('testCounter');
-      if (counter) counter.textContent = `Test Sayısı: ${rows.length}`;
-
-      if (!rows.length) {
-        grid.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-500">Test kaydı bulunamadı.</td></tr>';
-        return;
-      }
-
-      grid.innerHTML = rows.map((row) => {
-        return `
-          <tr class="border-t border-slate-200 text-slate-700">
-            <td class="p-3">${row[0] || '-'}</td>
-            <td class="p-3">${row[13] || '-'}</td>
-            <td class="p-3 font-medium">${row[3] || '-'}</td>
-            <td class="p-3">${row[4] || '-'}</td>
-            <td class="p-3">${row[5] || '-'}</td>
-          </tr>
-        `;
-      }).join('');
-    } catch (error) {
-      console.error(error);
-      grid.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-rose-600">Sistem hatası oluştu.</td></tr>';
-    }
-  }
-
-  async function init() {
+  async function loadCompany() {
     if (!firmaId) {
-      window.location.href = '/search';
+      document.getElementById('form-skeleton')!.innerHTML = '<p class="text-sm text-rose-400 font-bold p-8">Geçersiz firma ID.</p>';
       return;
     }
 
-    const mainCarousel = initCarousel('companyCarousel');
-    initCarousel('auditCarousel');
-    initCarousel('certificateCarousel');
-    initCarousel('testCarousel');
-    initCarousel('formCarousel');
-    bindMainCarousel(mainCarousel);
-    ensureLegacyHooks();
-
-    el('btn-refresh-certs')?.addEventListener('click', () => {
-      loadCertificates();
-    });
-
-    el('btn-refresh-tests')?.addEventListener('click', () => {
-      loadTests();
-    });
-
-    console.time('⚡ Full Page Load');
-    
-    // 🚀 ZERO LATENCY STRATEGY: Local-First Render
-    const localFirma = $companies.get().find((f: any) => String(f.id || f['Firma No']) === String(firmaId));
-    if (localFirma) {
-      console.log('✨ Instant Render from Local Store');
-      renderCompany(localFirma);
-      // Temel bilgiler geldiği an sayfa INTERAKTİF (0ms)
+    const res = await api.call('getCompanyById', { id: firmaId });
+    const c = res?.data;
+    if (!c) {
+      document.getElementById('form-skeleton')!.innerHTML = `<p class="text-sm text-rose-400 font-bold p-8">Firma bulunamadı (ID: ${firmaId})</p>`;
+      return;
     }
 
-    // 🚀 ASENKRON ARKA PLAN YÜKLEME (Non-Blocking Background Refresh)
-    // AwaiT KALDIRILDI: Bunlar bağımsız şekilde dolacak
-    api.getCompanyById(firmaId).then(res => {
-      if (res.success && res.data) {
-        renderCompany(res.data);
-        console.log('✅ Company refreshed from KV:', res.fromCache || false);
-      }
-    });
+    // Field mappings (API key → form field id)
+    const fields: [string, string[]][] = [
+      ['f-unvan',   ['Unvan', 'unvan']],
+      ['f-nick',    ['Firma Adı', 'Nick', 'nick', 'FirmaAdi']],
+      ['f-not',     ['Firma Not', 'Not', 'not']],
+      ['f-adres',   ['Adres', 'adres']],
+      ['f-sehir',   ['İl', 'Il', 'Şehir', 'Sehir', 'il']],
+      ['f-ulke',    ['Ülke', 'Ulke', 'ulke']],
+      ['f-yazisma', ['Yazışma Adresi', 'YazismaAdresi', 'yazisma', 'Şube Adresi']],
+      ['f-kapsam',  ['Türkçe Kapsam', 'Sertifika Kapsamı (TR)', 'Kapsam', 'kapsam']],
+      ['f-scope',   ['İngilizce Kapsam', 'Sertifika Kapsamı (EN)', 'Scope', 'scope']],
+      ['f-tel',     ['Telefon', 'Tel', 'tel']],
+      ['f-faks',    ['Faks', 'faks']],
+      ['f-mail',    ['Mail', 'mail', 'E-Posta']],
+      ['f-www',     ['İnternet', 'Web', 'www', 'web']],
+      ['f-vergiD',  ['Vergi Dairesi', 'VergiDairesi', 'vergiD']],
+      ['f-vergiN',  ['Vergi Numarası', 'VergiNumarasi', 'vergiN']],
+      ['f-kyt',     ['KYT', 'Kalite Yönetim Temsilcisi', 'kyt']],
+      ['f-yetA',    ['Yetkili Adı', 'YetkiliAdi', 'yetA']],
+      ['f-yetU',    ['Yetkili Ünvanı', 'YetkiliUnvani', 'yetU']],
+      ['f-irtA',    ['İrtibat Kişisi', 'IrtibatKisi', 'irtA']],
+      ['f-irtU',    ['İrtibat Ünvanı', 'IrtibatUnvani', 'irtU']],
+      ['f-irtN',    ['İrtibat Tel', 'IrtibatKisiNumarasi', 'irtN']],
+      ['f-irtM',    ['İrtibat Mail', 'IrtibatKisisMail', 'irtM']],
+      ['f-tcs',     ['Toplam Çalışan Sayısı', 'TCS', 'tcs']],
+      ['f-ycs',     ['Yönetim Çalışan Sayısı', 'YCS', 'ycs']],
+      ['f-ucs',     ['Üretim Çalışan Sayısı', 'UCS', 'ucs']],
+      ['f-yzcs',    ['Yarı Zamanlı Çalışan Sayısı', 'YZCS', 'yzcs']],
+      ['f-tascs',   ['Taşeron Çalışan Sayısı', 'TASCS', 'tascs']],
+      ['f-alan',    ['Alan', 'alan']],
+      ['f-vardiya', ['Vardiya', 'vardiya']],
+      ['f-dept',    ['Departman', 'departman', 'dept']],
+      ['f-nace',    ['NACE', 'nace']],
+      ['f-ea',      ['EA', 'ea']],
+      ['f-yapis',   ['Yapılan İş', 'YapilanIs', 'yapis']],
+    ];
 
-    loadCertificates(); // Arka planda başlar, tabloyu kendi doldurur
-    loadTests();        // Arka planda başlar, tabloyu kendi doldurur
+    fields.forEach(([id, keys]) => setVal(id, g(c, ...keys)));
+    setVal('f-id', firmaId);
 
-    console.timeEnd('⚡ Full Page Load');
+    const dan = g(c, 'Danışman', 'Danisman', 'dan', 'danisman');
+    await loadConsultants(dan);
+
+    const nick = g(c, 'Firma Adı', 'Nick', 'nick');
+    const headerNick = document.getElementById('header-nick');
+    if (headerNick) headerNick.textContent = nick || `Firma #${firmaId}`;
+
+    const footerName = document.getElementById('footer-company-name');
+    if (footerName) footerName.textContent = nick || `Firma #${firmaId}`;
+
+    document.title = `${nick || 'Firma'} Düzenle | Astro Portal`;
+
+    // Show form
+    document.getElementById('form-skeleton')?.classList.add('hidden');
+    document.getElementById('edit-form')?.classList.remove('hidden');
+    document.getElementById('save-footer')?.classList.remove('hidden');
   }
 
-  init();
-</script>
+  // ─── Kapsam Buttons ───────────────────────────────────────────────────────────
 
+  document.getElementById('btn-kapsam-big')?.addEventListener('click', () => {
+    const el = document.getElementById('f-kapsam') as HTMLTextAreaElement | null;
+    if (el) el.value = el.value.toLocaleUpperCase('tr-TR');
+  });
+
+  document.getElementById('btn-scope-big')?.addEventListener('click', () => {
+    const el = document.getElementById('f-scope') as HTMLTextAreaElement | null;
+    if (el) el.value = el.value.toUpperCase();
+  });
+
+  document.getElementById('btn-kapsam-translate')?.addEventListener('click', async () => {
+    const text = val('f-kapsam');
+    if (!text) return;
+    showToast('Çeviriliyor...', 'info');
+    const res = await api.translate(text, true);
+    if (res?.data) {
+      setVal('f-scope', res.data);
+      showToast('Çeviri tamamlandı.', 'success');
+    } else {
+      showToast('Çeviri başarısız.', 'error');
+    }
+  });
+
+  document.getElementById('btn-scope-translate')?.addEventListener('click', async () => {
+    const text = val('f-scope');
+    if (!text) return;
+    showToast('Çeviriliyor...', 'info');
+    const res = await api.translate(text, false);
+    if (res?.data) {
+      setVal('f-kapsam', res.data);
+      showToast('Çeviri tamamlandı.', 'success');
+    } else {
+      showToast('Çeviri başarısız.', 'error');
+    }
+  });
+
+  // ─── Save ─────────────────────────────────────────────────────────────────────
+
+  async function saveForm() {
+    const btnSave = document.getElementById('btn-save') as HTMLButtonElement | null;
+    const btnSaveFooter = document.getElementById('btn-save-footer') as HTMLButtonElement | null;
+    const saveLabel = document.getElementById('save-label');
+
+    const disable = (d: boolean) => {
+      if (btnSave)       btnSave.disabled = d;
+      if (btnSaveFooter) btnSaveFooter.disabled = d;
+      if (saveLabel) saveLabel.textContent = d ? 'Kaydediliyor...' : 'Kaydet';
+    };
+
+    disable(true);
+
+    const companyInfo = {
+      nickname: val('f-nick'),
+      unvan:    val('f-unvan'),
+      adres:    val('f-adres'),
+      sehir:    val('f-sehir'),
+      ulke:     val('f-ulke'),
+      yazisma:  val('f-yazisma'),
+      kapsam:   val('f-kapsam'),
+      scope:    val('f-scope'),
+      tel:      val('f-tel'),
+      faks:     val('f-faks'),
+      mail:     val('f-mail'),
+      www:      val('f-www'),
+      vergiD:   val('f-vergiD'),
+      vergiN:   val('f-vergiN'),
+      kyt:      val('f-kyt'),
+      yetA:     val('f-yetA'),
+      yetU:     val('f-yetU'),
+      irtA:     val('f-irtA'),
+      irtU:     val('f-irtU'),
+      irtN:     val('f-irtN'),
+      irtM:     val('f-irtM'),
+      dan:      val('f-dan'),
+      not:      val('f-not'),
+      tcs:      val('f-tcs'),
+      ycs:      val('f-ycs'),
+      ucs:      val('f-ucs'),
+      yzcs:     val('f-yzcs'),
+      tascs:    val('f-tascs'),
+      alan:     val('f-alan'),
+      vardiya:  val('f-vardiya'),
+      dept:     val('f-dept'),
+      nace:     val('f-nace'),
+      ea:       val('f-ea'),
+      yapis:    val('f-yapis'),
+    };
+
+    try {
+      const res = await api.call('updateCompany', { id: firmaId, companyInfo });
+      if (res?.success) {
+        showToast('✓ Firma başarıyla güncellendi.', 'success');
+      } else {
+        showToast(`✕ Kayıt başarısız: ${res?.error || 'Bilinmeyen hata.'}`, 'error');
+      }
+    } catch (e: any) {
+      showToast(`✕ Bağlantı hatası: ${e?.message || e}`, 'error');
+    } finally {
+      disable(false);
+    }
+  }
+
+  document.getElementById('btn-save')?.addEventListener('click', saveForm);
+  document.getElementById('btn-save-footer')?.addEventListener('click', saveForm);
+
+  document.getElementById('btn-cancel')?.addEventListener('click', () => {
+    if (firmaId) location.href = `/company?id=${firmaId}`;
+    else history.back();
+  });
+
+  // ─── Boot ─────────────────────────────────────────────────────────────────────
+  loadCompany();
+</script>

@@ -1,0 +1,242 @@
+---
+import DashboardLayout from "../layouts/DashboardLayout.astro";
+---
+
+<DashboardLayout title="Ayarlar">
+  <section class="space-y-6">
+    <div class="bg-surface border border-border-main rounded-2xl p-6 shadow-xl">
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Master Data</p>
+          <h1 class="text-2xl font-extrabold mt-1">Kemik Veri Yönetimi</h1>
+          <p class="text-sm text-muted mt-2">
+            Standarts, Auditors, Consultants, TestDoc ve SysDoc verilerini buradan yönetebilirsin.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="full-sync-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold">
+            Sheets'ten Tümünü Çek
+          </button>
+          <button id="sync-master-btn" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold">
+            Sheets'ten Senkronla
+          </button>
+          <button id="refresh-btn" class="px-4 py-2 rounded-xl bg-surface-hover border border-border-main text-sm font-bold">
+            Yenile
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center gap-3">
+        <label for="dataset-select" class="text-sm font-bold text-muted">Dataset</label>
+        <select id="dataset-select" class="bg-surface-hover border border-border-main rounded-xl px-3 py-2 text-sm">
+          <option value="standards">Standards (Standarts)</option>
+          <option value="auditors">Auditors</option>
+          <option value="consultants">Consultants</option>
+          <option value="testdocs">TestDoc</option>
+          <option value="sysdocs">SysDoc</option>
+        </select>
+        <div class="ml-auto text-xs text-muted">
+          <span id="meta-version">v-</span>
+          <span class="mx-2">|</span>
+          <span id="meta-updated">-</span>
+        </div>
+      </div>
+
+      <div id="status-box" class="hidden rounded-xl px-3 py-2 text-sm"></div>
+
+      <div class="overflow-auto border border-border-main rounded-xl">
+        <table class="min-w-full text-sm">
+          <thead id="master-thead" class="bg-surface-hover"></thead>
+          <tbody id="master-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button id="add-row-btn" class="px-4 py-2 rounded-xl bg-surface-hover border border-border-main text-sm font-bold">
+          Satır Ekle
+        </button>
+        <button id="save-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold">
+          Kaydet
+        </button>
+      </div>
+    </div>
+  </section>
+</DashboardLayout>
+
+<script>
+  import { api } from "../lib/api";
+
+  const selectEl = document.getElementById("dataset-select");
+  const syncBtn = document.getElementById("sync-master-btn");
+  const fullSyncBtn = document.getElementById("full-sync-btn");
+  const refreshBtn = document.getElementById("refresh-btn");
+  const addRowBtn = document.getElementById("add-row-btn");
+  const saveBtn = document.getElementById("save-btn");
+  const metaVersion = document.getElementById("meta-version");
+  const metaUpdated = document.getElementById("meta-updated");
+  const thead = document.getElementById("master-thead");
+  const tbody = document.getElementById("master-tbody");
+  const statusBox = document.getElementById("status-box");
+
+  let currentType = "standards";
+  let currentVersion = null;
+  let currentHeaders = [];
+  let currentRows = [];
+
+  function setStatus(message, type = "info") {
+    if (!statusBox) return;
+    statusBox.textContent = message;
+    statusBox.classList.remove("hidden", "bg-red-500/15", "text-red-200", "bg-emerald-500/15", "text-emerald-200", "bg-cyan-500/15", "text-cyan-100");
+    if (type === "error") statusBox.classList.add("bg-red-500/15", "text-red-200");
+    else if (type === "success") statusBox.classList.add("bg-emerald-500/15", "text-emerald-200");
+    else statusBox.classList.add("bg-cyan-500/15", "text-cyan-100");
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function renderTable() {
+    if (!thead || !tbody) return;
+    thead.innerHTML = `<tr>${currentHeaders.map((h) => `<th class="text-left px-3 py-2 border-b border-border-main whitespace-nowrap">${escapeHtml(h)}</th>`).join("")}<th class="px-3 py-2 border-b border-border-main">Sil</th></tr>`;
+    tbody.innerHTML = "";
+
+    currentRows.forEach((row, rowIndex) => {
+      const tr = document.createElement("tr");
+      tr.className = "border-b border-border-main/60";
+
+      currentHeaders.forEach((_, colIndex) => {
+        const td = document.createElement("td");
+        td.className = "px-2 py-2";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = row[colIndex] ?? "";
+        input.className = "w-full bg-surface-hover border border-border-main rounded-lg px-2 py-1 text-xs";
+        input.addEventListener("input", (e) => {
+          currentRows[rowIndex][colIndex] = e.target.value;
+        });
+        td.appendChild(input);
+        tr.appendChild(td);
+      });
+
+      const tdDel = document.createElement("td");
+      tdDel.className = "px-2 py-2 text-center";
+      const delBtn = document.createElement("button");
+      delBtn.className = "px-2 py-1 rounded-lg text-xs bg-red-600/80 hover:bg-red-500 text-white";
+      delBtn.textContent = "Sil";
+      delBtn.addEventListener("click", () => {
+        currentRows.splice(rowIndex, 1);
+        renderTable();
+      });
+      tdDel.appendChild(delBtn);
+      tr.appendChild(tdDel);
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function loadDataset(type) {
+    currentType = type;
+    setStatus("Veri yükleniyor...");
+
+    let res = await api.getMasterData(type);
+    if (!res.success && (res.needsHydration || res.error === "KV_PRIMARY_MISS")) {
+      setStatus("KV boş. Master data hydration başlatılıyor...");
+      const syncRes = await api.bulkSyncMaster();
+      if (!syncRes.success) {
+        setStatus(`Master sync başarısız: ${syncRes.error || "Bilinmeyen hata"}`, "error");
+        return;
+      }
+      res = await api.getMasterData(type);
+    }
+
+    if (!res.success || !res.data || !res.data.dataset) {
+      setStatus(`Veri alınamadı: ${res.error || "Geçersiz yanıt"}`, "error");
+      return;
+    }
+
+    const payload = res.data;
+    const ds = payload.dataset;
+    currentVersion = payload.version ?? null;
+    currentHeaders = Array.isArray(ds.headers) ? ds.headers : [];
+    currentRows = Array.isArray(ds.rows) ? ds.rows.map((r) => Array.isArray(r) ? [...r] : []) : [];
+
+    if (metaVersion) metaVersion.textContent = `v${currentVersion || "-"}`;
+    if (metaUpdated) metaUpdated.textContent = payload.updatedAt ? `Güncelleme: ${new Date(payload.updatedAt).toLocaleString("tr-TR")}` : "Güncelleme: -";
+
+    renderTable();
+    setStatus(`${ds.sheetName || type} yüklendi (${currentRows.length} satır).`, "success");
+  }
+
+  async function saveDataset() {
+    if (!currentType) return;
+    setStatus("Kaydediliyor...");
+    const res = await api.updateMasterData(currentType, { rows: currentRows }, currentVersion || undefined);
+    if (!res.success) {
+      if (res.error === "MASTER_VERSION_CONFLICT") {
+        setStatus("Version conflict: Veri başka bir oturumda değişmiş. Yenileyip tekrar dene.", "error");
+      } else if (res.error === "MASTER_EMPTY_REPLACE_BLOCKED") {
+        setStatus("Boş dataset ile tüm tabloyu silme işlemi güvenlik nedeniyle engellendi.", "error");
+      } else {
+        setStatus(`Kayıt hatası: ${res.error || "Bilinmeyen hata"}`, "error");
+      }
+      return;
+    }
+
+    const data = res.data || {};
+    currentVersion = data.version || currentVersion;
+    if (metaVersion) metaVersion.textContent = `v${currentVersion || "-"}`;
+    if (metaUpdated) metaUpdated.textContent = data.updatedAt ? `Güncelleme: ${new Date(data.updatedAt).toLocaleString("tr-TR")}` : "Güncelleme: -";
+    setStatus("Kaydedildi.", "success");
+  }
+
+  selectEl?.addEventListener("change", (e) => {
+    loadDataset(e.target.value);
+  });
+
+  refreshBtn?.addEventListener("click", () => loadDataset(currentType));
+
+  syncBtn?.addEventListener("click", async () => {
+    setStatus("Sheets -> KV master sync başlatıldı...");
+    const res = await api.bulkSyncMaster();
+    if (!res.success) {
+      setStatus(`Master sync başarısız: ${res.error || "Bilinmeyen hata"}`, "error");
+      return;
+    }
+    await loadDataset(currentType);
+    setStatus("Master sync tamamlandı.", "success");
+  });
+
+  fullSyncBtn?.addEventListener("click", async () => {
+    setStatus("Sheets -> KV tam senkron başlatıldı...");
+    const coreRes = await api.bulkSync();
+    if (!coreRes.success) {
+      setStatus(`Core sync başarısız: ${coreRes.error || "Bilinmeyen hata"}`, "error");
+      return;
+    }
+
+    const masterRes = await api.bulkSyncMaster();
+    if (!masterRes.success) {
+      setStatus(`Master sync başarısız: ${masterRes.error || "Bilinmeyen hata"}`, "error");
+      return;
+    }
+
+    await loadDataset(currentType);
+    setStatus("Sheets -> KV tam senkron tamamlandı.", "success");
+  });
+
+  addRowBtn?.addEventListener("click", () => {
+    currentRows.push(Array(currentHeaders.length).fill(""));
+    renderTable();
+  });
+
+  saveBtn?.addEventListener("click", saveDataset);
+
+  loadDataset(currentType);
+</script>

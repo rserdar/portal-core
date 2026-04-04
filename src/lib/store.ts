@@ -2,9 +2,9 @@ import { atom } from 'nanostores';
 
 /**
  * 🔋 Nano Stores: Global Application State
- * 
- * Uygulama çapında reaktif veri depoları. 
- * Reaksiyon hızı milisaniyeler seviyesindedir.
+ *
+ * Uygulama çapında reaktif state.
+ * Veri kaynağı önceliği: IndexedDB (anlık açılış) -> KV (arka plan tazeleme).
  */
 
 // Firma Listesi (Sync Data: ID, Nickname, Unvan, City)

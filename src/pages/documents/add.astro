@@ -140,6 +140,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   const currentDocName = document.getElementById('current-doc-name');
 
   let selectedCompany: any = null;
+  const CHUNK_SIZE = 50;
+  const CHUNK_BREAK_MS = 5000;
+
+  function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
   // 📡 Store'u Dinle (Arama Datalist)
   $companies.subscribe(companies => {
@@ -222,7 +228,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       const folderMap = prepRes.data.folderMap;
       const total = rows.length;
 
-      // 2. Tek tek üret (GAS limit koruması için döngü)
+      // 2. Tek tek üret (legacy "chunk + mola" modeli)
       for (let i = 0; i < total; i++) {
         const row = rows[i];
         const percent = Math.round(((i + 1) / total) * 100);
@@ -235,6 +241,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           data: { 
             nick: selectedCompany.nickname, 
             unvan: selectedCompany.unvan,
+            logo: selectedCompany.logo || selectedCompany.logoK || selectedCompany["Logo/Kase"] || selectedCompany["Firma Logosu"] || "",
             revNo: (document.getElementById('resp-rev-no') as HTMLInputElement)?.value || "00"
           },
           folderMap: folderMap
@@ -245,6 +252,15 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           if (progressPercent) progressPercent.textContent = `${percent}%`;
         } else {
           console.error(`Hata: ${row[4]} üretilemedi.`, genRes.error);
+        }
+
+        const isChunkBoundary = (i + 1) % CHUNK_SIZE === 0;
+        const hasMore = i + 1 < total;
+        if (isChunkBoundary && hasMore) {
+          if (progressText) {
+            progressText.textContent = `Sistem molası (${CHUNK_BREAK_MS / 1000} sn)... ardından devam edilecek.`;
+          }
+          await sleep(CHUNK_BREAK_MS);
         }
       }
 

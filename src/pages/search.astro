@@ -224,7 +224,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       tr.innerHTML = `
         <td class="px-5 py-3 text-center text-muted font-mono text-xs">${safeId || '-'}</td>
         <td class="px-5 py-3 text-left">
-          <a href="/company/edit?id=${encodeURIComponent(safeId)}" class="block group/link">
+          <a href="/company?id=${encodeURIComponent(safeId)}" class="block group/link">
             <div class="font-bold text-main group-hover/link:text-primary transition-colors uppercase tracking-tight">${c.unvan || '-'}</div>
             <div class="text-[10px] text-muted uppercase tracking-tighter mt-0.5 group-hover/link:text-primary transition-colors opacity-80">${c.nickname || '-'}</div>
           </a>
@@ -239,7 +239,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         </td>
         <td class="px-5 py-3 text-center text-muted font-medium text-xs tracking-tight">${c.city || '-'}</td>
         <td class="px-5 py-3 text-center">
-          <a href="/company/edit?id=${encodeURIComponent(safeId)}" class="inline-flex items-center justify-center px-4 py-1.5 border border-primary/30 rounded-lg text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-sm">
+          <a href="/company?id=${encodeURIComponent(safeId)}" class="inline-flex items-center justify-center px-4 py-1.5 border border-primary/30 rounded-lg text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-sm">
             GÖZAT
           </a>
         </td>
