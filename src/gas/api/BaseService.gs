@@ -7,6 +7,25 @@
 
 const BaseService = {
   /**
+   * Başlık + satır verisinden deterministik bir etag üretir.
+   * Çakışma kontrolünde (optimistic concurrency) kullanılır.
+   */
+  createRowEtag: function(headers, rowValues) {
+    const h = Array.isArray(headers) ? headers : [];
+    const r = Array.isArray(rowValues) ? rowValues : [];
+    const pairs = h.map((header, i) => ({
+      h: this.normalizeHeader(header),
+      v: String(r[i] !== undefined && r[i] !== null ? r[i] : "")
+    }));
+    const payload = JSON.stringify(pairs);
+    const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, payload);
+    return bytes.map(b => {
+      const v = b < 0 ? b + 256 : b;
+      return ("0" + v.toString(16)).slice(-2);
+    }).join("");
+  },
+
+  /**
    * Başlık/alan metnini karşılaştırma için normalize eder.
    */
   normalizeHeader: function(value) {

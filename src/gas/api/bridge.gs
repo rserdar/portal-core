@@ -55,7 +55,7 @@ function doPost(e) {
         break;
 
       case "updateCompany":
-        const updateCompanyRes = CompanyService.update(params.id, params.companyInfo);
+        const updateCompanyRes = CompanyService.update(params.id, params.companyInfo, params.expectedEtag);
         result.data = updateCompanyRes;
         result.success = updateCompanyRes.success;
         if (!updateCompanyRes.success) result.error = updateCompanyRes.error;

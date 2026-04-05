@@ -355,6 +355,7 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
 
   const params = new URLSearchParams(location.search);
   const firmaId = params.get('id') || '';
+  let companyEtag = '';
 
   // Update back/view links
   const btnBack = document.getElementById('btn-back') as HTMLAnchorElement | null;
@@ -433,6 +434,7 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
 
     fields.forEach(([id, keys]) => setVal(id, g(c, ...keys)));
     setVal('f-id', firmaId);
+    companyEtag = g(c, '__etag');
 
     const dan = g(c, 'Danışman', 'Danisman', 'dan', 'danisman');
     await loadConsultants(dan);
@@ -543,9 +545,12 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
     };
 
     try {
-      const res = await api.call('updateCompany', { id: firmaId, companyInfo });
+      const res = await api.call('updateCompany', { id: firmaId, companyInfo, expectedEtag: companyEtag || undefined });
       if (res?.success) {
+        companyEtag = String((res as any)?.data?.etag || companyEtag || '');
         showToast('✓ Firma başarıyla güncellendi.', 'success');
+      } else if (res?.error === 'CONFLICT') {
+        showToast('✕ Bu kayıt başka bir kullanıcı tarafından güncellendi. Lütfen sayfayı yenileyip tekrar deneyin.', 'error');
       } else {
         showToast(`✕ Kayıt başarısız: ${res?.error || 'Bilinmeyen hata.'}`, 'error');
       }

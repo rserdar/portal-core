@@ -98,6 +98,7 @@ const CompanyService = {
 
       const obj = {};
       headers.forEach((h, i) => obj[h] = dataRow[i]);
+      obj.__etag = BaseService.createRowEtag(headers, dataRow);
       return obj;
     } catch (e) {
       BaseService.logError("getById", e);
@@ -128,7 +129,7 @@ const CompanyService = {
   /**
    * Mevcut bir firmayı tam satır güncellemesi ile günceller (legacy editCompanyById).
    */
-  update: function(id, companyInfo) {
+  update: function(id, companyInfo, expectedEtag) {
     try {
       return BaseService.withScriptLock(() => {
         const ss = BaseService.openSS();
@@ -142,10 +143,21 @@ const CompanyService = {
 
         const rowNum = rowIndex + 2;
         const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getDisplayValues()[0].map(h => String(h).trim());
+        const currentRow = ws.getRange(rowNum, 1, 1, headers.length).getDisplayValues()[0];
+        const currentEtag = BaseService.createRowEtag(headers, currentRow);
+        if (expectedEtag && String(expectedEtag).trim() && String(expectedEtag) !== currentEtag) {
+          return {
+            success: false,
+            error: "CONFLICT",
+            code: "CONFLICT",
+            message: "Kayıt başka bir kullanıcı tarafından güncellenmiş.",
+            currentEtag: currentEtag
+          };
+        }
         const fullRow = this._buildRowByHeaders(headers, companyInfo || {}, String(id));
 
         ws.getRange(rowNum, 1, 1, headers.length).setValues([fullRow]);
-        return { success: true };
+        return { success: true, etag: BaseService.createRowEtag(headers, fullRow) };
       }, 30000, "CompanyService.update");
     } catch (e) {
       BaseService.logError("update", e, { id: id });
