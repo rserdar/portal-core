@@ -77,7 +77,6 @@ body {
 @media (max-width: 1024px) {
   .content-area {
     padding-top: var(--header-height);
-    padding-inline: 1rem;
   }
 }
 

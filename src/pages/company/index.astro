@@ -1,9 +1,10 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import {
-  Building2, MapPin, Phone, Mail, Globe, ChevronRight,
+  MapPin, Phone, Mail, Globe,
   FileText, Award, ClipboardList, Pencil, ArrowLeft,
-  Users, Briefcase, BadgeCheck, Layers, AlertCircle
+  Users, Briefcase, BadgeCheck, AlertCircle, Layers,
+  ChevronDown, CheckSquare, RefreshCw, FolderOpen, Printer, ShieldCheck, ShieldOff
 } from 'lucide-astro';
 
 /**
@@ -28,57 +29,103 @@ import {
     </div>
 
     <!-- Hero Card -->
-    <div class="bg-surface border border-border-main shadow-2xl rounded-[2.5rem] p-8 relative overflow-hidden" id="hero-card">
-      <!-- Background glow -->
+    <div class="bg-surface border border-border-main shadow-2xl rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 relative overflow-hidden" id="hero-card">
       <div class="absolute -right-10 -top-10 w-60 h-60 bg-indigo-600/5 rounded-full blur-3xl pointer-events-none"></div>
 
-      <!-- Loading state -->
+      <!-- Loading skeleton -->
       <div id="hero-skeleton" class="animate-pulse space-y-4">
-        <div class="flex items-start justify-between">
-          <div class="space-y-3">
+        <div class="flex items-start justify-between gap-4">
+          <div class="space-y-3 flex-1">
             <div class="h-3 bg-surface-hover rounded w-24"></div>
-            <div class="h-8 bg-surface-hover rounded w-72"></div>
-            <div class="h-4 bg-surface-hover rounded w-48"></div>
+            <div class="h-8 bg-surface-hover rounded w-64"></div>
           </div>
-          <div class="flex gap-2">
-            <div class="h-10 w-28 bg-surface-hover rounded-xl"></div>
-            <div class="h-10 w-28 bg-surface-hover rounded-xl"></div>
+          <div class="flex gap-2 shrink-0">
+            <div class="h-9 w-24 bg-surface-hover rounded-xl"></div>
+            <div class="h-9 w-24 bg-surface-hover rounded-xl"></div>
           </div>
+        </div>
+        <div class="space-y-3 pt-2">
+          {[1,2,3,4,5].map(() => (
+            <div class="flex items-center gap-3 py-1">
+              <div class="h-3 bg-surface-hover rounded w-20 shrink-0"></div>
+              <div class="h-3 bg-surface-hover rounded flex-1"></div>
+            </div>
+          ))}
         </div>
       </div>
 
       <!-- Real content -->
       <div id="hero-content" class="hidden">
-        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-          <div class="space-y-3 relative z-10">
-            <!-- ID + badges -->
+        <!-- Nick + Badges + Aksiyon -->
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 relative z-10">
+          <div class="space-y-2">
             <div class="flex flex-wrap items-center gap-2" id="hero-badges"></div>
-            <!-- Nick -->
-            <h1 class="text-3xl font-extrabold text-main tracking-tight leading-tight" id="hero-nick"></h1>
-            <!-- Unvan -->
-            <p class="text-sm font-semibold text-muted" id="hero-unvan"></p>
-            <!-- Location -->
-            <div class="flex items-center gap-2 text-xs text-muted" id="hero-location">
-              <MapPin size={12} class="text-indigo-400 flex-shrink-0" />
-              <span id="hero-address-short"></span>
-            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-main tracking-tight leading-tight" id="hero-nick"></h1>
+          </div>
+          <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 relative z-10 flex-shrink-0" id="hero-actions">
+            <a id="btn-edit" href="#" class="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-xl sm:rounded-2xl shadow-[0_4px_15px_rgba(79,70,229,0.3)] transition-all">
+              <Pencil size={14} />Düzenle
+            </a>
+            <a href="/documents/view" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-xs font-bold rounded-xl sm:rounded-2xl transition-all">
+              <FileText size={14} />Doküman Üret
+            </a>
+            <a id="btn-add-audit" href="#" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-xs font-bold rounded-xl sm:rounded-2xl transition-all">
+              <ClipboardList size={14} />Denetim Planla
+            </a>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="my-4 sm:my-5 border-t border-border-main relative z-10"></div>
+
+        <!-- Kopyalanabilir Alan Satırları -->
+        <div class="relative z-10 space-y-0">
+
+          <!-- Unvan -->
+          <div class="flex items-start gap-3 py-2.5 border-b border-border-main/40">
+            <button class="copy-btn flex items-center gap-1.5 text-muted hover:text-primary transition-colors shrink-0 pt-0.5" data-copy="hero-unvan" title="Kopyala">
+              <Briefcase size={13} />
+              <span class="text-[9px] font-black uppercase tracking-widest w-14 text-left">Unvan</span>
+            </button>
+            <p class="text-sm text-main leading-snug flex-1" id="hero-unvan">—</p>
           </div>
 
-          <!-- Action buttons -->
-          <div class="flex flex-wrap gap-3 relative z-10 flex-shrink-0" id="hero-actions">
-            <a id="btn-edit" href="#" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-2xl shadow-[0_4px_15px_rgba(79,70,229,0.3)] transition-all">
-              <Pencil size={14} />
-              Düzenle
-            </a>
-            <a href="/documents/view" class="flex items-center gap-2 px-5 py-2.5 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-xs font-bold rounded-2xl transition-all">
-              <FileText size={14} />
-              Doküman Üret
-            </a>
-            <a id="btn-add-audit" href="#" class="flex items-center gap-2 px-5 py-2.5 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-xs font-bold rounded-2xl transition-all">
-              <ClipboardList size={14} />
-              Denetim Planla
-            </a>
+          <!-- Adres -->
+          <div class="flex items-start gap-3 py-2.5 border-b border-border-main/40">
+            <button class="copy-btn flex items-center gap-1.5 text-muted hover:text-primary transition-colors shrink-0 pt-0.5" data-copy="hero-adres" title="Kopyala">
+              <MapPin size={13} />
+              <span class="text-[9px] font-black uppercase tracking-widest w-14 text-left">Adres</span>
+            </button>
+            <p class="text-sm text-main leading-snug flex-1" id="hero-adres">—</p>
           </div>
+
+          <!-- Şube (varsa) -->
+          <div class="flex items-start gap-3 py-2.5 border-b border-border-main/40 hidden" id="hero-sube-row">
+            <button class="copy-btn flex items-center gap-1.5 text-muted hover:text-primary transition-colors shrink-0 pt-0.5" data-copy="hero-sube" title="Kopyala">
+              <MapPin size={13} />
+              <span class="text-[9px] font-black uppercase tracking-widest w-14 text-left">Şube</span>
+            </button>
+            <p class="text-sm text-main leading-snug flex-1" id="hero-sube">—</p>
+          </div>
+
+          <!-- Kapsam (TR) -->
+          <div class="flex items-start gap-3 py-2.5 border-b border-border-main/40">
+            <button class="copy-btn flex items-center gap-1.5 text-muted hover:text-primary transition-colors shrink-0 pt-0.5" data-copy="hero-kapsam" title="Kopyala">
+              <Layers size={13} />
+              <span class="text-[9px] font-black uppercase tracking-widest w-14 text-left">Kapsam</span>
+            </button>
+            <p class="text-sm text-main leading-relaxed italic flex-1" id="hero-kapsam"><span class="not-italic opacity-30">—</span></p>
+          </div>
+
+          <!-- Scope (EN) -->
+          <div class="flex items-start gap-3 py-2.5">
+            <button class="copy-btn flex items-center gap-1.5 text-muted hover:text-primary transition-colors shrink-0 pt-0.5" data-copy="hero-scope" title="Kopyala">
+              <Globe size={13} />
+              <span class="text-[9px] font-black uppercase tracking-widest w-14 text-left">Scope</span>
+            </button>
+            <p class="text-sm text-main leading-relaxed italic flex-1" id="hero-scope"><span class="not-italic opacity-30">—</span></p>
+          </div>
+
         </div>
       </div>
     </div>
@@ -86,32 +133,69 @@ import {
     <!-- Info Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="info-grid">
 
-      <!-- Kapsam Card (span 2) -->
-      <div class="lg:col-span-2 bg-surface border border-border-main shadow-xl p-7 rounded-[2rem]">
+      <!-- Operasyonel Profil Card (span 2) -->
+      <div class="lg:col-span-2 bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="profile-card">
         <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
-          <div class="w-9 h-9 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 flex-shrink-0">
-            <Layers size={16} />
+          <div class="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400 flex-shrink-0">
+            <Briefcase size={16} />
           </div>
-          <h3 class="text-sm font-black uppercase tracking-widest text-main">Kapsam</h3>
+          <h3 class="text-sm font-black uppercase tracking-widest text-main">Operasyonel Profil</h3>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="space-y-2">
-            <p class="text-[10px] font-bold text-muted uppercase tracking-widest">Türkçe Kapsam</p>
-            <p class="text-sm text-main leading-relaxed italic" id="info-kapsam"><span class="text-muted opacity-40">—</span></p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3" id="profile-grid">
+          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-location-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-location" title="Kopyala">
+              <MapPin size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">Şehir / Ülke</span>
+            </button>
+            <p class="text-sm font-semibold text-main leading-snug" id="info-location"><span class="text-muted opacity-40">—</span></p>
           </div>
-          <div class="space-y-2">
-            <p class="text-[10px] font-bold text-muted uppercase tracking-widest">İngilizce Scope</p>
-            <p class="text-sm text-main leading-relaxed italic" id="info-scope"><span class="text-muted opacity-40">—</span></p>
+          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-tcs-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-tcs" title="Kopyala">
+              <Users size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">Toplam Çalışan</span>
+            </button>
+            <p class="text-sm font-semibold text-main leading-snug" id="info-tcs"><span class="text-muted opacity-40">—</span></p>
+          </div>
+          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-sector-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-sector" title="Kopyala">
+              <Briefcase size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">NACE / EA</span>
+            </button>
+            <p class="text-sm font-semibold text-main leading-snug" id="info-sector"><span class="text-muted opacity-40">—</span></p>
+          </div>
+          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-facility-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-facility" title="Kopyala">
+              <Layers size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">Alan / Departman</span>
+            </button>
+            <p class="text-sm font-semibold text-main leading-snug" id="info-facility"><span class="text-muted opacity-40">—</span></p>
+          </div>
+          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-vardiya-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-vardiya" title="Kopyala">
+              <ClipboardList size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">Vardiya Düzeni</span>
+            </button>
+            <p class="text-sm font-semibold text-main leading-snug" id="info-vardiya"><span class="text-muted opacity-40">—</span></p>
+          </div>
+          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-workforce-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-workforce" title="Kopyala">
+              <BadgeCheck size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">Çalışan Dağılımı</span>
+            </button>
+            <p class="text-sm font-semibold text-main leading-snug" id="info-workforce"><span class="text-muted opacity-40">—</span></p>
           </div>
         </div>
-        <div class="mt-5 pt-4 border-t border-border-main space-y-2" id="sube-row">
-          <p class="text-[10px] font-bold text-muted uppercase tracking-widest">Şube / Yazışma Adresi</p>
-          <p class="text-sm text-main" id="info-sube"><span class="text-muted opacity-40">—</span></p>
+        <div class="mt-5 pt-4 border-t border-border-main space-y-2" id="info-sube-row">
+          <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-sube" title="Kopyala">
+            <MapPin size={13} />
+            <span class="text-[10px] font-bold uppercase tracking-widest text-left">Şube / Yazışma Adresi</span>
+          </button>
+          <p class="text-sm text-main leading-relaxed" id="info-sube"><span class="text-muted opacity-40">—</span></p>
         </div>
       </div>
 
       <!-- İletişim Card -->
-      <div class="bg-surface border border-border-main shadow-xl p-7 rounded-[2rem]">
+      <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="contact-card">
         <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
           <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">
             <Phone size={16} />
@@ -119,67 +203,149 @@ import {
           <h3 class="text-sm font-black uppercase tracking-widest text-main">İletişim</h3>
         </div>
         <div class="space-y-3">
-          <div class="flex items-start gap-3">
-            <Phone size={12} class="text-muted mt-0.5 flex-shrink-0" />
+          <div class="flex items-start gap-3" id="info-telefon-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-telefon" title="Kopyala">
+              <Phone size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider text-left">Telefon</span>
+            </button>
             <div>
-              <p class="text-[10px] font-bold text-muted uppercase tracking-wider">Telefon / Faks</p>
-              <p class="text-sm font-semibold text-main mt-0.5" id="info-tel-faks">—</p>
+              <p class="text-sm font-semibold text-main mt-0.5" id="info-telefon">—</p>
             </div>
           </div>
-          <div class="flex items-start gap-3">
-            <Mail size={12} class="text-muted mt-0.5 flex-shrink-0" />
+          <div class="flex items-start gap-3" id="info-faks-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-faks" title="Kopyala">
+              <Phone size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider text-left">Faks</span>
+            </button>
             <div>
-              <p class="text-[10px] font-bold text-muted uppercase tracking-wider">E-Posta</p>
+              <p class="text-sm font-semibold text-main mt-0.5" id="info-faks">—</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3" id="info-mail-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-mail" title="Kopyala">
+              <Mail size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider text-left">E-Posta</span>
+            </button>
+            <div>
               <p class="text-sm font-semibold text-main mt-0.5 break-all" id="info-mail">—</p>
             </div>
           </div>
-          <div class="flex items-start gap-3">
-            <Globe size={12} class="text-muted mt-0.5 flex-shrink-0" />
+          <div class="flex items-start gap-3" id="info-web-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-web" title="Kopyala">
+              <Globe size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider text-left">Web</span>
+            </button>
             <div>
-              <p class="text-[10px] font-bold text-muted uppercase tracking-wider">Web</p>
               <p class="text-sm font-semibold text-main mt-0.5" id="info-web">—</p>
             </div>
           </div>
-          <div class="pt-2 border-t border-border-main space-y-1">
-            <p class="text-[10px] font-bold text-muted uppercase tracking-wider">Vergi Dairesi / No</p>
+          <div class="pt-2 border-t border-border-main space-y-1" id="info-vergi-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-vergi" title="Kopyala">
+              <FileText size={12} />
+              <span class="text-[10px] font-bold uppercase tracking-wider text-left">Vergi Dairesi / No</span>
+            </button>
             <p class="text-sm font-semibold text-main" id="info-vergi">—</p>
-          </div>
-          <div class="pt-2 border-t border-border-main space-y-1">
-            <p class="text-[10px] font-bold text-muted uppercase tracking-wider">Danışman</p>
-            <p class="text-sm font-semibold text-indigo-400" id="info-dan">—</p>
           </div>
         </div>
       </div>
 
-      <!-- Yetkililer (full width) -->
-      <div class="lg:col-span-3 bg-surface border border-border-main shadow-xl p-7 rounded-[2rem]">
+      <!-- Yetkililer & İrtibat -->
+      <div class="lg:col-span-2 bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="people-card">
         <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
           <div class="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 flex-shrink-0">
             <Users size={16} />
           </div>
-          <h3 class="text-sm font-black uppercase tracking-widest text-main">Yetkililer & Kişiler</h3>
+          <h3 class="text-sm font-black uppercase tracking-widest text-main">Yetkililer & İrtibat</h3>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5">
-            <p class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">KYT / Yönetim Temsilcisi</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-kyt-block">
+            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-kyt" title="Kopyala">
+              <BadgeCheck size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-widest text-left">KYT</span>
+            </button>
             <p class="text-sm font-bold text-main" id="info-kyt">—</p>
           </div>
-          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5">
-            <p class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Yetkili</p>
+          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-yetkili-block">
+            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-yetkili" title="Kopyala">
+              <Users size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-widest text-left">Yetkili Adı</span>
+            </button>
             <p class="text-sm font-bold text-main" id="info-yetkili">—</p>
-            <p class="text-[11px] text-muted" id="info-yetkili-unvan"></p>
           </div>
-          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5">
-            <p class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">İrtibat Kişisi</p>
+          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-yetkili-unvan-block">
+            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-yetkili-unvan" title="Kopyala">
+              <Briefcase size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-widest text-left">Yetkili Ünvanı</span>
+            </button>
+            <p class="text-sm font-bold text-main" id="info-yetkili-unvan">—</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-irtibat-block">
+            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-irtibat" title="Kopyala">
+              <Users size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-widest text-left">İrtibat Kişisi</span>
+            </button>
             <p class="text-sm font-bold text-main" id="info-irtibat">—</p>
-            <p class="text-[11px] text-muted" id="info-irtibat-detail"></p>
+          </div>
+          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-irtibat-unvan-block">
+            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-irtibat-unvan" title="Kopyala">
+              <Briefcase size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-widest text-left">İrtibat Ünvanı</span>
+            </button>
+            <p class="text-sm font-bold text-main" id="info-irtibat-unvan">—</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-irtibat-tel-block">
+            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-irtibat-tel" title="Kopyala">
+              <Phone size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-widest text-left">İrtibat Telefonu</span>
+            </button>
+            <p class="text-sm font-bold text-main" id="info-irtibat-tel">—</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5 md:col-span-2 xl:col-span-1" id="info-irtibat-mail-block">
+            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-irtibat-mail" title="Kopyala">
+              <Mail size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-widest text-left">İrtibat E-Posta</span>
+            </button>
+            <p class="text-sm font-bold text-main break-all" id="info-irtibat-mail">—</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kayıtlar & Varlıklar -->
+      <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="records-card">
+        <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
+            <FileText size={16} />
+          </div>
+          <h3 class="text-sm font-black uppercase tracking-widest text-main">Kayıtlar & Varlıklar</h3>
+        </div>
+        <div class="space-y-3">
+          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-dan-block">
+            <button class="copy-btn flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors" data-copy="info-dan" title="Kopyala">
+              <Users size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-widest text-left">Danışman</span>
+            </button>
+            <p class="text-sm font-semibold text-main" id="info-dan">—</p>
+          </div>
+          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-not-block">
+            <button class="copy-btn flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors" data-copy="info-not" title="Kopyala">
+              <FileText size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-widest text-left">Firma Notları</span>
+            </button>
+            <p class="text-sm text-main leading-relaxed" id="info-not">—</p>
+          </div>
+          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-logo-block">
+            <button class="copy-btn flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors" data-copy="info-logo" title="Kopyala">
+              <Pencil size={13} />
+              <span class="text-[10px] font-bold uppercase tracking-widest text-left">Logo / Kaşe-İmza</span>
+            </button>
+            <p class="text-sm text-main leading-relaxed break-all" id="info-logo">—</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Firma Detayları (NACE, EA, Çalışan) -->
-    <div class="bg-surface border border-border-main shadow-xl p-7 rounded-[2rem]" id="details-card">
+    <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="details-card">
       <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
         <div class="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
           <Briefcase size={16} />
@@ -197,7 +363,7 @@ import {
 
     <!-- Sertifikalar -->
     <div class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
-      <div class="flex items-center justify-between p-7 border-b border-border-main">
+      <div class="flex items-center justify-between p-4 sm:p-7 border-b border-border-main">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">
             <Award size={16} />
@@ -222,16 +388,100 @@ import {
       </div>
 
       <div id="cert-list-wrapper" class="hidden">
+        <div class="px-4 sm:px-7 py-4 border-b border-border-main bg-surface-hover/40">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div class="flex items-center gap-3 flex-wrap">
+              <button
+                type="button"
+                id="cert-actions-toggle"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-black uppercase tracking-widest transition-colors"
+              >
+                <ChevronDown size={14} class="transition-transform" id="cert-actions-chevron" />
+                Toplu Sertifika İşlemleri
+              </button>
+              <p class="text-[11px] text-muted" id="cert-selection-summary">Secili sertifika yok.</p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button type="button" id="cert-refresh" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-bold transition-colors">
+                <RefreshCw size={13} />
+                Yenile
+              </button>
+              <a id="cert-folder-link" href="/documents/view" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-bold transition-colors">
+                <FolderOpen size={13} />
+                Firma Klasoru
+              </a>
+              <a href="/certificates" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-300 text-[11px] font-bold transition-colors">
+                <Award size={13} />
+                Sertifika Merkezi
+              </a>
+            </div>
+          </div>
+
+          <div id="cert-actions-panel" class="hidden mt-4 grid grid-cols-1 xl:grid-cols-[1.4fr_1fr_1fr] gap-3">
+            <div class="rounded-2xl border border-border-main bg-surface p-4 space-y-3">
+              <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-muted">
+                <CheckSquare size={12} />
+                Secim
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" data-cert-select="all" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Tumunu Sec</button>
+                <button type="button" data-cert-select="active" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Aktif</button>
+                <button type="button" data-cert-select="warning" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Yaklasan</button>
+                <button type="button" data-cert-select="uyku" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Gozetimde</button>
+                <button type="button" data-cert-select="pasif" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Pasif</button>
+                <button type="button" data-cert-select="none" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Temizle</button>
+              </div>
+            </div>
+
+            <div class="rounded-2xl border border-border-main bg-surface p-4 space-y-3">
+              <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-muted">
+                <Printer size={12} />
+                Uretim
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" data-cert-lang="EN" class="cert-lang-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors">EN</button>
+                <button type="button" data-cert-lang="TR" class="cert-lang-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors">TR</button>
+                <button type="button" data-cert-sign="NS" class="cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors">Imzasiz</button>
+                <button type="button" data-cert-sign="S" class="cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors">Imzali</button>
+              </div>
+              <button type="button" id="cert-generate-selected" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <Printer size={13} />
+                Secilileri Uret
+              </button>
+            </div>
+
+            <div class="rounded-2xl border border-border-main bg-surface p-4 space-y-3">
+              <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-muted">
+                <ShieldCheck size={12} />
+                Bakim
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" id="cert-mark-passive" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <ShieldCheck size={13} />
+                  Gozetimde
+                </button>
+                <button type="button" id="cert-mark-active" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <ShieldOff size={13} />
+                  Aktife Al
+                </button>
+              </div>
+              <p class="text-[11px] text-muted leading-relaxed">Secili kayitlar icin durum guncellemesi ve toplu belge uretimi burada yonetilir.</p>
+            </div>
+          </div>
+        </div>
+
         <div class="overflow-x-auto">
           <table class="w-full text-xs">
             <thead>
               <tr class="border-b border-border-main">
-                <th class="px-7 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Standart</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Sertifika No</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Belge Tarihi</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Gözetim T.</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Akreditasyon</th>
+                <th class="px-4 sm:px-7 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest w-16">Sec</th>
+                <th class="px-4 sm:px-7 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Standart</th>
+                <th class="hidden sm:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Sertifika No</th>
+                <th class="hidden md:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Belge Tarihi</th>
+                <th class="hidden md:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Gözetim T.</th>
+                <th class="hidden lg:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Akreditasyon</th>
                 <th class="px-4 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest">Durum</th>
+                <th class="px-4 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest w-28">Aksiyon</th>
               </tr>
             </thead>
             <tbody id="cert-tbody"></tbody>
@@ -247,7 +497,7 @@ import {
 
     <!-- Denetimler -->
     <div class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
-      <div class="flex items-center justify-between p-7 border-b border-border-main">
+      <div class="flex items-center justify-between p-4 sm:p-7 border-b border-border-main">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
             <ClipboardList size={16} />
@@ -275,11 +525,11 @@ import {
           <table class="w-full text-xs">
             <thead>
               <tr class="border-b border-border-main">
-                <th class="px-7 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Standart</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Tür</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">A1 Tarihi</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">A2 Tarihi</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Baş Denetçi</th>
+                <th class="px-4 sm:px-7 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Standart</th>
+                <th class="hidden sm:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Tür</th>
+                <th class="hidden sm:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">A1 Tarihi</th>
+                <th class="hidden md:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">A2 Tarihi</th>
+                <th class="hidden md:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Baş Denetçi</th>
               </tr>
             </thead>
             <tbody id="audit-tbody"></tbody>
@@ -322,8 +572,293 @@ import {
     }
   }
 
+  function setMany(ids: string[], value: string) {
+    ids.forEach(id => setEl(id, value));
+  }
+
+  function setField(id: string, value: string, blockId?: string) {
+    setEl(id, value);
+    if (!blockId) return;
+
+    const block = document.getElementById(blockId);
+    if (!block) return;
+
+    if (value) {
+      block.classList.remove('hidden');
+    } else {
+      block.classList.add('hidden');
+    }
+  }
+
+  function toggleCardVisibility(cardId: string, blockIds: string[]) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+
+    const hasVisibleBlock = blockIds.some((blockId) => {
+      const block = document.getElementById(blockId);
+      return block && !block.classList.contains('hidden');
+    });
+
+    if (hasVisibleBlock) {
+      card.classList.remove('hidden');
+    } else {
+      card.classList.add('hidden');
+    }
+  }
+
   function badge(text: string, cls: string) {
     return `<span class="text-[10px] font-bold px-2.5 py-1 rounded-full border ${cls}">${text}</span>`;
+  }
+
+  const copyResetTimers = new WeakMap<HTMLButtonElement, number>();
+  let currentCompanyNick = '';
+  let currentCertRows: Array<{ id: string; status: string }> = [];
+  const selectedCertIds = new Set<string>();
+  let certLang: 'TR' | 'EN' = 'EN';
+  let certSign: 'S' | 'NS' = 'NS';
+  const copySuccessMarkup = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M20 6 9 17l-5-5"/>
+    </svg>
+    <span class="text-[9px] font-black uppercase tracking-widest text-left">Kopyalandı</span>
+  `;
+
+  async function copyText(value: string) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const area = document.createElement('textarea');
+    area.value = value;
+    area.setAttribute('readonly', 'true');
+    area.className = 'fixed -left-[9999px] -top-[9999px]';
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    area.remove();
+  }
+
+  function flashCopyState(button: HTMLButtonElement) {
+    if (!button.dataset.originalHtml) {
+      button.dataset.originalHtml = button.innerHTML;
+      button.dataset.originalClass = button.className;
+    }
+
+    const activeTimer = copyResetTimers.get(button);
+    if (activeTimer) window.clearTimeout(activeTimer);
+
+    button.className = `${button.dataset.originalClass} text-emerald-400`;
+    button.innerHTML = copySuccessMarkup;
+
+    const timer = window.setTimeout(() => {
+      if (button.dataset.originalHtml && button.dataset.originalClass) {
+        button.innerHTML = button.dataset.originalHtml;
+        button.className = button.dataset.originalClass;
+      }
+    }, 2000);
+
+    copyResetTimers.set(button, timer);
+  }
+
+  function setupCopyButtons() {
+    document.querySelectorAll<HTMLButtonElement>('.copy-btn').forEach(button => {
+      if (button.dataset.copyReady === 'true') return;
+      button.dataset.copyReady = 'true';
+      button.dataset.originalHtml = button.innerHTML;
+      button.dataset.originalClass = button.className;
+
+      button.addEventListener('click', async () => {
+        const targetId = button.dataset.copy;
+        if (!targetId) return;
+
+        const target = document.getElementById(targetId);
+        const text = target?.textContent?.trim() || '';
+        if (!text || text === '—') return;
+
+        try {
+          await copyText(text);
+          flashCopyState(button);
+        } catch (error) {
+          console.error('Copy failed:', error);
+        }
+      });
+    });
+  }
+
+  function refreshCertSelectionSummary() {
+    const el = document.getElementById('cert-selection-summary');
+    if (!el) return;
+
+    const total = currentCertRows.length;
+    const selected = selectedCertIds.size;
+    el.textContent = selected > 0
+      ? `${selected} / ${total} sertifika secili.`
+      : total > 0
+        ? `Secili sertifika yok. Toplam ${total} kayit.`
+        : 'Secili sertifika yok.';
+  }
+
+  function refreshCertActionButtons() {
+    const hasSelection = selectedCertIds.size > 0;
+    [
+      'cert-generate-selected',
+      'cert-mark-passive',
+      'cert-mark-active',
+    ].forEach((id) => {
+      const btn = document.getElementById(id) as HTMLButtonElement | null;
+      if (btn) btn.disabled = !hasSelection;
+    });
+  }
+
+  function syncCertCheckboxes() {
+    document.querySelectorAll<HTMLInputElement>('.cert-select-row').forEach((input) => {
+      input.checked = selectedCertIds.has(input.value);
+    });
+    refreshCertSelectionSummary();
+    refreshCertActionButtons();
+  }
+
+  function applyCertPreset(preset: string) {
+    selectedCertIds.clear();
+
+    if (preset !== 'none') {
+      currentCertRows.forEach((row) => {
+        if (preset === 'all' || row.status === preset) {
+          selectedCertIds.add(row.id);
+        }
+      });
+    }
+
+    syncCertCheckboxes();
+  }
+
+  async function refreshCertificates() {
+    const res = await api.call('getCertificatesByFirmaId', { firmaId });
+    renderCerts(res?.data || []);
+  }
+
+  async function updateSelectedSurveillance(status: 'TRUE' | 'FALSE') {
+    if (selectedCertIds.size === 0) return;
+
+    const buttonId = status === 'TRUE' ? 'cert-mark-passive' : 'cert-mark-active';
+    const button = document.getElementById(buttonId) as HTMLButtonElement | null;
+    if (button) button.disabled = true;
+
+    try {
+      await api.call('updateSurveillance', { ids: Array.from(selectedCertIds), status });
+      await refreshCertificates();
+    } finally {
+      refreshCertActionButtons();
+    }
+  }
+
+  async function generateSelectedCertificates() {
+    if (selectedCertIds.size === 0 || !currentCompanyNick) return;
+
+    const button = document.getElementById('cert-generate-selected') as HTMLButtonElement | null;
+    const original = button?.innerHTML || '';
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = `<span class="inline-flex items-center gap-2">Hazirlaniyor</span>`;
+    }
+
+    try {
+      const folderRes = await api.call('getFolderId', { nickname: currentCompanyNick });
+      const folderId = folderRes?.data;
+      if (!folderId) throw new Error('Firma klasoru bulunamadi.');
+
+      for (const certId of selectedCertIds) {
+        const payloadRes = await api.buildCertPayload(certId, certLang, certSign);
+        if (!payloadRes.success || !payloadRes.data) {
+          throw new Error(payloadRes.error || `Payload olusturulamadi: ${certId}`);
+        }
+
+        const genRes = await api.call('generateIso', { cert: payloadRes.data, folderId });
+        if (!genRes.success) {
+          throw new Error(genRes.error || `Belge uretilemedi: ${certId}`);
+        }
+      }
+    } catch (error) {
+      console.error('Certificate generation failed:', error);
+    } finally {
+      if (button) {
+        button.innerHTML = original;
+      }
+      refreshCertActionButtons();
+    }
+  }
+
+  function setupCertificateActionBar() {
+    const toggle = document.getElementById('cert-actions-toggle') as HTMLButtonElement | null;
+    const panel = document.getElementById('cert-actions-panel');
+    const chevron = document.getElementById('cert-actions-chevron');
+
+    if (toggle && panel && chevron && toggle.dataset.bound !== 'true') {
+      toggle.dataset.bound = 'true';
+      toggle.addEventListener('click', () => {
+        panel.classList.toggle('hidden');
+        chevron.classList.toggle('rotate-180');
+      });
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('[data-cert-select]').forEach((button) => {
+      if (button.dataset.bound === 'true') return;
+      button.dataset.bound = 'true';
+      button.addEventListener('click', () => applyCertPreset(button.dataset.certSelect || 'none'));
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-cert-lang]').forEach((button) => {
+      if (button.dataset.bound === 'true') return;
+      button.dataset.bound = 'true';
+      button.addEventListener('click', () => {
+        certLang = (button.dataset.certLang as 'TR' | 'EN') || 'EN';
+        document.querySelectorAll<HTMLButtonElement>('[data-cert-lang]').forEach((btn) => {
+          const active = btn.dataset.certLang === certLang;
+          btn.className = active
+            ? 'cert-lang-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors'
+            : 'cert-lang-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors';
+        });
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-cert-sign]').forEach((button) => {
+      if (button.dataset.bound === 'true') return;
+      button.dataset.bound = 'true';
+      button.addEventListener('click', () => {
+        certSign = (button.dataset.certSign as 'S' | 'NS') || 'NS';
+        document.querySelectorAll<HTMLButtonElement>('[data-cert-sign]').forEach((btn) => {
+          const active = btn.dataset.certSign === certSign;
+          btn.className = active
+            ? 'cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors'
+            : 'cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors';
+        });
+      });
+    });
+
+    const refreshBtn = document.getElementById('cert-refresh') as HTMLButtonElement | null;
+    if (refreshBtn && refreshBtn.dataset.bound !== 'true') {
+      refreshBtn.dataset.bound = 'true';
+      refreshBtn.addEventListener('click', () => void refreshCertificates());
+    }
+
+    const genBtn = document.getElementById('cert-generate-selected') as HTMLButtonElement | null;
+    if (genBtn && genBtn.dataset.bound !== 'true') {
+      genBtn.dataset.bound = 'true';
+      genBtn.addEventListener('click', () => void generateSelectedCertificates());
+    }
+
+    const passiveBtn = document.getElementById('cert-mark-passive') as HTMLButtonElement | null;
+    if (passiveBtn && passiveBtn.dataset.bound !== 'true') {
+      passiveBtn.dataset.bound = 'true';
+      passiveBtn.addEventListener('click', () => void updateSelectedSurveillance('TRUE'));
+    }
+
+    const activeBtn = document.getElementById('cert-mark-active') as HTMLButtonElement | null;
+    if (activeBtn && activeBtn.dataset.bound !== 'true') {
+      activeBtn.dataset.bound = 'true';
+      activeBtn.addEventListener('click', () => void updateSelectedSurveillance('FALSE'));
+    }
   }
 
   // ─── URL Param ────────────────────────────────────────────────────────────────
@@ -373,6 +908,14 @@ import {
     const tcs     = g(c, 'Toplam Çalışan Sayısı', 'Toplam Calisan', 'TCS', 'tcs');
     const yapis   = g(c, 'Yapılan İş', 'YapilanIs', 'yapis');
     const not_    = g(c, 'Firma Not', 'Not', 'not');
+    const logoK   = g(c, 'Logo/Kase', 'Logo Kase', 'Logo/Kase-Imza', 'logoK');
+    const ycs     = g(c, 'YCS', 'ycs');
+    const ucs     = g(c, 'UCS', 'ucs');
+    const yzcs    = g(c, 'YZCS', 'yzcs');
+    const tascs   = g(c, 'TASCS', 'tascs');
+    const alan    = g(c, 'Alan', 'alan');
+    const dept    = g(c, 'Departman', 'dept');
+    const vardiya = g(c, 'Vardiya', 'vardiya');
 
     // Update breadcrumb
     const breadcrumb = document.getElementById('breadcrumb-nick');
@@ -392,9 +935,8 @@ import {
 
     setEl('hero-nick', nick);
     setEl('hero-unvan', unvan);
-
-    const adresShort = [adres, il, ulke].filter(Boolean).join(' — ');
-    setEl('hero-address-short', adresShort);
+    setEl('hero-adres', [adres, [il, ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - '));
+    currentCompanyNick = nick;
 
     // Edit link
     const btnEdit = document.getElementById('btn-edit') as HTMLAnchorElement | null;
@@ -402,30 +944,94 @@ import {
 
     const btnAddAudit = document.getElementById('btn-add-audit') as HTMLAnchorElement | null;
     if (btnAddAudit) btnAddAudit.href = `/audits/add?firmaId=${firmaId}`;
+    const btnAuditLink = document.getElementById('btn-audit-link') as HTMLAnchorElement | null;
+    if (btnAuditLink) btnAuditLink.href = `/audits/add?firmaId=${firmaId}`;
 
     // Kapsam
-    setEl('info-kapsam', kapsam);
-    setEl('info-scope', scope);
-    const subeRow = document.getElementById('sube-row');
-    if (yazisma) { setEl('info-sube', yazisma); }
-    else if (subeRow) { subeRow.classList.add('hidden'); }
+    setEl('hero-kapsam', kapsam);
+    setEl('hero-scope', scope);
+
+    const heroSubeRow = document.getElementById('hero-sube-row');
+    const infoSubeRow = document.getElementById('info-sube-row');
+    if (yazisma) {
+      setEl('hero-sube', yazisma);
+      setEl('info-sube', yazisma);
+      heroSubeRow?.classList.remove('hidden');
+      infoSubeRow?.classList.remove('hidden');
+    } else {
+      heroSubeRow?.classList.add('hidden');
+      infoSubeRow?.classList.add('hidden');
+    }
 
     // İletişim
-    const telFaks = [tel, faks].filter(Boolean).join(' / ');
-    setEl('info-tel-faks', telFaks);
-    setEl('info-mail', mail);
-    setEl('info-web', web);
+    setField('info-telefon', tel, 'info-telefon-block');
+    setField('info-faks', faks, 'info-faks-block');
+    setField('info-mail', mail, 'info-mail-block');
+    setField('info-web', web, 'info-web-block');
     const vergi = [vergiD, vergiN].filter(Boolean).join(' — ');
-    setEl('info-vergi', vergi);
-    setEl('info-dan', dan);
+    setField('info-vergi', vergi, 'info-vergi-block');
+    setField('info-location', [il, ulke].filter(Boolean).join(' / '), 'info-location-block');
+    setField('info-tcs', tcs, 'info-tcs-block');
+    setField('info-sector', [nace, ea].filter(Boolean).join(' / '), 'info-sector-block');
+    setField('info-facility', [alan && `${alan} m2`, dept && `${dept} departman`].filter(Boolean).join(' / '), 'info-facility-block');
+    setField('info-vardiya', vardiya, 'info-vardiya-block');
+
+    const workforce = [
+      ycs && `Yonetim: ${ycs}`,
+      ucs && `Uretim: ${ucs}`,
+      yzcs && `Yari Zamanli: ${yzcs}`,
+      tascs && `Taseron: ${tascs}`,
+    ].filter(Boolean).join(' / ');
+    setField('info-workforce', workforce, 'info-workforce-block');
 
     // Yetkililer
-    setEl('info-kyt', kyt);
-    setEl('info-yetkili', yetA);
-    setEl('info-yetkili-unvan', yetU);
-    setEl('info-irtibat', irtA);
-    const irtDetail = [irtU, irtN, irtM].filter(Boolean).join(' • ');
-    setEl('info-irtibat-detail', irtDetail);
+    setField('info-kyt', kyt, 'info-kyt-block');
+    setField('info-yetkili', yetA, 'info-yetkili-block');
+    setField('info-yetkili-unvan', yetU, 'info-yetkili-unvan-block');
+    setField('info-irtibat', irtA, 'info-irtibat-block');
+    setField('info-irtibat-unvan', irtU, 'info-irtibat-unvan-block');
+    setField('info-irtibat-tel', irtN, 'info-irtibat-tel-block');
+    setField('info-irtibat-mail', irtM, 'info-irtibat-mail-block');
+
+    // Kayıtlar
+    setField('info-dan', dan, 'info-dan-block');
+    setField('info-not', not_, 'info-not-block');
+    setField('info-logo', logoK, 'info-logo-block');
+
+    // Kart görünürlüğü
+    toggleCardVisibility('profile-card', [
+      'info-location-block',
+      'info-tcs-block',
+      'info-sector-block',
+      'info-facility-block',
+      'info-vardiya-block',
+      'info-workforce-block',
+      'info-sube-row',
+    ]);
+
+    toggleCardVisibility('contact-card', [
+      'info-telefon-block',
+      'info-faks-block',
+      'info-mail-block',
+      'info-web-block',
+      'info-vergi-block',
+    ]);
+
+    toggleCardVisibility('people-card', [
+      'info-kyt-block',
+      'info-yetkili-block',
+      'info-yetkili-unvan-block',
+      'info-irtibat-block',
+      'info-irtibat-unvan-block',
+      'info-irtibat-tel-block',
+      'info-irtibat-mail-block',
+    ]);
+
+    toggleCardVisibility('records-card', [
+      'info-dan-block',
+      'info-not-block',
+      'info-logo-block',
+    ]);
 
     // Firma Detayları
     const detailsGrid = document.getElementById('details-grid');
@@ -434,7 +1040,6 @@ import {
         { label: 'NACE', value: nace },
         { label: 'EA', value: ea },
         { label: 'Toplam Çalışan', value: tcs },
-        { label: 'Notlar', value: not_, span: true },
       ].filter(d => d.value);
 
       detailsGrid.innerHTML = details.map(d => `
@@ -462,8 +1067,14 @@ import {
     const count    = document.getElementById('cert-count');
 
     skeleton?.classList.add('hidden');
+    wrapper?.classList.add('hidden');
+    empty?.classList.add('hidden');
 
     if (!certData.length) {
+      currentCertRows = [];
+      selectedCertIds.clear();
+      refreshCertSelectionSummary();
+      refreshCertActionButtons();
       empty?.classList.remove('hidden');
       return;
     }
@@ -473,10 +1084,13 @@ import {
     // Certs from store are objects; certs from API are raw rows
     const isRaw = Array.isArray(certData[0]);
 
+    const nextRows: Array<{ id: string; status: string }> = [];
+
     const rows = certData.map(c => {
-      let standart, sertNo, belgeTarihi, gozT, akreditasyon, gozetimConf;
+      let id, standart, sertNo, belgeTarihi, gozT, akreditasyon, gozetimConf;
       if (isRaw) {
         // Raw row: [id, nick, firmaNo, standart, sertNo, belgeTarihi?, ...]
+        id          = String(c[0] || '');
         standart    = c[3]  || '';
         sertNo      = c[4]  || '';
         belgeTarihi = c[5]  || '';
@@ -484,6 +1098,7 @@ import {
         akreditasyon= c[14] || '';
         gozetimConf = String(c[19] || '').toUpperCase() === 'TRUE';
       } else {
+        id          = g(c, 'ID', 'id');
         standart    = g(c, 'Standart', 'standart');
         sertNo      = g(c, 'Sertifika No', 'sertNo', 'SertifikaNo');
         belgeTarihi = g(c, 'Sertifika Tarihi', 'Belge Tarihi', 'sTarihi');
@@ -492,19 +1107,58 @@ import {
         gozetimConf = String(g(c, 'Gözetim Conf.', 'gozetimConf')).toUpperCase() === 'TRUE';
       }
 
+      const parsedDate = gozT ? new Date(gozT.split('.').reverse().join('-')) : null;
+      const now = new Date();
+      const diffDays = parsedDate ? Math.floor((parsedDate.getTime() - now.getTime()) / 86400000) : null;
+      const statusKey = gozetimConf
+        ? 'uyku'
+        : parsedDate && parsedDate < now
+          ? 'pasif'
+          : diffDays !== null && diffDays < 46
+            ? 'warning'
+            : 'active';
+
+      nextRows.push({ id, status: statusKey });
+
       const statusHtml = gozetimConf
-        ? `<span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">AKTİF</span>`
-        : `<span class="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] font-bold">GÖZETİM</span>`;
+        ? `<span class="px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-300 border border-slate-500/20 text-[9px] font-bold">GOZETIMDE</span>`
+        : statusKey === 'pasif'
+          ? `<span class="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] font-bold">PASIF</span>`
+          : statusKey === 'warning'
+            ? `<span class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[9px] font-bold">YAKLASAN</span>`
+            : `<span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">AKTIF</span>`;
 
       return `<tr class="border-b border-border-main hover:bg-surface-hover transition-colors">
-        <td class="px-7 py-3.5 font-bold text-main">${standart || '—'}</td>
-        <td class="px-4 py-3.5 text-muted font-mono">${sertNo || '—'}</td>
-        <td class="px-4 py-3.5 text-muted">${belgeTarihi || '—'}</td>
-        <td class="px-4 py-3.5 text-muted">${gozT || '—'}</td>
-        <td class="px-4 py-3.5 text-muted">${akreditasyon || '—'}</td>
-        <td class="px-4 py-3.5 text-center">${statusHtml}</td>
+        <td class="px-4 sm:px-7 py-3 text-center">
+          <input type="checkbox" class="cert-select-row h-4 w-4 rounded border-border-main bg-surface-hover text-emerald-500 focus:ring-emerald-500/40" value="${id}">
+        </td>
+        <td class="px-4 sm:px-7 py-3 font-bold text-main text-xs">
+          <div>${standart || '—'}</div>
+          <div class="sm:hidden text-[10px] text-muted font-mono mt-0.5">${sertNo || ''}</div>
+        </td>
+        <td class="hidden sm:table-cell px-4 py-3 text-muted font-mono text-xs">${sertNo || '—'}</td>
+        <td class="hidden md:table-cell px-4 py-3 text-muted text-xs">${belgeTarihi || '—'}</td>
+        <td class="hidden md:table-cell px-4 py-3 text-muted text-xs">${gozT || '—'}</td>
+        <td class="hidden lg:table-cell px-4 py-3 text-muted text-xs">${akreditasyon || '—'}</td>
+        <td class="px-4 py-3 text-center">${statusHtml}</td>
+        <td class="px-4 py-3 text-center">
+          <div class="inline-flex items-center justify-center gap-1">
+            <a href="/certificates" class="inline-flex min-w-0 items-center justify-center rounded-lg border border-border-main bg-surface-hover px-2.5 py-2 text-main hover:bg-surface transition-colors text-[10px] font-bold uppercase tracking-wide" title="Sertifika Merkezi">
+              Merkez
+            </a>
+            <button type="button" class="cert-copy-id inline-flex min-w-0 items-center justify-center rounded-lg border border-border-main bg-surface-hover px-2.5 py-2 text-main hover:bg-surface transition-colors text-[10px] font-bold uppercase tracking-wide" data-cert-id="${id}" title="ID Kopyala">
+              ID
+            </button>
+          </div>
+        </td>
       </tr>`;
     }).join('');
+
+    currentCertRows = nextRows;
+    const validIds = new Set(nextRows.map((row) => row.id));
+    Array.from(selectedCertIds).forEach((id) => {
+      if (!validIds.has(id)) selectedCertIds.delete(id);
+    });
 
     if (tbody) tbody.innerHTML = rows;
     wrapper?.classList.remove('hidden');
@@ -512,6 +1166,30 @@ import {
     // Update add cert link
     const btnAddCert = document.getElementById('btn-add-cert') as HTMLAnchorElement | null;
     if (btnAddCert) btnAddCert.href = `/certificates?add=1&firmaId=${firmaId}`;
+
+    const folderLink = document.getElementById('cert-folder-link') as HTMLAnchorElement | null;
+    if (folderLink) folderLink.href = '/documents/view';
+
+    document.querySelectorAll<HTMLInputElement>('.cert-select-row').forEach((input) => {
+      input.addEventListener('change', () => {
+        if (input.checked) selectedCertIds.add(input.value);
+        else selectedCertIds.delete(input.value);
+        refreshCertSelectionSummary();
+        refreshCertActionButtons();
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('.cert-copy-id').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const certId = button.dataset.certId || '';
+        if (!certId) return;
+        await copyText(certId);
+        flashCopyState(button);
+      });
+    });
+
+    setupCertificateActionBar();
+    syncCertCheckboxes();
   }
 
   // ─── Load Audits ──────────────────────────────────────────────────────────────
@@ -561,11 +1239,14 @@ import {
       const a2Range = a2Basla ? `${a2Basla}${a2Bitis && a2Bitis !== a2Basla ? ' → ' + a2Bitis : ''}` : '—';
 
       return `<tr class="border-b border-border-main hover:bg-surface-hover transition-colors">
-        <td class="px-7 py-3.5 font-bold text-main">${standart || '—'}</td>
-        <td class="px-4 py-3.5 text-muted">${tur || '—'}</td>
-        <td class="px-4 py-3.5 text-muted font-mono text-[11px]">${a1Range}</td>
-        <td class="px-4 py-3.5 text-muted font-mono text-[11px]">${a2Range}</td>
-        <td class="px-4 py-3.5 text-muted">${a1Lead || '—'}</td>
+        <td class="px-4 sm:px-7 py-3 font-bold text-main text-xs">
+          <div>${standart || '—'}</div>
+          <div class="sm:hidden text-[10px] text-muted mt-0.5">${tur || ''}</div>
+        </td>
+        <td class="hidden sm:table-cell px-4 py-3 text-muted text-xs">${tur || '—'}</td>
+        <td class="hidden sm:table-cell px-4 py-3 text-muted font-mono text-[11px]">${a1Range}</td>
+        <td class="hidden md:table-cell px-4 py-3 text-muted font-mono text-[11px]">${a2Range}</td>
+        <td class="hidden md:table-cell px-4 py-3 text-muted text-xs">${a1Lead || '—'}</td>
       </tr>`;
     }).join('');
 
@@ -586,6 +1267,8 @@ import {
   // ─── Boot ─────────────────────────────────────────────────────────────────────
 
   if (firmaId) {
+    setupCopyButtons();
+
     SyncManager.init().then(() => {
       // Once store is ready, filter certs
       const certs = $certificates.get();
