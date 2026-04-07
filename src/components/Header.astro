@@ -125,33 +125,80 @@ const menuItems = [
       </div>
     </div>
   </div>
-  
-  <!-- Mobil Menü -->
-  <div id="mobile-menu" class="hidden lg:hidden bg-surface border-t border-border-main overflow-hidden transition-all duration-300">
-    <div class="px-4 py-4 space-y-1">
-      {menuItems.map((item) => (
-        <div class="flex flex-col">
-          <a href={item.href} class="flex items-center px-4 py-3 text-sm font-bold text-main hover:bg-surface rounded-xl uppercase tracking-tight transition-colors">
-            <Icon name={item.icon} class="w-5 h-5 mr-3 opacity-70" />
-            {item.name}
-          </a>
-          {item.dropdown && (
-            <div class="pl-12 space-y-1 pb-2">
-              {item.dropdown.map((drop) => (
-                <a href={drop.href} class="flex items-center px-4 py-2 text-xs font-semibold text-muted hover:text-primary transition-colors uppercase">
-                  {drop.name}
-                </a>
-              ))}
+</header>
+<!-- Mobil Menü -->
+<div id="mobile-menu" class="hidden lg:hidden fixed inset-0 z-[80] bg-[var(--bg-color)] overflow-hidden">
+  <div class="absolute inset-x-0 top-0 h-[70px] border-b border-border-main bg-header-bg/95 backdrop-blur-md"></div>
+  <button
+    id="mobile-menu-close"
+    type="button"
+    class="lg:hidden absolute top-4 right-4 z-[81] p-2.5 bg-surface border border-border-main shadow-sm rounded-xl text-muted hover:text-primary"
+    aria-label="Menüyü kapat"
+  >
+    <Icon name="mdi:close" class="h-6 w-6" />
+  </button>
+  <div class="relative h-full overflow-y-auto px-4 pt-[86px] pb-28 space-y-1">
+    {menuItems.map((item) => (
+      <div class="flex flex-col">
+        <a href={item.href} class="flex items-center px-4 py-3 text-sm font-bold text-main hover:bg-surface rounded-xl uppercase tracking-tight transition-colors">
+          <Icon name={item.icon} class="w-5 h-5 mr-3 opacity-70" />
+          {item.name}
+        </a>
+        {item.dropdown && (
+          <div class="pl-12 space-y-1 pb-2">
+            {item.dropdown.map((drop) => (
+              <a href={drop.href} class="flex items-center px-4 py-2 text-xs font-semibold text-muted hover:text-primary transition-colors uppercase">
+                {drop.name}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+  <div class="sticky bottom-0 border-t border-border-main bg-[var(--surface-color)] px-4 py-3 shadow-[0_-10px_30px_rgba(0,0,0,0.18)]">
+    <div class="flex items-center justify-between gap-3">
+      <div
+        id="header-user-mobile"
+        class="flex min-w-0 items-center gap-3"
+        title={user.email}
+        data-user-name={user.name}
+        data-user-email={user.email}
+        data-user-role={user.role}
+        data-user-initials={user.initials}
+        data-user-picture={user.picture || ""}
+      >
+        <div class="relative shrink-0">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-primary-hover p-[2px]">
+            <div class="w-full h-full rounded-full bg-surface flex items-center justify-center overflow-hidden border-2 border-transparent shadow-inner">
+              <img
+                id="header-user-picture-mobile"
+                src={user.picture || ""}
+                alt={user.name}
+                class:list={["w-full h-full object-cover", !user.picture && "hidden"]}
+                referrerpolicy="no-referrer"
+              />
+              <span id="header-user-initials-mobile" class:list={["text-xs font-black text-primary", user.picture && "hidden"]}>{user.initials}</span>
             </div>
-          )}
+          </div>
         </div>
-      ))}
+        <div class="min-w-0">
+          <p id="header-user-name-mobile" class="truncate text-xs font-black uppercase tracking-tight text-main">{user.name}</p>
+          <p id="header-user-role-mobile" class="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-muted">{user.role}</p>
+        </div>
+      </div>
+      <div class="shrink-0 rounded-xl border border-border-main bg-surface-hover px-2 py-1">
+        <ThemeToggle direction="up" />
+      </div>
     </div>
   </div>
+</div>
 
-  <SearchOverlay />
-</header>
+<SearchOverlay />
+
 <script>
+  const HEADER_IDENTITY_CACHE_KEY = 'medicert.header.identity.v1';
+
   function computeInitials(name) {
     return String(name || '')
       .trim()
@@ -168,44 +215,69 @@ const menuItems = [
   }
 
   function updateHeaderIdentity(identity) {
-    const wrapper = document.getElementById('header-user');
-    const nameEl = document.getElementById('header-user-name');
-    const roleEl = document.getElementById('header-user-role');
-    const pictureEl = document.getElementById('header-user-picture');
-    const initialsEl = document.getElementById('header-user-initials');
-
-    if (!wrapper || !nameEl || !roleEl || !pictureEl || !initialsEl) return;
-
-    const email = identity.email || wrapper.dataset.userEmail || 'info@medicert.com.tr';
-    const name = identity.name || wrapper.dataset.userName || 'Kullanıcı';
+    const desktopWrapper = document.getElementById('header-user');
+    const email = identity.email || desktopWrapper?.dataset.userEmail || 'info@medicert.com.tr';
+    const name = identity.name || desktopWrapper?.dataset.userName || 'Kullanıcı';
     const role = identity.role || roleFromEmail(email);
     const picture = identity.picture || '';
     const initials = identity.initials || computeInitials(name);
+    const targets = [
+      {
+        wrapper: document.getElementById('header-user'),
+        nameEl: document.getElementById('header-user-name'),
+        roleEl: document.getElementById('header-user-role'),
+        pictureEl: document.getElementById('header-user-picture'),
+        initialsEl: document.getElementById('header-user-initials'),
+      },
+      {
+        wrapper: document.getElementById('header-user-mobile'),
+        nameEl: document.getElementById('header-user-name-mobile'),
+        roleEl: document.getElementById('header-user-role-mobile'),
+        pictureEl: document.getElementById('header-user-picture-mobile'),
+        initialsEl: document.getElementById('header-user-initials-mobile'),
+      }
+    ];
 
-    wrapper.title = email;
-    wrapper.dataset.userEmail = email;
-    wrapper.dataset.userName = name;
-    wrapper.dataset.userRole = role;
-    wrapper.dataset.userInitials = initials;
-    wrapper.dataset.userPicture = picture;
+    targets.forEach((target) => {
+      const { wrapper, nameEl, roleEl, pictureEl, initialsEl } = target;
+      if (!wrapper || !nameEl || !roleEl || !pictureEl || !initialsEl) return;
 
-    nameEl.textContent = name;
-    roleEl.textContent = role;
-    initialsEl.textContent = initials;
+      wrapper.title = email;
+      wrapper.dataset.userEmail = email;
+      wrapper.dataset.userName = name;
+      wrapper.dataset.userRole = role;
+      wrapper.dataset.userInitials = initials;
+      wrapper.dataset.userPicture = picture;
 
-    if (picture) {
-      pictureEl.src = picture;
-      pictureEl.alt = name;
-      pictureEl.classList.remove('hidden');
-      initialsEl.classList.add('hidden');
-    } else {
-      pictureEl.removeAttribute('src');
-      pictureEl.classList.add('hidden');
-      initialsEl.classList.remove('hidden');
-    }
+      nameEl.textContent = name;
+      roleEl.textContent = role;
+      initialsEl.textContent = initials;
+
+      if (picture) {
+        pictureEl.src = picture;
+        pictureEl.alt = name;
+        pictureEl.classList.remove('hidden');
+        initialsEl.classList.add('hidden');
+      } else {
+        pictureEl.removeAttribute('src');
+        pictureEl.classList.add('hidden');
+        initialsEl.classList.remove('hidden');
+      }
+    });
   }
 
   async function hydrateAccessIdentity() {
+    try {
+      const cached = sessionStorage.getItem(HEADER_IDENTITY_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === 'object') {
+          updateHeaderIdentity(parsed);
+          return;
+        }
+      }
+    } catch {}
+
     try {
       const response = await fetch('/cdn-cgi/access/get-identity', {
         credentials: 'include',
@@ -244,13 +316,16 @@ const menuItems = [
         payload.photo ||
         '';
 
-      updateHeaderIdentity({
+      const identity = {
         name,
         email,
         picture,
         initials: computeInitials(name),
         role: roleFromEmail(email),
-      });
+      };
+
+      updateHeaderIdentity(identity);
+      sessionStorage.setItem(HEADER_IDENTITY_CACHE_KEY, JSON.stringify(identity));
     } catch (error) {
       console.warn('[Header] Access identity could not be loaded:', error);
     }
@@ -260,11 +335,18 @@ const menuItems = [
     const header = document.getElementById("medicert-header") as HTMLElement | null;
     const headerInner = document.getElementById("header-inner") as HTMLElement | null;
     const mobileBtn = document.getElementById("mobile-menu-button") as HTMLButtonElement | null;
+    const mobileCloseBtn = document.getElementById("mobile-menu-close") as HTMLButtonElement | null;
     const mobileMenu = document.getElementById("mobile-menu") as HTMLElement | null;
     const iconOpen = document.getElementById("menu-icon-open") as HTMLElement | null;
     const iconClose = document.getElementById("menu-icon-close") as HTMLElement | null;
     let isCompact = false;
     let scrollRaf: number | null = null;
+
+    const previousController = (window as any).__medicertHeaderController as AbortController | undefined;
+    previousController?.abort();
+    const controller = new AbortController();
+    const { signal } = controller;
+    (window as any).__medicertHeaderController = controller;
 
     const applyHeaderState = () => {
       if (!header || !headerInner) return;
@@ -297,10 +379,32 @@ const menuItems = [
     };
 
     if (mobileBtn) {
-      mobileBtn.addEventListener("click", onMobileToggle);
+      mobileBtn.addEventListener("click", onMobileToggle, { signal });
+    }
+    if (mobileCloseBtn) {
+      mobileCloseBtn.addEventListener("click", onMobileToggle, { signal });
     }
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    mobileMenu?.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        if (mobileMenu?.classList.contains('hidden')) return;
+        mobileMenu.classList.add('hidden');
+        iconOpen?.classList.remove('hidden');
+        iconClose?.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      }, { signal });
+    });
+
+    window.addEventListener("scroll", handleScroll, { passive: true, signal });
+    window.addEventListener("resize", () => {
+      if (window.innerWidth >= 1024 && mobileMenu && !mobileMenu.classList.contains('hidden')) {
+        mobileMenu.classList.add('hidden');
+        iconOpen?.classList.remove('hidden');
+        iconClose?.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      }
+    }, { signal });
+
     applyHeaderState();
     hydrateAccessIdentity();
   }

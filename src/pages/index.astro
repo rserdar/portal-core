@@ -40,29 +40,29 @@ const quickActions = [
 <DashboardLayout title="Genel Bakış">
 
   <!-- Toast Container -->
-  <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+  <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
 
   <!-- Top Stats Section -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8 md:mb-10">
     {stats.map((item) => {
       const Icon = item.icon;
       return (
-        <div class="bg-surface border border-border-main shadow-xl p-6 rounded-[2rem] relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
+        <div class="bg-surface border border-border-main shadow-xl p-5 sm:p-6 rounded-[2rem] relative overflow-hidden group md:hover:scale-[1.02] transition-all duration-300">
           <div class={`absolute -right-4 -bottom-4 w-24 h-24 ${item.glowClass} rounded-full blur-2xl transition-colors`}></div>
 
-          <div class="flex items-center justify-between mb-6 relative z-10">
+          <div class="flex items-center justify-between gap-3 mb-5 sm:mb-6 relative z-10">
             <div class={`w-12 h-12 rounded-2xl flex items-center justify-center ring-1 transition-transform ${item.iconClass}`}>
               <Icon size={24} />
             </div>
-            <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-hover border border-border-main text-[10px] font-bold text-muted uppercase tracking-tighter shadow-sm">
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-hover border border-border-main text-[9px] sm:text-[10px] font-bold text-muted uppercase tracking-tighter shadow-sm shrink-0">
               <TrendingUp size={12} class="text-emerald-400" />
               Canlı Veri
             </div>
           </div>
 
-          <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest relative z-10">{item.label}</h3>
-          <div class="flex items-end gap-2 relative z-10">
-            <p class="text-4xl font-extrabold mt-1 text-main tracking-tighter" id={item.id} data-target="0">—</p>
+          <h3 class="text-[11px] sm:text-xs font-bold text-gray-500 uppercase tracking-widest relative z-10">{item.label}</h3>
+          <div class="flex items-end gap-2 relative z-10 flex-wrap">
+            <p class="text-3xl sm:text-4xl font-extrabold mt-1 text-main tracking-tighter" id={item.id} data-target="0">—</p>
             {item.id === 'stat-pending-count' && (
               <span id="stat-pending-badge" class="mb-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-surface-hover text-muted border border-border-main">...</span>
             )}
@@ -73,15 +73,15 @@ const quickActions = [
   </div>
 
   <!-- System Connectivity Hub & Actions -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
     <!-- Left: Quick Actions + Activity -->
     <div class="lg:col-span-2 space-y-6">
-      <div class="flex items-center justify-between px-2">
-        <h2 class="text-xl font-bold text-main flex items-center gap-2">
+      <div class="flex items-center justify-between gap-3 px-1 sm:px-2">
+        <h2 class="text-lg sm:text-xl font-bold text-main flex items-center gap-2">
           Hızlı Aksiyonlar
           <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
         </h2>
-        <a href="/search" class="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 group">
+        <a href="/search" class="text-[11px] sm:text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 group shrink-0">
           Tümünü Gör <ChevronRight size={14} class="group-hover:translate-x-1 transition-transform" />
         </a>
       </div>
@@ -90,31 +90,31 @@ const quickActions = [
         {quickActions.map((action) => {
           const Icon = action.icon;
           return (
-            <a href={action.href} class="bg-surface border border-border-main shadow-xl p-5 rounded-[1.5rem] flex items-center justify-between hover:bg-surface-hover hover:border-primary/20 transition-all group overflow-hidden relative">
-              <div class="flex items-center gap-4 relative z-10">
-                <div class="w-10 h-10 rounded-xl bg-surface-hover border border-border-main flex items-center justify-center text-muted group-hover:text-primary group-hover:bg-primary/10 transition-all">
+            <a href={action.href} class="bg-surface border border-border-main shadow-xl p-4 sm:p-5 rounded-[1.5rem] flex items-center justify-between gap-3 hover:bg-surface-hover hover:border-primary/20 transition-all group overflow-hidden relative">
+              <div class="flex items-center gap-3 sm:gap-4 relative z-10 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-surface-hover border border-border-main flex items-center justify-center text-muted group-hover:text-primary group-hover:bg-primary/10 transition-all shrink-0">
                   <Icon size={20} />
                 </div>
-                <div>
-                  <h3 class="font-bold text-main group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{action.title}</h3>
-                  <p class="text-[10px] text-muted mt-0.5 uppercase tracking-wide">{action.desc}</p>
+                <div class="min-w-0">
+                  <h3 class="text-sm sm:text-base font-bold text-main group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{action.title}</h3>
+                  <p class="text-[10px] text-muted mt-0.5 uppercase tracking-wide line-clamp-2">{action.desc}</p>
                 </div>
               </div>
-              <ChevronRight size={18} class="text-gray-700 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all relative z-10" />
+              <ChevronRight size={18} class="hidden sm:block text-gray-700 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all relative z-10 shrink-0" />
             </a>
           )
         })}
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-surface border border-border-main shadow-xl p-5 rounded-[1.5rem] relative overflow-hidden group">
+        <div class="bg-surface border border-border-main shadow-xl p-5 rounded-[1.5rem] relative overflow-hidden group h-full">
           <div class="absolute right-0 bottom-0 w-20 h-20 bg-cyan-500/10 blur-2xl rounded-full group-hover:bg-cyan-500/20 transition-colors"></div>
-          <div class="relative z-10">
+          <div class="relative z-10 flex h-full flex-col">
             <div class="inline-flex items-center gap-2 rounded-full bg-surface-hover border border-border-main px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">
               <Users size={12} />
               Danışman Havuzu
             </div>
-            <div class="mt-4 flex items-center gap-4">
+            <div class="mt-4 flex flex-1 flex-col items-start gap-4 sm:flex-row sm:items-center">
               <div class="relative h-24 w-24 shrink-0">
                 <div
                   id="consultant-chart"
@@ -122,29 +122,35 @@ const quickActions = [
                   style="background: conic-gradient(rgba(148,163,184,0.25) 0deg 360deg);"
                 ></div>
               </div>
-              <div class="min-w-0 flex-1">
+              <div class="min-w-0 flex-1 w-full">
                 <div id="consultant-chart-legend" class="space-y-2"></div>
               </div>
             </div>
-            <p class="mt-3 text-[11px] text-muted">Sertifika dağılımında öne çıkan danışmanların toplam payı.</p>
+            <p class="mt-4 text-[11px] text-muted">Sertifika dağılımında öne çıkan danışmanların toplam payı.</p>
           </div>
         </div>
 
-        <div class="bg-surface border border-border-main shadow-xl p-5 rounded-[1.5rem] relative overflow-hidden group">
+        <div class="bg-surface border border-border-main shadow-xl p-5 rounded-[1.5rem] relative overflow-hidden group h-full">
           <div class="absolute right-0 bottom-0 w-20 h-20 bg-rose-500/10 blur-2xl rounded-full group-hover:bg-rose-500/20 transition-colors"></div>
-          <div class="relative z-10">
+          <div class="relative z-10 flex h-full flex-col">
             <div>
               <div class="inline-flex items-center gap-2 rounded-full bg-surface-hover border border-border-main px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-rose-400">
                 <TrendingUp size={12} />
                 Yıllara Göre Sertifika
               </div>
-              <div class="mt-2 flex items-center justify-between gap-3">
+              <div class="mt-2 flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <p class="text-[11px] text-muted">Sertifika tarihine göre dağılım.</p>
                 <p id="cert-year-chart-latest" class="text-[11px] font-bold tracking-tight text-main">—</p>
               </div>
             </div>
-            <div class="mt-4">
-              <svg id="cert-year-chart" viewBox="0 0 320 132" class="h-32 w-full overflow-visible">
+            <div class="mt-4 flex flex-1 flex-col justify-center">
+              <div class="mb-3 flex items-end justify-between gap-3">
+                <div>
+                  <p class="text-[10px] font-black uppercase tracking-[0.16em] text-muted">Toplam Sertifika</p>
+                  <p id="cert-year-chart-total" class="mt-1 text-2xl font-black tracking-tight text-main">0</p>
+                </div>
+              </div>
+              <svg id="cert-year-chart" viewBox="0 0 320 132" class="h-28 sm:h-32 w-full overflow-visible">
                 <defs>
                   <linearGradient id="cert-year-area" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stop-color="rgba(244,63,94,0.34)" />
@@ -158,19 +164,6 @@ const quickActions = [
                 <g id="cert-year-labels"></g>
               </svg>
             </div>
-            <div class="mt-4 rounded-2xl border border-border-main bg-surface-hover/40 px-4 py-3">
-              <p class="text-[10px] font-black uppercase tracking-[0.18em] text-main">Önceki Yıllar</p>
-              <div id="cert-year-chart-summary" class="mt-2">
-                <div class="grid grid-cols-6 gap-2 border-b border-border-main/70 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
-                  <span>Yıl</span>
-                  <span>Adet</span>
-                  <span>Yıl</span>
-                  <span>Adet</span>
-                  <span>Yıl</span>
-                  <span>Adet</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -179,7 +172,7 @@ const quickActions = [
     <!-- Right Panel -->
     <div class="space-y-6">
       <!-- Pro Tip -->
-      <div class="bg-surface border border-border-main shadow-xl p-8 rounded-[2.5rem] relative overflow-hidden group">
+      <div class="bg-surface border border-border-main shadow-xl p-6 sm:p-8 rounded-[2.5rem] relative overflow-hidden group">
         <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-600/10 rounded-full blur-3xl group-hover:bg-indigo-600/20 transition-colors animate-pulse"></div>
         <h3 class="text-sm font-bold text-indigo-400 mb-3 flex items-center gap-2 uppercase tracking-widest italic">
           <Zap size={14} fill="currentColor" />
@@ -191,7 +184,7 @@ const quickActions = [
       </div>
 
       <!-- Status + Sync -->
-      <div class="bg-surface border border-border-main shadow-xl p-6 rounded-[2.5rem] flex flex-col gap-6">
+      <div class="bg-surface border border-border-main shadow-xl p-5 sm:p-6 rounded-[2.5rem] flex flex-col gap-6">
         <div>
           <h3 class="text-sm font-bold text-main uppercase tracking-widest mb-4 flex items-center gap-2">
             <RefreshCw size={14} class="text-indigo-400" />
@@ -235,14 +228,14 @@ const quickActions = [
   </div>
 
   <!-- Regional Distribution & Insights -->
-  <div class="mt-10">
+  <div class="mt-10 dashboard-deferred">
     <TurkeyMap />
   </div>
 
-  <div class="mt-10 bg-surface border border-border-main shadow-2xl p-8 rounded-[2.5rem] relative overflow-hidden">
-    <div class="flex items-center justify-between mb-8">
-      <h2 class="text-lg font-bold text-main uppercase tracking-tight">Son Eklenen Firmalar</h2>
-      <a href="/search" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-hover border border-border-main shadow-sm text-[10px] font-bold text-muted hover:text-indigo-400 transition-colors">
+  <div class="mt-10 dashboard-deferred bg-surface border border-border-main shadow-2xl p-5 sm:p-8 rounded-[2.5rem] relative overflow-hidden">
+    <div class="flex items-center justify-between gap-3 mb-6 sm:mb-8">
+      <h2 class="text-base sm:text-lg font-bold text-main uppercase tracking-tight">Son Eklenen Firmalar</h2>
+      <a href="/search" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-hover border border-border-main shadow-sm text-[10px] font-bold text-muted hover:text-indigo-400 transition-colors shrink-0">
         <Activity size={12} class="text-indigo-500" />
         TÜMÜNÜ GÖR
       </a>
@@ -408,6 +401,7 @@ const quickActions = [
       return `${palette[index % palette.length]} ${start}deg ${currentAngle}deg`;
     });
 
+    const compactViewport = window.innerWidth < 420;
     chartEl.style.background = `conic-gradient(${gradientSegments.join(', ')})`;
     legendEl.innerHTML = chartEntries.map(([name, count], index) => {
       const percentage = Math.round((count / totalCertificates) * 100);
@@ -417,7 +411,7 @@ const quickActions = [
             <span class="h-2.5 w-2.5 rounded-full shrink-0" style="background:${palette[index % palette.length]}"></span>
             <span class="truncate text-[11px] font-bold text-main">${name}</span>
           </div>
-          <span class="shrink-0 text-[10px] font-black uppercase tracking-[0.14em] text-muted">%${percentage}</span>
+          <span class="shrink-0 text-[10px] font-black uppercase tracking-[0.14em] text-muted">${compactViewport ? `%${percentage}` : `%${percentage}`}</span>
         </div>
       `;
     }).join('');
@@ -431,9 +425,9 @@ const quickActions = [
     const pointsEl = document.getElementById('cert-year-points') as SVGGElement | null;
     const labelsEl = document.getElementById('cert-year-labels') as SVGGElement | null;
     const latestEl = document.getElementById('cert-year-chart-latest') as HTMLElement | null;
-    const summaryEl = document.getElementById('cert-year-chart-summary') as HTMLElement | null;
+    const totalEl = document.getElementById('cert-year-chart-total') as HTMLElement | null;
 
-    if (!svg || !gridEl || !areaEl || !lineEl || !pointsEl || !labelsEl || !latestEl || !summaryEl) return;
+    if (!svg || !gridEl || !areaEl || !lineEl || !pointsEl || !labelsEl || !latestEl || !totalEl) return;
 
     const yearlyCounts = new Map<number, number>();
 
@@ -450,23 +444,11 @@ const quickActions = [
 
     if (sortedYears.length === 0) {
       latestEl.textContent = 'Son yıl verisi görünmüyor';
+      totalEl.textContent = '0';
       gridEl.innerHTML = '';
       areaEl.setAttribute('d', '');
       lineEl.setAttribute('d', '');
       pointsEl.innerHTML = '';
-      summaryEl.innerHTML = `
-        <div class="grid grid-cols-6 gap-2 border-b border-border-main/70 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
-          <span>Yıl</span>
-          <span>Adet</span>
-          <span>Yıl</span>
-          <span>Adet</span>
-          <span>Yıl</span>
-          <span>Adet</span>
-        </div>
-        <div class="px-1 py-3 text-[11px] text-muted">
-          Yıllık sertifika verisi görünmüyor.
-        </div>
-      `;
       labelsEl.innerHTML = `<text x="160" y="68" text-anchor="middle" class="fill-muted text-[11px]">Yıllık sertifika verisi görünmüyor</text>`;
       return;
     }
@@ -474,41 +456,9 @@ const quickActions = [
     const yearsToShow = sortedYears.slice(-6);
     const series = yearsToShow.map((year) => ({ year, count: yearlyCounts.get(year) || 0 }));
     const latest = series[series.length - 1];
+    const totalCertificates = Array.from(yearlyCounts.values()).reduce((sum, count) => sum + count, 0);
     latestEl.textContent = `${latest.year}'te ${latest.count} sertifika`;
-
-    const hiddenYears = sortedYears.slice(0, -yearsToShow.length);
-    const summaryYears = (hiddenYears.length > 0 ? hiddenYears : sortedYears)
-      .slice(-5)
-      .map((year) => ({ year, count: yearlyCounts.get(year) || 0 }))
-      .reverse();
-
-    const summaryRows = [];
-    for (let index = 0; index < summaryYears.length; index += 3) {
-      summaryRows.push(summaryYears.slice(index, index + 3));
-    }
-
-    summaryEl.innerHTML = `
-      <div class="grid grid-cols-6 gap-2 border-b border-border-main/70 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
-        <span>Yıl</span>
-        <span>Adet</span>
-        <span>Yıl</span>
-        <span>Adet</span>
-        <span>Yıl</span>
-        <span>Adet</span>
-      </div>
-      <div class="mt-2 space-y-1.5">
-      ${summaryRows.map((row) => `
-        <div class="grid grid-cols-6 gap-2 px-1 py-1 text-[11px]">
-          <span class="font-bold text-main">${row[0]?.year ?? '—'}</span>
-          <span class="font-black tracking-tight text-rose-400">${row[0]?.count ?? '—'}</span>
-          <span class="font-bold text-main">${row[1]?.year ?? '—'}</span>
-          <span class="font-black tracking-tight text-rose-400">${row[1]?.count ?? '—'}</span>
-          <span class="font-bold text-main">${row[2]?.year ?? '—'}</span>
-          <span class="font-black tracking-tight text-rose-400">${row[2]?.count ?? '—'}</span>
-        </div>
-      `).join('')}
-      </div>
-    `;
+    totalEl.textContent = String(totalCertificates);
 
     const width = 320;
     const height = 132;
@@ -520,6 +470,7 @@ const quickActions = [
     const chartHeight = height - top - bottom;
     const maxCount = Math.max(...series.map((item) => item.count), 1);
     const stepX = series.length > 1 ? chartWidth / (series.length - 1) : 0;
+    const compactViewport = window.innerWidth < 480;
 
     const points = series.map((item, index) => {
       const x = left + stepX * index;
@@ -540,17 +491,21 @@ const quickActions = [
 
     pointsEl.innerHTML = points.map((point) => `
       <g>
-        <circle cx="${point.x}" cy="${point.y}" r="4" fill="#fb7185" />
+        <circle cx="${point.x}" cy="${point.y}" r="${compactViewport ? 3.5 : 4}" fill="#fb7185" />
         <circle cx="${point.x}" cy="${point.y}" r="8" fill="transparent">
           <title>${point.year}: ${point.count} sertifika</title>
         </circle>
       </g>
     `).join('');
 
+    const yearLabelSize = compactViewport ? 8 : 10;
+    const valueLabelSize = compactViewport ? 8 : 10;
+    const valueLabelOffset = compactViewport ? 8 : 10;
+
     labelsEl.innerHTML = points.map((point) => `
       <g>
-        <text x="${point.x}" y="${height - 8}" text-anchor="middle" class="fill-muted text-[10px] font-bold">${point.year}</text>
-        <text x="${point.x}" y="${point.y - 10}" text-anchor="middle" class="fill-main text-[10px] font-black">${point.count}</text>
+        <text x="${point.x}" y="${height - 8}" text-anchor="middle" class="fill-muted font-bold" style="font-size:${yearLabelSize}px">${point.year}</text>
+        <text x="${point.x}" y="${point.y - valueLabelOffset}" text-anchor="middle" class="fill-main font-black" style="font-size:${valueLabelSize}px">${point.count}</text>
       </g>
     `).join('');
   }

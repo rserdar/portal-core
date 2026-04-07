@@ -3,7 +3,7 @@ import { Building2, Award, CalendarClock, Map as MapIcon, UserRound } from 'luci
 import turkeySvg from '../assets/images/turkey.svg?raw';
 ---
 
-<section id="turkey-map-dashboard" class="bg-surface border border-border-main shadow-2xl rounded-[2.5rem] overflow-hidden relative">
+<section id="turkey-map-dashboard" class="bg-surface border border-border-main shadow-2xl rounded-[2rem] md:rounded-[2.5rem] overflow-hidden relative">
   <div class="absolute inset-x-0 top-0 h-36 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_52%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.1),transparent_36%)] pointer-events-none"></div>
   <div class="relative z-10 p-6 md:p-8 border-b border-border-main">
     <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
@@ -35,9 +35,36 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
     </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_22rem]">
+  <div class="md:hidden p-5 border-b border-border-main">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="rounded-[1.25rem] border border-border-main bg-surface-hover px-4 py-4">
+        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Aktif İl Sayısı</p>
+        <p id="map-summary-cities-mobile" class="mt-2 text-2xl font-black tracking-tight text-main">0</p>
+      </div>
+      <button id="map-summary-top-city-btn-mobile" type="button" class="rounded-[1.25rem] border border-border-main bg-surface-hover px-4 py-4 text-left transition-all hover:border-indigo-500/40 hover:bg-surface">
+        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">En Yoğun İl</p>
+        <p id="map-summary-top-city-mobile" class="mt-2 text-lg font-black tracking-tight text-indigo-400">—</p>
+      </button>
+      <div class="rounded-[1.25rem] border border-border-main bg-surface-hover px-4 py-4">
+        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Türkiye'deki Firma Sayısı</p>
+        <p id="map-summary-companies-mobile" class="mt-2 text-2xl font-black tracking-tight text-main">0</p>
+      </div>
+    </div>
+
+    <div class="mt-4 rounded-[1.5rem] border border-border-main bg-surface-hover px-4 py-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Öne Çıkan İller</p>
+          <p class="text-xs text-muted mt-1">Firma sayısına göre ilk 5 il</p>
+        </div>
+      </div>
+      <div id="map-top-cities-mobile" class="mt-4 grid grid-cols-1 gap-2"></div>
+    </div>
+  </div>
+
+  <div class="hidden md:grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_22rem]">
     <div class="p-5 md:p-8 border-b xl:border-b-0 xl:border-r border-border-main">
-      <div class="rounded-[2rem] border border-border-main bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] p-4 md:p-6">
+      <div class="rounded-[1.5rem] md:rounded-[2rem] border border-border-main bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] p-4 md:p-6">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
           <div>
             <p class="text-[10px] font-black uppercase tracking-[0.22em] text-muted">Isı Haritası</p>
@@ -51,7 +78,7 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
         </div>
         <div class="relative">
           <div id="map-tooltip" class="absolute hidden pointer-events-none z-[100] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border-main bg-surface/95 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-main shadow-2xl ring-1 ring-white/10 backdrop-blur-sm transition-opacity duration-150">İl Adı</div>
-          <div id="turkey-map-wrapper" class="relative mx-auto max-w-5xl">
+          <div id="turkey-map-wrapper" class="relative mx-auto max-w-5xl overflow-hidden">
             <Fragment set:html={turkeySvg} />
           </div>
         </div>
@@ -69,14 +96,14 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
     </div>
 
     <aside class="p-5 md:p-8 bg-[linear-gradient(180deg,rgba(99,102,241,0.06),transparent_32%)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.55),transparent_40%)]">
-      <div id="city-panel-empty" class="flex h-full min-h-[22rem] flex-col items-center justify-center rounded-[2rem] border border-dashed border-border-main bg-surface-hover px-6 py-10 text-center">
+      <div id="city-panel-empty" class="flex h-full min-h-[16rem] md:min-h-[22rem] flex-col items-center justify-center rounded-[1.5rem] md:rounded-[2rem] border border-dashed border-border-main bg-surface-hover px-5 md:px-6 py-8 md:py-10 text-center">
         <div class="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-indigo-500/10 text-indigo-400 mb-5"><MapIcon size={28} /></div>
         <p class="text-lg font-black tracking-tight text-main">Bir İl Seçin</p>
         <p class="mt-2 max-w-[18rem] text-xs leading-relaxed text-muted">Haritadan herhangi bir ile tıklayarak o bölgedeki firma yoğunluğunu ve sertifika hareketlerini açabilirsin.</p>
       </div>
 
       <div id="city-panel-content" class="hidden space-y-5">
-        <div class="rounded-[2rem] border border-border-main bg-surface px-5 py-5 shadow-xl">
+        <div class="rounded-[1.5rem] md:rounded-[2rem] border border-border-main bg-surface px-4 md:px-5 py-4 md:py-5 shadow-xl">
           <div class="flex items-start justify-between gap-4">
             <div>
               <p class="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Seçili İl</p>
@@ -298,19 +325,25 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
     const activeCities = sorted.filter((city) => city.companyCount > 0);
     const totalCompanies = sorted.reduce((sum, city) => sum + city.companyCount, 0);
     const cityCountEl = document.getElementById('map-summary-cities');
+    const cityCountMobileEl = document.getElementById('map-summary-cities-mobile');
     const topCityEl = document.getElementById('map-summary-top-city');
+    const topCityMobileEl = document.getElementById('map-summary-top-city-mobile');
     const companyCountEl = document.getElementById('map-summary-companies');
+    const companyCountMobileEl = document.getElementById('map-summary-companies-mobile');
     const monthLabelEl = document.getElementById('city-month-label');
     if (cityCountEl) cityCountEl.textContent = String(activeCities.length);
+    if (cityCountMobileEl) cityCountMobileEl.textContent = String(activeCities.length);
     if (topCityEl) topCityEl.textContent = sorted[0]?.name || '—';
+    if (topCityMobileEl) topCityMobileEl.textContent = sorted[0]?.name || '—';
     if (companyCountEl) companyCountEl.textContent = String(totalCompanies);
+    if (companyCountMobileEl) companyCountMobileEl.textContent = String(totalCompanies);
     if (monthLabelEl) monthLabelEl.textContent = monthLabel();
   }
 
   function updateTopCities() {
     const topCitiesEl = document.getElementById('map-top-cities');
-    if (!topCitiesEl) return;
-    topCitiesEl.innerHTML = getSortedCities().slice(0, 5).map((city, index) => `
+    const topCitiesMobileEl = document.getElementById('map-top-cities-mobile');
+    const topCitiesMarkup = getSortedCities().slice(0, 5).map((city, index) => `
       <button type="button" class="map-top-city-btn flex items-center justify-between rounded-2xl border border-border-main bg-surface px-3 py-3 text-left transition-all hover:border-indigo-500/40 hover:bg-surface-hover" data-city-key="${city.key}">
         <div class="min-w-0">
           <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">#${index + 1}</p>
@@ -323,7 +356,10 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
       </button>
     `).join('') || `<p class="text-xs text-muted">Henüz harita verisi yok.</p>`;
 
-    topCitiesEl.querySelectorAll('.map-top-city-btn').forEach((button) => {
+    if (topCitiesEl) topCitiesEl.innerHTML = topCitiesMarkup;
+    if (topCitiesMobileEl) topCitiesMobileEl.innerHTML = topCitiesMarkup;
+
+    document.querySelectorAll('.map-top-city-btn').forEach((button) => {
       button.addEventListener('click', () => {
         const cityKey = button.dataset.cityKey || '';
         const stat = cityStats.get(cityKey);
@@ -390,6 +426,13 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
     const topCity = getSortedCities()[0];
     if (!topCity) return;
     showCity(topCity.name, topCity.code);
+    openCitySearch(topCity.name);
+  });
+
+  const topCitySummaryMobileBtn = document.getElementById('map-summary-top-city-btn-mobile');
+  topCitySummaryMobileBtn?.addEventListener('click', () => {
+    const topCity = getSortedCities()[0];
+    if (!topCity) return;
     openCitySearch(topCity.name);
   });
 
