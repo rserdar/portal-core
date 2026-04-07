@@ -3,8 +3,9 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 import {
   Building2, Award, CalendarClock, RefreshCw,
   Plus, Search, FileSpreadsheet, ChevronRight,
-  TrendingUp, ShieldCheck, Activity, Zap, ClipboardList
+  TrendingUp, ShieldCheck, Activity, Zap, ClipboardList, Users
 } from 'lucide-astro';
+import TurkeyMap from '../components/TurkeyMap.astro';
 
 /**
  * 🏠 Dashboard Overview (v5.2.0)
@@ -22,7 +23,7 @@ const stats = [
     glowClass: "bg-emerald-500/10 group-hover:bg-emerald-500/20"
   },
   {
-    label: "Kritik Gözetim", id: "stat-pending-count", icon: CalendarClock,
+    label: "Bu Ayki Gözetimler", id: "stat-pending-count", icon: CalendarClock,
     iconClass: "bg-amber-500/10 text-amber-400 ring-amber-500/20 group-hover:rotate-6",
     glowClass: "bg-amber-500/10 group-hover:bg-amber-500/20"
   },
@@ -105,40 +106,72 @@ const quickActions = [
         })}
       </div>
 
-      <!-- Recent Activity -->
-      <div class="bg-surface border border-border-main shadow-2xl p-8 rounded-[2.5rem] relative overflow-hidden">
-        <div class="flex items-center justify-between mb-8">
-          <h2 class="text-lg font-bold text-main uppercase tracking-tight">Son Eklenen Firmalar</h2>
-          <a href="/search" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-hover border border-border-main shadow-sm text-[10px] font-bold text-muted hover:text-indigo-400 transition-colors">
-            <Activity size={12} class="text-indigo-500" />
-            TÜMÜNÜ GÖR
-          </a>
-        </div>
-
-        <!-- Skeleton (loading state) -->
-        <div id="activity-skeleton" class="space-y-4">
-          {[1,2,3].map(() => (
-            <div class="flex items-center gap-5 py-4 px-4 rounded-2xl animate-pulse">
-              <div class="w-12 h-12 rounded-2xl bg-surface-hover flex-shrink-0"></div>
-              <div class="flex-1 space-y-2">
-                <div class="h-3 bg-surface-hover rounded w-2/5"></div>
-                <div class="h-2 bg-surface-hover rounded w-1/4"></div>
-              </div>
-              <div class="h-2 bg-surface-hover rounded w-16"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-surface border border-border-main shadow-xl p-5 rounded-[1.5rem] relative overflow-hidden group">
+          <div class="absolute right-0 bottom-0 w-20 h-20 bg-cyan-500/10 blur-2xl rounded-full group-hover:bg-cyan-500/20 transition-colors"></div>
+          <div class="relative z-10">
+            <div class="inline-flex items-center gap-2 rounded-full bg-surface-hover border border-border-main px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">
+              <Users size={12} />
+              Danışman Havuzu
             </div>
-          ))}
+            <div class="mt-4 flex items-center gap-4">
+              <div class="relative h-24 w-24 shrink-0">
+                <div
+                  id="consultant-chart"
+                  class="h-24 w-24 rounded-full border border-border-main shadow-inner"
+                  style="background: conic-gradient(rgba(148,163,184,0.25) 0deg 360deg);"
+                ></div>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div id="consultant-chart-legend" class="space-y-2"></div>
+              </div>
+            </div>
+            <p class="mt-3 text-[11px] text-muted">Sertifika dağılımında öne çıkan danışmanların toplam payı.</p>
+          </div>
         </div>
 
-        <!-- Real data list -->
-        <div id="activity-list" class="space-y-1 hidden"></div>
-
-        <!-- Empty state -->
-        <div id="activity-empty" class="hidden flex flex-col items-center justify-center py-10 text-center gap-3">
-          <div class="w-14 h-14 rounded-2xl bg-surface-hover border border-border-main flex items-center justify-center">
-            <Activity size={24} class="text-muted opacity-40" />
+        <div class="bg-surface border border-border-main shadow-xl p-5 rounded-[1.5rem] relative overflow-hidden group">
+          <div class="absolute right-0 bottom-0 w-20 h-20 bg-rose-500/10 blur-2xl rounded-full group-hover:bg-rose-500/20 transition-colors"></div>
+          <div class="relative z-10">
+            <div>
+              <div class="inline-flex items-center gap-2 rounded-full bg-surface-hover border border-border-main px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-rose-400">
+                <TrendingUp size={12} />
+                Yıllara Göre Sertifika
+              </div>
+              <div class="mt-2 flex items-center justify-between gap-3">
+                <p class="text-[11px] text-muted">Sertifika tarihine göre dağılım.</p>
+                <p id="cert-year-chart-latest" class="text-[11px] font-bold tracking-tight text-main">—</p>
+              </div>
+            </div>
+            <div class="mt-4">
+              <svg id="cert-year-chart" viewBox="0 0 320 132" class="h-32 w-full overflow-visible">
+                <defs>
+                  <linearGradient id="cert-year-area" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="rgba(244,63,94,0.34)" />
+                    <stop offset="100%" stop-color="rgba(244,63,94,0)" />
+                  </linearGradient>
+                </defs>
+                <g id="cert-year-grid" class="text-border-main"></g>
+                <path id="cert-year-area-path" fill="url(#cert-year-area)" stroke="none"></path>
+                <path id="cert-year-line" fill="none" stroke="#fb7185" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+                <g id="cert-year-points"></g>
+                <g id="cert-year-labels"></g>
+              </svg>
+            </div>
+            <div class="mt-4 rounded-2xl border border-border-main bg-surface-hover/40 px-4 py-3">
+              <p class="text-[10px] font-black uppercase tracking-[0.18em] text-main">Önceki Yıllar</p>
+              <div id="cert-year-chart-summary" class="mt-2">
+                <div class="grid grid-cols-6 gap-2 border-b border-border-main/70 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
+                  <span>Yıl</span>
+                  <span>Adet</span>
+                  <span>Yıl</span>
+                  <span>Adet</span>
+                  <span>Yıl</span>
+                  <span>Adet</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <p class="text-sm font-bold text-muted">Henüz veri yok</p>
-          <p class="text-[11px] text-muted opacity-60">"Sistemi Senkronize Et" butonuna basarak veriyi yükleyin.</p>
         </div>
       </div>
     </div>
@@ -200,6 +233,44 @@ const quickActions = [
       </div>
     </div>
   </div>
+
+  <!-- Regional Distribution & Insights -->
+  <div class="mt-10">
+    <TurkeyMap />
+  </div>
+
+  <div class="mt-10 bg-surface border border-border-main shadow-2xl p-8 rounded-[2.5rem] relative overflow-hidden">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-lg font-bold text-main uppercase tracking-tight">Son Eklenen Firmalar</h2>
+      <a href="/search" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-hover border border-border-main shadow-sm text-[10px] font-bold text-muted hover:text-indigo-400 transition-colors">
+        <Activity size={12} class="text-indigo-500" />
+        TÜMÜNÜ GÖR
+      </a>
+    </div>
+
+    <div id="activity-skeleton" class="space-y-4">
+      {[1,2,3].map(() => (
+        <div class="flex items-center gap-5 py-4 px-4 rounded-2xl animate-pulse">
+          <div class="w-12 h-12 rounded-2xl bg-surface-hover flex-shrink-0"></div>
+          <div class="flex-1 space-y-2">
+            <div class="h-3 bg-surface-hover rounded w-2/5"></div>
+            <div class="h-2 bg-surface-hover rounded w-1/4"></div>
+          </div>
+          <div class="h-2 bg-surface-hover rounded w-16"></div>
+        </div>
+      ))}
+    </div>
+
+    <div id="activity-list" class="space-y-1 hidden"></div>
+
+    <div id="activity-empty" class="hidden flex flex-col items-center justify-center py-10 text-center gap-3">
+      <div class="w-14 h-14 rounded-2xl bg-surface-hover border border-border-main flex items-center justify-center">
+        <Activity size={24} class="text-muted opacity-40" />
+      </div>
+      <p class="text-sm font-bold text-muted">Henüz veri yok</p>
+      <p class="text-[11px] text-muted opacity-60">"Sistemi Senkronize Et" butonuna basarak veriyi yükleyin.</p>
+    </div>
+  </div>
 </DashboardLayout>
 
 <script>
@@ -251,6 +322,237 @@ const quickActions = [
       if (progress < 1) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
+  }
+
+  function parseTrDate(value: unknown): Date | null {
+    const raw = String(value ?? '').trim();
+    const match = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (!match) return null;
+
+    const [, dayStr, monthStr, yearStr] = match;
+    const day = Number(dayStr);
+    const monthIndex = Number(monthStr) - 1;
+    const year = Number(yearStr);
+    const date = new Date(year, monthIndex, day);
+
+    if (
+      Number.isNaN(date.getTime()) ||
+      date.getFullYear() !== year ||
+      date.getMonth() !== monthIndex ||
+      date.getDate() !== day
+    ) {
+      return null;
+    }
+
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  function pickValue(item: Record<string, any>, aliases: string[], fallback = ''): string {
+    for (const key of aliases) {
+      const value = item?.[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return String(value).trim();
+      }
+    }
+    return fallback;
+  }
+
+  function getCurrentMonthLabel(): string {
+    const now = new Date();
+    const monthName = now.toLocaleDateString('tr-TR', { month: 'long' });
+    if (!monthName) return 'Bu Ayki Gözetimler';
+    return `${monthName.charAt(0).toUpperCase()}${monthName.slice(1)} Gözetimleri`;
+  }
+
+  function renderConsultantChart(certificates: Record<string, any>[]) {
+    const chartEl = document.getElementById('consultant-chart') as HTMLElement | null;
+    const legendEl = document.getElementById('consultant-chart-legend') as HTMLElement | null;
+
+    if (!chartEl || !legendEl) return;
+
+    const consultantCounts = new Map<string, number>();
+
+    certificates.forEach((certificate) => {
+      const consultant = pickValue(certificate, ['Danışman', 'Danisman', 'dan'], 'Atanmamış');
+      const normalized = consultant || 'Atanmamış';
+      consultantCounts.set(normalized, (consultantCounts.get(normalized) || 0) + 1);
+    });
+
+    const sorted = Array.from(consultantCounts.entries()).sort((a, b) => b[1] - a[1]);
+    const totalCertificates = sorted.reduce((sum, [, count]) => sum + count, 0);
+
+    if (sorted.length === 0 || totalCertificates === 0) {
+      chartEl.style.background = 'conic-gradient(rgba(148,163,184,0.25) 0deg 360deg)';
+      legendEl.innerHTML = `<p class="text-[11px] text-muted">Danışman verisi henüz görünmüyor.</p>`;
+      return;
+    }
+
+    const palette = [
+      '#22c55e',
+      '#06b6d4',
+      '#6366f1',
+      '#f59e0b',
+      '#f472b6',
+    ];
+
+    const topEntries = sorted.slice(0, 4);
+    const remainingCount = sorted.slice(4).reduce((sum, [, count]) => sum + count, 0);
+    const chartEntries = remainingCount > 0 ? [...topEntries, ['Diğer', remainingCount] as [string, number]] : topEntries;
+
+    let currentAngle = 0;
+    const gradientSegments = chartEntries.map(([_, count], index) => {
+      const portion = count / totalCertificates;
+      const start = currentAngle;
+      currentAngle += portion * 360;
+      return `${palette[index % palette.length]} ${start}deg ${currentAngle}deg`;
+    });
+
+    chartEl.style.background = `conic-gradient(${gradientSegments.join(', ')})`;
+    legendEl.innerHTML = chartEntries.map(([name, count], index) => {
+      const percentage = Math.round((count / totalCertificates) * 100);
+      return `
+        <div class="flex items-center justify-between gap-3 border-b border-border-main/60 pb-2 last:border-0 last:pb-0">
+          <div class="min-w-0 flex items-center gap-2">
+            <span class="h-2.5 w-2.5 rounded-full shrink-0" style="background:${palette[index % palette.length]}"></span>
+            <span class="truncate text-[11px] font-bold text-main">${name}</span>
+          </div>
+          <span class="shrink-0 text-[10px] font-black uppercase tracking-[0.14em] text-muted">%${percentage}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderYearlyCertificateChart(certificates: Record<string, any>[]) {
+    const svg = document.getElementById('cert-year-chart') as SVGSVGElement | null;
+    const gridEl = document.getElementById('cert-year-grid') as SVGGElement | null;
+    const areaEl = document.getElementById('cert-year-area-path') as SVGPathElement | null;
+    const lineEl = document.getElementById('cert-year-line') as SVGPathElement | null;
+    const pointsEl = document.getElementById('cert-year-points') as SVGGElement | null;
+    const labelsEl = document.getElementById('cert-year-labels') as SVGGElement | null;
+    const latestEl = document.getElementById('cert-year-chart-latest') as HTMLElement | null;
+    const summaryEl = document.getElementById('cert-year-chart-summary') as HTMLElement | null;
+
+    if (!svg || !gridEl || !areaEl || !lineEl || !pointsEl || !labelsEl || !latestEl || !summaryEl) return;
+
+    const yearlyCounts = new Map<number, number>();
+
+    certificates.forEach((certificate) => {
+      const issueDate = parseTrDate(
+        pickValue(certificate, ['gst', 'GST', 'Sertifika Tarihi', 'Belge Tarihi', 'sTarihi'])
+      );
+      if (!issueDate) return;
+      const year = issueDate.getFullYear();
+      yearlyCounts.set(year, (yearlyCounts.get(year) || 0) + 1);
+    });
+
+    const sortedYears = Array.from(yearlyCounts.keys()).sort((a, b) => a - b);
+
+    if (sortedYears.length === 0) {
+      latestEl.textContent = 'Son yıl verisi görünmüyor';
+      gridEl.innerHTML = '';
+      areaEl.setAttribute('d', '');
+      lineEl.setAttribute('d', '');
+      pointsEl.innerHTML = '';
+      summaryEl.innerHTML = `
+        <div class="grid grid-cols-6 gap-2 border-b border-border-main/70 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
+          <span>Yıl</span>
+          <span>Adet</span>
+          <span>Yıl</span>
+          <span>Adet</span>
+          <span>Yıl</span>
+          <span>Adet</span>
+        </div>
+        <div class="px-1 py-3 text-[11px] text-muted">
+          Yıllık sertifika verisi görünmüyor.
+        </div>
+      `;
+      labelsEl.innerHTML = `<text x="160" y="68" text-anchor="middle" class="fill-muted text-[11px]">Yıllık sertifika verisi görünmüyor</text>`;
+      return;
+    }
+
+    const yearsToShow = sortedYears.slice(-6);
+    const series = yearsToShow.map((year) => ({ year, count: yearlyCounts.get(year) || 0 }));
+    const latest = series[series.length - 1];
+    latestEl.textContent = `${latest.year}'te ${latest.count} sertifika`;
+
+    const hiddenYears = sortedYears.slice(0, -yearsToShow.length);
+    const summaryYears = (hiddenYears.length > 0 ? hiddenYears : sortedYears)
+      .slice(-5)
+      .map((year) => ({ year, count: yearlyCounts.get(year) || 0 }))
+      .reverse();
+
+    const summaryRows = [];
+    for (let index = 0; index < summaryYears.length; index += 3) {
+      summaryRows.push(summaryYears.slice(index, index + 3));
+    }
+
+    summaryEl.innerHTML = `
+      <div class="grid grid-cols-6 gap-2 border-b border-border-main/70 pb-2 text-[10px] font-black uppercase tracking-[0.14em] text-muted">
+        <span>Yıl</span>
+        <span>Adet</span>
+        <span>Yıl</span>
+        <span>Adet</span>
+        <span>Yıl</span>
+        <span>Adet</span>
+      </div>
+      <div class="mt-2 space-y-1.5">
+      ${summaryRows.map((row) => `
+        <div class="grid grid-cols-6 gap-2 px-1 py-1 text-[11px]">
+          <span class="font-bold text-main">${row[0]?.year ?? '—'}</span>
+          <span class="font-black tracking-tight text-rose-400">${row[0]?.count ?? '—'}</span>
+          <span class="font-bold text-main">${row[1]?.year ?? '—'}</span>
+          <span class="font-black tracking-tight text-rose-400">${row[1]?.count ?? '—'}</span>
+          <span class="font-bold text-main">${row[2]?.year ?? '—'}</span>
+          <span class="font-black tracking-tight text-rose-400">${row[2]?.count ?? '—'}</span>
+        </div>
+      `).join('')}
+      </div>
+    `;
+
+    const width = 320;
+    const height = 132;
+    const left = 18;
+    const right = 16;
+    const top = 14;
+    const bottom = 26;
+    const chartWidth = width - left - right;
+    const chartHeight = height - top - bottom;
+    const maxCount = Math.max(...series.map((item) => item.count), 1);
+    const stepX = series.length > 1 ? chartWidth / (series.length - 1) : 0;
+
+    const points = series.map((item, index) => {
+      const x = left + stepX * index;
+      const y = top + chartHeight - (item.count / maxCount) * chartHeight;
+      return { ...item, x, y };
+    });
+
+    gridEl.innerHTML = [0.25, 0.5, 0.75].map((ratio) => {
+      const y = top + chartHeight - chartHeight * ratio;
+      return `<line x1="${left}" y1="${y}" x2="${width - right}" y2="${y}" stroke="currentColor" stroke-opacity="0.16" stroke-dasharray="4 6" />`;
+    }).join('');
+
+    const linePath = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+    const areaPath = `${linePath} L ${points[points.length - 1].x} ${height - bottom} L ${points[0].x} ${height - bottom} Z`;
+
+    lineEl.setAttribute('d', linePath);
+    areaEl.setAttribute('d', areaPath);
+
+    pointsEl.innerHTML = points.map((point) => `
+      <g>
+        <circle cx="${point.x}" cy="${point.y}" r="4" fill="#fb7185" />
+        <circle cx="${point.x}" cy="${point.y}" r="8" fill="transparent">
+          <title>${point.year}: ${point.count} sertifika</title>
+        </circle>
+      </g>
+    `).join('');
+
+    labelsEl.innerHTML = points.map((point) => `
+      <g>
+        <text x="${point.x}" y="${height - 8}" text-anchor="middle" class="fill-muted text-[10px] font-bold">${point.year}</text>
+        <text x="${point.x}" y="${point.y - 10}" text-anchor="middle" class="fill-main text-[10px] font-black">${point.count}</text>
+      </g>
+    `).join('');
   }
 
   // ─── Status Check ────────────────────────────��───────────────────────────────
@@ -338,22 +640,60 @@ const quickActions = [
   const statPendingBadge = document.getElementById('stat-pending-badge');
   const lastSyncLabel    = document.getElementById('last-sync-label');
 
+  const pendingStatLabel = document
+    .getElementById('stat-pending-count')
+    ?.closest('.relative.z-10')
+    ?.previousElementSibling as HTMLElement | null;
+
+  if (pendingStatLabel) {
+    pendingStatLabel.textContent = getCurrentMonthLabel();
+  }
+
   $companies.subscribe(val => {
     if (statCompanies) countUp(statCompanies, val.length);
     renderActivity(val as any[]);
   });
 
   $certificates.subscribe(val => {
+    renderConsultantChart(val as Record<string, any>[]);
+    renderYearlyCertificateChart(val as Record<string, any>[]);
+
     if (statCertificates) {
-      const activeCount = val.filter(c => String(c['Gözetim Conf.']).trim().toUpperCase() === 'TRUE').length;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const activeCount = val.filter(c => {
+        const gst = parseTrDate(pickValue(c, ['gst', 'GST', 'Sertifika Tarihi', 'Belge Tarihi', 'sTarihi']));
+        const goz = parseTrDate(pickValue(c, ['goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
+        const gozetimConf = pickValue(c, ['Gözetim Conf.', 'Gözetim', 'gozetimConfirmed'], 'FALSE').toUpperCase();
+
+        if (!gst || !goz) return false;
+        if (gozetimConf !== 'FALSE') return false;
+
+        return today >= gst && today <= goz;
+      }).length;
+
       countUp(statCertificates, activeCount);
     }
     if (statPendingCount) {
-      const pendingCount = val.filter(c => String(c['Gözetim Conf.']).trim().toUpperCase() === 'FALSE').length;
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      const pendingCount = val.filter(c => {
+        const goz = parseTrDate(pickValue(c, ['goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
+        const gozetimConf = pickValue(c, ['Gözetim Conf.', 'Gözetim', 'gozetimConfirmed'], 'FALSE').toUpperCase();
+
+        if (!goz) return false;
+        if (gozetimConf !== 'FALSE') return false;
+
+        return goz.getMonth() === currentMonth && goz.getFullYear() === currentYear;
+      }).length;
+
       countUp(statPendingCount, pendingCount);
 
       if (statPendingBadge) {
-        statPendingBadge.textContent = pendingCount > 0 ? 'KRİTİK' : 'TEMİZ';
+        statPendingBadge.textContent = pendingCount > 0 ? 'BEKLİYOR' : 'TEMİZ';
         statPendingBadge.className = `mb-1 text-[10px] font-bold px-2 py-0.5 rounded-md border transition-colors ${
           pendingCount > 0
             ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.2)]'

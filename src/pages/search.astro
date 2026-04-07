@@ -101,6 +101,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   let currentTerm = '';
   let currentPage = 1;
   let pageSize = 20;
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQuery = urlParams.get('q') || '';
 
   // 📡 Store ve Sync Yönetimi
   $companies.subscribe(data => {
@@ -360,5 +362,14 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     refreshUI();
   });
 
-  SyncManager.init();
+  if (searchInput && initialQuery) {
+    searchInput.value = initialQuery;
+    currentTerm = initialQuery;
+  }
+
+  SyncManager.init().then(() => {
+    if (initialQuery) {
+      renderResults($companies.get(), currentTerm);
+    }
+  });
 </script>

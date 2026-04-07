@@ -1,0 +1,480 @@
+---
+import { Building2, Award, CalendarClock, Map as MapIcon, UserRound } from 'lucide-astro';
+import turkeySvg from '../assets/images/turkey.svg?raw';
+---
+
+<section id="turkey-map-dashboard" class="bg-surface border border-border-main shadow-2xl rounded-[2.5rem] overflow-hidden relative">
+  <div class="absolute inset-x-0 top-0 h-36 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_52%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.1),transparent_36%)] pointer-events-none"></div>
+  <div class="relative z-10 p-6 md:p-8 border-b border-border-main">
+    <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+      <div class="space-y-2">
+        <div class="inline-flex items-center gap-2 rounded-full bg-surface-hover border border-border-main px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">
+          <MapIcon size={12} />
+          Bölgesel Görünüm
+        </div>
+        <h2 class="text-2xl md:text-3xl font-black tracking-tight text-main">Türkiye Genelinde Firma Yoğunluğu</h2>
+        <p class="max-w-3xl text-xs md:text-sm text-muted leading-relaxed">Harita firma dağılımını il bazında gösterir. Sağ panelde seçili ilin aktif sertifikaları ve bu ay yenileme bekleyen kayıtları yer alır.</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 w-full xl:w-auto xl:min-w-[28rem]">
+        <div class="rounded-[1.5rem] border border-border-main bg-surface-hover px-4 py-4 relative overflow-hidden group/summary">
+          <div class="absolute right-3 bottom-2 text-indigo-400/10 group-hover/summary:text-indigo-400/20 transition-colors"><MapIcon size={26} /></div>
+          <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Aktif İl Sayısı</p>
+          <p id="map-summary-cities" class="mt-2 text-2xl font-black tracking-tight text-main">0</p>
+        </div>
+        <button id="map-summary-top-city-btn" type="button" class="rounded-[1.5rem] border border-border-main bg-surface-hover px-4 py-4 relative overflow-hidden text-left transition-all hover:border-indigo-500/40 hover:bg-surface group/summary">
+          <div class="absolute right-3 bottom-2 text-indigo-400/10 group-hover/summary:text-indigo-400/20 transition-colors"><Building2 size={26} /></div>
+          <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">En Yoğun İl</p>
+          <p id="map-summary-top-city" class="mt-2 text-lg font-black tracking-tight text-indigo-400">—</p>
+        </button>
+        <div class="rounded-[1.5rem] border border-border-main bg-surface-hover px-4 py-4 relative overflow-hidden group/summary">
+          <div class="absolute right-3 bottom-2 text-indigo-400/10 group-hover/summary:text-indigo-400/20 transition-colors"><Award size={26} /></div>
+          <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Türkiye'deki Firma Sayısı</p>
+          <p id="map-summary-companies" class="mt-2 text-2xl font-black tracking-tight text-main">0</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_22rem]">
+    <div class="p-5 md:p-8 border-b xl:border-b-0 xl:border-r border-border-main">
+      <div class="rounded-[2rem] border border-border-main bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] p-4 md:p-6">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
+          <div>
+            <p class="text-[10px] font-black uppercase tracking-[0.22em] text-muted">Isı Haritası</p>
+            <p class="text-sm text-main font-bold">Yoğunluğa göre tonlanan iller</p>
+          </div>
+          <div class="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+            <span class="inline-flex items-center gap-2 rounded-full border border-border-main bg-surface px-3 py-1"><span class="h-2.5 w-2.5 rounded-full bg-indigo-300/40"></span>Düşük</span>
+            <span class="inline-flex items-center gap-2 rounded-full border border-border-main bg-surface px-3 py-1"><span class="h-2.5 w-2.5 rounded-full bg-indigo-500/70"></span>Orta</span>
+            <span class="inline-flex items-center gap-2 rounded-full border border-border-main bg-surface px-3 py-1"><span class="h-2.5 w-2.5 rounded-full bg-cyan-400"></span>Yüksek</span>
+          </div>
+        </div>
+        <div class="relative">
+          <div id="map-tooltip" class="absolute hidden pointer-events-none z-[100] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border-main bg-surface/95 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.15em] text-main shadow-2xl ring-1 ring-white/10 backdrop-blur-sm transition-opacity duration-150">İl Adı</div>
+          <div id="turkey-map-wrapper" class="relative mx-auto max-w-5xl">
+            <Fragment set:html={turkeySvg} />
+          </div>
+        </div>
+
+        <div class="mt-5 rounded-[1.5rem] border border-border-main bg-surface-hover px-4 py-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Öne Çıkan İller</p>
+              <p class="text-xs text-muted mt-1">Firma sayısına göre ilk 5 il</p>
+            </div>
+          </div>
+          <div id="map-top-cities" class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2"></div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="p-5 md:p-8 bg-[linear-gradient(180deg,rgba(99,102,241,0.06),transparent_32%)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.55),transparent_40%)]">
+      <div id="city-panel-empty" class="flex h-full min-h-[22rem] flex-col items-center justify-center rounded-[2rem] border border-dashed border-border-main bg-surface-hover px-6 py-10 text-center">
+        <div class="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-indigo-500/10 text-indigo-400 mb-5"><MapIcon size={28} /></div>
+        <p class="text-lg font-black tracking-tight text-main">Bir İl Seçin</p>
+        <p class="mt-2 max-w-[18rem] text-xs leading-relaxed text-muted">Haritadan herhangi bir ile tıklayarak o bölgedeki firma yoğunluğunu ve sertifika hareketlerini açabilirsin.</p>
+      </div>
+
+      <div id="city-panel-content" class="hidden space-y-5">
+        <div class="rounded-[2rem] border border-border-main bg-surface px-5 py-5 shadow-xl">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Seçili İl</p>
+              <h3 id="city-details-name" class="mt-2 text-3xl font-black tracking-tight text-main">ANKARA</h3>
+            </div>
+            <span id="city-details-plate" class="inline-flex items-center rounded-xl bg-indigo-500 px-3 py-1 text-[11px] font-black text-white shadow-lg shadow-indigo-500/20">06</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3">
+          <button type="button" id="city-card-companies" class="rounded-[1.5rem] border border-border-main bg-surface px-4 py-4 text-left relative overflow-hidden transition-all hover:border-indigo-500/40 hover:bg-surface-hover group/card">
+            <div class="absolute right-3 bottom-2 text-indigo-400/10 group-hover/card:text-indigo-400/25 transition-colors"><Building2 size={24} /></div>
+            <div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Toplam Firma</p><Building2 size={15} class="text-indigo-400" /></div>
+            <p id="city-stat-companies" class="mt-2 text-3xl font-black tracking-tight text-main">0</p>
+          </button>
+          <div class="rounded-[1.5rem] border border-emerald-500/20 bg-emerald-500/10 px-4 py-4 relative overflow-hidden group/card">
+            <div class="absolute right-3 bottom-2 text-emerald-300/10 group-hover/card:text-emerald-300/20 transition-colors"><Award size={24} /></div>
+            <div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300">Aktif Sertifika</p><Award size={15} class="text-emerald-400" /></div>
+            <p id="city-stat-active-certs" class="mt-2 text-3xl font-black tracking-tight text-emerald-400">0</p>
+          </div>
+          <div class="rounded-[1.5rem] border border-amber-500/20 bg-amber-500/10 px-4 py-4 relative overflow-hidden group/card">
+            <div class="absolute right-3 bottom-2 text-amber-300/10 group-hover/card:text-amber-300/20 transition-colors"><CalendarClock size={24} /></div>
+            <div class="flex items-center justify-between"><p id="city-month-label" class="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">Bu Ay Bekleyen</p><CalendarClock size={15} class="text-amber-400" /></div>
+            <p id="city-stat-pending-certs" class="mt-2 text-3xl font-black tracking-tight text-amber-400">0</p>
+          </div>
+          <div class="rounded-[1.5rem] border border-border-main bg-surface px-4 py-4 relative overflow-hidden group/card">
+            <div class="absolute right-3 bottom-2 text-cyan-400/10 group-hover/card:text-cyan-400/20 transition-colors"><UserRound size={24} /></div>
+            <div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Danışman Yoğunluğu</p><UserRound size={15} class="text-cyan-400" /></div>
+            <p id="city-stat-consultants" class="mt-2 text-sm font-black tracking-tight text-main">—</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<style is:global>
+  #turkey-map-dashboard #svg-turkey { width: 100%; height: auto; filter: drop-shadow(0 20px 40px rgba(14, 165, 233, 0.08)); }
+  #turkey-map-dashboard .turkey path { fill: rgba(51, 65, 85, 0.22); stroke: rgba(148, 163, 184, 0.35); stroke-width: 0.85; transition: fill 0.2s ease, stroke 0.2s ease, transform 0.2s ease, filter 0.2s ease; cursor: pointer; vector-effect: non-scaling-stroke; }
+  .dark #turkey-map-dashboard .turkey path { fill: rgba(30, 41, 59, 0.95); stroke: rgba(148, 163, 184, 0.2); }
+  #turkey-map-dashboard .turkey path:hover, #turkey-map-dashboard .turkey g:focus-visible path { stroke: rgba(125, 211, 252, 0.95); stroke-width: 1.15; filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.35)); transform: translateY(-1px); }
+  #turkey-map-dashboard .turkey path.active {
+    fill: rgba(34, 197, 94, 0.72) !important;
+    stroke: rgba(134, 239, 172, 1);
+    stroke-width: 1.35;
+    filter: drop-shadow(0 0 14px rgba(34, 197, 94, 0.28));
+  }
+  .dark #turkey-map-dashboard .turkey path.active {
+    fill: rgba(16, 185, 129, 0.82) !important;
+    stroke: rgba(167, 243, 208, 0.95);
+    filter: drop-shadow(0 0 18px rgba(16, 185, 129, 0.35));
+  }
+  #turkey-map-dashboard .turkey g:focus,
+  #turkey-map-dashboard .turkey g:focus-visible,
+  #turkey-map-dashboard .turkey path:focus,
+  #turkey-map-dashboard .turkey path:focus-visible { outline: none !important; }
+  #turkey-map-dashboard .turkey text { display: none; }
+</style>
+
+<script>
+  import { $companies, $certificates } from '../lib/store';
+
+  let cityStats = new Map();
+  let companiesData = [];
+  let certsData = [];
+  let selectedCityKey = '';
+
+  const DISPLAY_NAMES = {
+    'ADIYAMAN': 'Adıyaman',
+    'AFYONKARAHISAR': 'Afyonkarahisar',
+    'AGRI': 'Ağrı',
+    'AKSARAY': 'Aksaray',
+    'AMASYA': 'Amasya',
+    'ANKARA': 'Ankara',
+    'ANTALYA': 'Antalya',
+    'ARDAHAN': 'Ardahan',
+    'ARTVIN': 'Artvin',
+    'AYDIN': 'Aydın',
+    'BALIKESIR': 'Balıkesir',
+    'BARTIN': 'Bartın',
+    'BATMAN': 'Batman',
+    'BAYBURT': 'Bayburt',
+    'BILECIK': 'Bilecik',
+    'BINGOL': 'Bingöl',
+    'BITLIS': 'Bitlis',
+    'BOLU': 'Bolu',
+    'BURDUR': 'Burdur',
+    'BURSA': 'Bursa',
+    'CANAKKALE': 'Çanakkale',
+    'CANKIRI': 'Çankırı',
+    'CORUM': 'Çorum',
+    'DENIZLI': 'Denizli',
+    'DIYARBAKIR': 'Diyarbakır',
+    'DUZCE': 'Düzce',
+    'EDIRNE': 'Edirne',
+    'ELAZIG': 'Elazığ',
+    'ERZINCAN': 'Erzincan',
+    'ERZURUM': 'Erzurum',
+    'ESKISEHIR': 'Eskişehir',
+    'GAZIANTEP': 'Gaziantep',
+    'GIRESUN': 'Giresun',
+    'GUMUSHANE': 'Gümüşhane',
+    'HAKKARI': 'Hakkari',
+    'HATAY': 'Hatay',
+    'IGDIR': 'Iğdır',
+    'ISPARTA': 'Isparta',
+    'ISTANBUL': 'İstanbul',
+    'IZMIR': 'İzmir',
+    'KAHRAMANMARAS': 'Kahramanmaraş',
+    'KARABUK': 'Karabük',
+    'KARAMAN': 'Karaman',
+    'KARS': 'Kars',
+    'KASTAMONU': 'Kastamonu',
+    'KAYSERI': 'Kayseri',
+    'KILIS': 'Kilis',
+    'KIRIKKALE': 'Kırıkkale',
+    'KIRKLARELI': 'Kırklareli',
+    'KIRSEHIR': 'Kırşehir',
+    'KOCAELI': 'Kocaeli',
+    'KONYA': 'Konya',
+    'KUTAHYA': 'Kütahya',
+    'MALATYA': 'Malatya',
+    'MANISA': 'Manisa',
+    'MARDIN': 'Mardin',
+    'MERSIN': 'Mersin',
+    'MUGLA': 'Muğla',
+    'MUS': 'Muş',
+    'NEVSEHIR': 'Nevşehir',
+    'NIGDE': 'Niğde',
+    'ORDU': 'Ordu',
+    'OSMANIYE': 'Osmaniye',
+    'RIZE': 'Rize',
+    'SAKARYA': 'Sakarya',
+    'SAMSUN': 'Samsun',
+    'SANLIURFA': 'Şanlıurfa',
+    'SIIRT': 'Siirt',
+    'SINOP': 'Sinop',
+    'SIRNAK': 'Şırnak',
+    'SIVAS': 'Sivas',
+    'TEKIRDAG': 'Tekirdağ',
+    'TOKAT': 'Tokat',
+    'TRABZON': 'Trabzon',
+    'TUNCELI': 'Tunceli',
+    'USAK': 'Uşak',
+    'VAN': 'Van',
+    'YALOVA': 'Yalova',
+    'YOZGAT': 'Yozgat',
+    'ZONGULDAK': 'Zonguldak'
+  };
+
+  function normalizeCityName(name) {
+    return String(name || '').trim().toLocaleUpperCase('tr-TR').replace(/İ/g, 'I').replace(/I/g, 'I').replace(/Ğ/g, 'G').replace(/Ü/g, 'U').replace(/Ş/g, 'S').replace(/Ö/g, 'O').replace(/Ç/g, 'C');
+  }
+
+  function canonicalCityName(name) {
+    const normalized = normalizeCityName(name).replace(/[^A-Z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return DISPLAY_NAMES[normalized] ? normalized : '';
+  }
+
+  function displayCityName(cityKey) {
+    return DISPLAY_NAMES[cityKey] || cityKey;
+  }
+
+  function openCitySearch(cityName) {
+    if (!cityName) return;
+    const query = `@ ${cityName}`;
+    window.location.href = `/search?q=${encodeURIComponent(query)}`;
+  }
+
+  function isTurkeyCompany(company) {
+    const country = normalizeCityName(pickValue(company, ['Ülke', 'Ulke', 'ulke', 'Country']));
+    return country === 'TURKIYE' || country === 'TURKEY';
+  }
+
+  function pickValue(item, aliases, fallback = '') {
+    for (const key of aliases) {
+      const value = item?.[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') return String(value).trim();
+    }
+    return fallback;
+  }
+
+  function parseTrDate(value) {
+    const raw = String(value ?? '').trim();
+    const match = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (!match) return null;
+    const [, dayStr, monthStr, yearStr] = match;
+    const date = new Date(Number(yearStr), Number(monthStr) - 1, Number(dayStr));
+    if (Number.isNaN(date.getTime())) return null;
+    if (date.getFullYear() !== Number(yearStr) || date.getMonth() !== Number(monthStr) - 1 || date.getDate() !== Number(dayStr)) return null;
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  function isActiveCertificate(cert, today) {
+    const gst = parseTrDate(pickValue(cert, ['gst', 'GST', 'Sertifika Tarihi', 'Belge Tarihi', 'sTarihi']));
+    const goz = parseTrDate(pickValue(cert, ['goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
+    const gozetimConf = pickValue(cert, ['Gözetim Conf.', 'Gözetim', 'gozetimConfirmed'], 'FALSE').toUpperCase();
+    return Boolean(gst && goz && gozetimConf === 'FALSE' && today >= gst && today <= goz);
+  }
+
+  function isPendingThisMonth(cert, month, year) {
+    const goz = parseTrDate(pickValue(cert, ['goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
+    const gozetimConf = pickValue(cert, ['Gözetim Conf.', 'Gözetim', 'gozetimConfirmed'], 'FALSE').toUpperCase();
+    return Boolean(goz && gozetimConf === 'FALSE' && goz.getMonth() === month && goz.getFullYear() === year);
+  }
+
+  function monthLabel() {
+    const label = new Date().toLocaleDateString('tr-TR', { month: 'long' });
+    return `${label.charAt(0).toUpperCase()}${label.slice(1)} Ayı Bekleyen`;
+  }
+
+  function getSortedCities() {
+    return Array.from(cityStats.values()).sort((a, b) => b.companyCount - a.companyCount);
+  }
+
+  function updateSummary() {
+    const sorted = getSortedCities();
+    const activeCities = sorted.filter((city) => city.companyCount > 0);
+    const totalCompanies = sorted.reduce((sum, city) => sum + city.companyCount, 0);
+    const cityCountEl = document.getElementById('map-summary-cities');
+    const topCityEl = document.getElementById('map-summary-top-city');
+    const companyCountEl = document.getElementById('map-summary-companies');
+    const monthLabelEl = document.getElementById('city-month-label');
+    if (cityCountEl) cityCountEl.textContent = String(activeCities.length);
+    if (topCityEl) topCityEl.textContent = sorted[0]?.name || '—';
+    if (companyCountEl) companyCountEl.textContent = String(totalCompanies);
+    if (monthLabelEl) monthLabelEl.textContent = monthLabel();
+  }
+
+  function updateTopCities() {
+    const topCitiesEl = document.getElementById('map-top-cities');
+    if (!topCitiesEl) return;
+    topCitiesEl.innerHTML = getSortedCities().slice(0, 5).map((city, index) => `
+      <button type="button" class="map-top-city-btn flex items-center justify-between rounded-2xl border border-border-main bg-surface px-3 py-3 text-left transition-all hover:border-indigo-500/40 hover:bg-surface-hover" data-city-key="${city.key}">
+        <div class="min-w-0">
+          <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">#${index + 1}</p>
+          <p class="mt-1 truncate text-sm font-black text-main">${city.name}</p>
+        </div>
+        <div class="pl-3 text-right">
+          <p class="text-lg font-black tracking-tight text-indigo-400">${city.companyCount}</p>
+          <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">Firma</p>
+        </div>
+      </button>
+    `).join('') || `<p class="text-xs text-muted">Henüz harita verisi yok.</p>`;
+
+    topCitiesEl.querySelectorAll('.map-top-city-btn').forEach((button) => {
+      button.addEventListener('click', () => {
+        const cityKey = button.dataset.cityKey || '';
+        const stat = cityStats.get(cityKey);
+        if (!stat) return;
+        showCity(stat.name, stat.code);
+      });
+    });
+  }
+
+  function updateHeatmap() {
+    const maxCount = Math.max(...Array.from(cityStats.values()).map((stat) => stat.companyCount), 1);
+    document.querySelectorAll('#turkey-map-dashboard .turkey g').forEach((group) => {
+      const cityName = group.dataset.cityName || '';
+      const cityCode = group.dataset.cityCode || '';
+      const cityKey = canonicalCityName(cityName);
+      const stat = cityStats.get(cityKey);
+      const path = group.querySelector('path');
+      if (!path) return;
+      if (stat) stat.code = cityCode || stat.code;
+      if (!stat || stat.companyCount === 0) {
+        path.style.fill = '';
+        return;
+      }
+      const ratio = stat.companyCount / maxCount;
+      path.style.fill = ratio > 0.66 ? 'rgba(34, 211, 238, 0.88)' : ratio > 0.33 ? 'rgba(99, 102, 241, 0.78)' : 'rgba(129, 140, 248, 0.52)';
+    });
+  }
+
+  function showCity(cityName, cityCode) {
+    const cityKey = canonicalCityName(cityName);
+    const stat = cityStats.get(cityKey);
+    if (!stat) return;
+    selectedCityKey = cityKey;
+    if (cityCode) stat.code = cityCode;
+    document.getElementById('city-panel-empty')?.classList.add('hidden');
+    document.getElementById('city-panel-content')?.classList.remove('hidden');
+    const consultants = stat.consultants.length > 0 ? stat.consultants.join(', ') : 'Atanmamış';
+    const nameEl = document.getElementById('city-details-name');
+    const plateEl = document.getElementById('city-details-plate');
+    const companiesEl = document.getElementById('city-stat-companies');
+    const activeEl = document.getElementById('city-stat-active-certs');
+    const pendingEl = document.getElementById('city-stat-pending-certs');
+    const consultantsEl = document.getElementById('city-stat-consultants');
+    if (nameEl) nameEl.textContent = displayCityName(stat.key || cityKey);
+    if (plateEl) plateEl.textContent = stat.code || '--';
+    if (companiesEl) companiesEl.textContent = String(stat.companyCount);
+    if (activeEl) activeEl.textContent = String(stat.activeCerts);
+    if (pendingEl) pendingEl.textContent = String(stat.pendingThisMonth);
+    if (consultantsEl) consultantsEl.textContent = consultants;
+    document.querySelectorAll('#turkey-map-dashboard .turkey path').forEach((path) => path.classList.remove('active'));
+    const activePath = document.querySelector(`#turkey-map-dashboard .turkey g[data-city-name="${cityName}"] path`);
+    if (activePath) activePath.classList.add('active');
+  }
+
+  const cityCompaniesCard = document.getElementById('city-card-companies');
+  cityCompaniesCard?.addEventListener('click', () => {
+    const current = cityStats.get(selectedCityKey);
+    if (!current) return;
+    openCitySearch(current.name);
+  });
+
+  const topCitySummaryBtn = document.getElementById('map-summary-top-city-btn');
+  topCitySummaryBtn?.addEventListener('click', () => {
+    const topCity = getSortedCities()[0];
+    if (!topCity) return;
+    showCity(topCity.name, topCity.code);
+    openCitySearch(topCity.name);
+  });
+
+  function calculateStats() {
+    const freshStats = new Map();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    companiesData.forEach((company) => {
+      if (!isTurkeyCompany(company)) return;
+      const cityName = pickValue(company, ['İl', 'il', 'City', 'Sehir']);
+      const cityKey = canonicalCityName(cityName);
+      if (!cityKey) return;
+      if (!freshStats.has(cityKey)) {
+        freshStats.set(cityKey, { key: cityKey, name: displayCityName(cityKey), code: '', companyCount: 0, activeCerts: 0, pendingThisMonth: 0, consultants: [], companyIds: [] });
+      }
+      const entry = freshStats.get(cityKey);
+      entry.companyCount += 1;
+      entry.companyIds.push(String(pickValue(company, ['Firma No', 'id'])));
+      const consultant = pickValue(company, ['Danışman', 'Danisman', 'dan']);
+      if (consultant && !entry.consultants.includes(consultant)) entry.consultants.push(consultant);
+    });
+
+    freshStats.forEach((entry) => {
+      const companyIds = new Set(entry.companyIds);
+      entry.activeCerts = certsData.filter((cert) => companyIds.has(String(pickValue(cert, ['Firma No', 'firmaNo', 'fid']))) && isActiveCertificate(cert, today)).length;
+      entry.pendingThisMonth = certsData.filter((cert) => companyIds.has(String(pickValue(cert, ['Firma No', 'firmaNo', 'fid']))) && isPendingThisMonth(cert, currentMonth, currentYear)).length;
+    });
+
+    cityStats = freshStats;
+    updateSummary();
+    updateTopCities();
+    updateHeatmap();
+    if (!selectedCityKey) {
+      const first = getSortedCities()[0];
+      if (first) showCity(first.name, first.code);
+    } else {
+      const current = cityStats.get(selectedCityKey);
+      if (current) showCity(current.name, current.code);
+    }
+  }
+
+  const tooltip = document.getElementById('map-tooltip');
+  const mapWrapper = document.getElementById('turkey-map-wrapper');
+
+  function moveTooltip(event) {
+    if (!tooltip) return;
+    const wrapperRect = mapWrapper?.getBoundingClientRect();
+    if (!wrapperRect) return;
+    tooltip.style.left = `${event.clientX - wrapperRect.left}px`;
+    tooltip.style.top = `${event.clientY - wrapperRect.top - 18}px`;
+  }
+
+  document.querySelectorAll('#turkey-map-dashboard .turkey g').forEach((group) => {
+    group.tabIndex = 0;
+    group.style.outline = 'none';
+    group.addEventListener('mouseenter', (event) => {
+      const cityName = group.dataset.cityName || '';
+      if (!tooltip || !cityName) return;
+      tooltip.textContent = cityName;
+      tooltip.classList.remove('hidden');
+      tooltip.style.opacity = '1';
+      moveTooltip(event);
+    });
+    group.addEventListener('mousemove', moveTooltip);
+    group.addEventListener('mouseleave', () => {
+      if (!tooltip) return;
+      tooltip.classList.add('hidden');
+      tooltip.style.opacity = '0';
+    });
+    group.addEventListener('click', (event) => {
+      showCity(group.dataset.cityName || '', group.dataset.cityCode || '');
+      group.blur();
+    });
+    group.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        showCity(group.dataset.cityName || '', group.dataset.cityCode || '');
+        group.blur();
+      }
+    });
+  });
+
+  $companies.subscribe((val) => { companiesData = [...val]; calculateStats(); });
+  $certificates.subscribe((val) => { certsData = [...val]; calculateStats(); });
+</script>
