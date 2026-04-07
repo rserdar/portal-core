@@ -1,10 +1,14 @@
 ---
-import { getUserIdentity } from "../lib/user";
+import { Image } from "astro:assets";
+import { Icon } from "astro-icon/components";
+import logoImage from "../assets/images/Medicert-Logo-sm.webp";
+import SearchOverlay from "./SearchOverlay.astro";
+import ThemeToggle from "./ThemeToggle.astro";
 
-const user = getUserIdentity(Astro.request) || {
-  email: "r.serdar@gmail.com",
-  name: "ADMIN",
-  role: "Süper Yetkili",
+const user = {
+  email: "info@medicert.com.tr",
+  name: "Kullanıcı",
+  role: "Personel",
   initials: "MC",
   picture: null
 };
@@ -84,19 +88,31 @@ const menuItems = [
         <div class="px-1 h-full flex items-center"><ThemeToggle /></div>
         <a href="/settings" class="p-2.5 rounded-xl text-muted hover:text-primary hover:bg-surface transition-all" title="Ayarlar"><Icon name="mdi:cog-outline" class="w-6 h-6" /></a>
         <div class="w-px h-8 bg-border-main mx-2"></div>
-        <div class="flex items-center gap-3 pl-2 group cursor-pointer" title={user.email}>
+        <div
+          id="header-user"
+          class="flex items-center gap-3 pl-2 group cursor-pointer"
+          title={user.email}
+          data-user-name={user.name}
+          data-user-email={user.email}
+          data-user-role={user.role}
+          data-user-initials={user.initials}
+          data-user-picture={user.picture || ""}
+        >
           <div class="flex flex-col items-end">
-            <span class="text-[12px] font-black group-hover:text-primary transition-colors uppercase line-clamp-1 max-w-[120px] text-right">{user.name}</span>
-            <span class="text-[10px] font-bold text-muted tracking-widest uppercase">{user.role}</span>
+            <span id="header-user-name" class="text-[12px] font-black group-hover:text-primary transition-colors uppercase line-clamp-1 max-w-[120px] text-right">{user.name}</span>
+            <span id="header-user-role" class="text-[10px] font-bold text-muted tracking-widest uppercase">{user.role}</span>
           </div>
           <div class="relative">
             <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-primary-hover p-[2px]">
-              <div class="w-full h-full rounded-full bg-surface flex items-center justify-center overflow-hidden border-2 border-transparent shadow-inner">
-                {user.picture ? (
-                  <img src={user.picture} alt={user.name} class="w-full h-full object-cover" referrerpolicy="no-referrer" />
-                ) : (
-                  <span class="text-xs font-black text-primary">{user.initials}</span>
-                )}
+              <div id="header-user-avatar" class="w-full h-full rounded-full bg-surface flex items-center justify-center overflow-hidden border-2 border-transparent shadow-inner">
+                <img
+                  id="header-user-picture"
+                  src={user.picture || ""}
+                  alt={user.name}
+                  class:list={["w-full h-full object-cover", !user.picture && "hidden"]}
+                  referrerpolicy="no-referrer"
+                />
+                <span id="header-user-initials" class:list={["text-xs font-black text-primary", user.picture && "hidden"]}>{user.initials}</span>
               </div>
             </div>
             <div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-header-bg rounded-full shadow-sm"></div>
@@ -136,6 +152,110 @@ const menuItems = [
   <SearchOverlay />
 </header>
 <script>
+  function computeInitials(name) {
+    return String(name || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'MC';
+  }
+
+  function roleFromEmail(email) {
+    return email === 'r.serdar@gmail.com' ? 'Admin' : 'Personel';
+  }
+
+  function updateHeaderIdentity(identity) {
+    const wrapper = document.getElementById('header-user');
+    const nameEl = document.getElementById('header-user-name');
+    const roleEl = document.getElementById('header-user-role');
+    const pictureEl = document.getElementById('header-user-picture');
+    const initialsEl = document.getElementById('header-user-initials');
+
+    if (!wrapper || !nameEl || !roleEl || !pictureEl || !initialsEl) return;
+
+    const email = identity.email || wrapper.dataset.userEmail || 'info@medicert.com.tr';
+    const name = identity.name || wrapper.dataset.userName || 'Kullanıcı';
+    const role = identity.role || roleFromEmail(email);
+    const picture = identity.picture || '';
+    const initials = identity.initials || computeInitials(name);
+
+    wrapper.title = email;
+    wrapper.dataset.userEmail = email;
+    wrapper.dataset.userName = name;
+    wrapper.dataset.userRole = role;
+    wrapper.dataset.userInitials = initials;
+    wrapper.dataset.userPicture = picture;
+
+    nameEl.textContent = name;
+    roleEl.textContent = role;
+    initialsEl.textContent = initials;
+
+    if (picture) {
+      pictureEl.src = picture;
+      pictureEl.alt = name;
+      pictureEl.classList.remove('hidden');
+      initialsEl.classList.add('hidden');
+    } else {
+      pictureEl.removeAttribute('src');
+      pictureEl.classList.add('hidden');
+      initialsEl.classList.remove('hidden');
+    }
+  }
+
+  async function hydrateAccessIdentity() {
+    try {
+      const response = await fetch('/cdn-cgi/access/get-identity', {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!response.ok) return;
+
+      const payload = await response.json().catch(() => null);
+      if (!payload || typeof payload !== 'object') return;
+
+      const oidc = typeof payload.oidc_fields === 'object' && payload.oidc_fields ? payload.oidc_fields : {};
+
+      const name =
+        payload.name ||
+        oidc.name ||
+        oidc.given_name ||
+        payload.user_name ||
+        payload.nickname ||
+        payload.email ||
+        oidc.email ||
+        'Kullanıcı';
+
+      const email =
+        payload.email ||
+        oidc.email ||
+        payload.user_email ||
+        '';
+
+      const picture =
+        payload.picture ||
+        oidc.picture ||
+        payload.avatar ||
+        payload.avatar_url ||
+        payload.image ||
+        payload.photo ||
+        '';
+
+      updateHeaderIdentity({
+        name,
+        email,
+        picture,
+        initials: computeInitials(name),
+        role: roleFromEmail(email),
+      });
+    } catch (error) {
+      console.warn('[Header] Access identity could not be loaded:', error);
+    }
+  }
+
   function initHeader() {
     const header = document.getElementById("medicert-header") as HTMLElement | null;
     const headerInner = document.getElementById("header-inner") as HTMLElement | null;
@@ -182,10 +302,9 @@ const menuItems = [
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     applyHeaderState();
+    hydrateAccessIdentity();
   }
 
   document.addEventListener("astro:page-load", initHeader);
   initHeader();
 </script>
-
-
