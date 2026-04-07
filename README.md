@@ -58,6 +58,7 @@ npm run dev
 ### Dağıtım (Production)
 - **Worker Deployment:** `wrangler deploy` ile CF Worker proxy yayınlanır.
 - **UI Deployment:** Astro build çıktısı Cloudflare Pages üzerinden servis edilir.
+- **Pages Env:** `PUBLIC_WORKER_URL=https://portalapi.medicert.com.tr` production environment'a eklenmelidir.
 - **GAS Setup:** `/src/gas/api/` altındaki dosyalar Google Apps Script editörüne kopyalanır ve web uygulaması olarak yayınlanır.
 
 ---
