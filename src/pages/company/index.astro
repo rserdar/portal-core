@@ -3,7 +3,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import {
   MapPin, Phone, Mail, Globe,
   FileText, Award, ClipboardList, Pencil, ArrowLeft,
-  Users, Briefcase, BadgeCheck, AlertCircle, Layers,
+  Users, Briefcase, BadgeCheck, Layers, FlaskConical,
   ChevronDown, CheckSquare, RefreshCw, FolderOpen, Printer, ShieldCheck, ShieldOff
 } from 'lucide-astro';
 
@@ -69,9 +69,6 @@ import {
             <a href="/documents/view" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-xs font-bold rounded-xl sm:rounded-2xl transition-all">
               <FileText size={14} />Doküman Üret
             </a>
-            <a id="btn-add-audit" href="#" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-xs font-bold rounded-xl sm:rounded-2xl transition-all">
-              <ClipboardList size={14} />Denetim Planla
-            </a>
           </div>
         </div>
 
@@ -85,7 +82,7 @@ import {
           <div class="flex items-start gap-3 py-2.5 border-b border-border-main/40">
             <button class="copy-btn flex items-center gap-1.5 text-muted hover:text-primary transition-colors shrink-0 pt-0.5" data-copy="hero-unvan" title="Kopyala">
               <Briefcase size={13} />
-              <span class="text-[9px] font-black uppercase tracking-widest w-14 text-left">Unvan</span>
+              <span class="text-[10px] font-black uppercase tracking-widest w-16 text-left">Unvan</span>
             </button>
             <p class="text-sm text-main leading-snug flex-1" id="hero-unvan">—</p>
           </div>
@@ -94,7 +91,7 @@ import {
           <div class="flex items-start gap-3 py-2.5 border-b border-border-main/40">
             <button class="copy-btn flex items-center gap-1.5 text-muted hover:text-primary transition-colors shrink-0 pt-0.5" data-copy="hero-adres" title="Kopyala">
               <MapPin size={13} />
-              <span class="text-[9px] font-black uppercase tracking-widest w-14 text-left">Adres</span>
+              <span class="text-[10px] font-black uppercase tracking-widest w-16 text-left">Adres</span>
             </button>
             <p class="text-sm text-main leading-snug flex-1" id="hero-adres">—</p>
           </div>
@@ -103,7 +100,7 @@ import {
           <div class="flex items-start gap-3 py-2.5 border-b border-border-main/40 hidden" id="hero-sube-row">
             <button class="copy-btn flex items-center gap-1.5 text-muted hover:text-primary transition-colors shrink-0 pt-0.5" data-copy="hero-sube" title="Kopyala">
               <MapPin size={13} />
-              <span class="text-[9px] font-black uppercase tracking-widest w-14 text-left">Şube</span>
+              <span class="text-[10px] font-black uppercase tracking-widest w-16 text-left">Şube</span>
             </button>
             <p class="text-sm text-main leading-snug flex-1" id="hero-sube">—</p>
           </div>
@@ -112,7 +109,7 @@ import {
           <div class="flex items-start gap-3 py-2.5 border-b border-border-main/40">
             <button class="copy-btn flex items-center gap-1.5 text-muted hover:text-primary transition-colors shrink-0 pt-0.5" data-copy="hero-kapsam" title="Kopyala">
               <Layers size={13} />
-              <span class="text-[9px] font-black uppercase tracking-widest w-14 text-left">Kapsam</span>
+              <span class="text-[10px] font-black uppercase tracking-widest w-16 text-left">Kapsam</span>
             </button>
             <p class="text-sm text-main leading-relaxed italic flex-1" id="hero-kapsam"><span class="not-italic opacity-30">—</span></p>
           </div>
@@ -121,7 +118,7 @@ import {
           <div class="flex items-start gap-3 py-2.5">
             <button class="copy-btn flex items-center gap-1.5 text-muted hover:text-primary transition-colors shrink-0 pt-0.5" data-copy="hero-scope" title="Kopyala">
               <Globe size={13} />
-              <span class="text-[9px] font-black uppercase tracking-widest w-14 text-left">Scope</span>
+              <span class="text-[10px] font-black uppercase tracking-widest w-16 text-left">Scope</span>
             </button>
             <p class="text-sm text-main leading-relaxed italic flex-1" id="hero-scope"><span class="not-italic opacity-30">—</span></p>
           </div>
@@ -130,71 +127,10 @@ import {
       </div>
     </div>
 
-    <!-- Info Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="info-grid">
+    <!-- Info Grid: 3 eşit kolon -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6" id="info-grid">
 
-      <!-- Operasyonel Profil Card (span 2) -->
-      <div class="lg:col-span-2 bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="profile-card">
-        <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
-          <div class="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400 flex-shrink-0">
-            <Briefcase size={16} />
-          </div>
-          <h3 class="text-sm font-black uppercase tracking-widest text-main">Operasyonel Profil</h3>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3" id="profile-grid">
-          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-location-block">
-            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-location" title="Kopyala">
-              <MapPin size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">Şehir / Ülke</span>
-            </button>
-            <p class="text-sm font-semibold text-main leading-snug" id="info-location"><span class="text-muted opacity-40">—</span></p>
-          </div>
-          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-tcs-block">
-            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-tcs" title="Kopyala">
-              <Users size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">Toplam Çalışan</span>
-            </button>
-            <p class="text-sm font-semibold text-main leading-snug" id="info-tcs"><span class="text-muted opacity-40">—</span></p>
-          </div>
-          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-sector-block">
-            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-sector" title="Kopyala">
-              <Briefcase size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">NACE / EA</span>
-            </button>
-            <p class="text-sm font-semibold text-main leading-snug" id="info-sector"><span class="text-muted opacity-40">—</span></p>
-          </div>
-          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-facility-block">
-            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-facility" title="Kopyala">
-              <Layers size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">Alan / Departman</span>
-            </button>
-            <p class="text-sm font-semibold text-main leading-snug" id="info-facility"><span class="text-muted opacity-40">—</span></p>
-          </div>
-          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-vardiya-block">
-            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-vardiya" title="Kopyala">
-              <ClipboardList size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">Vardiya Düzeni</span>
-            </button>
-            <p class="text-sm font-semibold text-main leading-snug" id="info-vardiya"><span class="text-muted opacity-40">—</span></p>
-          </div>
-          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-workforce-block">
-            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-workforce" title="Kopyala">
-              <BadgeCheck size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-left">Çalışan Dağılımı</span>
-            </button>
-            <p class="text-sm font-semibold text-main leading-snug" id="info-workforce"><span class="text-muted opacity-40">—</span></p>
-          </div>
-        </div>
-        <div class="mt-5 pt-4 border-t border-border-main space-y-2" id="info-sube-row">
-          <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-sube" title="Kopyala">
-            <MapPin size={13} />
-            <span class="text-[10px] font-bold uppercase tracking-widest text-left">Şube / Yazışma Adresi</span>
-          </button>
-          <p class="text-sm text-main leading-relaxed" id="info-sube"><span class="text-muted opacity-40">—</span></p>
-        </div>
-      </div>
-
-      <!-- İletişim Card -->
+      <!-- İletişim -->
       <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="contact-card">
         <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
           <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">
@@ -206,173 +142,206 @@ import {
           <div class="flex items-start gap-3" id="info-telefon-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-telefon" title="Kopyala">
               <Phone size={12} class="flex-shrink-0" />
-              <span class="text-[10px] font-bold uppercase tracking-wider text-left">Telefon</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Telefon</span>
             </button>
-            <div>
-              <p class="text-sm font-semibold text-main mt-0.5" id="info-telefon">—</p>
-            </div>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-telefon">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-faks-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-faks" title="Kopyala">
               <Phone size={12} class="flex-shrink-0" />
-              <span class="text-[10px] font-bold uppercase tracking-wider text-left">Faks</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Faks</span>
             </button>
-            <div>
-              <p class="text-sm font-semibold text-main mt-0.5" id="info-faks">—</p>
-            </div>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-faks">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-mail-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-mail" title="Kopyala">
               <Mail size={12} class="flex-shrink-0" />
-              <span class="text-[10px] font-bold uppercase tracking-wider text-left">E-Posta</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">E-Posta</span>
             </button>
-            <div>
-              <p class="text-sm font-semibold text-main mt-0.5 break-all" id="info-mail">—</p>
-            </div>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1 break-all" id="info-mail">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-web-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-web" title="Kopyala">
               <Globe size={12} class="flex-shrink-0" />
-              <span class="text-[10px] font-bold uppercase tracking-wider text-left">Web</span>
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Web</span>
             </button>
-            <div>
-              <p class="text-sm font-semibold text-main mt-0.5" id="info-web">—</p>
-            </div>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-web">—</p>
           </div>
-          <div class="pt-2 border-t border-border-main space-y-1" id="info-vergi-block">
-            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors" data-copy="info-vergi" title="Kopyala">
-              <FileText size={12} />
-              <span class="text-[10px] font-bold uppercase tracking-wider text-left">Vergi Dairesi / No</span>
+          <div class="flex items-start gap-3 pt-2 border-t border-border-main" id="info-vergi-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-vergi" title="Kopyala">
+              <FileText size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Vergi</span>
             </button>
-            <p class="text-sm font-semibold text-main" id="info-vergi">—</p>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-vergi">—</p>
           </div>
         </div>
       </div>
 
       <!-- Yetkililer & İrtibat -->
-      <div class="lg:col-span-2 bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="people-card">
+      <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="people-card">
         <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
           <div class="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 flex-shrink-0">
             <Users size={16} />
           </div>
           <h3 class="text-sm font-black uppercase tracking-widest text-main">Yetkililer & İrtibat</h3>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-kyt-block">
-            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-kyt" title="Kopyala">
-              <BadgeCheck size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-widest text-left">KYT</span>
+        <div class="space-y-3">
+          <div class="flex items-start gap-3" id="info-kyt-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-kyt" title="Kopyala">
+              <BadgeCheck size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">KYT</span>
             </button>
-            <p class="text-sm font-bold text-main" id="info-kyt">—</p>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-kyt">—</p>
           </div>
-          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-yetkili-block">
-            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-yetkili" title="Kopyala">
-              <Users size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-widest text-left">Yetkili Adı</span>
+          <div class="flex items-start gap-3" id="info-yetkili-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-yetkili" title="Kopyala">
+              <Users size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Yetkili</span>
             </button>
-            <p class="text-sm font-bold text-main" id="info-yetkili">—</p>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-yetkili">—</p>
           </div>
-          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-yetkili-unvan-block">
-            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-yetkili-unvan" title="Kopyala">
-              <Briefcase size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-widest text-left">Yetkili Ünvanı</span>
+          <div class="flex items-start gap-3" id="info-yetkili-unvan-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-yetkili-unvan" title="Kopyala">
+              <Briefcase size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Ünvan</span>
             </button>
-            <p class="text-sm font-bold text-main" id="info-yetkili-unvan">—</p>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-yetkili-unvan">—</p>
           </div>
-          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-irtibat-block">
-            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-irtibat" title="Kopyala">
-              <Users size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-widest text-left">İrtibat Kişisi</span>
+          <div class="flex items-start gap-3 pt-2 border-t border-border-main" id="info-irtibat-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-irtibat" title="Kopyala">
+              <Users size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">İrtibat</span>
             </button>
-            <p class="text-sm font-bold text-main" id="info-irtibat">—</p>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-irtibat">—</p>
           </div>
-          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-irtibat-unvan-block">
-            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-irtibat-unvan" title="Kopyala">
-              <Briefcase size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-widest text-left">İrtibat Ünvanı</span>
+          <div class="flex items-start gap-3" id="info-irtibat-unvan-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-irtibat-unvan" title="Kopyala">
+              <Briefcase size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Ünvan</span>
             </button>
-            <p class="text-sm font-bold text-main" id="info-irtibat-unvan">—</p>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-irtibat-unvan">—</p>
           </div>
-          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5" id="info-irtibat-tel-block">
-            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-irtibat-tel" title="Kopyala">
-              <Phone size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-widest text-left">İrtibat Telefonu</span>
+          <div class="flex items-start gap-3" id="info-irtibat-tel-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-irtibat-tel" title="Kopyala">
+              <Phone size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Telefon</span>
             </button>
-            <p class="text-sm font-bold text-main" id="info-irtibat-tel">—</p>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-irtibat-tel">—</p>
           </div>
-          <div class="p-4 rounded-2xl bg-surface-hover border border-border-main space-y-1.5 md:col-span-2 xl:col-span-1" id="info-irtibat-mail-block">
-            <button class="copy-btn flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors" data-copy="info-irtibat-mail" title="Kopyala">
-              <Mail size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-widest text-left">İrtibat E-Posta</span>
+          <div class="flex items-start gap-3" id="info-irtibat-mail-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-irtibat-mail" title="Kopyala">
+              <Mail size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">E-Posta</span>
             </button>
-            <p class="text-sm font-bold text-main break-all" id="info-irtibat-mail">—</p>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1 break-all" id="info-irtibat-mail">—</p>
           </div>
         </div>
       </div>
 
-      <!-- Kayıtlar & Varlıklar -->
-      <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="records-card">
+      <!-- Operasyon & Profil -->
+      <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="ops-card">
         <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
-          <div class="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
-            <FileText size={16} />
+          <div class="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400 flex-shrink-0">
+            <Briefcase size={16} />
           </div>
-          <h3 class="text-sm font-black uppercase tracking-widest text-main">Kayıtlar & Varlıklar</h3>
+          <h3 class="text-sm font-black uppercase tracking-widest text-main">Operasyon & Profil</h3>
         </div>
         <div class="space-y-3">
-          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-dan-block">
-            <button class="copy-btn flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors" data-copy="info-dan" title="Kopyala">
-              <Users size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-widest text-left">Danışman</span>
+          <div class="flex items-start gap-3" id="info-location-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-location" title="Kopyala">
+              <MapPin size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Şehir</span>
             </button>
-            <p class="text-sm font-semibold text-main" id="info-dan">—</p>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-location">—</p>
           </div>
-          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-not-block">
-            <button class="copy-btn flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors" data-copy="info-not" title="Kopyala">
-              <FileText size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-widest text-left">Firma Notları</span>
+          <div class="flex items-start gap-3" id="info-sector-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-sector" title="Kopyala">
+              <Briefcase size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">NACE / EA</span>
             </button>
-            <p class="text-sm text-main leading-relaxed" id="info-not">—</p>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-sector">—</p>
           </div>
-          <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-1.5" id="info-logo-block">
-            <button class="copy-btn flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors" data-copy="info-logo" title="Kopyala">
-              <Pencil size={13} />
-              <span class="text-[10px] font-bold uppercase tracking-widest text-left">Logo / Kaşe-İmza</span>
+          <div class="flex items-start gap-3" id="info-tcs-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-tcs" title="Kopyala">
+              <Users size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Çalışan</span>
             </button>
-            <p class="text-sm text-main leading-relaxed break-all" id="info-logo">—</p>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-tcs">—</p>
+          </div>
+          <div class="flex items-start gap-3" id="info-workforce-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-workforce" title="Kopyala">
+              <BadgeCheck size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Dağılım</span>
+            </button>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-workforce">—</p>
+          </div>
+          <div class="flex items-start gap-3" id="info-facility-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-facility" title="Kopyala">
+              <Layers size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Alan</span>
+            </button>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-facility">—</p>
+          </div>
+          <div class="flex items-start gap-3" id="info-vardiya-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-vardiya" title="Kopyala">
+              <ClipboardList size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Vardiya</span>
+            </button>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-vardiya">—</p>
+          </div>
+          <div class="flex items-start gap-3 pt-2 border-t border-border-main" id="info-dan-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-dan" title="Kopyala">
+              <Users size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Danışman</span>
+            </button>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-dan">—</p>
+          </div>
+          <div class="flex items-start gap-3" id="info-logo-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-logo" title="Kopyala">
+              <Pencil size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Logo</span>
+            </button>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1 break-all" id="info-logo">—</p>
+          </div>
+          <div class="flex items-start gap-3 hidden" id="info-sube-row">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-sube" title="Kopyala">
+              <MapPin size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Şube</span>
+            </button>
+            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-sube">—</p>
+          </div>
+          <div class="flex items-start gap-3" id="info-not-block">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-not" title="Kopyala">
+              <FileText size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Not</span>
+            </button>
+            <p class="text-sm text-main mt-0.5 flex-1 leading-relaxed" id="info-not">—</p>
+          </div>
+          <div class="flex items-start gap-3 hidden" id="yapis-row">
+            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-yapis" title="Kopyala">
+              <Layers size={12} class="flex-shrink-0" />
+              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">İşler</span>
+            </button>
+            <p class="text-sm text-main mt-0.5 flex-1 leading-relaxed" id="info-yapis">—</p>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Firma Detayları (NACE, EA, Çalışan) -->
-    <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="details-card">
-      <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
-        <div class="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
-          <Briefcase size={16} />
-        </div>
-        <h3 class="text-sm font-black uppercase tracking-widest text-main">Firma Detayları</h3>
-      </div>
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-4" id="details-grid">
-        <!-- Injected by JS -->
-      </div>
-      <div class="mt-5 pt-4 border-t border-border-main space-y-2" id="yapis-row">
-        <p class="text-[10px] font-bold text-muted uppercase tracking-widest">Yapılan İşler</p>
-        <p class="text-sm text-main leading-relaxed" id="info-yapis"><span class="text-muted opacity-40">—</span></p>
-      </div>
     </div>
 
     <!-- Sertifikalar -->
     <div class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
-      <div class="flex items-center justify-between p-4 sm:p-7 border-b border-border-main">
-        <div class="flex items-center gap-3">
+      <div class="flex items-center justify-between gap-3 p-4 sm:p-7 border-b border-border-main">
+        <div class="flex items-center gap-3 min-w-0">
           <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">
             <Award size={16} />
           </div>
-          <h3 class="text-sm font-black uppercase tracking-widest text-main">Sertifikalar</h3>
-          <span id="cert-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"></span>
+          <h3 class="text-sm font-black uppercase tracking-widest text-main truncate">Sertifikalar</h3>
+          <span id="cert-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex-shrink-0"></span>
         </div>
-        <a id="btn-add-cert" href="#" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black rounded-xl transition-all">
-          + Sertifika Ekle
+        <a id="btn-add-cert" href="#" class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black rounded-xl transition-all">
+          <span class="hidden sm:inline">+ Sertifika Ekle</span>
+          <span class="sm:hidden">+ Ekle</span>
         </a>
       </div>
 
@@ -389,35 +358,35 @@ import {
 
       <div id="cert-list-wrapper" class="hidden">
         <div class="px-4 sm:px-7 py-4 border-b border-border-main bg-surface-hover/40">
-          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-            <div class="flex items-center gap-3 flex-wrap">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
                 id="cert-actions-toggle"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-black uppercase tracking-widest transition-colors"
+                class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-black uppercase tracking-widest transition-colors"
               >
-                <ChevronDown size={14} class="transition-transform" id="cert-actions-chevron" />
-                Toplu Sertifika İşlemleri
+                <ChevronDown size={13} class="transition-transform" id="cert-actions-chevron" />
+                <span class="hidden sm:inline">Toplu </span>İşlemler
               </button>
               <p class="text-[11px] text-muted" id="cert-selection-summary">Secili sertifika yok.</p>
             </div>
-            <div class="flex items-center gap-2 flex-wrap">
-              <button type="button" id="cert-refresh" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-bold transition-colors">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button type="button" id="cert-refresh" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-bold transition-colors">
                 <RefreshCw size={13} />
-                Yenile
+                <span class="hidden sm:inline">Yenile</span>
               </button>
-              <a id="cert-folder-link" href="/documents/view" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-bold transition-colors">
+              <a id="cert-folder-link" href="/documents/view" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-bold transition-colors">
                 <FolderOpen size={13} />
-                Firma Klasoru
+                <span class="hidden sm:inline">Firma Klasörü</span>
               </a>
-              <a href="/certificates" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-300 text-[11px] font-bold transition-colors">
+              <a href="/certificates" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-300 text-[11px] font-bold transition-colors">
                 <Award size={13} />
-                Sertifika Merkezi
+                <span class="hidden sm:inline">Sertifika Merkezi</span>
               </a>
             </div>
           </div>
 
-          <div id="cert-actions-panel" class="hidden mt-4 grid grid-cols-1 xl:grid-cols-[1.4fr_1fr_1fr] gap-3">
+          <div id="cert-actions-panel" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             <div class="rounded-2xl border border-border-main bg-surface p-4 space-y-3">
               <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-muted">
                 <CheckSquare size={12} />
@@ -474,18 +443,29 @@ import {
           <table class="w-full text-xs">
             <thead>
               <tr class="border-b border-border-main">
-                <th class="px-4 sm:px-7 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest w-16">Sec</th>
-                <th class="px-4 sm:px-7 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Standart</th>
-                <th class="hidden sm:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Sertifika No</th>
-                <th class="hidden md:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Belge Tarihi</th>
-                <th class="hidden md:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Gözetim T.</th>
-                <th class="hidden lg:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Akreditasyon</th>
+                <th class="px-3 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest w-10">
+                  <input id="cert-select-all" type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface-hover text-emerald-500 focus:ring-emerald-500/40" title="Tumunu sec" />
+                </th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest whitespace-nowrap">Sertifika Tarihi</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Standart</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest whitespace-nowrap">Sertifika No</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Akredite</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest whitespace-nowrap">Gözetim Tarihi</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Danışman</th>
                 <th class="px-4 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest">Durum</th>
-                <th class="px-4 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest w-28">Aksiyon</th>
+                <th class="px-4 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest w-36">İşlem</th>
               </tr>
             </thead>
             <tbody id="cert-tbody"></tbody>
           </table>
+        </div>
+
+        <div id="cert-pagination-container" class="hidden bg-surface-hover border-t border-border-main px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-bold text-muted uppercase tracking-widest hidden sm:inline">Sayfa:</span>
+            <span id="cert-page-indicator" class="text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-md border border-primary/20">1 / 1</span>
+          </div>
+          <div id="cert-pagination-controls" class="flex items-center gap-1"></div>
         </div>
       </div>
 
@@ -495,51 +475,52 @@ import {
       </div>
     </div>
 
-    <!-- Denetimler -->
+    <!-- Testler -->
     <div class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
-      <div class="flex items-center justify-between p-4 sm:p-7 border-b border-border-main">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 flex-shrink-0">
-            <ClipboardList size={16} />
+      <div class="flex items-center justify-between gap-3 p-4 sm:p-7 border-b border-border-main">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 flex-shrink-0">
+            <FlaskConical size={16} />
           </div>
-          <h3 class="text-sm font-black uppercase tracking-widest text-main">Denetimler</h3>
-          <span id="audit-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"></span>
+          <h3 class="text-sm font-black uppercase tracking-widest text-main truncate">Testler</h3>
+          <span id="test-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 flex-shrink-0"></span>
         </div>
-        <a id="btn-audit-link" href="/audits/add" class="flex items-center gap-2 px-4 py-2 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-[11px] font-bold rounded-xl transition-all">
-          + Denetim Planla
-        </a>
       </div>
 
-      <div id="audit-skeleton" class="p-7 animate-pulse space-y-3">
-        {[1,2].map(() => (
+      <div id="test-skeleton" class="p-7 animate-pulse space-y-3">
+        {[1,2,3].map(() => (
           <div class="flex gap-4">
-            <div class="h-3 bg-surface-hover rounded w-20"></div>
+            <div class="h-3 bg-surface-hover rounded w-24"></div>
             <div class="h-3 bg-surface-hover rounded flex-1"></div>
-            <div class="h-3 bg-surface-hover rounded w-28"></div>
+            <div class="h-3 bg-surface-hover rounded w-20"></div>
+            <div class="h-3 bg-surface-hover rounded w-16"></div>
           </div>
         ))}
       </div>
 
-      <div id="audit-list-wrapper" class="hidden">
+      <div id="test-list-wrapper" class="hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-xs">
             <thead>
               <tr class="border-b border-border-main">
-                <th class="px-4 sm:px-7 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Standart</th>
-                <th class="hidden sm:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Tür</th>
-                <th class="hidden sm:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">A1 Tarihi</th>
-                <th class="hidden md:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">A2 Tarihi</th>
-                <th class="hidden md:table-cell px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Baş Denetçi</th>
+                <th class="px-3 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest w-10">
+                  <input id="test-select-all" type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface-hover text-violet-500 focus:ring-violet-500/40" title="Tümünü seç" />
+                </th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest whitespace-nowrap">Rapor Tarihi</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Test Adı</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Marka</th>
+                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Ürün</th>
+                <th class="px-4 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest w-24">İşlem</th>
               </tr>
             </thead>
-            <tbody id="audit-tbody"></tbody>
+            <tbody id="test-tbody"></tbody>
           </table>
         </div>
       </div>
 
-      <div id="audit-empty" class="hidden p-10 text-center">
-        <AlertCircle size={32} class="mx-auto text-muted opacity-20 mb-3" />
-        <p class="text-sm font-bold text-muted">Bu firmaya ait denetim kaydı bulunamadı.</p>
+      <div id="test-empty" class="hidden p-10 text-center">
+        <FlaskConical size={32} class="mx-auto text-muted opacity-20 mb-3" />
+        <p class="text-sm font-bold text-muted">Bu firmaya ait test kaydı bulunamadı.</p>
       </div>
     </div>
 
@@ -610,12 +591,102 @@ import {
     return `<span class="text-[10px] font-bold px-2.5 py-1 rounded-full border ${cls}">${text}</span>`;
   }
 
+  function escHtml(value: any) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getExpandableLimit(id: keyof typeof EXPANDABLE_TEXT_LIMITS) {
+    const config = EXPANDABLE_TEXT_LIMITS[id];
+    return window.innerWidth < 768 ? config.mobile : config.desktop;
+  }
+
+  function renderExpandableText(id: keyof typeof EXPANDABLE_TEXT_LIMITS, value: string) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const cleanValue = value.trim();
+    el.dataset.copyValue = cleanValue;
+    el.dataset.fullText = cleanValue;
+
+    if (!cleanValue) {
+      el.innerHTML = '<span class="not-italic text-muted opacity-30">—</span>';
+      delete el.dataset.expanded;
+      return;
+    }
+
+    const limit = getExpandableLimit(id);
+    const expanded = el.dataset.expanded === 'true';
+    const needsClamp = cleanValue.length > limit;
+
+    if (!needsClamp) {
+      el.textContent = cleanValue;
+      delete el.dataset.expanded;
+      return;
+    }
+
+    const shortText = `${cleanValue.slice(0, limit).trimEnd()}...`;
+    const visibleText = expanded ? cleanValue : shortText;
+    const toggleLabel = expanded ? '&lt;&lt; Daha az' : 'Devamı &gt;&gt;';
+
+    el.innerHTML = `
+      <span>${escHtml(visibleText)}</span>
+      <button
+        type="button"
+        class="ml-2 inline-flex items-center text-[11px] font-bold not-italic text-indigo-400 hover:text-indigo-300 transition-colors"
+        data-expand-target="${id}"
+        aria-expanded="${expanded ? 'true' : 'false'}"
+      >${toggleLabel}</button>
+    `;
+  }
+
+  function setupExpandableTextButtons() {
+    document.querySelectorAll<HTMLButtonElement>('[data-expand-target]').forEach((button) => {
+      if (button.dataset.bound === 'true') return;
+      button.dataset.bound = 'true';
+      button.addEventListener('click', () => {
+        const targetId = button.dataset.expandTarget as keyof typeof EXPANDABLE_TEXT_LIMITS | undefined;
+        if (!targetId) return;
+
+        const target = document.getElementById(targetId);
+        const fullText = target?.dataset.fullText || '';
+        if (!target || !fullText) return;
+
+        target.dataset.expanded = target.dataset.expanded === 'true' ? 'false' : 'true';
+        renderExpandableText(targetId, fullText);
+        setupExpandableTextButtons();
+      });
+    });
+  }
+
+  function refreshExpandableTexts() {
+    (Object.keys(EXPANDABLE_TEXT_LIMITS) as Array<keyof typeof EXPANDABLE_TEXT_LIMITS>).forEach((id) => {
+      const target = document.getElementById(id);
+      const fullText = target?.dataset.fullText;
+      if (target && fullText !== undefined) {
+        renderExpandableText(id, fullText);
+      }
+    });
+    setupExpandableTextButtons();
+  }
+
   const copyResetTimers = new WeakMap<HTMLButtonElement, number>();
   let currentCompanyNick = '';
   let currentCertRows: Array<{ id: string; status: string }> = [];
   const selectedCertIds = new Set<string>();
+  let allCertData: any[] = [];
+  let certCurrentPage = 1;
+  const CERT_PAGE_SIZE = 10;
   let certLang: 'TR' | 'EN' = 'EN';
   let certSign: 'S' | 'NS' = 'NS';
+  const EXPANDABLE_TEXT_LIMITS = {
+    'hero-kapsam': { mobile: 170, desktop: 340 },
+    'hero-scope': { mobile: 170, desktop: 360 },
+  } as const;
   const copySuccessMarkup = `
     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M20 6 9 17l-5-5"/>
@@ -673,7 +744,7 @@ import {
         if (!targetId) return;
 
         const target = document.getElementById(targetId);
-        const text = target?.textContent?.trim() || '';
+        const text = target?.dataset.copyValue || target?.textContent?.trim() || '';
         if (!text || text === '—') return;
 
         try {
@@ -715,6 +786,15 @@ import {
     document.querySelectorAll<HTMLInputElement>('.cert-select-row').forEach((input) => {
       input.checked = selectedCertIds.has(input.value);
     });
+
+    const selectAll = document.getElementById('cert-select-all') as HTMLInputElement | null;
+    if (selectAll) {
+      const total = currentCertRows.length;
+      const selected = selectedCertIds.size;
+      selectAll.checked = total > 0 && selected === total;
+      selectAll.indeterminate = selected > 0 && selected < total;
+    }
+
     refreshCertSelectionSummary();
     refreshCertActionButtons();
   }
@@ -842,6 +922,19 @@ import {
       refreshBtn.addEventListener('click', () => void refreshCertificates());
     }
 
+    const selectAll = document.getElementById('cert-select-all') as HTMLInputElement | null;
+    if (selectAll && selectAll.dataset.bound !== 'true') {
+      selectAll.dataset.bound = 'true';
+      selectAll.addEventListener('change', () => {
+        if (selectAll.checked) {
+          currentCertRows.forEach((row) => selectedCertIds.add(row.id));
+        } else {
+          selectedCertIds.clear();
+        }
+        syncCertCheckboxes();
+      });
+    }
+
     const genBtn = document.getElementById('cert-generate-selected') as HTMLButtonElement | null;
     if (genBtn && genBtn.dataset.bound !== 'true') {
       genBtn.dataset.bound = 'true';
@@ -942,14 +1035,11 @@ import {
     const btnEdit = document.getElementById('btn-edit') as HTMLAnchorElement | null;
     if (btnEdit) btnEdit.href = `/company/edit?id=${firmaId}`;
 
-    const btnAddAudit = document.getElementById('btn-add-audit') as HTMLAnchorElement | null;
-    if (btnAddAudit) btnAddAudit.href = `/audits/add?firmaId=${firmaId}`;
-    const btnAuditLink = document.getElementById('btn-audit-link') as HTMLAnchorElement | null;
-    if (btnAuditLink) btnAuditLink.href = `/audits/add?firmaId=${firmaId}`;
 
     // Kapsam
-    setEl('hero-kapsam', kapsam);
-    setEl('hero-scope', scope);
+    renderExpandableText('hero-kapsam', kapsam);
+    renderExpandableText('hero-scope', scope);
+    setupExpandableTextButtons();
 
     const heroSubeRow = document.getElementById('hero-sube-row');
     const infoSubeRow = document.getElementById('info-sube-row');
@@ -999,14 +1089,16 @@ import {
     setField('info-logo', logoK, 'info-logo-block');
 
     // Kart görünürlüğü
-    toggleCardVisibility('profile-card', [
+    toggleCardVisibility('ops-card', [
       'info-location-block',
       'info-tcs-block',
       'info-sector-block',
       'info-facility-block',
       'info-vardiya-block',
       'info-workforce-block',
-      'info-sube-row',
+      'info-dan-block',
+      'info-logo-block',
+      'info-not-block',
     ]);
 
     toggleCardVisibility('contact-card', [
@@ -1027,11 +1119,6 @@ import {
       'info-irtibat-mail-block',
     ]);
 
-    toggleCardVisibility('records-card', [
-      'info-dan-block',
-      'info-not-block',
-      'info-logo-block',
-    ]);
 
     // Firma Detayları
     const detailsGrid = document.getElementById('details-grid');
@@ -1043,7 +1130,7 @@ import {
       ].filter(d => d.value);
 
       detailsGrid.innerHTML = details.map(d => `
-        <div class="${d.span ? 'md:col-span-2' : ''} p-4 rounded-2xl bg-surface-hover border border-border-main">
+        <div class="p-4 rounded-2xl bg-surface-hover border border-border-main">
           <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">${d.label}</p>
           <p class="text-sm font-semibold text-main">${d.value}</p>
         </div>`).join('');
@@ -1059,11 +1146,22 @@ import {
 
   // ─── Load Certificates ────────────────────────────────────────────────────────
 
+  function parseCertDate(dateStr: string): number {
+    if (!dateStr) return 0;
+    const parts = dateStr.split('.');
+    if (parts.length !== 3) return 0;
+    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
+  }
+
+  function getCertDateStr(c: any): string {
+    if (Array.isArray(c)) return String(c[6] || '');
+    return g(c, 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi');
+  }
+
   function renderCerts(certData: any[]) {
     const skeleton = document.getElementById('cert-skeleton');
     const wrapper  = document.getElementById('cert-list-wrapper');
     const empty    = document.getElementById('cert-empty');
-    const tbody    = document.getElementById('cert-tbody');
     const count    = document.getElementById('cert-count');
 
     skeleton?.classList.add('hidden');
@@ -1071,6 +1169,7 @@ import {
     empty?.classList.add('hidden');
 
     if (!certData.length) {
+      allCertData = [];
       currentCertRows = [];
       selectedCertIds.clear();
       refreshCertSelectionSummary();
@@ -1079,33 +1178,91 @@ import {
       return;
     }
 
-    if (count) count.textContent = String(certData.length);
+    // Sertifika tarihine göre en yeniden en eskiye sırala
+    allCertData = [...certData].sort((a, b) => parseCertDate(getCertDateStr(b)) - parseCertDate(getCertDateStr(a)));
+    certCurrentPage = 1;
+    if (count) count.textContent = String(allCertData.length);
+    renderCertPage();
 
-    // Certs from store are objects; certs from API are raw rows
-    const isRaw = Array.isArray(certData[0]);
+  }
+
+  function renderCertPage() {
+    const wrapper  = document.getElementById('cert-list-wrapper');
+    const tbody    = document.getElementById('cert-tbody');
+    const pageCont = document.getElementById('cert-pagination-container');
+    const pageInd  = document.getElementById('cert-page-indicator');
+
+    const totalPages = Math.ceil(allCertData.length / CERT_PAGE_SIZE) || 1;
+    if (certCurrentPage > totalPages) certCurrentPage = totalPages;
+    const start = (certCurrentPage - 1) * CERT_PAGE_SIZE;
+    const pageData = allCertData.slice(start, start + CERT_PAGE_SIZE);
+
+    const isRaw = Array.isArray(allCertData[0]);
 
     const nextRows: Array<{ id: string; status: string }> = [];
 
-    const rows = certData.map(c => {
-      let id, standart, sertNo, belgeTarihi, gozT, akreditasyon, gozetimConf;
+    const rows = pageData.map((c, rowIdx) => {
+      let id, standart, otherStandart, sertNo, belgeTarihi, gozT, akredite, danisman, durum, akreditasyon, note, denetim, kapsam, scope, certLink, qr, eventId, gozetimConf;
       if (isRaw) {
-        // Raw row: [id, nick, firmaNo, standart, sertNo, belgeTarihi?, ...]
-        id          = String(c[0] || '');
-        standart    = c[3]  || '';
-        sertNo      = c[4]  || '';
-        belgeTarihi = c[5]  || '';
-        gozT        = c[6]  || '';
-        akreditasyon= c[14] || '';
-        gozetimConf = String(c[19] || '').toUpperCase() === 'TRUE';
+        id           = String(c[0] || '').trim();
+        standart     = String(c[3] || '').trim();
+        denetim      = String(c[4] || '').trim();
+        sertNo       = String(c[5] || '').trim();
+        belgeTarihi  = String(c[6] || '').trim();
+        gozT         = String(c[7] || '').trim();
+        kapsam       = String(c[10] || '').trim();
+        scope        = String(c[11] || '').trim();
+        akreditasyon = String(c[14] || '').trim();
+        akredite     = String(c[15] || '').trim();
+        danisman     = String(c[16] || '').trim();
+        durum        = String(c[17] || '').trim();
+        note         = String(c[18] || '').trim();
+        gozetimConf  = String(c[19] || '').toUpperCase() === 'TRUE';
+        otherStandart= String(c[20] || '').trim();
+        eventId      = String(c[21] || '').trim();
+        qr           = String(c[22] || '').trim();
+        certLink     = String(c[23] || '').trim();
       } else {
-        id          = g(c, 'ID', 'id');
-        standart    = g(c, 'Standart', 'standart');
-        sertNo      = g(c, 'Sertifika No', 'sertNo', 'SertifikaNo');
-        belgeTarihi = g(c, 'Sertifika Tarihi', 'Belge Tarihi', 'sTarihi');
-        gozT        = g(c, 'Gözetim Tarihi', 'sGozetimT', 'GözetimTarihi');
-        akreditasyon= g(c, 'Akreditasyon', 'akrn', 'akreditasyon');
-        gozetimConf = String(g(c, 'Gözetim Conf.', 'gozetimConf')).toUpperCase() === 'TRUE';
+        id           = g(c, 'ID', 'id');
+        standart     = g(c, 'Standart', 'standart');
+        otherStandart= g(c, 'Other Standard', 'Other', 'other', 'Diğer', 'diger', 'Diger', 'diğer', 'Diğer Standart', 'digerStandart');
+        sertNo       = g(c, 'Sertifika No', 'sertNo', 'SertifikaNo');
+        belgeTarihi  = g(c, 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi');
+        gozT         = g(c, 'Gözetim Tarihi', 'Sertifika Gözetim Tarihi', 'goz', 'GOZ', 'sGozetimT', 'GözetimTarihi');
+        akreditasyon = g(c, 'Akreditasyon', 'akrn', 'akreditasyon');
+        akredite     = g(c, 'Akredite', 'akredite');
+        danisman     = g(c, 'Danışman', 'Danisman', 'dan', 'danisman');
+        durum        = g(c, 'Durum', 'durum');
+        note         = g(c, 'Not', 'not');
+        denetim      = g(c, 'Denetim Tipi', 'denetim');
+        kapsam       = g(c, 'Kapsam', 'kapsam');
+        scope        = g(c, 'Scope', 'scope');
+        eventId      = g(c, 'Calendar ID', 'eventId');
+        qr           = g(c, 'QR Code', 'qr');
+        certLink     = g(c, 'Cert Link', 'certLink');
+        gozetimConf  = String(g(c, 'Gözetim Conf.', 'gozetimConfirmed', 'gozetimConf')).toUpperCase() === 'TRUE';
       }
+
+      const sLow = standart.toLowerCase();
+      const isOther = sLow === 'diğer' || sLow === 'diger' || sLow === 'other';
+
+      if (isOther && !otherStandart && !isRaw && id === (allCertData[0] as any)?.ID) {
+        console.log('[DEBUG cert keys]', Object.keys(c));
+      }
+
+      // Eğer bilinen key'lerle bulunamadıysa obje içinde normalize eşleşme ara
+      if (isOther && !otherStandart && !isRaw) {
+        const normKey = (s: string) => s.trim().toLowerCase()
+          .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')
+          .replace(/ö/g,'o').replace(/ç/g,'c').replace(/ı/g,'i')
+          .replace(/[^a-z0-9]/g,'');
+        for (const k of Object.keys(c)) {
+          const n = normKey(k);
+          if (n === 'other' || n === 'diger') { otherStandart = String(c[k] || ''); break; }
+        }
+      }
+
+      const standartDisplay = isOther && otherStandart ? otherStandart : standart;
 
       const parsedDate = gozT ? new Date(gozT.split('.').reverse().join('-')) : null;
       const now = new Date();
@@ -1128,27 +1285,74 @@ import {
             ? `<span class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[9px] font-bold">YAKLASAN</span>`
             : `<span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">AKTIF</span>`;
 
-      return `<tr class="border-b border-border-main hover:bg-surface-hover transition-colors">
-        <td class="px-4 sm:px-7 py-3 text-center">
+      const copyPayload = [
+        belgeTarihi && `Tarih: ${belgeTarihi}`,
+        standartDisplay && `Standart: ${standartDisplay}`,
+        sertNo && `No: ${sertNo}`,
+        akredite && `Akredite: ${akredite}`,
+        gozT && `Gozetim: ${gozT}`,
+        danisman && `Danisman: ${danisman}`,
+        (durum || statusKey) && `Durum: ${durum || statusKey}`,
+      ].filter(Boolean).join(' | ');
+
+      const detailCards = [
+        { label: 'Denetim Tipi', value: denetim },
+        { label: 'Akreditasyon', value: akreditasyon },
+        { label: 'Kapsam', value: kapsam },
+        { label: 'Scope', value: scope },
+        { label: 'Not', value: note },
+        { label: 'QR', value: qr },
+        { label: 'Calendar ID', value: eventId },
+      ].filter((item) => item.value).map((item) => `
+        <div class="rounded-xl border border-border-main bg-surface-hover p-3 space-y-1">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-muted">${escHtml(item.label)}</p>
+          <p class="text-xs text-main leading-relaxed break-words">${escHtml(item.value)}</p>
+        </div>
+      `).join('');
+
+      const detailLink = certLink
+        ? `<a href="${escHtml(certLink)}" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-emerald-300 hover:bg-emerald-500/15 transition-colors">Belgeyi Ac</a>`
+        : '';
+
+      const zebraClass = rowIdx % 2 !== 0 ? 'bg-black/[0.03]' : '';
+      return `<tr class="border-b border-border-main hover:bg-primary/5 transition-colors ${zebraClass}">
+        <td class="px-3 py-3 text-center align-middle">
           <input type="checkbox" class="cert-select-row h-4 w-4 rounded border-border-main bg-surface-hover text-emerald-500 focus:ring-emerald-500/40" value="${id}">
         </td>
-        <td class="px-4 sm:px-7 py-3 font-bold text-main text-xs">
-          <div>${standart || '—'}</div>
-          <div class="sm:hidden text-[10px] text-muted font-mono mt-0.5">${sertNo || ''}</div>
-        </td>
-        <td class="hidden sm:table-cell px-4 py-3 text-muted font-mono text-xs">${sertNo || '—'}</td>
-        <td class="hidden md:table-cell px-4 py-3 text-muted text-xs">${belgeTarihi || '—'}</td>
-        <td class="hidden md:table-cell px-4 py-3 text-muted text-xs">${gozT || '—'}</td>
-        <td class="hidden lg:table-cell px-4 py-3 text-muted text-xs">${akreditasyon || '—'}</td>
-        <td class="px-4 py-3 text-center">${statusHtml}</td>
-        <td class="px-4 py-3 text-center">
-          <div class="inline-flex items-center justify-center gap-1">
-            <a href="/certificates" class="inline-flex min-w-0 items-center justify-center rounded-lg border border-border-main bg-surface-hover px-2.5 py-2 text-main hover:bg-surface transition-colors text-[10px] font-bold uppercase tracking-wide" title="Sertifika Merkezi">
-              Merkez
-            </a>
-            <button type="button" class="cert-copy-id inline-flex min-w-0 items-center justify-center rounded-lg border border-border-main bg-surface-hover px-2.5 py-2 text-main hover:bg-surface transition-colors text-[10px] font-bold uppercase tracking-wide" data-cert-id="${id}" title="ID Kopyala">
-              ID
+        <td class="px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${belgeTarihi || '—'}</td>
+        <td class="px-4 py-3 font-bold text-main text-xs align-middle">${escHtml(standartDisplay || '—')}</td>
+        <td class="px-4 py-3 text-muted font-mono text-xs align-middle whitespace-nowrap">${escHtml(sertNo || '—')}</td>
+        <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(akredite || '—')}</td>
+        <td class="px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${escHtml(gozT || '—')}</td>
+        <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(danisman || '—')}</td>
+        <td class="px-4 py-3 text-center align-middle">${statusHtml}</td>
+        <td class="px-4 py-3 text-center align-middle">
+          <div class="inline-flex items-center gap-1.5">
+            <button type="button" class="cert-copy-row inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" data-copy-value="${escHtml(copyPayload || id)}" title="Satiri Kopyala" aria-label="Satiri kopyala">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+              </svg>
             </button>
+            <button type="button" class="cert-toggle-detail inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" data-target="cert-detail-${id}" aria-expanded="false" title="Detay Goster" aria-label="Detay goster">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+      <tr id="cert-detail-${id}" class="hidden border-b border-border-main bg-surface-hover/40">
+        <td colspan="9" class="px-4 sm:px-7 py-4">
+          <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div class="grid flex-1 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              ${detailCards || `<div class="rounded-xl border border-dashed border-border-main p-3 text-xs text-muted">Ek detay bulunamadi.</div>`}
+            </div>
+            <div class="flex flex-wrap items-center gap-2 xl:justify-end">
+              ${detailLink}
+              <a href="/certificates" class="inline-flex items-center justify-center rounded-lg border border-border-main bg-surface px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-main hover:bg-surface-hover transition-colors">Sertifika Merkezi</a>
+            </div>
           </div>
         </td>
       </tr>`;
@@ -1162,6 +1366,11 @@ import {
 
     if (tbody) tbody.innerHTML = rows;
     wrapper?.classList.remove('hidden');
+
+    // Pagination
+    if (pageInd) pageInd.textContent = `${certCurrentPage} / ${totalPages}`;
+    if (pageCont) pageCont.classList.toggle('hidden', totalPages <= 1);
+    renderCertPaginationUI(totalPages);
 
     // Update add cert link
     const btnAddCert = document.getElementById('btn-add-cert') as HTMLAnchorElement | null;
@@ -1179,12 +1388,25 @@ import {
       });
     });
 
-    document.querySelectorAll<HTMLButtonElement>('.cert-copy-id').forEach((button) => {
+    document.querySelectorAll<HTMLButtonElement>('.cert-copy-row').forEach((button) => {
       button.addEventListener('click', async () => {
-        const certId = button.dataset.certId || '';
-        if (!certId) return;
-        await copyText(certId);
+        const payload = button.dataset.copyValue || '';
+        if (!payload) return;
+        await copyText(payload);
         flashCopyState(button);
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('.cert-toggle-detail').forEach((button) => {
+      button.addEventListener('click', () => {
+        const targetId = button.dataset.target || '';
+        const detailRow = targetId ? document.getElementById(targetId) : null;
+        if (!detailRow) return;
+
+        const isHidden = detailRow.classList.contains('hidden');
+        detailRow.classList.toggle('hidden', !isHidden);
+        button.setAttribute('aria-expanded', String(isHidden));
+        button.classList.toggle('text-emerald-400', isHidden);
       });
     });
 
@@ -1192,66 +1414,152 @@ import {
     syncCertCheckboxes();
   }
 
-  // ─── Load Audits ──────────────────────────────────────────────────────────────
+  function renderCertPaginationUI(totalPages: number) {
+    const controls = document.getElementById('cert-pagination-controls');
+    if (!controls) return;
+    controls.innerHTML = '';
 
-  async function loadAudits() {
-    const res = await api.call('getAuditsByFirmaId', { firmaId });
-    const skeleton = document.getElementById('audit-skeleton');
-    const wrapper  = document.getElementById('audit-list-wrapper');
-    const empty    = document.getElementById('audit-empty');
-    const tbody    = document.getElementById('audit-tbody');
-    const count    = document.getElementById('audit-count');
+    const prevBtn = document.createElement('button');
+    prevBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>`;
+    prevBtn.className = `p-1.5 rounded-lg border border-border-main transition-all ${certCurrentPage > 1 ? 'text-primary hover:bg-primary/10' : 'text-muted opacity-30 cursor-not-allowed'}`;
+    prevBtn.onclick = () => { if (certCurrentPage > 1) { certCurrentPage--; renderCertPage(); } };
+    controls.appendChild(prevBtn);
+
+    const delta = 1;
+    const range: number[] = [];
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= certCurrentPage - delta && i <= certCurrentPage + delta)) {
+        range.push(i);
+      }
+    }
+
+    let last: number | null = null;
+    range.forEach(i => {
+      if (last && i - last > 1) {
+        const dots = document.createElement('span');
+        dots.textContent = '...';
+        dots.className = 'px-2 text-muted text-xs';
+        controls.appendChild(dots);
+      }
+      const btn = document.createElement('button');
+      btn.textContent = i.toString();
+      btn.className = `w-9 h-9 rounded-lg border text-xs font-black transition-all ${
+        i === certCurrentPage
+          ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+          : 'border-border-main text-muted hover:text-primary hover:bg-primary/10'
+      }`;
+      btn.onclick = () => { certCurrentPage = i; renderCertPage(); };
+      controls.appendChild(btn);
+      last = i;
+    });
+
+    const nextBtn = document.createElement('button');
+    nextBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`;
+    nextBtn.className = `p-1.5 rounded-lg border border-border-main transition-all ${certCurrentPage < totalPages ? 'text-primary hover:bg-primary/10' : 'text-muted opacity-30 cursor-not-allowed'}`;
+    nextBtn.onclick = () => { if (certCurrentPage < totalPages) { certCurrentPage++; renderCertPage(); } };
+    controls.appendChild(nextBtn);
+  }
+
+  // ─── Load Tests ───────────────────────────────────────────────────────────────
+
+  function updateTestSelectAll() {
+    const all = Array.from(document.querySelectorAll<HTMLInputElement>('.test-select-row'));
+    const selectAll = document.getElementById('test-select-all') as HTMLInputElement | null;
+    if (selectAll) selectAll.checked = all.length > 0 && all.every(cb => cb.checked);
+  }
+
+  async function loadTests() {
+    const res = await api.call('getTestsByFirmaId', { firmaId });
+    const skeleton = document.getElementById('test-skeleton');
+    const wrapper  = document.getElementById('test-list-wrapper');
+    const empty    = document.getElementById('test-empty');
+    const tbody    = document.getElementById('test-tbody');
+    const count    = document.getElementById('test-count');
 
     skeleton?.classList.add('hidden');
 
-    const audits: any[] = res?.data || [];
+    const tests: any[] = res?.data || [];
 
-    if (!audits.length) {
+    if (!tests.length) {
       empty?.classList.remove('hidden');
       return;
     }
 
-    if (count) count.textContent = String(audits.length);
+    if (count) count.textContent = String(tests.length);
 
-    const isRaw = Array.isArray(audits[0]);
+    const isRaw = Array.isArray(tests[0]);
 
-    const rows = audits.map(a => {
-      let standart, tur, a1Basla, a1Bitis, a2Basla, a2Bitis, a1Lead;
+    const rows = tests.map((t, rowIdx) => {
+      let testAdi, urun, marka, raporTarihi;
       if (isRaw) {
-        standart = a[3] || '';
-        tur      = a[4] || '';
-        a1Basla  = a[9] || '';
-        a1Bitis  = a[10] || '';
-        a2Basla  = a[15] || '';
-        a2Bitis  = a[16] || '';
-        a1Lead   = a[6] || '';
+        testAdi     = t[3]  || '';
+        marka       = t[4]  || '';
+        urun        = t[5]  || '';
+        raporTarihi = t[13] || '';
       } else {
-        standart = g(a, 'standart', 'Standart');
-        tur      = g(a, 'denetimTipi', 'Denetim Tipi');
-        a1Basla  = g(a, 'a1Basla');
-        a1Bitis  = g(a, 'a1Bitis');
-        a2Basla  = g(a, 'a2Basla');
-        a2Bitis  = g(a, 'a2Bitis');
-        a1Lead   = g(a, 'a1Lead', 'A1 Lead');
+        testAdi     = g(t, 'Test Adı', 'testAdi');
+        marka       = g(t, 'Marka', 'marka');
+        urun        = g(t, 'Ürün', 'urun');
+        raporTarihi = g(t, 'Rapor Tarihi', 'raporTarihi');
       }
 
-      const a1Range = a1Basla ? `${a1Basla}${a1Bitis && a1Bitis !== a1Basla ? ' → ' + a1Bitis : ''}` : '—';
-      const a2Range = a2Basla ? `${a2Basla}${a2Bitis && a2Bitis !== a2Basla ? ' → ' + a2Bitis : ''}` : '—';
+      const testId = String(isRaw ? (t[0] || rowIdx) : (g(t, 'ID', 'id') || rowIdx));
+      const zebraClass = rowIdx % 2 !== 0 ? 'bg-black/[0.03]' : '';
 
-      return `<tr class="border-b border-border-main hover:bg-surface-hover transition-colors">
-        <td class="px-4 sm:px-7 py-3 font-bold text-main text-xs">
-          <div>${standart || '—'}</div>
-          <div class="sm:hidden text-[10px] text-muted mt-0.5">${tur || ''}</div>
+      return `<tr class="border-b border-border-main hover:bg-primary/5 transition-colors ${zebraClass}">
+        <td class="px-3 py-3 text-center align-middle">
+          <input type="checkbox" class="test-select-row h-4 w-4 rounded border-border-main bg-surface-hover text-violet-500 focus:ring-violet-500/40" value="${testId}">
         </td>
-        <td class="hidden sm:table-cell px-4 py-3 text-muted text-xs">${tur || '—'}</td>
-        <td class="hidden sm:table-cell px-4 py-3 text-muted font-mono text-[11px]">${a1Range}</td>
-        <td class="hidden md:table-cell px-4 py-3 text-muted font-mono text-[11px]">${a2Range}</td>
-        <td class="hidden md:table-cell px-4 py-3 text-muted text-xs">${a1Lead || '—'}</td>
+        <td class="px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${raporTarihi || '—'}</td>
+        <td class="px-4 py-3 font-bold text-main text-xs align-middle">${escHtml(testAdi || '—')}</td>
+        <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(marka || '—')}</td>
+        <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(urun || '—')}</td>
+        <td class="px-4 py-3 text-center align-middle">
+          <div class="inline-flex items-center gap-1.5">
+            <button type="button" class="test-print-row inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" data-id="${testId}" title="Test Raporunu Yazdır">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect width="12" height="8" x="6" y="14"></rect></svg>
+            </button>
+            <button type="button" class="test-delete-row inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-400 hover:bg-rose-500/15 transition-colors" data-id="${testId}" title="Testi Sil">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+            </button>
+          </div>
+        </td>
       </tr>`;
     }).join('');
 
     if (tbody) tbody.innerHTML = rows;
     wrapper?.classList.remove('hidden');
+
+    document.querySelectorAll<HTMLInputElement>('.test-select-row').forEach(input => {
+      input.addEventListener('change', () => updateTestSelectAll());
+    });
+
+    document.getElementById('test-select-all')?.addEventListener('change', (e) => {
+      const checked = (e.target as HTMLInputElement).checked;
+      document.querySelectorAll<HTMLInputElement>('.test-select-row').forEach(cb => { cb.checked = checked; });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('.test-print-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id || '';
+        if (id) window.location.href = `/documents/add?firmaId=${firmaId}&testId=${id}`;
+      });
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('.test-delete-row').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id || '';
+        if (!id || !confirm('Bu test kaydını silmek istediğinizden emin misiniz?')) return;
+        btn.disabled = true;
+        const res = await api.call('deleteTest', { id });
+        if (res?.success) {
+          await loadTests();
+        } else {
+          alert('Silme işlemi başarısız.');
+          btn.disabled = false;
+        }
+      });
+    });
   }
 
   // ─── Certificates from Store ──────────────────────────────────────────────────
@@ -1268,6 +1576,11 @@ import {
 
   if (firmaId) {
     setupCopyButtons();
+    let resizeTimer = 0;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => refreshExpandableTexts(), 120);
+    });
 
     SyncManager.init().then(() => {
       // Once store is ready, filter certs
@@ -1286,6 +1599,6 @@ import {
       if (certs.length > 0) loadCertsFromStore(certs);
     });
 
-    Promise.all([loadCompany(), loadAudits()]);
+    Promise.all([loadCompany(), loadTests()]);
   }
 </script>

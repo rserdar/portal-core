@@ -207,7 +207,12 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       const id = pickValue(item, ["ID", "id"]);
       const firma = pickValue(item, ["Firma Adı", "Nickname", "nick"], "-");
       const danisman = pickValue(item, ["Danışman", "dan"], "");
-      const standart = pickValue(item, ["Standart", "standard"], "-");
+      const mainStandart = pickValue(item, ["Standart", "standard"], "-");
+      const otherStandart = pickValue(item, ["Other Standard", "Other", "other", "Diğer", "diger", "Diger", "diğer", "Diğer Standart", "digerStandart"], "");
+      const sLow = mainStandart.toLowerCase().trim();
+      const isOther = sLow === 'diğer' || sLow === 'diger' || sLow === 'other';
+      const standart = (isOther && otherStandart) ? otherStandart : mainStandart;
+
       const certNo = pickValue(item, ["Sertifika No", "sNo", "SNo", "sno"], "-");
       const gozetimTarihi = pickValue(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ"], "");
       const sertifikaTarihi = pickValue(item, ["Sertifika Tarihi", "gst", "GST"], "");
