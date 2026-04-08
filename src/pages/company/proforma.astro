@@ -1,0 +1,96 @@
+---
+import OperationPageShell from '../../components/company/OperationPageShell.astro';
+---
+
+<OperationPageShell
+  pageKey="proforma"
+  title="Proforma"
+  description="Proforma listeleme ve yeni kayit hazirlama akisini, mobilde de rahat kullanilacak sekilde ayri bir operasyon sayfasina tasir."
+>
+  <div class="space-y-6">
+    <section class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-black uppercase tracking-widest text-main">Kayitlar</h2>
+          <p class="text-sm text-muted">Bu alanda firmaya ait proforma kayitlari listelenecek.</p>
+        </div>
+        <button type="button" disabled class="rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-bold text-muted cursor-not-allowed">Yenile (Yakinda)</button>
+      </div>
+      <div class="rounded-2xl border border-dashed border-border-main p-5 text-sm text-muted" id="proforma-list-placeholder">
+        Henuz API baglantisi yapilmadi. Bu alan `getProformaByFirmaId` ile doldurulacak.
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+        <h2 class="text-sm font-black uppercase tracking-widest text-main">Tutarlar</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <input id="pro-kdv-haric" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="KDV Haric" />
+          <input id="pro-kdv-oran" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="KDV Orani" />
+          <input id="pro-kdv-tutar" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="KDV Tutari" />
+          <input id="pro-toplam" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Toplam Fiyat" />
+          <input id="pro-para" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Para Birimi" />
+          <input id="pro-tarih" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" />
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+        <h2 class="text-sm font-black uppercase tracking-widest text-main">Konu</h2>
+        <textarea id="pro-konu" rows={10} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[240px]" placeholder="Proforma konusu"></textarea>
+      </div>
+    </section>
+
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-muted cursor-not-allowed">Taslak Kaydet (Yakinda)</button>
+      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl bg-indigo-600/60 px-5 py-3 text-sm font-black text-white cursor-not-allowed">Proforma Uret (Yakinda)</button>
+    </div>
+  </div>
+</OperationPageShell>
+
+<script>
+  import { loadCompanyOperationContext } from '../../features/company-ops/context';
+  import { COMPANY_OPERATION_DEFINITIONS, buildCompanyOperationHref } from '../../features/company-ops/definitions';
+
+  const params = new URLSearchParams(location.search);
+  const firmaId = params.get('id') || '';
+
+  async function boot() {
+    if (!firmaId) {
+      document.getElementById('op-skeleton')?.classList.add('hidden');
+      document.getElementById('op-error')?.classList.remove('hidden');
+      return;
+    }
+
+    const context = await loadCompanyOperationContext(firmaId);
+    if (!context) {
+      document.getElementById('op-skeleton')?.classList.add('hidden');
+      document.getElementById('op-error')?.classList.remove('hidden');
+      return;
+    }
+
+    (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${firmaId}`);
+    document.querySelectorAll<HTMLAnchorElement>('[data-op-link]').forEach((link) => {
+      const key = link.dataset.opLink as 'form' | 'proforma' | 'draft' | 'contract';
+      const definition = COMPANY_OPERATION_DEFINITIONS.find((item) => item.key === key);
+      if (definition) link.href = buildCompanyOperationHref(definition.href, firmaId);
+    });
+
+    document.getElementById('op-company-id')!.textContent = `M${context.firmaId}`;
+    document.getElementById('op-company-nick')!.textContent = context.nick || 'Firma';
+    document.getElementById('op-company-dan')!.textContent = context.danisman || 'Danisman atanamamis';
+    document.getElementById('op-company-unvan')!.textContent = context.unvan || context.nick || `Firma #${context.firmaId}`;
+    document.getElementById('op-company-address')!.textContent = [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
+    document.getElementById('op-company-kapsam')!.textContent = context.scope || context.kapsam || 'Kapsam bulunamadi.';
+    document.getElementById('op-company-stats')!.textContent = `${context.certificates.length} sertifika, ${context.tests.length} test kaydi uzerinden fiyatlandirma baglanabilir.`;
+
+    const placeholder = document.getElementById('proforma-list-placeholder');
+    if (placeholder) {
+      placeholder.textContent = `Bu firma icin ${context.certificates.length} sertifika ve ${context.tests.length} test kaydi bulundu. Proforma listesi ikinci adimda API'den yüklenecek.`;
+    }
+
+    document.getElementById('op-skeleton')?.classList.add('hidden');
+    document.getElementById('op-shell')?.classList.remove('hidden');
+  }
+
+  void boot();
+</script>

@@ -286,6 +286,11 @@ function doPost(e) {
         result.success = true;
         break;
 
+      case "getAuditRows":
+        result.data = BaseService.getRawData("Denetim");
+        result.success = true;
+        break;
+
       case "getAuditsByFirmaId":
         result.data = AuditService.getByFirmaId(params.firmaId || params.id);
         result.success = true;

@@ -168,6 +168,11 @@ Yeni bir READ action eklendiğinde, eğer verisi `SyncService.getFullExport()` t
 - `store.ts`: Defines shared global stores (`$companies`, `$certificates`, `$syncStatus`, `$lastSyncTime`).
 - `config.ts`: Central config. Reads `PUBLIC_WORKER_URL` from env, exposes `CONFIG.WORKER_URL`.
 
+### `/src/features/company-ops/` (Company Operation Modules)
+- `definitions.ts`: Firma operasyon ekranlari icin ortak route/label metadata kaynagi.
+- `context.ts`: `company/form`, `company/proforma`, `company/draft`, `company/contract` sayfalari icin normalize edilmis ortak firma operasyon context'i uretir.
+- `certificate-form.ts`: Legacy sertifika ekleme kartindan tasinan standart/tarih/QR/sNo onerisi helper'larini barindirir.
+
 ### `/src/workers/` (Cloudflare Worker)
 - `proxy.js`: **The deployed Cloudflare Worker.** Handles CORS, injects `API_KEY` secret into every request body before forwarding to GAS. Copy-paste this file into the Cloudflare Worker dashboard or deploy via `wrangler deploy`.
   - `bulkSyncMaster`: Standarts/Auditors/Consultants/TestDoc/SysDoc verilerini GAS'tan KV'ye hydrate eder.
@@ -176,11 +181,17 @@ Yeni bir READ action eklendiğinde, eğer verisi `SyncService.getFullExport()` t
 - `index.astro`: Reactive Dashboard.
 - `search.astro`: Cached company lookup.
 - `company/add.astro`: Registration & Property Mapping.
+- `company/form.astro`: Mobil uyumlu basvuru formu operasyon sayfasi (iskelet + ortak company context).
+- `company/proforma.astro`: Proforma operasyon sayfasi (liste/form iskeleti + ortak company context).
+- `company/draft.astro`: Draft belge operasyon sayfasi (standart/dil secimi + ortak company context).
+- `company/contract.astro`: Sozlesme operasyon sayfasi (ucret/konu formu + ortak company context).
+- `company/certificate.astro`: Legacy sertifika ekleme carousel kartinin mobil uyumlu Astro karsiligi; `addCertificate` aksiyonuna baglidir.
 - `certificates.astro`: Grid view & Bulk Surveillance updates.
 - `documents/add.astro`: Batch document production.
 - `documents/view.astro`: Recursive Drive Explorer & PDF conversion management.
 - `audits/index.astro`: Audit timeline & Calendar overview.
-- `audits/add.astro`: New audit scheduling form (Stage 1/2 calendar integration).
+- `addaudit.astro`: Firma ekleme akisindan bagimsiz yeni denetim planlama sayfasi.
+- `audits/add.astro`: Legacy/transition audit scheduling route (eski baglantilar icin korunuyor).
 - `settings.astro`: Master data yönetim paneli (KV read + KV-primary update, version conflict kontrolü, manuel `Sheets -> KV` sync butonları).
 
 ---

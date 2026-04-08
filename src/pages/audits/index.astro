@@ -18,7 +18,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
             <h1 class="text-3xl font-black text-white tracking-tight">Denetim Takvimi</h1>
             <p class="text-gray-500 text-sm mt-1">Planlanmış denetimleri ve denetçi atamalarını yönetin.</p>
         </div>
-        <a href="/audits/add" class="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/20 transition-all group">
+        <a href="/addaudit" class="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/20 transition-all group">
             <svg class="group-hover:rotate-90 transition-transform" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
             YENİ DENETİM PLANLA
         </a>
@@ -103,7 +103,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   async function loadAudits() {
     if (!tableBody || !tableLoader || !noResults) return;
 
-    const res = await api.call('getAudits');
+    const res = await api.getAudits();
     tableLoader.classList.add('hidden');
 
     if (res.success && Array.isArray(res.data) && res.data.length > 0) {

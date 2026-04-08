@@ -104,9 +104,51 @@ const SyncService = {
     return normalized.length;
   },
 
+  _mapAuditRows: function(rows) {
+    const list = Array.isArray(rows) ? rows : [];
+    return list.map(function(row) {
+      const r = Array.isArray(row) ? row : [];
+      return {
+        id: r[0] || "",
+        nick: r[1] || "",
+        firmaNo: r[2] || "",
+        standart: r[3] || "",
+        denetimTipi: r[4] || "",
+        a1Full: r[5] || "",
+        a1Auditor: r[6] || "",
+        a2Full: r[7] || "",
+        a2Auditor: r[8] || "",
+        a1Basla: r[9] || "",
+        a1Bitis: r[10] || "",
+        a1Md: r[11] || "",
+        a1La: r[12] || "",
+        a1Fa: r[13] || "",
+        a1Sa: r[14] || "",
+        a2Basla: r[15] || "",
+        a2Bitis: r[16] || "",
+        a2Md: r[17] || "",
+        a2La: r[18] || "",
+        a2Fa: r[19] || "",
+        a2Sa: r[20] || "",
+        qms: r[21] || "",
+        mdd: r[22] || "",
+        ems: r[23] || "",
+        ohs: r[24] || "",
+        fsms: r[25] || "",
+        isms: r[26] || "",
+        engy: r[27] || "",
+        gmp: r[28] || "",
+        a1kDenet: r[29] || "",
+        a2kDenet: r[30] || "",
+        a1EventId: r[31] || "",
+        a2EventId: r[32] || ""
+      };
+    }).reverse();
+  },
+
   /**
    * Tüm sistem verilerini dışa aktarır.
-   * @returns {Object} { companies: [], certificates: [], certificateRows: [], tests: [], audits: [], proformas: [], consultants: [], standards: [], lastUpdate: string }
+   * @returns {Object} { companies: [], certificates: [], certificateRows: [], tests: [], audits: [], auditObjects: [], proformas: [], consultants: [], standards: [], lastUpdate: string }
    */
   getFullExport: function() {
     const start = new Date().getTime();
@@ -120,6 +162,7 @@ const SyncService = {
       // Şirket detay ekranı için firma bazlı listeler
       const tests = this._safeRead(syncWarnings, "Testler", () => BaseService.getRawData("Testler"));
       const audits = this._safeRead(syncWarnings, "Denetim", () => BaseService.getRawData("Denetim"));
+      const auditObjects = this._mapAuditRows(audits);
       const proformas = this._safeRead(syncWarnings, "Proforma", () => BaseService.getRawData("Proforma"));
       const consultants = this._safeRead(syncWarnings, "Consultants", () => CompanyService.getConsultants());
       const standards = this._safeRead(syncWarnings, "Standarts", () => BaseService.getDataAsObjects("Standarts"));
@@ -133,6 +176,7 @@ const SyncService = {
         certificateRows,
         tests,
         audits,
+        auditObjects,
         proformas,
         consultants,
         standards,

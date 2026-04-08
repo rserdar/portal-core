@@ -28,6 +28,65 @@ const DEFAULT_TIMEOUT_MS = 15000;
 const LONG_TIMEOUT_MS = 180000; // bulkSync/import-export gibi ağır işlemler için 3 dk
 const inFlightRequests = new Map<string, Promise<ApiResponse<any>>>();
 
+function mapLegacyAuditRow(row: any[]): any {
+  const r = Array.isArray(row) ? row : [];
+  return {
+    id: r[0] ?? "",
+    nick: r[1] ?? "",
+    firmaNo: r[2] ?? "",
+    standart: r[3] ?? "",
+    denetimTipi: r[4] ?? "",
+    a1Full: r[5] ?? "",
+    a1Auditor: r[6] ?? "",
+    a2Full: r[7] ?? "",
+    a2Auditor: r[8] ?? "",
+    a1Basla: r[9] ?? "",
+    a1Bitis: r[10] ?? "",
+    a1Md: r[11] ?? "",
+    a1La: r[12] ?? "",
+    a1Fa: r[13] ?? "",
+    a1Sa: r[14] ?? "",
+    a2Basla: r[15] ?? "",
+    a2Bitis: r[16] ?? "",
+    a2Md: r[17] ?? "",
+    a2La: r[18] ?? "",
+    a2Fa: r[19] ?? "",
+    a2Sa: r[20] ?? "",
+    qms: r[21] ?? "",
+    mdd: r[22] ?? "",
+    ems: r[23] ?? "",
+    ohs: r[24] ?? "",
+    fsms: r[25] ?? "",
+    isms: r[26] ?? "",
+    engy: r[27] ?? "",
+    gmp: r[28] ?? "",
+    a1kDenet: r[29] ?? "",
+    a2kDenet: r[30] ?? "",
+    a1EventId: r[31] ?? "",
+    a2EventId: r[32] ?? "",
+  };
+}
+
+function normalizeAuditList(data: any): any[] {
+  if (!Array.isArray(data)) return [];
+  if (data.length === 0) return [];
+
+  if (Array.isArray(data[0])) {
+    return data.map((row) => mapLegacyAuditRow(row));
+  }
+
+  return data;
+}
+
+function hasUsableAuditDates(audits: any[]): boolean {
+  return audits.some((audit) => {
+    if (!audit || typeof audit !== "object") return false;
+    return Boolean(
+      String(audit.a1Basla || audit.a1Bitis || audit.a2Basla || audit.a2Bitis || "").trim()
+    );
+  });
+}
+
 function stableStringify(value: any): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
@@ -81,6 +140,7 @@ export const api = {
   async getCompanyById(id: string | number) { return this.call("getCompanyById", { id }); },
   async updateCompany(id: string | number, companyInfo: any) { return this.call("updateCompany", { id, companyInfo }); },
   async getCertificates() { return this.call("getCertificates"); },
+  async getCertificateById(id: string | number) { return this.call("getCertificateById", { id }); },
   async addCertificate(certInfo: any) { return this.call("addCertificate", { certInfo }); },
   async updateCertificate(id: string | number, certInfo: any) { return this.call("updateCertificate", { id, certInfo }); },
   async updateCertificateField(id: string | number, field: string, value: any) {
@@ -92,8 +152,28 @@ export const api = {
   async getRecentCertificates(limit: number = 25) {
     return this.call("getRecentCertificates", { limit });
   },
+  async getAudits() {
+    let result = await this.call("getAudits");
+    if (!result.success && (result.needsHydration || result.error === "KV_PRIMARY_MISS")) {
+      const sync = await this.bulkSync();
+      if (sync.success) {
+        result = await this.call("getAudits");
+      }
+    }
+    if (result.success) {
+      result = { ...result, data: normalizeAuditList(result.data) };
+    }
+    return result;
+  },
   async getAuditsByFirmaId(firmaId: string | number) { 
-    return this.call("getAuditsByFirmaId", { firmaId }); 
+    let result = await this.call("getAuditsByFirmaId", { firmaId });
+    if (!result.success && (result.needsHydration || result.error === "KV_PRIMARY_MISS")) {
+      const sync = await this.bulkSync();
+      if (sync.success) {
+        result = await this.call("getAuditsByFirmaId", { firmaId });
+      }
+    }
+    return result; 
   },
   async updateAudit(id: string | number, data: any) {
     return this.call("updateAudit", { id, data });

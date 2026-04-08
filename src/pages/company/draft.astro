@@ -1,0 +1,132 @@
+---
+import OperationPageShell from '../../components/company/OperationPageShell.astro';
+---
+
+<OperationPageShell
+  pageKey="draft"
+  title="Draft Olustur"
+  description="Standart, dil ve kapsam tercihleriyle sertifika draft olusturma akisini izole eder; mobilde adimlar daha rahat yonetilir."
+>
+  <div class="space-y-6">
+    <section class="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6">
+      <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+        <h2 class="text-sm font-black uppercase tracking-widest text-main">Draft Ayarlari</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Standart</label>
+            <select id="draft-standard" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main">
+              <option>Seciniz...</option>
+            </select>
+          </div>
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Dil</label>
+            <div class="flex gap-3">
+              <label class="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main">
+                <input type="radio" name="draft-lang" value="TR" checked />
+                TR
+              </label>
+              <label class="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main">
+                <input type="radio" name="draft-lang" value="EN" />
+                EN
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Kapsam</label>
+          <textarea id="draft-kapsam" rows={8} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px]"></textarea>
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+        <h2 class="text-sm font-black uppercase tracking-widest text-main">Onizleme Ozeti</h2>
+        <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-3 text-sm">
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted">Firma</p>
+            <p id="draft-preview-firma" class="font-semibold text-main">—</p>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted">Yetkili</p>
+            <p id="draft-preview-yetkili" class="font-semibold text-main">—</p>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted">Iletisim</p>
+            <p id="draft-preview-mail" class="font-semibold text-main">—</p>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-dashed border-border-main p-4 text-sm leading-relaxed text-muted">
+          Bu ekran ikinci adimda `generateDraftCertificate` veya yeni bridge action ile dogrudan belge uretimine baglanacak.
+        </div>
+      </div>
+    </section>
+
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-muted cursor-not-allowed">Payload Onizle (Yakinda)</button>
+      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl bg-indigo-600/60 px-5 py-3 text-sm font-black text-white cursor-not-allowed">Draft Uret (Yakinda)</button>
+    </div>
+  </div>
+</OperationPageShell>
+
+<script>
+  import { loadCompanyOperationContext } from '../../features/company-ops/context';
+  import { COMPANY_OPERATION_DEFINITIONS, buildCompanyOperationHref } from '../../features/company-ops/definitions';
+
+  const params = new URLSearchParams(location.search);
+  const firmaId = params.get('id') || '';
+
+  async function boot() {
+    if (!firmaId) {
+      document.getElementById('op-skeleton')?.classList.add('hidden');
+      document.getElementById('op-error')?.classList.remove('hidden');
+      return;
+    }
+
+    const context = await loadCompanyOperationContext(firmaId);
+    if (!context) {
+      document.getElementById('op-skeleton')?.classList.add('hidden');
+      document.getElementById('op-error')?.classList.remove('hidden');
+      return;
+    }
+
+    (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${firmaId}`);
+    document.querySelectorAll<HTMLAnchorElement>('[data-op-link]').forEach((link) => {
+      const key = link.dataset.opLink as 'form' | 'proforma' | 'draft' | 'contract';
+      const definition = COMPANY_OPERATION_DEFINITIONS.find((item) => item.key === key);
+      if (definition) link.href = buildCompanyOperationHref(definition.href, firmaId);
+    });
+
+    document.getElementById('op-company-id')!.textContent = `M${context.firmaId}`;
+    document.getElementById('op-company-nick')!.textContent = context.nick || 'Firma';
+    document.getElementById('op-company-dan')!.textContent = context.danisman || 'Danisman atanamamis';
+    document.getElementById('op-company-unvan')!.textContent = context.unvan || context.nick || `Firma #${context.firmaId}`;
+    document.getElementById('op-company-address')!.textContent = [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
+    document.getElementById('op-company-kapsam')!.textContent = context.scope || context.kapsam || 'Kapsam bulunamadi.';
+    document.getElementById('op-company-stats')!.textContent = `${context.certificates.length} sertifika kaydi icinden standart secimi baglanacak.`;
+
+    const select = document.getElementById('draft-standard') as HTMLSelectElement | null;
+    if (select) {
+      const standards = new Set<string>();
+      context.certificates.forEach((item: any) => {
+        const value = Array.isArray(item) ? String(item[3] || '').trim() : String(item?.Standart || item?.standart || '').trim();
+        if (value) standards.add(value);
+      });
+      if (standards.size === 0) standards.add('Genel Draft');
+      Array.from(standards).forEach((value) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+    }
+
+    (document.getElementById('draft-kapsam') as HTMLTextAreaElement | null)!.value = context.scope || context.kapsam;
+    document.getElementById('draft-preview-firma')!.textContent = context.unvan || context.nick;
+    document.getElementById('draft-preview-yetkili')!.textContent = [context.yetkiliAdi, context.yetkiliUnvani].filter(Boolean).join(' / ') || '—';
+    document.getElementById('draft-preview-mail')!.textContent = context.mail || context.irtibatMail || '—';
+
+    document.getElementById('op-skeleton')?.classList.add('hidden');
+    document.getElementById('op-shell')?.classList.remove('hidden');
+  }
+
+  void boot();
+</script>

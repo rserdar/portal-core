@@ -30,6 +30,56 @@ export default {
       const keys = Object.keys(value).sort();
       return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
     };
+    const mapLegacyAuditRow = (row) => {
+      const r = Array.isArray(row) ? row : [];
+      return {
+        id: r[0] ?? "",
+        nick: r[1] ?? "",
+        firmaNo: r[2] ?? "",
+        standart: r[3] ?? "",
+        denetimTipi: r[4] ?? "",
+        a1Full: r[5] ?? "",
+        a1Auditor: r[6] ?? "",
+        a2Full: r[7] ?? "",
+        a2Auditor: r[8] ?? "",
+        a1Basla: r[9] ?? "",
+        a1Bitis: r[10] ?? "",
+        a1Md: r[11] ?? "",
+        a1La: r[12] ?? "",
+        a1Fa: r[13] ?? "",
+        a1Sa: r[14] ?? "",
+        a2Basla: r[15] ?? "",
+        a2Bitis: r[16] ?? "",
+        a2Md: r[17] ?? "",
+        a2La: r[18] ?? "",
+        a2Fa: r[19] ?? "",
+        a2Sa: r[20] ?? "",
+        qms: r[21] ?? "",
+        mdd: r[22] ?? "",
+        ems: r[23] ?? "",
+        ohs: r[24] ?? "",
+        fsms: r[25] ?? "",
+        isms: r[26] ?? "",
+        engy: r[27] ?? "",
+        gmp: r[28] ?? "",
+        a1kDenet: r[29] ?? "",
+        a2kDenet: r[30] ?? "",
+        a1EventId: r[31] ?? "",
+        a2EventId: r[32] ?? "",
+      };
+    };
+    const hasUsableAuditDates = (audits) => Array.isArray(audits) && audits.some((audit) =>
+      audit && typeof audit === "object" && String(audit.a1Basla || audit.a1Bitis || audit.a2Basla || audit.a2Bitis || "").trim()
+    );
+    const rebuildAuditsFromIndex = async () => {
+      if (!env.DB) return null;
+      const indexedRaw = await env.DB.get(indexKeys.auditsByFirmaId);
+      if (!indexedRaw) return null;
+      const indexed = JSON.parse(indexedRaw);
+      const rows = Object.values(indexed || {}).flatMap((value) => Array.isArray(value) ? value : []);
+      if (!rows.length) return [];
+      return rows.map(mapLegacyAuditRow).reverse();
+    };
     const parseVersionNumber = (raw) => {
       const n = parseInt(String(raw ?? "0"), 10);
       return isNaN(n) ? 0 : n;
@@ -93,6 +143,7 @@ export default {
           "getCertificates",
           "getCertificatesByFirmaId",
           "getRecentCertificates",
+          "getAudits",
           "getTestsByFirmaId",
           "getAuditsByFirmaId",
           "getConsultants",
@@ -130,7 +181,22 @@ export default {
           const cached = await env.DB.get(cacheKey);
           if (cached) {
             const data = JSON.parse(cached);
+            if (action === "getAudits" && !hasUsableAuditDates(data)) {
+              const rebuilt = await rebuildAuditsFromIndex();
+              if (rebuilt && rebuilt.length) {
+                ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(rebuilt), { expirationTtl: CACHE_TTL }));
+                return jsonResponse({ success: true, data: rebuilt, fromCache: true, rebuiltFromIndex: true });
+              }
+            }
             return jsonResponse({ success: true, data, fromCache: true });
+          }
+
+          if (action === "getAudits") {
+            const rebuilt = await rebuildAuditsFromIndex();
+            if (rebuilt) {
+              ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(rebuilt), { expirationTtl: CACHE_TTL }));
+              return jsonResponse({ success: true, data: rebuilt, fromCache: true, rebuiltFromIndex: true });
+            }
           }
 
           // Bulk sync ile önceden yazılan indeks cache'lerini fallback olarak kullan.
@@ -314,6 +380,7 @@ export default {
               const certificateRows = Array.isArray(d.certificateRows) ? d.certificateRows : [];
               const tests = Array.isArray(d.tests) ? d.tests : [];
               const audits = Array.isArray(d.audits) ? d.audits : [];
+              const auditObjects = Array.isArray(d.auditObjects) ? d.auditObjects : [];
               const proformas = Array.isArray(d.proformas) ? d.proformas : [];
               const consultants = Array.isArray(d.consultants) ? d.consultants : [];
               const standards = Array.isArray(d.standards) ? d.standards : [];
@@ -381,6 +448,7 @@ export default {
               await Promise.all([
                 env.DB.put(`cache:getCompanies:{}`, JSON.stringify(companies), { expirationTtl: CACHE_TTL }),
                 env.DB.put(`cache:getCertificates:{}`, JSON.stringify(certificates), { expirationTtl: CACHE_TTL }),
+                env.DB.put(`cache:getAudits:{}`, JSON.stringify(auditObjects), { expirationTtl: CACHE_TTL }),
                 env.DB.put(`cache:getConsultants:{}`, JSON.stringify(consultants), { expirationTtl: CACHE_TTL }),
                 env.DB.put(indexKeys.companyById, JSON.stringify(companiesById), { expirationTtl: CACHE_TTL }),
                 env.DB.put(indexKeys.certsByFirmaId, JSON.stringify(certsByFirmaId), { expirationTtl: CACHE_TTL }),
@@ -400,6 +468,7 @@ export default {
                   certRows: certificateRows.length,
                   tests: tests.length,
                   audits: audits.length,
+                  auditObjects: auditObjects.length,
                   proformas: proformas.length,
                   consultants: consultants.length,
                   standards: standards.length
@@ -554,6 +623,7 @@ export default {
           }
 
           if (action === "scheduleAudit" || action === "updateAudit") {
+            invalidateKeys.add("cache:getAudits:{}");
             invalidateKeys.add(indexKeys.auditsByFirmaId);
             const auditFirmaId = resolveFirmaId(
               params?.firmaId ??

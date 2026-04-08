@@ -1,0 +1,157 @@
+---
+import OperationPageShell from '../../components/company/OperationPageShell.astro';
+---
+
+<OperationPageShell
+  pageKey="form"
+  title="Basvuru Formu"
+  description="Standart secimi, akreditasyon tercihleri ve firma kapsam kontrolunu tek akista toplayan mobil uyumlu basvuru hazirlama ekranidir."
+>
+  <div class="space-y-6">
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-sm font-black uppercase tracking-widest text-main">Standartlar</h2>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adim 1</span>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-sm">
+          {['ISO 9001', 'ISO 13485', 'ISO 14001', 'ISO 22000', 'ISO 27001', 'ISO 45001', 'ISO 50001', 'ISO 22716', 'ISO 10002', '2017/745/EU'].map((item) => (
+            <label class="flex items-center gap-3 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-main">
+              <input type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface text-primary" />
+              <span class="font-semibold">{item}</span>
+            </label>
+          ))}
+        </div>
+        <div class="space-y-2">
+          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Diger Standart</label>
+          <input type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Gerekirse manuel standart girin" />
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-sm font-black uppercase tracking-widest text-main">Akreditasyon</h2>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adim 2</span>
+        </div>
+        <div class="space-y-2">
+          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Notified Body</label>
+          <select class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main">
+            <option>Seciniz...</option>
+            <option>2195</option>
+            <option>1883</option>
+          </select>
+        </div>
+        <div class="space-y-2">
+          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Akreditasyon Kurulusu</label>
+          <select class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main">
+            <option>Seciniz...</option>
+            <option>TURKAK</option>
+            <option>IAS</option>
+          </select>
+        </div>
+        <div class="rounded-2xl border border-dashed border-border-main p-4 text-sm leading-relaxed text-muted">
+          Kaydetme ve belge uretme aksiyonlari ikinci adimda API'ye baglanacak. Bu sayfa su an mobil akisi ve alan mimarisini sabitliyor.
+        </div>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-sm font-black uppercase tracking-widest text-main">Firma Kontrolu</h2>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adim 3</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Yetkili</label>
+            <input id="form-yetkili" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Irtibat</label>
+            <input id="form-irtibat" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Telefon</label>
+            <input id="form-tel" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">E-Posta</label>
+            <input id="form-mail" type="email" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" />
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-sm font-black uppercase tracking-widest text-main">Kapsam Incelemesi</h2>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adim 4</span>
+        </div>
+        <textarea id="form-kapsam" rows={6} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[180px]"></textarea>
+        <textarea id="form-scope" rows={6} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[180px]" placeholder="Scope (EN)"></textarea>
+      </div>
+    </section>
+
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+      <a href="/company/edit" id="form-edit-link" class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-main hover:bg-surface-hover transition-colors">Firma Bilgilerini Duzenle</a>
+      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl bg-indigo-600/60 px-5 py-3 text-sm font-black text-white cursor-not-allowed">Kaydet ve Form Uret (Yakinda)</button>
+    </div>
+  </div>
+</OperationPageShell>
+
+<script>
+  import { loadCompanyOperationContext } from '../../features/company-ops/context';
+  import { COMPANY_OPERATION_DEFINITIONS, buildCompanyOperationHref } from '../../features/company-ops/definitions';
+
+  const params = new URLSearchParams(location.search);
+  const firmaId = params.get('id') || '';
+
+  function setValue(id: string, value: string) {
+    const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null;
+    if (el) el.value = value || '';
+  }
+
+  async function boot() {
+    if (!firmaId) {
+      document.getElementById('op-skeleton')?.classList.add('hidden');
+      document.getElementById('op-error')?.classList.remove('hidden');
+      return;
+    }
+
+    const context = await loadCompanyOperationContext(firmaId);
+    if (!context) {
+      document.getElementById('op-skeleton')?.classList.add('hidden');
+      document.getElementById('op-error')?.classList.remove('hidden');
+      return;
+    }
+
+    (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${firmaId}`);
+    document.querySelectorAll<HTMLAnchorElement>('[data-op-link]').forEach((link) => {
+      const key = link.dataset.opLink as 'form' | 'proforma' | 'draft' | 'contract';
+      const definition = COMPANY_OPERATION_DEFINITIONS.find((item) => item.key === key);
+      if (definition) link.href = buildCompanyOperationHref(definition.href, firmaId);
+    });
+
+    document.getElementById('op-company-id')!.textContent = `M${context.firmaId}`;
+    document.getElementById('op-company-nick')!.textContent = context.nick || 'Firma';
+    document.getElementById('op-company-dan')!.textContent = context.danisman || 'Danisman atanamamis';
+    document.getElementById('op-company-unvan')!.textContent = context.unvan || context.nick || `Firma #${context.firmaId}`;
+    document.getElementById('op-company-address')!.textContent = [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
+    document.getElementById('op-company-kapsam')!.textContent = context.kapsam || 'Kapsam bulunamadi.';
+    document.getElementById('op-company-stats')!.textContent = `${context.certificates.length} sertifika, ${context.tests.length} test kaydi bulundu.`;
+
+    setValue('form-yetkili', context.yetkiliAdi);
+    setValue('form-irtibat', context.irtibatAdi);
+    setValue('form-tel', context.tel || context.irtibatTel);
+    setValue('form-mail', context.mail || context.irtibatMail);
+    setValue('form-kapsam', context.kapsam);
+    setValue('form-scope', context.scope);
+
+    const editLink = document.getElementById('form-edit-link') as HTMLAnchorElement | null;
+    if (editLink) editLink.href = `/company/edit?id=${firmaId}`;
+
+    document.getElementById('op-skeleton')?.classList.add('hidden');
+    document.getElementById('op-shell')?.classList.remove('hidden');
+  }
+
+  void boot();
+</script>

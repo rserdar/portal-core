@@ -1,0 +1,1012 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Denetim Planla">
+  <div class="max-w-6xl mx-auto pb-24 space-y-6">
+    <div class="flex items-center gap-3">
+      <a href="/audits" class="flex items-center gap-2 text-xs font-bold text-muted hover:text-primary transition-colors group">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:-translate-x-1 transition-transform"><path d="m15 18-6-6 6-6"></path></svg>
+        Denetim Merkezi
+      </a>
+      <span class="text-border-main">/</span>
+      <span class="text-xs font-bold text-muted">Denetim Planla</span>
+    </div>
+
+    <section class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
+      <div class="p-6 sm:p-8 border-b border-border-main space-y-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted" id="audit-company-badge">Firma Seçimi Bekleniyor</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Denetim Planla</h1>
+      </div>
+
+      <div class="p-6 sm:p-8 space-y-6">
+          <section class="rounded-[1.75rem] border border-border-main bg-surface-hover p-5 sm:p-6 space-y-5">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path><path d="M9 9v.01"></path><path d="M9 12v.01"></path><path d="M9 15v.01"></path><path d="M9 18v.01"></path></svg>
+              </div>
+              <div>
+                <h2 class="text-sm font-black uppercase tracking-widest text-main">Temel Bilgiler</h2>
+                <p class="text-xs text-muted">Firma, standart ve denetim tipi</p>
+              </div>
+            </div>
+
+            <div id="audit-company-summary" class="hidden rounded-[1.5rem] border border-indigo-500/20 bg-indigo-500/5 p-4 sm:p-5">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="space-y-1.5">
+                  <p class="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-300">Secili Firma</p>
+                  <h3 id="audit-company-name" class="text-base sm:text-lg font-black text-main">—</h3>
+                </div>
+                <div class="rounded-2xl border border-indigo-500/20 bg-surface px-3 py-2 text-right">
+                  <p class="text-[10px] font-black uppercase tracking-[0.24em] text-muted">Firma ID</p>
+                  <p id="audit-company-id-pill" class="text-sm font-black text-indigo-300">—</p>
+                </div>
+              </div>
+            </div>
+
+            <div id="audit-company-picker" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label class="space-y-2 block">
+                <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Secimi</span>
+                <input id="company-search" list="company-list" type="text" placeholder="Firma arayin..." class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" />
+                <datalist id="company-list"></datalist>
+              </label>
+
+              <label class="space-y-2 block">
+                <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma ID</span>
+                <input id="audit-firma-id" type="text" readonly placeholder="Firma secildiginde dolar" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" />
+              </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label class="space-y-2 block">
+                <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Standart Secimi</span>
+                <select id="xstandartInput" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main">
+                  <option>Yukleniyor...</option>
+                </select>
+              </label>
+
+              <label class="space-y-2 block">
+                <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Denetim Tipi</span>
+                <select id="denetimInput" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main">
+                  <option value="İlk" selected>İlk</option>
+                  <option value="Gözetim 1">Gözetim 1</option>
+                  <option value="Gözetim 2">Gözetim 2</option>
+                  <option value="Yeniden">Yeniden</option>
+                  <option value="Özel">Özel</option>
+                  <option value="Tekrar">Tekrar</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { id: '9C', label: '9001' },
+                { id: '13C', label: '13485' },
+                { id: '14C', label: '14001' },
+                { id: '22C', label: '22000' },
+                { id: '27C', label: '27001' },
+                { id: '45C', label: '45001' },
+                { id: '50C', label: '50001' },
+                { id: 'GMPC', label: 'GMP' },
+              ].map((item) => (
+                <label class="flex items-center gap-2 rounded-2xl border border-border-main bg-surface px-3 py-3 text-sm font-semibold text-main">
+                  <input id={item.id} type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface text-indigo-500" />
+                  <span>{item.label}</span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          <section class="rounded-[1.75rem] border border-border-main bg-surface-hover p-5 sm:p-6 space-y-6">
+            <div class="space-y-5">
+              <div class="space-y-4">
+                <h2 class="text-base font-black text-main">Asama 1</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1.45fr_1fr_1fr_0.8fr] gap-4">
+                  <div class="space-y-2">
+                    <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Baslangic Tarihi</span>
+                    <div class="flex gap-2">
+                      <input id="a1Basla" type="date" class="flex-1 rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" />
+                      <button id="a1Equal" type="button" class="shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-3 text-xs font-black text-emerald-300">=</button>
+                      <button id="a1Plus1" type="button" class="shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-3 text-xs font-black text-emerald-300">+1</button>
+                      <button id="a1Plus2" type="button" class="shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-3 text-xs font-black text-emerald-300">+2</button>
+                    </div>
+                  </div>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Bitis Tarihi</span><input id="a1Bitis" type="date" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Tam Tarih</span><input id="a1Full" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Adam / Gun</span><input id="a1Manday" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                </div>
+                <input id="a1Md" type="hidden" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Bas Denetci</span><select id="leadAuditorInput1" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Secim Yapiniz...</option></select></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">2. Denetci</span><select id="secondAuditorInput1" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Secim Yapiniz...</option></select></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">3. Denetci</span><select id="thirdAuditorInput1" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Secim Yapiniz...</option></select></label>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Isimler</span><input id="a1Denetciler" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Kisaltmalar</span><input id="a1KDenetci" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                </div>
+              </div>
+
+              <div class="border-t border-dashed border-border-main"></div>
+
+              <div class="space-y-4">
+                <h2 id="stage2Title" class="text-base font-black text-main">Asama 2</h2>
+                <div id="stage2AreaR1" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[1.45fr_1fr_1fr_0.8fr] gap-4">
+                  <div class="space-y-2">
+                    <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Baslangic Tarihi</span>
+                    <div class="flex gap-2">
+                      <input id="a2Basla" type="date" class="flex-1 rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" />
+                      <button id="a2Equal" type="button" class="shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-3 text-xs font-black text-emerald-300">=</button>
+                      <button id="a2Plus1" type="button" class="shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-3 text-xs font-black text-emerald-300">+1</button>
+                      <button id="a2Plus2" type="button" class="shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-3 text-xs font-black text-emerald-300">+2</button>
+                    </div>
+                  </div>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Bitis Tarihi</span><input id="a2Bitis" type="date" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Tam Tarih</span><input id="a2Full" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Adam / Gun</span><input id="a2Manday" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                </div>
+                <input id="a2Md" type="hidden" />
+                <div id="stage2AreaR2" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Bas Denetci</span><select id="leadAuditorInput2" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Secim Yapiniz...</option></select></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">2. Denetci</span><select id="secondAuditorInput2" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Secim Yapiniz...</option></select></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">3. Denetci</span><select id="thirdAuditorInput2" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Secim Yapiniz...</option></select></label>
+                </div>
+                <div id="stage2AreaR3" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Isimler</span><input id="a2Denetciler" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Kisaltmalar</span><input id="a2KDenetci" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end pt-2">
+              <button id="clear-audit-button" type="button" class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3.5 text-sm font-bold text-main hover:bg-surface-hover transition-colors sm:py-3">Formu Temizle</button>
+              <a href="#audit-calendar" class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3.5 text-sm font-bold text-main hover:bg-surface-hover transition-colors sm:py-3">Takvim</a>
+              <button id="add-audit-button" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3.5 text-sm font-black text-white hover:bg-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed sm:py-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+                Denetim Ekle
+              </button>
+            </div>
+          </section>
+        </div>
+    </section>
+
+    <!-- Denetim Takvimi -->
+    <section id="audit-calendar" class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
+      <!-- Baslik + Navigasyon -->
+      <div class="p-6 sm:p-8 border-b border-border-main">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div class="flex items-center gap-3 flex-1">
+            <div class="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
+            </div>
+            <div>
+              <h2 class="text-sm font-black uppercase tracking-widest text-main">Denetim Takvimi</h2>
+              <p class="text-xs text-muted">Planlı denetimler ve denetçi müsaitliği</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 self-start sm:self-auto">
+            <button id="cal-prev" type="button" class="w-10 h-10 flex items-center justify-center rounded-2xl border border-border-main bg-surface hover:bg-surface-hover transition-colors text-muted hover:text-main shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+            </button>
+            <span id="cal-title" class="text-sm font-black uppercase tracking-widest text-main w-[140px] text-center shrink-0"></span>
+            <button id="cal-next" type="button" class="w-10 h-10 flex items-center justify-center rounded-2xl border border-border-main bg-surface hover:bg-surface-hover transition-colors text-muted hover:text-main shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px]">
+        <!-- Takvim Grid -->
+        <div class="p-6 sm:p-8 lg:border-r border-b lg:border-b-0 border-border-main space-y-3">
+          <div class="grid grid-cols-7 gap-1">
+            {['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'].map(d => (
+              <div class="text-center text-[10px] font-black uppercase tracking-widest text-muted py-1">{d}</div>
+            ))}
+          </div>
+          <div id="cal-grid" class="grid grid-cols-7 gap-1"></div>
+          <div id="cal-loader" class="flex items-center gap-2 pt-1">
+            <div class="w-3 h-3 border border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin shrink-0"></div>
+            <span class="text-[11px] text-muted">Denetimler yükleniyor...</span>
+          </div>
+          <div class="flex flex-wrap gap-x-4 gap-y-2 pt-2 border-t border-border-main">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>
+              <span class="text-[11px] text-muted">Planlı Denetim</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-rose-400 inline-block"></span>
+              <span class="text-[11px] text-muted">Denetçi Çakışması</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="w-4 h-4 rounded-lg bg-indigo-600 inline-block"></span>
+              <span class="text-[11px] text-muted">Bugün</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detay Paneli -->
+        <div class="p-6 sm:p-8">
+          <div id="cal-detail" class="overflow-y-auto max-h-[50vh] lg:max-h-none">
+            <div class="py-10 text-center space-y-3">
+              <div class="w-10 h-10 rounded-2xl bg-surface-hover flex items-center justify-center mx-auto text-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
+              </div>
+              <p class="text-xs text-muted">Detay için bir güne tıklayın</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api } from '../lib/api';
+  import { $companies } from '../lib/store';
+  import { SyncManager } from '../lib/sync';
+  import {
+    uniqueColumnValues,
+    filterAuditorsByStandard,
+    formatDateToDots,
+    shiftIsoDate,
+    buildAuditRangeLabel,
+    buildAuditorSummary,
+    shouldHideStage2,
+    checkboxIdForStandard,
+  } from '../features/company-ops/audit-form';
+
+  const params = new URLSearchParams(window.location.search);
+  const preselectedFirmaId = params.get('firmaId') || params.get('id') || '';
+
+  const companySearch = document.getElementById('company-search') as HTMLInputElement | null;
+  const companyList = document.getElementById('company-list');
+  const firmaIdInput = document.getElementById('audit-firma-id') as HTMLInputElement | null;
+  const companyBadge = document.getElementById('audit-company-badge');
+  const companyPicker = document.getElementById('audit-company-picker');
+  const companySummary = document.getElementById('audit-company-summary');
+  const companyNameEl = document.getElementById('audit-company-name');
+  const companyIdPillEl = document.getElementById('audit-company-id-pill');
+  const xstandartInput = document.getElementById('xstandartInput') as HTMLSelectElement | null;
+  const denetimInput = document.getElementById('denetimInput') as HTMLSelectElement | null;
+  const saveBtn = document.getElementById('add-audit-button') as HTMLButtonElement | null;
+
+  let selectedCompany: any = null;
+  let auditorRows: any[][] = [];
+
+  function getCompanyValue(company: any, ...keys: string[]) {
+    if (!company || typeof company !== 'object') return '';
+    for (const key of keys) {
+      const value = company[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return String(value).trim();
+      }
+    }
+    return '';
+  }
+
+  function getCompanyId(company: any) {
+    return getCompanyValue(company, 'Firma No', 'FirmaNo', 'firmaNo', 'id', 'ID');
+  }
+
+  function getCompanyNick(company: any) {
+    return getCompanyValue(company, 'Firma Adı', 'nickname', 'Nick', 'nick', 'FirmaAdi');
+  }
+
+  function getCompanyDisplayName(company: any) {
+    return getCompanyNick(company) || getCompanyValue(company, 'Unvan', 'unvan');
+  }
+
+  function companyLabel(company: any) {
+    const nick = getCompanyNick(company) || 'Firma';
+    const companyId = getCompanyId(company) || '—';
+    return `${nick} (${companyId})`;
+  }
+
+  function fillSelect(selectId: string, values: string[]) {
+    const select = document.getElementById(selectId) as HTMLSelectElement | null;
+    if (!select) return;
+    const frag = document.createDocumentFragment();
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Secim Yapiniz...';
+    frag.appendChild(placeholder);
+    values.forEach((value) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value;
+      frag.appendChild(option);
+    });
+    select.innerHTML = '';
+    select.appendChild(frag);
+  }
+
+  function setSelectedCompany(company: any) {
+    selectedCompany = company || null;
+    const companyId = company ? getCompanyId(company) : '';
+    const companyName = company ? getCompanyDisplayName(company) : '';
+    if (firmaIdInput) firmaIdInput.value = companyId || '';
+    if (companyBadge) companyBadge.textContent = company ? [companyName, companyId].filter(Boolean).join(' - ') : 'Firma Secimi Bekleniyor';
+    if (companySearch && company) companySearch.value = companyLabel(company);
+    if (companyIdPillEl) companyIdPillEl.textContent = companyId || '—';
+    if (companyNameEl) {
+      companyNameEl.textContent = companyName || (companyId ? `Firma #${companyId}` : '—');
+    }
+    if (preselectedFirmaId) {
+      companySummary?.classList.toggle('hidden', !company);
+      companyPicker?.classList.add('hidden');
+    } else {
+      companySummary?.classList.add('hidden');
+      companyPicker?.classList.remove('hidden');
+    }
+  }
+
+  function syncCompanyList(companies: any[]) {
+    if (companyList) {
+      const frag = document.createDocumentFragment();
+      companies.forEach((company) => {
+        const option = document.createElement('option');
+        option.value = companyLabel(company);
+        frag.appendChild(option);
+      });
+      companyList.innerHTML = '';
+      companyList.appendChild(frag);
+    }
+
+    if (!selectedCompany && preselectedFirmaId) {
+      const match = companies.find((company) => String(getCompanyId(company)) === String(preselectedFirmaId));
+      if (match) setSelectedCompany(match);
+    }
+  }
+
+  async function hydratePreselectedCompany() {
+    if (!preselectedFirmaId || selectedCompany) return;
+
+    const existing = ($companies.get() as any[]).find((company) => String(getCompanyId(company)) === String(preselectedFirmaId));
+    if (existing) {
+      setSelectedCompany(existing);
+      return;
+    }
+
+    const res = await api.getCompanyById(preselectedFirmaId);
+    if (res.success && res.data) {
+      setSelectedCompany(res.data);
+      return;
+    }
+
+    if (companyBadge) companyBadge.textContent = `Firma bulunamadi (${preselectedFirmaId})`;
+    if (companyNameEl) companyNameEl.textContent = `Firma #${preselectedFirmaId}`;
+    if (companyIdPillEl) companyIdPillEl.textContent = String(preselectedFirmaId);
+  }
+
+  function resetCheckboxes() {
+    ['9C', '13C', '14C', '22C', '27C', '45C', '50C', 'GMPC'].forEach((id) => {
+      const checkbox = document.getElementById(id) as HTMLInputElement | null;
+      if (checkbox) checkbox.checked = false;
+    });
+  }
+
+  function refreshAuditorDropdowns() {
+    const rows = filterAuditorsByStandard(auditorRows, xstandartInput?.value || '');
+    const names = uniqueColumnValues(rows, 1);
+    ['leadAuditorInput1', 'secondAuditorInput1', 'thirdAuditorInput1', 'leadAuditorInput2', 'secondAuditorInput2', 'thirdAuditorInput2'].forEach((id) => fillSelect(id, names));
+    resetCheckboxes();
+    const checkboxId = checkboxIdForStandard(xstandartInput?.value || '');
+    const checkbox = checkboxId ? document.getElementById(checkboxId) as HTMLInputElement | null : null;
+    if (checkbox) checkbox.checked = true;
+  }
+
+  function updateRange(stage: 'a1' | 'a2') {
+    const startValue = (document.getElementById(`${stage}Basla`) as HTMLInputElement | null)?.value || '';
+    const endValue = (document.getElementById(`${stage}Bitis`) as HTMLInputElement | null)?.value || '';
+    const full = document.getElementById(`${stage}Full`) as HTMLInputElement | null;
+    const md = document.getElementById(`${stage}Md`) as HTMLInputElement | null;
+    const manDay = document.getElementById(`${stage}Manday`) as HTMLInputElement | null;
+    const result = buildAuditRangeLabel(startValue, endValue);
+    if (full) full.value = result.fullLabel;
+    if (md) md.value = result.manDays;
+    if (manDay) manDay.value = result.manDays;
+    updateAuditors(stage);
+  }
+
+  function updateAuditors(stage: 'a1' | 'a2') {
+    const lead = (document.getElementById(stage === 'a1' ? 'leadAuditorInput1' : 'leadAuditorInput2') as HTMLSelectElement | null)?.value || '';
+    const second = (document.getElementById(stage === 'a1' ? 'secondAuditorInput1' : 'secondAuditorInput2') as HTMLSelectElement | null)?.value || '';
+    const third = (document.getElementById(stage === 'a1' ? 'thirdAuditorInput1' : 'thirdAuditorInput2') as HTMLSelectElement | null)?.value || '';
+    const rawDays = (document.getElementById(`${stage}Md`) as HTMLInputElement | null)?.value || '';
+    const summary = buildAuditorSummary(auditorRows, [lead, second, third], rawDays);
+    const names = document.getElementById(stage === 'a1' ? 'a1Denetciler' : 'a2Denetciler') as HTMLInputElement | null;
+    const short = document.getElementById(stage === 'a1' ? 'a1KDenetci' : 'a2KDenetci') as HTMLInputElement | null;
+    const manDay = document.getElementById(`${stage}Manday`) as HTMLInputElement | null;
+    if (names) names.value = summary.names;
+    if (short) short.value = summary.shortNames;
+    if (manDay) manDay.value = summary.totalManDays || rawDays;
+  }
+
+  function setEndDate(stage: 'a1' | 'a2', offset: number) {
+    const start = (document.getElementById(`${stage}Basla`) as HTMLInputElement | null)?.value || '';
+    const end = document.getElementById(`${stage}Bitis`) as HTMLInputElement | null;
+    if (!start || !end) return;
+    end.value = shiftIsoDate(start, offset);
+    updateRange(stage);
+  }
+
+  function toggleStage2() {
+    const hidden = shouldHideStage2(denetimInput?.value || '');
+    ['stage2Title', 'stage2AreaR1', 'stage2AreaR2', 'stage2AreaR3'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('hidden', hidden);
+    });
+  }
+
+  function clearAuditForm() {
+    ['a1Basla', 'a1Bitis', 'a1Full', 'a1Manday', 'a1Denetciler', 'a1KDenetci', 'a1Md', 'a2Basla', 'a2Bitis', 'a2Full', 'a2Manday', 'a2Denetciler', 'a2KDenetci', 'a2Md'].forEach((id) => {
+      const el = document.getElementById(id) as HTMLInputElement | null;
+      if (el) el.value = '';
+    });
+    ['leadAuditorInput1', 'secondAuditorInput1', 'thirdAuditorInput1', 'leadAuditorInput2', 'secondAuditorInput2', 'thirdAuditorInput2'].forEach((id) => {
+      const select = document.getElementById(id) as HTMLSelectElement | null;
+      if (select) select.value = '';
+    });
+    resetCheckboxes();
+    refreshAuditorDropdowns();
+    toggleStage2();
+  }
+
+  async function addAudit() {
+    if (!selectedCompany) return alert('Lutfen bir firma secin.');
+    if (!(xstandartInput?.value || '').trim()) return alert('Lutfen standart secin.');
+    if (!saveBtn) return;
+
+    saveBtn.disabled = true;
+    const original = saveBtn.innerHTML;
+    saveBtn.innerHTML = 'Kaydediliyor...';
+
+    const getCheckbox = (id: string) => ((document.getElementById(id) as HTMLInputElement | null)?.checked ? 'TRUE' : 'FALSE');
+    const value = (id: string) => ((document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value || '');
+
+    const auditInfo = {
+      nick: getCompanyNick(selectedCompany),
+      firmano: getCompanyId(selectedCompany),
+      standart: value('xstandartInput'),
+      denetim: value('denetimInput'),
+      qms: getCheckbox('9C'),
+      mdd: getCheckbox('13C'),
+      ems: getCheckbox('14C'),
+      fsms: getCheckbox('22C'),
+      isms: getCheckbox('27C'),
+      ohs: getCheckbox('45C'),
+      engy: getCheckbox('50C'),
+      gmp: getCheckbox('GMPC'),
+      a1Basla: formatDateToDots(value('a1Basla')),
+      a1Bitis: formatDateToDots(value('a1Bitis')),
+      a1Baslav2: value('a1Basla'),
+      a1Bitisv2: value('a1Bitis'),
+      a1Full: value('a1Full'),
+      a1La: value('leadAuditorInput1'),
+      a1Fa: value('secondAuditorInput1'),
+      a1Sa: value('thirdAuditorInput1'),
+      a1Md: value('a1Manday'),
+      a1Denetci: value('a1Denetciler'),
+      a1kDenet: value('a1KDenetci'),
+      a2Basla: formatDateToDots(value('a2Basla')),
+      a2Bitis: formatDateToDots(value('a2Bitis')),
+      a2Baslav2: value('a2Basla'),
+      a2Bitisv2: value('a2Bitis'),
+      a2Full: value('a2Full'),
+      a2La: value('leadAuditorInput2'),
+      a2Fa: value('secondAuditorInput2'),
+      a2Sa: value('thirdAuditorInput2'),
+      a2Md: value('a2Manday'),
+      a2Denetci: value('a2Denetciler'),
+      a2kDenet: value('a2KDenetci'),
+    };
+
+    const res = await api.call('scheduleAudit', { data: auditInfo });
+    if (res.success) {
+      await SyncManager.checkAndSync();
+      clearAuditForm();
+      alert("Denetim basariyla eklendi ve Takvim'e islendi.");
+    } else {
+      alert(`Hata: ${res.error}`);
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = original;
+  }
+
+  async function loadMasterRows() {
+    const res = await api.getMasterData('auditors');
+    auditorRows = Array.isArray(res?.data?.dataset?.rows) ? res.data.dataset.rows : Array.isArray(res?.data?.rows) ? res.data.rows : [];
+    fillSelect('xstandartInput', uniqueColumnValues(auditorRows, 0));
+    refreshAuditorDropdowns();
+  }
+
+  function bindEvents() {
+    companySearch?.addEventListener('input', (event) => {
+      const val = (event.target as HTMLInputElement).value;
+      const match = ($companies.get() as any[]).find((company) => companyLabel(company) === val);
+      setSelectedCompany(match || null);
+    });
+
+    xstandartInput?.addEventListener('change', refreshAuditorDropdowns);
+    denetimInput?.addEventListener('change', toggleStage2);
+
+    [['a1Basla', 'a1'], ['a1Bitis', 'a1'], ['a2Basla', 'a2'], ['a2Bitis', 'a2']].forEach(([id, stage]) => {
+      document.getElementById(id)?.addEventListener('change', () => updateRange(stage as 'a1' | 'a2'));
+    });
+    [['leadAuditorInput1', 'a1'], ['secondAuditorInput1', 'a1'], ['thirdAuditorInput1', 'a1'], ['leadAuditorInput2', 'a2'], ['secondAuditorInput2', 'a2'], ['thirdAuditorInput2', 'a2']].forEach(([id, stage]) => {
+      document.getElementById(id)?.addEventListener('change', () => updateAuditors(stage as 'a1' | 'a2'));
+    });
+
+    document.getElementById('a1Equal')?.addEventListener('click', () => setEndDate('a1', 0));
+    document.getElementById('a1Plus1')?.addEventListener('click', () => setEndDate('a1', 1));
+    document.getElementById('a1Plus2')?.addEventListener('click', () => setEndDate('a1', 2));
+    document.getElementById('a2Equal')?.addEventListener('click', () => setEndDate('a2', 0));
+    document.getElementById('a2Plus1')?.addEventListener('click', () => setEndDate('a2', 1));
+    document.getElementById('a2Plus2')?.addEventListener('click', () => setEndDate('a2', 2));
+    document.getElementById('clear-audit-button')?.addEventListener('click', clearAuditForm);
+    document.getElementById('add-audit-button')?.addEventListener('click', addAudit);
+  }
+
+  async function boot() {
+    if (preselectedFirmaId) {
+      companyPicker?.classList.add('hidden');
+      companySummary?.classList.remove('hidden');
+    }
+    syncCompanyList($companies.get() as any[]);
+    $companies.subscribe((companies) => syncCompanyList(companies as any[]));
+    await hydratePreselectedCompany();
+    await loadMasterRows();
+    bindEvents();
+    toggleStage2();
+  }
+
+  void boot();
+
+  // --- Denetim Takvimi ---
+  (function initCalendar() {
+    const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+    const today = new Date();
+    let calYear = today.getFullYear();
+    let calMonth = today.getMonth();
+    let allAudits: any[] = [];
+    let selectedDate: string | null = null;
+    let mappedStageCount = 0;
+    let firstMappedDate: string | null = null;
+    let lastMappedDate: string | null = null;
+
+    // { 'YYYY-MM-DD': Array<{ audit, stage: 1|2 }> }
+    const auditsByDate = new Map<string, { audit: any; stage: 1 | 2 }[]>();
+
+    function parseAuditDate(s: string): Date | null {
+      if (!s || typeof s !== 'string') return null;
+      if (s.includes('.')) {
+        const [dd, mm, yyyy] = s.split('.');
+        if (dd && mm && yyyy && yyyy.length === 4) {
+          const d = new Date(+yyyy, +mm - 1, +dd);
+          return isNaN(d.getTime()) ? null : d;
+        }
+      }
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function extractRangeFromFullLabel(label: string): { start: string; end: string } {
+      const raw = String(label || '').trim();
+      if (!raw) return { start: '', end: '' };
+
+      const direct = parseAuditDate(raw);
+      if (direct) {
+        const iso = toIso(direct);
+        return { start: iso, end: iso };
+      }
+
+      const parts = raw.split('-').map((part) => part.trim()).filter(Boolean);
+      const endPart = parts[parts.length - 1] || '';
+      const end = parseAuditDate(endPart);
+      if (!end) return { start: '', end: '' };
+
+      const endIso = toIso(end);
+      const endYear = end.getFullYear();
+      const endMonth = end.getMonth() + 1;
+
+      const startPart = parts[0] || '';
+      let startIso = endIso;
+
+      const fullStart = parseAuditDate(startPart);
+      if (fullStart) {
+        startIso = toIso(fullStart);
+      } else if (/^\d{1,2}\.\d{1,2}$/.test(startPart)) {
+        const [dd, mm] = startPart.split('.').map(Number);
+        const year = mm > endMonth ? endYear - 1 : endYear;
+        startIso = toIso(new Date(year, mm - 1, dd));
+      } else if (/^\d{1,2}$/.test(startPart)) {
+        const day = Number(startPart);
+        startIso = toIso(new Date(endYear, endMonth - 1, day));
+      }
+
+      return { start: startIso, end: endIso };
+    }
+
+    function toIso(d: Date): string {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function splitAuditorNames(value: string): string[] {
+      return String(value || '')
+        .split(/\s-\s|,|\/|\n/)
+        .map((name: string) => name.trim())
+        .filter(Boolean);
+    }
+
+    function normalizeAuditorName(value: string): string {
+      return String(value || '')
+        .trim()
+        .toLocaleLowerCase('tr-TR')
+        .replace(/\s+/g, ' ');
+    }
+
+    function normalizeAuditKey(value: string): string {
+      return String(value || '')
+        .trim()
+        .toLocaleLowerCase('tr-TR')
+        .replace(/[ıİ]/g, 'i')
+        .replace(/[ğĞ]/g, 'g')
+        .replace(/[üÜ]/g, 'u')
+        .replace(/[şŞ]/g, 's')
+        .replace(/[öÖ]/g, 'o')
+        .replace(/[çÇ]/g, 'c')
+        .replace(/[^a-z0-9]+/g, '');
+    }
+
+    function getAuditValue(audit: any, aliases: string[], legacyIndex?: number): string {
+      if (Array.isArray(audit)) {
+        if (legacyIndex === undefined) return '';
+        return String(audit[legacyIndex] ?? '').trim();
+      }
+
+      if (!audit || typeof audit !== 'object') return '';
+
+      for (const alias of aliases) {
+        const direct = audit[alias];
+        if (direct !== undefined && direct !== null && String(direct).trim() !== '') {
+          return String(direct).trim();
+        }
+      }
+
+      const entries = Object.entries(audit);
+      const normalizedAliases = aliases.map(normalizeAuditKey);
+      for (const [key, value] of entries) {
+        if (value === undefined || value === null || String(value).trim() === '') continue;
+        if (normalizedAliases.includes(normalizeAuditKey(key))) {
+          return String(value).trim();
+        }
+      }
+
+      return '';
+    }
+
+    function getAuditorsForStage(audit: any, stage: 1 | 2): string[] {
+      const combined = stage === 1
+        ? getAuditValue(audit, ['a1Auditor', 'a1Denetci', 'denetci1', 'A1 Auditors', 'A1 Denetçi'], 6)
+        : getAuditValue(audit, ['a2Auditor', 'a2Denetci', 'denetci2', 'A2 Auditors', 'A2 Denetçi'], 8);
+
+      if (combined) {
+        return splitAuditorNames(combined);
+      }
+
+      const individual = stage === 1
+        ? [
+            getAuditValue(audit, ['a1Lead', 'a1La', 'A1 Lead', 'A1 Başdenetçi'], 12),
+            getAuditValue(audit, ['a1Fa', 'A1 FA'], 13),
+            getAuditValue(audit, ['a1Sa', 'A1 SA'], 14),
+          ]
+        : [
+            getAuditValue(audit, ['a2Lead', 'a2La', 'A2 Lead', 'A2 Başdenetçi'], 18),
+            getAuditValue(audit, ['a2Fa', 'A2 FA'], 19),
+            getAuditValue(audit, ['a2Sa', 'A2 SA'], 20),
+          ];
+
+      return individual
+        .flatMap((value) => splitAuditorNames(String(value || '')))
+        .filter(Boolean);
+    }
+
+    function buildAuditMap() {
+      auditsByDate.clear();
+      mappedStageCount = 0;
+      firstMappedDate = null;
+      lastMappedDate = null;
+      allAudits.forEach(audit => {
+        ([1, 2] as const)
+          .map((stage) => {
+            const full = stage === 1
+              ? getAuditValue(audit, ['a1Full', 'A1 Full', 'a1Tarih'], 5)
+              : getAuditValue(audit, ['a2Full', 'A2 Full', 'a2Tarih'], 7);
+            const explicitStart = stage === 1
+              ? getAuditValue(audit, ['a1Basla', 'a1Baslav2', 'a1Tarih', 'A1 Başla'], 9)
+              : getAuditValue(audit, ['a2Basla', 'a2Baslav2', 'a2Tarih', 'A2 Başla'], 15);
+            const explicitEnd = stage === 1
+              ? getAuditValue(audit, ['a1Bitis', 'a1Bitisv2', 'A1 Bitiş'], 10)
+              : getAuditValue(audit, ['a2Bitis', 'a2Bitisv2', 'A2 Bitiş'], 16);
+            const fallback = extractRangeFromFullLabel(full);
+            return [
+              explicitStart || fallback.start,
+              explicitEnd || fallback.end,
+              stage,
+            ] as [string, string, 1|2];
+          })
+          .forEach(([startRaw, endRaw, stage]) => {
+            const start = parseAuditDate(startRaw);
+            if (!start) return;
+            const end = parseAuditDate(endRaw) || start;
+            mappedStageCount += 1;
+            const cur = new Date(start);
+            while (cur <= end) {
+              const key = toIso(cur);
+              if (!firstMappedDate || key < firstMappedDate) firstMappedDate = key;
+              if (!lastMappedDate || key > lastMappedDate) lastMappedDate = key;
+              if (!auditsByDate.has(key)) auditsByDate.set(key, []);
+              auditsByDate.get(key)!.push({ audit, stage });
+              cur.setDate(cur.getDate() + 1);
+            }
+          });
+      });
+    }
+
+    function monthHasAudit(year: number, month: number): boolean {
+      const prefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+      for (const key of auditsByDate.keys()) {
+        if (key.startsWith(prefix)) return true;
+      }
+      return false;
+    }
+
+    function focusCalendarToUsefulMonth() {
+      if (monthHasAudit(calYear, calMonth)) return;
+
+      const todayIso = toIso(today);
+      const allDates = [...auditsByDate.keys()].sort();
+      if (allDates.length === 0) return;
+
+      const target = allDates.find((date) => date >= todayIso) || allDates[allDates.length - 1];
+      const [year, month] = target.split('-');
+      calYear = Number(year);
+      calMonth = Number(month) - 1;
+    }
+
+    function getFormSelection() {
+      const v = (id: string) => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value || '';
+      return {
+        a1Start: v('a1Basla'), a1End: v('a1Bitis'),
+        a2Start: v('a2Basla'), a2End: v('a2Bitis'),
+        auditors: [v('leadAuditorInput1'), v('secondAuditorInput1'), v('thirdAuditorInput1'),
+                   v('leadAuditorInput2'), v('secondAuditorInput2'), v('thirdAuditorInput2')]
+          .filter(Boolean),
+      };
+    }
+
+    function getConflictDates(): Set<string> {
+      const form = getFormSelection();
+      const dates = new Set<string>();
+      if (form.auditors.length === 0) {
+        return dates;
+      }
+
+      const selectedAuditors = new Set(form.auditors.map(normalizeAuditorName));
+      [[form.a1Start, form.a1End], [form.a2Start, form.a2End]].forEach(([startIso, endIso]) => {
+        if (!startIso) return;
+        const start = new Date(startIso);
+        const end = endIso ? new Date(endIso) : new Date(startIso);
+        const cur = new Date(start);
+        while (cur <= end) {
+          const key = toIso(cur);
+          const entries = auditsByDate.get(key) || [];
+          const hasBusy = entries.some(({ audit, stage }) => {
+            const auditAuditors = getAuditorsForStage(audit, stage).map(normalizeAuditorName);
+            return auditAuditors.some((name) => selectedAuditors.has(name));
+          });
+          if (hasBusy) dates.add(key);
+          cur.setDate(cur.getDate() + 1);
+        }
+      });
+      return dates;
+    }
+
+    // DOM referanslarını bir kez al
+    const titleEl = document.getElementById('cal-title');
+    const gridEl = document.getElementById('cal-grid');
+
+    // Event delegation — her hücreye ayrı listener yerine grid'e tek listener
+    gridEl?.addEventListener('click', (e) => {
+      const cell = (e.target as HTMLElement).closest('[data-date]') as HTMLElement | null;
+      if (!cell?.dataset.date) return;
+      selectedDate = cell.dataset.date;
+      render();
+      renderDetail(selectedDate);
+    });
+
+    function render() {
+      if (!titleEl || !gridEl) return;
+
+      titleEl.textContent = `${MONTHS_TR[calMonth]} ${calYear}`;
+
+      const firstDay = new Date(calYear, calMonth, 1);
+      const startOffset = (firstDay.getDay() + 6) % 7;
+      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+      const todayStr = toIso(today);
+      const conflictDates = getConflictDates();
+
+      const frag = document.createDocumentFragment();
+
+      for (let i = 0; i < startOffset; i++) {
+        const blank = document.createElement('div');
+        blank.className = 'h-12';
+        frag.appendChild(blank);
+      }
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const isToday = dateStr === todayStr;
+        const isSelected = dateStr === selectedDate;
+        const entries = auditsByDate.get(dateStr) || [];
+        const hasAudits = entries.length > 0;
+        const isConflict = conflictDates.has(dateStr);
+        const dow = (new Date(calYear, calMonth, d).getDay() + 6) % 7;
+        const isWeekend = dow >= 5;
+
+        const cell = document.createElement('div');
+        cell.dataset.date = dateStr;
+        cell.className = [
+          'relative h-12 flex flex-col items-center justify-center rounded-xl cursor-pointer transition-colors select-none',
+          isSelected
+            ? 'bg-indigo-600 text-white ring-2 ring-indigo-400/60'
+            : isConflict
+            ? 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30'
+            : isToday
+            ? 'bg-indigo-600 text-white'
+            : isWeekend
+            ? 'text-rose-400/60 hover:bg-surface-hover'
+            : 'text-main hover:bg-surface-hover',
+        ].join(' ');
+
+        const dotColor = isSelected ? 'bg-white/70' : isConflict ? 'bg-rose-400' : 'bg-amber-400';
+        const dotsHtml = hasAudits
+          ? `<div class="flex gap-0.5 mt-0.5">${Array(Math.min(entries.length, 4)).fill(0).map(() => `<span class="w-1 h-1 rounded-full ${dotColor}"></span>`).join('')}</div>`
+          : '<div class="h-1.5 mt-0.5"></div>';
+
+        cell.innerHTML = `<span class="text-sm font-semibold leading-none">${d}</span>${dotsHtml}`;
+        frag.appendChild(cell);
+      }
+
+      gridEl.innerHTML = '';
+      gridEl.appendChild(frag);
+    }
+
+    function renderDetail(dateStr: string) {
+      const panel = document.getElementById('cal-detail');
+      if (!panel) return;
+
+      const [y, m, d] = dateStr.split('-');
+      const displayDate = `${d} ${MONTHS_TR[+m - 1]} ${y}`;
+      const entries = auditsByDate.get(dateStr) || [];
+
+      if (entries.length === 0) {
+        panel.innerHTML = `
+          <div class="space-y-3">
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted">${displayDate}</p>
+            <div class="py-8 text-center space-y-2">
+              <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <p class="text-sm font-black text-emerald-400">Müsait</p>
+              <p class="text-xs text-muted">Bu güne planlanmış denetim yok.</p>
+            </div>
+          </div>`;
+        return;
+      }
+
+      // Unique (audit, stage) grupla
+      const auditMap = new Map<any, number[]>();
+      entries.forEach(({ audit, stage }) => {
+        if (!auditMap.has(audit)) auditMap.set(audit, []);
+        if (!auditMap.get(audit)!.includes(stage)) auditMap.get(audit)!.push(stage);
+      });
+
+      const allBusyAuditors = new Set<string>();
+      entries.forEach(({ audit, stage }) => getAuditorsForStage(audit, stage).forEach(a => allBusyAuditors.add(a)));
+
+      const form = getFormSelection();
+      const busyAuditorsNormalized = new Set([...allBusyAuditors].map(normalizeAuditorName));
+      const conflictingAuditors = form.auditors.filter((name) => busyAuditorsNormalized.has(normalizeAuditorName(name)));
+
+      const auditCards = [...auditMap.entries()].map(([audit, stages]) => {
+        const stageLabel = stages.sort().map(s => `Aşama ${s}`).join(' + ');
+        const auds = [...new Set(stages.flatMap(s => getAuditorsForStage(audit, s as 1|2)))];
+        const nick = getAuditValue(audit, ['nick', 'nickname', 'Firma Adı'], 1) || '—';
+        const standart = getAuditValue(audit, ['standart', 'standard', 'Standart'], 3);
+        const denetimTipi = getAuditValue(audit, ['denetimTipi', 'denetim', 'Denetim Tipi'], 4);
+        return `
+          <div class="rounded-2xl border border-border-main bg-surface p-3 space-y-1.5">
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-sm font-bold text-main leading-tight">${nick}</span>
+              <span class="shrink-0 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400">${standart}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] text-muted">${denetimTipi}</span>
+              <span class="text-[10px] text-sky-400 font-bold">${stageLabel}</span>
+            </div>
+            ${auds.length > 0 ? `<div class="flex flex-wrap gap-1">${auds.map(a => `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-surface-hover text-muted">${a}</span>`).join('')}</div>` : ''}
+          </div>`;
+      }).join('');
+
+      const conflictBanner = conflictingAuditors.length > 0
+        ? `<div class="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-3 space-y-1.5">
+             <p class="text-[10px] font-black uppercase tracking-widest text-rose-400">Çakışma — Seçili Denetçiler</p>
+             <div class="flex flex-wrap gap-1.5">${conflictingAuditors.map(a => `<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-300">${a}</span>`).join('')}</div>
+           </div>` : '';
+
+      const busyBanner = allBusyAuditors.size > 0
+        ? `<div class="rounded-2xl border border-border-main bg-surface-hover/50 p-3 space-y-1.5">
+             <p class="text-[10px] font-black uppercase tracking-widest text-muted">Meşgul Denetçiler</p>
+             <div class="flex flex-wrap gap-1.5">${[...allBusyAuditors].map(a => `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-surface text-main border border-border-main">${a}</span>`).join('')}</div>
+           </div>` : '';
+
+      panel.innerHTML = `
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted">${displayDate}</p>
+            <span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400">${auditMap.size} denetim</span>
+          </div>
+          ${conflictBanner}
+          ${auditCards}
+          ${busyBanner}
+        </div>`;
+    }
+
+    async function loadAudits() {
+      const res = await api.getAudits() as any;
+      const loader = document.getElementById('cal-loader');
+      if (loader) loader.remove();
+
+      if (res.success && Array.isArray(res.data)) {
+        allAudits = res.data;
+        buildAuditMap();
+        focusCalendarToUsefulMonth();
+        render();
+        if (selectedDate) renderDetail(selectedDate);
+      } else {
+        console.warn('Denetim verisi alinamadi.', {
+          success: res.success,
+          error: res.error || '',
+          needsHydration: (res as any).needsHydration || false,
+        });
+        render();
+      }
+    }
+
+    // Form degisikliklerinde takvimi yenile (catisma kontrolu)
+    ['a1Basla','a1Bitis','a2Basla','a2Bitis',
+     'leadAuditorInput1','secondAuditorInput1','thirdAuditorInput1',
+     'leadAuditorInput2','secondAuditorInput2','thirdAuditorInput2'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', () => {
+        render();
+        if (selectedDate) renderDetail(selectedDate);
+      });
+    });
+
+    document.getElementById('cal-prev')?.addEventListener('click', () => {
+      if (--calMonth < 0) { calMonth = 11; calYear--; }
+      render();
+    });
+    document.getElementById('cal-next')?.addEventListener('click', () => {
+      if (++calMonth > 11) { calMonth = 0; calYear++; }
+      render();
+    });
+
+    render();
+    void loadAudits();
+  })();
+</script>

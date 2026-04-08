@@ -1,0 +1,104 @@
+---
+import OperationPageShell from '../../components/company/OperationPageShell.astro';
+---
+
+<OperationPageShell
+  pageKey="contract"
+  title="Sozlesme"
+  description="Sozlesme ucreti, tarihi ve konusu gibi alanlari firma context'i ile birlestiren ayri operasyon sayfasidir."
+>
+  <div class="space-y-6">
+    <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+        <h2 class="text-sm font-black uppercase tracking-widest text-main">Sozlesme Bilgileri</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <input id="contract-date" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" />
+          <input id="contract-price" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Ucret" />
+        </div>
+        <div class="space-y-2">
+          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Sozlesme Konusu</label>
+          <input id="contract-subject" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Sozlesme konusu" />
+        </div>
+        <div class="space-y-2">
+          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Kapsam / Scope</label>
+          <textarea id="contract-scope" rows={8} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px]"></textarea>
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+        <h2 class="text-sm font-black uppercase tracking-widest text-main">Firma Referansi</h2>
+        <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-3 text-sm">
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted">Vergi</p>
+            <p id="contract-preview-tax" class="font-semibold text-main">—</p>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted">Irtibat</p>
+            <p id="contract-preview-contact" class="font-semibold text-main">—</p>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted">Mail</p>
+            <p id="contract-preview-mail" class="font-semibold text-main">—</p>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-dashed border-border-main p-4 text-sm leading-relaxed text-muted">
+          Bu ekran ikinci turda `generateContract` aksiyonuna dogrudan baglanacak ve payload olusturma katmani feature module icinde tutulacak.
+        </div>
+      </div>
+    </section>
+
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-muted cursor-not-allowed">Taslak Kaydet (Yakinda)</button>
+      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl bg-indigo-600/60 px-5 py-3 text-sm font-black text-white cursor-not-allowed">Sozlesme Uret (Yakinda)</button>
+    </div>
+  </div>
+</OperationPageShell>
+
+<script>
+  import { loadCompanyOperationContext } from '../../features/company-ops/context';
+  import { COMPANY_OPERATION_DEFINITIONS, buildCompanyOperationHref } from '../../features/company-ops/definitions';
+
+  const params = new URLSearchParams(location.search);
+  const firmaId = params.get('id') || '';
+
+  async function boot() {
+    if (!firmaId) {
+      document.getElementById('op-skeleton')?.classList.add('hidden');
+      document.getElementById('op-error')?.classList.remove('hidden');
+      return;
+    }
+
+    const context = await loadCompanyOperationContext(firmaId);
+    if (!context) {
+      document.getElementById('op-skeleton')?.classList.add('hidden');
+      document.getElementById('op-error')?.classList.remove('hidden');
+      return;
+    }
+
+    (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${firmaId}`);
+    document.querySelectorAll<HTMLAnchorElement>('[data-op-link]').forEach((link) => {
+      const key = link.dataset.opLink as 'form' | 'proforma' | 'draft' | 'contract';
+      const definition = COMPANY_OPERATION_DEFINITIONS.find((item) => item.key === key);
+      if (definition) link.href = buildCompanyOperationHref(definition.href, firmaId);
+    });
+
+    document.getElementById('op-company-id')!.textContent = `M${context.firmaId}`;
+    document.getElementById('op-company-nick')!.textContent = context.nick || 'Firma';
+    document.getElementById('op-company-dan')!.textContent = context.danisman || 'Danisman atanamamis';
+    document.getElementById('op-company-unvan')!.textContent = context.unvan || context.nick || `Firma #${context.firmaId}`;
+    document.getElementById('op-company-address')!.textContent = [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
+    document.getElementById('op-company-kapsam')!.textContent = context.kapsam || context.scope || 'Kapsam bulunamadi.';
+    document.getElementById('op-company-stats')!.textContent = `${context.certificates.length} sertifika, ${context.tests.length} test verisi sozlesme referansi icin hazir.`;
+
+    (document.getElementById('contract-scope') as HTMLTextAreaElement | null)!.value = context.kapsam || context.scope;
+    (document.getElementById('contract-subject') as HTMLInputElement | null)!.value = `${context.unvan || context.nick} belgelendirme hizmetleri`;
+    document.getElementById('contract-preview-tax')!.textContent = [context.vergiD, context.vergiN].filter(Boolean).join(' / ') || '—';
+    document.getElementById('contract-preview-contact')!.textContent = [context.irtibatAdi, context.irtibatUnvani].filter(Boolean).join(' / ') || '—';
+    document.getElementById('contract-preview-mail')!.textContent = context.mail || context.irtibatMail || '—';
+
+    document.getElementById('op-skeleton')?.classList.add('hidden');
+    document.getElementById('op-shell')?.classList.remove('hidden');
+  }
+
+  void boot();
+</script>

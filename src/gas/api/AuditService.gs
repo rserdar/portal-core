@@ -83,6 +83,20 @@ const AuditService = {
     return row[idx - 1];
   },
 
+  _pickCellWithFallback: function(row, idx, legacyIndex, fallback) {
+    const headerValue = this._pickCell(row, idx, null);
+    if (headerValue !== undefined && headerValue !== null && headerValue !== "") {
+      return headerValue;
+    }
+    if (legacyIndex !== undefined && legacyIndex !== null && legacyIndex >= 0) {
+      const legacyValue = row[legacyIndex];
+      if (legacyValue !== undefined && legacyValue !== null && legacyValue !== "") {
+        return legacyValue;
+      }
+    }
+    return fallback !== undefined ? fallback : "";
+  },
+
   _parseDateTime: function(value, hhmm) {
     if (!value) return null;
     if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
@@ -239,39 +253,39 @@ const AuditService = {
       };
 
       return data.map(r => ({
-        id: this._pickCell(r, cols.id, ""),
-        nick: this._pickCell(r, cols.nick, ""),
-        firmaNo: this._pickCell(r, cols.firmaNo, ""),
-        standart: this._pickCell(r, cols.standart, ""),
-        denetimTipi: this._pickCell(r, cols.denetimTipi, ""),
-        a1Auditor: this._pickCell(r, cols.a1Auditor, ""),
-        a1Lead: this._pickCell(r, cols.a1Lead, ""),
-        a1Basla: this._pickCell(r, cols.a1Basla, ""),
-        a1Bitis: this._pickCell(r, cols.a1Bitis, ""),
-        a1Md: this._pickCell(r, cols.a1Md, ""),
-        a1La: this._pickCell(r, cols.a1La, ""),
-        a1Fa: this._pickCell(r, cols.a1Fa, ""),
-        a1Sa: this._pickCell(r, cols.a1Sa, ""),
-        a2Auditor: this._pickCell(r, cols.a2Auditor, ""),
-        a2Lead: this._pickCell(r, cols.a2Lead, ""),
-        a2Basla: this._pickCell(r, cols.a2Basla, ""),
-        a2Bitis: this._pickCell(r, cols.a2Bitis, ""),
-        a2Md: this._pickCell(r, cols.a2Md, ""),
-        a2La: this._pickCell(r, cols.a2La, ""),
-        a2Fa: this._pickCell(r, cols.a2Fa, ""),
-        a2Sa: this._pickCell(r, cols.a2Sa, ""),
-        qms: this._pickCell(r, cols.qms, ""),
-        mdd: this._pickCell(r, cols.mdd, ""),
-        ems: this._pickCell(r, cols.ems, ""),
-        ohs: this._pickCell(r, cols.ohs, ""),
-        fsms: this._pickCell(r, cols.fsms, ""),
-        isms: this._pickCell(r, cols.isms, ""),
-        engy: this._pickCell(r, cols.engy, ""),
-        gmp: this._pickCell(r, cols.gmp, ""),
-        a1kDenet: this._pickCell(r, cols.a1kDenet, ""),
-        a2kDenet: this._pickCell(r, cols.a2kDenet, ""),
-        a1EventId: this._pickCell(r, cols.a1EventId, ""),
-        a2EventId: this._pickCell(r, cols.a2EventId, "")
+        id: this._pickCellWithFallback(r, cols.id, 0, ""),
+        nick: this._pickCellWithFallback(r, cols.nick, 1, ""),
+        firmaNo: this._pickCellWithFallback(r, cols.firmaNo, 2, ""),
+        standart: this._pickCellWithFallback(r, cols.standart, 3, ""),
+        denetimTipi: this._pickCellWithFallback(r, cols.denetimTipi, 4, ""),
+        a1Auditor: this._pickCellWithFallback(r, cols.a1Auditor, 6, ""),
+        a1Lead: this._pickCellWithFallback(r, cols.a1Lead, 12, ""),
+        a1Basla: this._pickCellWithFallback(r, cols.a1Basla, 9, ""),
+        a1Bitis: this._pickCellWithFallback(r, cols.a1Bitis, 10, ""),
+        a1Md: this._pickCellWithFallback(r, cols.a1Md, 11, ""),
+        a1La: this._pickCellWithFallback(r, cols.a1La, 12, ""),
+        a1Fa: this._pickCellWithFallback(r, cols.a1Fa, 13, ""),
+        a1Sa: this._pickCellWithFallback(r, cols.a1Sa, 14, ""),
+        a2Auditor: this._pickCellWithFallback(r, cols.a2Auditor, 8, ""),
+        a2Lead: this._pickCellWithFallback(r, cols.a2Lead, 18, ""),
+        a2Basla: this._pickCellWithFallback(r, cols.a2Basla, 15, ""),
+        a2Bitis: this._pickCellWithFallback(r, cols.a2Bitis, 16, ""),
+        a2Md: this._pickCellWithFallback(r, cols.a2Md, 17, ""),
+        a2La: this._pickCellWithFallback(r, cols.a2La, 18, ""),
+        a2Fa: this._pickCellWithFallback(r, cols.a2Fa, 19, ""),
+        a2Sa: this._pickCellWithFallback(r, cols.a2Sa, 20, ""),
+        qms: this._pickCellWithFallback(r, cols.qms, 21, ""),
+        mdd: this._pickCellWithFallback(r, cols.mdd, 22, ""),
+        ems: this._pickCellWithFallback(r, cols.ems, 23, ""),
+        ohs: this._pickCellWithFallback(r, cols.ohs, 24, ""),
+        fsms: this._pickCellWithFallback(r, cols.fsms, 25, ""),
+        isms: this._pickCellWithFallback(r, cols.isms, 26, ""),
+        engy: this._pickCellWithFallback(r, cols.engy, 27, ""),
+        gmp: this._pickCellWithFallback(r, cols.gmp, 28, ""),
+        a1kDenet: this._pickCellWithFallback(r, cols.a1kDenet, 29, ""),
+        a2kDenet: this._pickCellWithFallback(r, cols.a2kDenet, 30, ""),
+        a1EventId: this._pickCellWithFallback(r, cols.a1EventId, 31, ""),
+        a2EventId: this._pickCellWithFallback(r, cols.a2EventId, 32, "")
       })).reverse();
     } catch (e) {
       BaseService.logError("getAudits", e);
