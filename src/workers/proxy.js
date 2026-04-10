@@ -133,8 +133,39 @@ export default {
       }
       return indexed;
     };
+    const mapLegacyCertificateRow = (row) => {
+      const r = Array.isArray(row) ? row : [];
+      return {
+        ID: String(r[0] ?? "").trim(),
+        "Firma Adı": String(r[1] ?? "").trim(),
+        "Firma No": String(r[2] ?? "").trim(),
+        Standart: String(r[3] ?? "").trim(),
+        "Denetim Tipi": String(r[4] ?? "").trim(),
+        "Sertifika No": String(r[5] ?? "").trim(),
+        "Sertifika Tarihi": String(r[6] ?? "").trim(),
+        "Gözetim Tarihi": String(r[7] ?? "").trim(),
+        "Tescil Tarihi": String(r[8] ?? "").trim(),
+        "Sertifika Geçerlilik Tarihi": String(r[9] ?? "").trim(),
+        Kapsam: String(r[10] ?? "").trim(),
+        Scope: String(r[11] ?? "").trim(),
+        Logo: String(r[12] ?? "").trim(),
+        Kod: String(r[13] ?? "").trim(),
+        Akreditasyon: String(r[14] ?? "").trim(),
+        Akredite: String(r[15] ?? "").trim(),
+        "Danışman": String(r[16] ?? "").trim(),
+        Durum: String(r[17] ?? "").trim(),
+        Not: String(r[18] ?? "").trim(),
+        "Gözetim Conf.": String(r[19] ?? "").trim(),
+        "Other Standard": String(r[20] ?? "").trim(),
+        "Calendar ID": String(r[21] ?? "").trim(),
+        "QR Code": String(r[22] ?? "").trim(),
+        "Cert Link": String(r[23] ?? "").trim(),
+      };
+    };
+    const normalizeCertificateSource = (source) => Array.isArray(source) ? mapLegacyCertificateRow(source) : source;
     const createCanonicalCertificate = (source, options = {}) => {
-      const input = source && typeof source === "object" ? source : {};
+      const normalizedSource = normalizeCertificateSource(source);
+      const input = normalizedSource && typeof normalizedSource === "object" ? normalizedSource : {};
       const id = String(options.id ?? getCertificateId(input) ?? "").trim();
       const nick = pickObjectValue(input, ["nick", "nickname", "Nickname", "Firma Adı", "isim"]);
       const firmaNo = pickObjectValue(input, ["firmano", "firmaNo", "Firma No", "fno"]);
@@ -818,8 +849,11 @@ export default {
               const indexedRaw = await env.DB.get(indexCacheKey);
               if (indexedRaw) {
                 const indexed = JSON.parse(indexedRaw);
-                const data = Object.prototype.hasOwnProperty.call(indexed, idKey) ? indexed[idKey] : emptyValue;
-                ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(data), { expirationTtl: CACHE_TTL }));
+                const hasIndexedValue = Object.prototype.hasOwnProperty.call(indexed, idKey);
+                const data = hasIndexedValue ? indexed[idKey] : emptyValue;
+                if (hasIndexedValue || Array.isArray(data)) {
+                  ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(data), { expirationTtl: CACHE_TTL }));
+                }
                 return jsonResponse({ success: true, data, fromCache: true, indexed: true });
               }
             }
@@ -834,7 +868,7 @@ export default {
               needsHydration: true,
               action,
               params
-            }, 503);
+            });
           }
         }
 
@@ -971,11 +1005,17 @@ export default {
               const consultants = Array.isArray(d.consultants) ? d.consultants : [];
               const standards = Array.isArray(d.standards) ? d.standards : [];
               const canonicalCompanies = companies.map((company) => createCanonicalCompany(company)).filter((company) => getCompanyId(company));
+              const canonicalCertificates = [
+                ...certificates,
+                ...certificateRows,
+              ]
+                .map((certificate) => createCanonicalCertificate(certificate))
+                .filter((certificate) => getCertificateId(certificate));
+              const certById = buildCertificatesById(canonicalCertificates);
+              const dedupedCertificates = Object.values(certById);
+              const certsByFirmaId = buildCertificatesByFirmaId(dedupedCertificates);
 
               const companiesById = buildCompaniesById(canonicalCompanies);
-
-              const certById = buildCertificatesById(certificates);
-              const certsByFirmaId = buildCertificatesByFirmaId(certificates);
 
               const testsByFirmaId = {};
               for (const row of tests) {
@@ -1021,7 +1061,7 @@ export default {
 
               await Promise.all([
                 env.DB.put(`cache:getCompanies:{}`, JSON.stringify(canonicalCompanies), { expirationTtl: CACHE_TTL }),
-                env.DB.put(`cache:getCertificates:{}`, JSON.stringify(certificates), { expirationTtl: CACHE_TTL }),
+                env.DB.put(`cache:getCertificates:{}`, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }),
                 env.DB.put(`cache:getAudits:{}`, JSON.stringify(auditObjects), { expirationTtl: CACHE_TTL }),
                 env.DB.put(`cache:getConsultants:{}`, JSON.stringify(consultants), { expirationTtl: CACHE_TTL }),
                 env.DB.put(indexKeys.companyById, JSON.stringify(companiesById), { expirationTtl: CACHE_TTL }),
@@ -1032,6 +1072,11 @@ export default {
                 env.DB.put(indexKeys.proformasByFirmaId, JSON.stringify(proformasByFirmaId), { expirationTtl: CACHE_TTL }),
                 env.DB.put(indexKeys.proformasById, JSON.stringify(proformasById), { expirationTtl: CACHE_TTL }),
                 env.DB.put(indexKeys.standardsById, JSON.stringify(standardsById), { expirationTtl: CACHE_TTL }),
+              ]);
+              await Promise.all([
+                purgeCachePrefix("cache:getCertificateById:"),
+                purgeCachePrefix("cache:getCertificatesByFirmaId:"),
+                purgeCachePrefix("cache:getRecentCertificates:"),
               ]);
 
               return jsonResponse({
@@ -1121,7 +1166,7 @@ export default {
         if (env.DB && ["addCompany", "updateCompany"].includes(action)) {
           const state = await loadCompanyState();
           if (!state) {
-            return jsonResponse({ success: false, error: "COMPANY_KV_EMPTY", message: "Firma KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." }, 503);
+            return jsonResponse({ success: false, error: "COMPANY_KV_EMPTY", message: "Firma KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
           }
 
           const nextState = {
@@ -1166,7 +1211,7 @@ export default {
         if (env.DB && ["addTest", "updateTest"].includes(action)) {
           const state = await loadTestState();
           if (!state) {
-            return jsonResponse({ success: false, error: "TEST_KV_EMPTY", message: "Test KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." }, 503);
+            return jsonResponse({ success: false, error: "TEST_KV_EMPTY", message: "Test KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
           }
 
           const nextState = { rows: [...state.rows] };
@@ -1239,7 +1284,7 @@ export default {
         if (env.DB && ["addProforma", "addProInfo"].includes(action)) {
           const state = await loadProformaState();
           if (!state) {
-            return jsonResponse({ success: false, error: "PROFORMA_KV_EMPTY", message: "Proforma KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." }, 503);
+            return jsonResponse({ success: false, error: "PROFORMA_KV_EMPTY", message: "Proforma KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
           }
 
           const newId = getNextProformaId(state.rows);
@@ -1259,7 +1304,7 @@ export default {
         if (env.DB && ["scheduleAudit", "updateAudit"].includes(action)) {
           const state = await loadAuditState();
           if (!state) {
-            return jsonResponse({ success: false, error: "AUDIT_KV_EMPTY", message: "Denetim KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." }, 503);
+            return jsonResponse({ success: false, error: "AUDIT_KV_EMPTY", message: "Denetim KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
           }
 
           if (action === "scheduleAudit") {
@@ -1310,7 +1355,7 @@ export default {
               success: false,
               error: "CERTIFICATE_KV_EMPTY",
               message: "Sertifika KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın."
-            }, 503);
+            });
           }
 
           const nextState = {
@@ -1409,7 +1454,7 @@ export default {
         if (env.DB && action === "updateSurveillance") {
           const state = await loadCertificateState();
           if (!state) {
-            return jsonResponse({ success: false, error: "CERTIFICATE_KV_EMPTY", message: "Sertifika KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." }, 503);
+            return jsonResponse({ success: false, error: "CERTIFICATE_KV_EMPTY", message: "Sertifika KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
           }
 
           const ids = Array.isArray(params?.ids) ? params.ids.map((id) => String(id).trim()).filter(Boolean) : [];
