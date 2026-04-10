@@ -21,6 +21,7 @@ export interface CompanyOperationContext {
   irtibatTel: string;
   irtibatMail: string;
   danisman: string;
+  nace: string;
   logo: string;
   kase: string;
   certificates: any[];
@@ -70,6 +71,7 @@ export async function loadCompanyOperationContext(firmaId: string): Promise<Comp
     irtibatTel: pickValue(company, ['İrtibat Tel', 'IrtibatKisiNumarasi', 'irtN']),
     irtibatMail: pickValue(company, ['İrtibat Mail', 'IrtibatKisisMail', 'irtM']),
     danisman: pickValue(company, ['Danışman', 'Danisman', 'dan', 'danisman']),
+    nace: pickValue(company, ['NACE', 'nace', 'EA', 'ea']),
     logo: pickValue(company, ['Firma Logosu', 'logo', 'Logo/Kase', 'Logo Kase', 'Logo/Kase-Imza', 'logoK']),
     kase: pickValue(company, ['Kaşe İmza', 'Kase Imza', 'Kaşe&İmza', 'kase', 'Logo/Kase', 'Logo Kase', 'Logo/Kase-Imza', 'logoK']),
     certificates: Array.isArray(certRes?.data) ? certRes.data : [],

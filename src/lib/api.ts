@@ -5,7 +5,7 @@ import { CONFIG } from './config';
  *
  * Yeni mimaride tüm istekler Cloudflare Worker üzerinden gider.
  * - Okuma: KV-primary (miss durumunda needsHydration dönebilir)
- * - Yazma: Action tipine göre GAS write + KV invalidation veya KV-primary
+ * - Yazma: KV-primary (Google native side-effect'ler haric)
  */
 
 interface ApiResponse<T = any> {

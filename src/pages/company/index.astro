@@ -1,8 +1,8 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import {
-  COMPANY_OPERATION_DEFINITIONS,
-} from '../../features/company-ops/definitions';
+  OPERATION_DEFINITIONS,
+} from '../../features/operations/definitions';
 import {
   MapPin, Phone, Mail, Globe,
   FileText, Award, ClipboardList, Pencil, ArrowLeft,
@@ -65,7 +65,7 @@ import {
             <div class="flex flex-wrap items-center gap-2" id="hero-badges"></div>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-main tracking-tight leading-tight" id="hero-nick"></h1>
           </div>
-          <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 relative z-10 flex-shrink-0" id="hero-actions">
+          <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 relative z-10 shrink-0" id="hero-actions">
             <a id="btn-edit" href="#" class="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-xl sm:rounded-2xl shadow-[0_4px_15px_rgba(79,70,229,0.3)] transition-all">
               <Pencil size={14} />Düzenle
             </a>
@@ -136,7 +136,7 @@ import {
       <!-- İletişim -->
       <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="contact-card">
         <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
-          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
             <Phone size={16} />
           </div>
           <h3 class="text-sm font-black uppercase tracking-widest text-main">İletişim</h3>
@@ -144,42 +144,42 @@ import {
         <div class="space-y-3">
           <div class="flex items-start gap-3" id="info-telefon-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-telefon" title="Kopyala">
-              <Phone size={12} class="flex-shrink-0" />
+              <Phone size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Telefon</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-telefon">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-faks-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-faks" title="Kopyala">
-              <Phone size={12} class="flex-shrink-0" />
+              <Phone size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Faks</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-faks">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-mail-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-mail" title="Kopyala">
-              <Mail size={12} class="flex-shrink-0" />
+              <Mail size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">E-Posta</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1 break-all" id="info-mail">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-web-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-web" title="Kopyala">
-              <Globe size={12} class="flex-shrink-0" />
+              <Globe size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Web</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-web">—</p>
           </div>
           <div class="flex items-start gap-3 pt-2 border-t border-border-main" id="info-vergi-d-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-vergi-d" title="Kopyala">
-              <FileText size={12} class="flex-shrink-0" />
+              <FileText size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Vergi D.</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-vergi-d">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-vergi-n-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-vergi-n" title="Kopyala">
-              <FileText size={12} class="flex-shrink-0" />
+              <FileText size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Vergi No</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-vergi-n">—</p>
@@ -190,7 +190,7 @@ import {
       <!-- Yetkililer & İrtibat -->
       <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="people-card">
         <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
-          <div class="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 flex-shrink-0">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 shrink-0">
             <Users size={16} />
           </div>
           <h3 class="text-sm font-black uppercase tracking-widest text-main">Yetkililer & İrtibat</h3>
@@ -198,49 +198,49 @@ import {
         <div class="space-y-3">
           <div class="flex items-start gap-3" id="info-kyt-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-kyt" title="Kopyala">
-              <BadgeCheck size={12} class="flex-shrink-0" />
+              <BadgeCheck size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">KYT</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-kyt">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-yetkili-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-yetkili" title="Kopyala">
-              <Users size={12} class="flex-shrink-0" />
+              <Users size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Yetkili</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-yetkili">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-yetkili-unvan-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-yetkili-unvan" title="Kopyala">
-              <Briefcase size={12} class="flex-shrink-0" />
+              <Briefcase size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Ünvan</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-yetkili-unvan">—</p>
           </div>
           <div class="flex items-start gap-3 pt-2 border-t border-border-main" id="info-irtibat-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-irtibat" title="Kopyala">
-              <Users size={12} class="flex-shrink-0" />
+              <Users size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">İrtibat</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-irtibat">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-irtibat-unvan-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-irtibat-unvan" title="Kopyala">
-              <Briefcase size={12} class="flex-shrink-0" />
+              <Briefcase size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Ünvan</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-irtibat-unvan">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-irtibat-tel-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-irtibat-tel" title="Kopyala">
-              <Phone size={12} class="flex-shrink-0" />
+              <Phone size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Telefon</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-irtibat-tel">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-irtibat-mail-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-irtibat-mail" title="Kopyala">
-              <Mail size={12} class="flex-shrink-0" />
+              <Mail size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">E-Posta</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1 break-all" id="info-irtibat-mail">—</p>
@@ -251,99 +251,78 @@ import {
       <!-- Operasyon & Profil -->
       <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-7 rounded-2xl sm:rounded-[2rem]" id="ops-card">
         <div class="flex items-center gap-3 mb-5 pb-4 border-b border-border-main">
-          <div class="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400 flex-shrink-0">
+          <div class="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400 shrink-0">
             <Briefcase size={16} />
           </div>
           <h3 class="text-sm font-black uppercase tracking-widest text-main">Operasyon & Profil</h3>
         </div>
         <div class="space-y-3">
-          <div class="flex items-start gap-3" id="info-location-block">
-            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-location" title="Kopyala">
-              <MapPin size={12} class="flex-shrink-0" />
-              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Şehir</span>
-            </button>
-            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-location">—</p>
-          </div>
-          <div class="flex items-start gap-3" id="info-country-block">
-            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-country" title="Kopyala">
-              <Globe size={12} class="flex-shrink-0" />
-              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Ülke</span>
-            </button>
-            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-country">—</p>
-          </div>
           <div class="flex items-start gap-3" id="info-sector-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-sector" title="Kopyala">
-              <Briefcase size={12} class="flex-shrink-0" />
+              <Briefcase size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">NACE / EA</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-sector">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-tcs-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-tcs" title="Kopyala">
-              <Users size={12} class="flex-shrink-0" />
+              <Users size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Çalışan</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-tcs">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-workforce-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-workforce" title="Kopyala">
-              <BadgeCheck size={12} class="flex-shrink-0" />
+              <BadgeCheck size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Dağılım</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-workforce">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-facility-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-facility" title="Kopyala">
-              <Layers size={12} class="flex-shrink-0" />
+              <Layers size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Alan</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-facility">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-vardiya-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-vardiya" title="Kopyala">
-              <ClipboardList size={12} class="flex-shrink-0" />
+              <ClipboardList size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Vardiya</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-vardiya">—</p>
           </div>
           <div class="flex items-start gap-3 pt-2 border-t border-border-main" id="info-dan-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-dan" title="Kopyala">
-              <Users size={12} class="flex-shrink-0" />
+              <Users size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Danışman</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-dan">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-logo-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-logo" title="Kopyala">
-              <Pencil size={12} class="flex-shrink-0" />
+              <Pencil size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Logo</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1 break-all" id="info-logo">—</p>
           </div>
           <div class="flex items-start gap-3" id="info-kase-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-kase" title="Kopyala">
-              <Pencil size={12} class="flex-shrink-0" />
+              <Pencil size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Kaşe</span>
             </button>
             <p class="text-sm font-semibold text-main mt-0.5 flex-1 break-all" id="info-kase">—</p>
           </div>
-          <div class="flex items-start gap-3 hidden" id="info-sube-row">
-            <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-sube" title="Kopyala">
-              <MapPin size={12} class="flex-shrink-0" />
-              <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Şube</span>
-            </button>
-            <p class="text-sm font-semibold text-main mt-0.5 flex-1" id="info-sube">—</p>
-          </div>
           <div class="flex items-start gap-3" id="info-not-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-not" title="Kopyala">
-              <FileText size={12} class="flex-shrink-0" />
+              <FileText size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">Not</span>
             </button>
             <p class="text-sm text-main mt-0.5 flex-1 leading-relaxed" id="info-not">—</p>
           </div>
           <div class="flex items-start gap-3 hidden" id="yapis-row">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-yapis" title="Kopyala">
-              <Layers size={12} class="flex-shrink-0" />
+              <Layers size={12} class="shrink-0" />
               <span class="text-[10px] font-bold uppercase tracking-wider w-16 text-left">İşler</span>
             </button>
             <p class="text-sm text-main mt-0.5 flex-1 leading-relaxed" id="info-yapis">—</p>
@@ -357,13 +336,13 @@ import {
     <div class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
       <div class="flex items-center justify-between gap-3 p-4 sm:p-7 border-b border-border-main">
         <div class="flex items-center gap-3 min-w-0">
-          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
             <Award size={16} />
           </div>
           <h3 class="text-sm font-black uppercase tracking-widest text-main truncate">Sertifikalar</h3>
-          <span id="cert-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex-shrink-0"></span>
+          <span id="cert-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0"></span>
         </div>
-        <a id="btn-add-cert" href="#" class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black rounded-xl transition-all">
+        <a id="btn-add-cert" href="#" class="shrink-0 flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black rounded-xl transition-all">
           <span class="hidden sm:inline">+ Sertifika Ekle</span>
           <span class="sm:hidden">+ Ekle</span>
         </a>
@@ -381,7 +360,7 @@ import {
       </div>
 
       <div id="cert-list-wrapper" class="hidden">
-        <div class="px-4 sm:px-7 py-4 border-b border-border-main bg-surface-hover/40">
+        <div class="px-4 sm:px-7 py-4 border-b border-border-main bg-surface-hover">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div class="flex items-center gap-2 flex-wrap">
               <button
@@ -392,7 +371,7 @@ import {
                 <ChevronDown size={13} class="transition-transform" id="cert-actions-chevron" />
                 <span class="hidden sm:inline">Toplu </span>İşlemler
               </button>
-              <p class="text-[11px] text-muted" id="cert-selection-summary">Secili sertifika yok.</p>
+              <p class="text-[11px] text-muted" id="cert-selection-summary">Seçili sertifika yok.</p>
             </div>
             <div class="flex items-center gap-1.5 flex-wrap">
               <button type="button" id="cert-refresh" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-bold transition-colors">
@@ -414,13 +393,14 @@ import {
             <div class="rounded-2xl border border-border-main bg-surface p-4 space-y-3">
               <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-muted">
                 <CheckSquare size={12} />
-                Secim
+                Seçim
               </div>
               <div class="flex flex-wrap gap-2">
-                <button type="button" data-cert-select="all" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Tumunu Sec</button>
+                <button type="button" data-cert-select="all" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Tümünü Seç</button>
                 <button type="button" data-cert-select="active" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Aktif</button>
-                <button type="button" data-cert-select="warning" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Yaklasan</button>
-                <button type="button" data-cert-select="uyku" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Gozetimde</button>
+                <button type="button" data-cert-select="warning" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Yaklaşan</button>
+                <button type="button" data-cert-select="aski" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Askı</button>
+                <button type="button" data-cert-select="uyku" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Gözetimde</button>
                 <button type="button" data-cert-select="pasif" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Pasif</button>
                 <button type="button" data-cert-select="none" class="cert-batch-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">Temizle</button>
               </div>
@@ -429,55 +409,55 @@ import {
             <div class="rounded-2xl border border-border-main bg-surface p-4 space-y-3">
               <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-muted">
                 <Printer size={12} />
-                Uretim
+                Üretim
               </div>
               <div class="flex flex-wrap gap-2">
                 <button type="button" data-cert-lang="EN" class="cert-lang-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors">EN</button>
                 <button type="button" data-cert-lang="TR" class="cert-lang-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors">TR</button>
-                <button type="button" data-cert-sign="NS" class="cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors">Imzasiz</button>
-                <button type="button" data-cert-sign="S" class="cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors">Imzali</button>
+                <button type="button" data-cert-sign="NS" class="cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors">İmzasız</button>
+                <button type="button" data-cert-sign="S" class="cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors">İmzalı</button>
               </div>
               <button type="button" id="cert-generate-selected" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                 <Printer size={13} />
-                Secilileri Uret
+                Seçilileri Üret
               </button>
             </div>
 
             <div class="rounded-2xl border border-border-main bg-surface p-4 space-y-3">
               <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-muted">
                 <ShieldCheck size={12} />
-                Bakim
+                Bakım
               </div>
               <div class="flex flex-wrap gap-2">
                 <button type="button" id="cert-mark-passive" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   <ShieldCheck size={13} />
-                  Gozetimde
+                  Gözetimde
                 </button>
                 <button type="button" id="cert-mark-active" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                   <ShieldOff size={13} />
                   Aktife Al
                 </button>
               </div>
-              <p class="text-[11px] text-muted leading-relaxed">Secili kayitlar icin durum guncellemesi ve toplu belge uretimi burada yonetilir.</p>
+              <p class="text-[11px] text-muted leading-relaxed">Seçili kayıtlar için durum güncellemesi ve toplu belge üretimi burada yönetilir.</p>
             </div>
           </div>
         </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full text-xs">
+          <table class="w-full min-w-[420px] text-xs">
             <thead>
-              <tr class="border-b border-border-main">
-                <th class="px-3 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest w-10">
-                  <input id="cert-select-all" type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface-hover text-emerald-500 focus:ring-emerald-500/40" title="Tumunu sec" />
+              <tr class="border-b-2 border-emerald-500/20 bg-emerald-500/5">
+                <th class="hidden sm:table-cell px-3 py-3 text-center text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest w-10">
+                  <input id="cert-select-all" type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface-hover text-emerald-500 focus:ring-emerald-500/40" title="Tümünü seç" />
                 </th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest whitespace-nowrap">Sertifika Tarihi</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Standart</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest whitespace-nowrap">Sertifika No</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Akredite</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest whitespace-nowrap">Gözetim Tarihi</th>
-                <th class="px-4 py-3 text-left text-[10px] font-bold text-muted uppercase tracking-widest">Danışman</th>
-                <th class="px-4 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest">Durum</th>
-                <th class="px-4 py-3 text-center text-[10px] font-bold text-muted uppercase tracking-widest w-36">İşlem</th>
+                <th class="hidden sm:table-cell px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest whitespace-nowrap">Tarih</th>
+                <th class="px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest">Standart</th>
+                <th class="hidden sm:table-cell px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest whitespace-nowrap">Sertifika No</th>
+                <th class="hidden md:table-cell px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest">Akredite</th>
+                <th class="hidden md:table-cell px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest whitespace-nowrap">Gözetim</th>
+                <th class="hidden md:table-cell px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest">Danışman</th>
+                <th class="px-3 sm:px-4 py-3 text-center text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest">Durum</th>
+                <th class="px-3 sm:px-4 py-3 text-center text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest w-28 sm:w-36">İşlem</th>
               </tr>
             </thead>
             <tbody id="cert-tbody"></tbody>
@@ -503,12 +483,16 @@ import {
     <div class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
       <div class="flex items-center justify-between gap-3 p-4 sm:p-7 border-b border-border-main">
         <div class="flex items-center gap-3 min-w-0">
-          <div class="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 flex-shrink-0">
+          <div class="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 shrink-0">
             <FlaskConical size={16} />
           </div>
           <h3 class="text-sm font-black uppercase tracking-widest text-main truncate">Testler</h3>
-          <span id="test-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 flex-shrink-0"></span>
+          <span id="test-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 shrink-0"></span>
         </div>
+        <a id="btn-add-test" href="#" class="shrink-0 flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-black rounded-xl transition-all">
+          <span class="hidden sm:inline">+ Test Ekle</span>
+          <span class="sm:hidden">+ Ekle</span>
+        </a>
       </div>
 
       <div id="test-skeleton" class="p-7 animate-pulse space-y-3">
@@ -553,13 +537,13 @@ import {
       <div class="flex items-center justify-between gap-3 p-4 sm:p-7 border-b border-border-main">
         <div class="space-y-1">
           <p class="text-[10px] font-black uppercase tracking-[0.24em] text-muted">Operasyon Merkezi</p>
-          <h3 class="text-sm sm:text-base font-black uppercase tracking-widest text-main">Denetim, Basvuru, Proforma, Draft ve Sozlesme</h3>
+          <h3 class="text-sm sm:text-base font-black uppercase tracking-widest text-main" id="ops-title">İşlemler</h3>
         </div>
-        <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400">Mobil Hazir</span>
+        <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400">Mobil Hazır</span>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 sm:p-7">
-        {COMPANY_OPERATION_DEFINITIONS.map((operation) => (
+        {OPERATION_DEFINITIONS.map((operation) => (
           <a
             href={operation.href}
             data-company-op-link={operation.href}
@@ -588,13 +572,57 @@ import {
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+  function normalizeLookupKey(value: any): string {
+    return String(value || '')
+      .trim()
+      .toLocaleLowerCase('tr-TR')
+      .replace(/[ıİ]/g, 'i')
+      .replace(/[ğĞ]/g, 'g')
+      .replace(/[üÜ]/g, 'u')
+      .replace(/[şŞ]/g, 's')
+      .replace(/[öÖ]/g, 'o')
+      .replace(/[çÇ]/g, 'c')
+      .replace(/[^a-z0-9]/g, '');
+  }
+
   /** Bir objeden birden fazla olası key ile değer okur */
   function g(obj: Record<string, any>, ...keys: string[]): string {
     for (const k of keys) {
       const v = obj?.[k];
       if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
     }
+    if (obj && typeof obj === 'object') {
+      const normalizedKeys = keys.map((key) => normalizeLookupKey(key));
+      for (const [rawKey, rawValue] of Object.entries(obj)) {
+        if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') continue;
+        if (normalizedKeys.includes(normalizeLookupKey(rawKey))) {
+          return String(rawValue).trim();
+        }
+      }
+    }
     return '';
+  }
+
+  function getCertificateRecordId(record: any, fallback = ''): string {
+    if (Array.isArray(record)) {
+      return String(record[0] ?? fallback).trim();
+    }
+
+    const direct = g(record || {}, 'ID', 'Id', 'id', 'Certificate ID', 'certificateId', 'sertifikaId');
+    if (direct) return direct;
+
+    if (record && typeof record === 'object') {
+      const entries = Object.entries(record);
+      if (entries.length > 0) {
+        const [firstKey, firstValue] = entries[0];
+        const firstValueText = String(firstValue ?? '').trim();
+        if (firstValueText && (normalizeLookupKey(firstKey) === '' || entries.length > 0)) {
+          return firstValueText;
+        }
+      }
+    }
+
+    return fallback;
   }
 
   function setEl(id: string, value: string) {
@@ -607,8 +635,15 @@ import {
     }
   }
 
-  function setMany(ids: string[], value: string) {
-    ids.forEach(id => setEl(id, value));
+
+  function getCompanyCertificateHref() {
+    if (!firmaId) return '/certificates/add';
+    return `/certificates/add?id=${encodeURIComponent(firmaId)}`;
+  }
+
+  function getCompanyTestHref() {
+    if (!firmaId) return '/tests/add';
+    return `/tests/add?id=${encodeURIComponent(firmaId)}`;
   }
 
   function setField(id: string, value: string, blockId?: string) {
@@ -860,13 +895,13 @@ import {
     const el = document.getElementById('cert-selection-summary');
     if (!el) return;
 
-    const total = currentCertRows.length;
+    const total = allCertData.length;
     const selected = selectedCertIds.size;
     el.textContent = selected > 0
-      ? `${selected} / ${total} sertifika secili.`
+      ? `${selected} / ${total} sertifika seçili.`
       : total > 0
-        ? `Secili sertifika yok. Toplam ${total} kayit.`
-        : 'Secili sertifika yok.';
+        ? `Seçili sertifika yok. Toplam ${total} kayıt.`
+        : 'Seçili sertifika yok.';
   }
 
   function refreshCertActionButtons() {
@@ -939,23 +974,23 @@ import {
     const original = button?.innerHTML || '';
     if (button) {
       button.disabled = true;
-      button.innerHTML = `<span class="inline-flex items-center gap-2">Hazirlaniyor</span>`;
+      button.innerHTML = `<span class="inline-flex items-center gap-2">Hazırlanıyor</span>`;
     }
 
     try {
       const folderRes = await api.call('getFolderId', { nickname: currentCompanyNick });
       const folderId = folderRes?.data;
-      if (!folderId) throw new Error('Firma klasoru bulunamadi.');
+      if (!folderId) throw new Error('Firma klasörü bulunamadı.');
 
       for (const certId of selectedCertIds) {
         const payloadRes = await api.buildCertPayload(certId, certLang, certSign);
         if (!payloadRes.success || !payloadRes.data) {
-          throw new Error(payloadRes.error || `Payload olusturulamadi: ${certId}`);
+          throw new Error(payloadRes.error || `Payload oluşturulamadı: ${certId}`);
         }
 
         const genRes = await api.call('generateIso', { cert: payloadRes.data, folderId });
         if (!genRes.success) {
-          throw new Error(genRes.error || `Belge uretilemedi: ${certId}`);
+          throw new Error(genRes.error || `Belge üretilemedi: ${certId}`);
         }
       }
     } catch (error) {
@@ -1008,6 +1043,8 @@ import {
         certSign = (button.dataset.certSign as 'S' | 'NS') || 'NS';
         document.querySelectorAll<HTMLButtonElement>('[data-cert-sign]').forEach((btn) => {
           const active = btn.dataset.certSign === certSign;
+          const label = btn.dataset.certSign === 'NS' ? 'İmzasız' : 'İmzalı';
+          btn.textContent = label;
           btn.className = active
             ? 'cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors'
             : 'cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors';
@@ -1056,17 +1093,39 @@ import {
   // ─── URL Param ────────────────────────────────────────────────────────────────
 
   const params = new URLSearchParams(location.search);
-  const firmaId = params.get('id') || '';
+  const firmaId = params.get('id') || params.get('firmaId') || '';
 
   if (!firmaId) {
     document.getElementById('hero-skeleton')!.innerHTML = '<p class="text-sm text-rose-400 font-bold">Geçersiz firma ID.</p>';
   }
 
+  function buildCompanyOperationLink(baseHref: string) {
+    if (!baseHref || !firmaId) return baseHref;
+
+    const [pathname, rawQuery = ''] = baseHref.split('?');
+    const searchParams = new URLSearchParams(rawQuery);
+
+    searchParams.set('id', firmaId);
+
+    // Denetim planlama sayfasi hem `id` hem `firmaId` kabul ediyor.
+    if (pathname === '/audits/add') {
+      searchParams.set('firmaId', firmaId);
+    }
+
+    const query = searchParams.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }
+
   document.querySelectorAll<HTMLAnchorElement>('[data-company-op-link]').forEach((link) => {
     const baseHref = link.dataset.companyOpLink || '';
     if (!baseHref || !firmaId) return;
-    link.href = `${baseHref}?id=${encodeURIComponent(firmaId)}`;
+    link.href = buildCompanyOperationLink(baseHref);
   });
+
+  const initialAddCertLink = document.getElementById('btn-add-cert') as HTMLAnchorElement | null;
+  if (initialAddCertLink) initialAddCertLink.href = getCompanyCertificateHref();
+  const initialAddTestLink = document.getElementById('btn-add-test') as HTMLAnchorElement | null;
+  if (initialAddTestLink) initialAddTestLink.href = getCompanyTestHref();
 
   // ─── Load Company ─────────────────────────────────────────────────────────────
 
@@ -1137,6 +1196,9 @@ import {
     setEl('hero-adres', [adres, [il, ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - '));
     currentCompanyNick = nick;
 
+    const opsTitle = document.getElementById('ops-title');
+    if (opsTitle) opsTitle.textContent = nick ? `${nick} İşlemleri` : 'İşlemler';
+
     // Edit link
     const btnEdit = document.getElementById('btn-edit') as HTMLAnchorElement | null;
     if (btnEdit) btnEdit.href = `/company/edit?id=${firmaId}`;
@@ -1148,15 +1210,11 @@ import {
     setupExpandableTextButtons();
 
     const heroSubeRow = document.getElementById('hero-sube-row');
-    const infoSubeRow = document.getElementById('info-sube-row');
     if (yazisma) {
       setEl('hero-sube', yazisma);
-      setEl('info-sube', yazisma);
       heroSubeRow?.classList.remove('hidden');
-      infoSubeRow?.classList.remove('hidden');
     } else {
       heroSubeRow?.classList.add('hidden');
-      infoSubeRow?.classList.add('hidden');
     }
 
     // İletişim
@@ -1166,18 +1224,16 @@ import {
     setLinkedField('info-web', web, 'info-web-block', 'web');
     setField('info-vergi-d', vergiD, 'info-vergi-d-block');
     setField('info-vergi-n', vergiN, 'info-vergi-n-block');
-    setField('info-location', il, 'info-location-block');
-    setField('info-country', ulke, 'info-country-block');
     setField('info-tcs', tcs, 'info-tcs-block');
     setField('info-sector', [nace, ea].filter(Boolean).join(' / '), 'info-sector-block');
     setField('info-facility', [alan && `${alan} m2`, dept && `${dept} departman`].filter(Boolean).join(' / '), 'info-facility-block');
     setField('info-vardiya', vardiya, 'info-vardiya-block');
 
     const workforce = [
-      ycs && `Yonetim: ${ycs}`,
-      ucs && `Uretim: ${ucs}`,
-      yzcs && `Yari Zamanli: ${yzcs}`,
-      tascs && `Taseron: ${tascs}`,
+      ycs && `Yönetim: ${ycs}`,
+      ucs && `Üretim: ${ucs}`,
+      yzcs && `Yarı Zamanlı: ${yzcs}`,
+      tascs && `Taşeron: ${tascs}`,
     ].filter(Boolean).join(' / ');
     setField('info-workforce', workforce, 'info-workforce-block');
 
@@ -1198,8 +1254,6 @@ import {
 
     // Kart görünürlüğü
     toggleCardVisibility('ops-card', [
-      'info-location-block',
-      'info-country-block',
       'info-tcs-block',
       'info-sector-block',
       'info-facility-block',
@@ -1334,7 +1388,7 @@ import {
         qr           = String(c[22] || '').trim();
         certLink     = String(c[23] || '').trim();
       } else {
-        id           = g(c, 'ID', 'id');
+        id           = getCertificateRecordId(c);
         standart     = g(c, 'Standart', 'standart');
         otherStandart= g(c, 'Other Standard', 'Other', 'other', 'Diğer', 'diger', 'Diger', 'diğer', 'Diğer Standart', 'digerStandart');
         sertNo       = g(c, 'Sertifika No', 'sertNo', 'SertifikaNo');
@@ -1375,26 +1429,44 @@ import {
 
       const standartDisplay = isOther && otherStandart ? otherStandart : standart;
 
-      const parsedDate = gozT ? new Date(gozT.split('.').reverse().join('-')) : null;
+      const parsedGoz = gozT ? new Date(gozT.split('.').reverse().join('-')) : null;
+      const parsedBelge = belgeTarihi ? new Date(belgeTarihi.split('.').reverse().join('-')) : null;
       const now = new Date();
-      const diffDays = parsedDate ? Math.floor((parsedDate.getTime() - now.getTime()) / 86400000) : null;
-      const statusKey = gozetimConf
-        ? 'uyku'
-        : parsedDate && parsedDate < now
-          ? 'pasif'
-          : diffDays !== null && diffDays < 46
-            ? 'warning'
-            : 'active';
+      now.setHours(0, 0, 0, 0);
+
+      if (parsedGoz && !Number.isNaN(parsedGoz.getTime())) parsedGoz.setHours(0, 0, 0, 0);
+      if (parsedBelge && !Number.isNaN(parsedBelge.getTime())) parsedBelge.setHours(0, 0, 0, 0);
+
+      const diffDays = parsedGoz ? Math.floor((parsedGoz.getTime() - now.getTime()) / 86400000) : null;
+      const isBetweenBelgeAndGoz = Boolean(
+        parsedBelge &&
+        parsedGoz &&
+        !Number.isNaN(parsedBelge.getTime()) &&
+        !Number.isNaN(parsedGoz.getTime()) &&
+        now >= parsedBelge &&
+        now <= parsedGoz
+      );
+
+      let statusKey = 'pasif';
+      if (gozetimConf) {
+        statusKey = 'pasif';
+      } else if (parsedGoz && !Number.isNaN(parsedGoz.getTime()) && parsedGoz < now) {
+        statusKey = 'aski';
+      } else if (diffDays !== null && diffDays >= 0 && diffDays < 46) {
+        statusKey = 'warning';
+      } else if (isBetweenBelgeAndGoz) {
+        statusKey = 'active';
+      }
 
       nextRows.push({ id, status: statusKey });
 
-      const statusHtml = gozetimConf
-        ? `<span class="px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-300 border border-slate-500/20 text-[9px] font-bold">GOZETIMDE</span>`
-        : statusKey === 'pasif'
-          ? `<span class="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] font-bold">PASIF</span>`
+      const statusHtml = statusKey === 'pasif'
+        ? `<span class="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] font-bold">PASİF</span>`
+        : statusKey === 'aski'
+          ? `<span class="px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[9px] font-bold">ASKI</span>`
           : statusKey === 'warning'
-            ? `<span class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[9px] font-bold">YAKLASAN</span>`
-            : `<span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">AKTIF</span>`;
+            ? `<span class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[9px] font-bold">YAKLAŞAN</span>`
+            : `<span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">AKTİF</span>`;
 
       const detailCards = [
         { label: 'Denetim Tipi', value: denetim },
@@ -1412,36 +1484,36 @@ import {
       `).join('');
 
       const detailLink = certLink
-        ? `<a href="${escHtml(certLink)}" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-emerald-300 hover:bg-emerald-500/15 transition-colors">Belgeyi Ac</a>`
+        ? `<a href="${escHtml(certLink)}" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-emerald-300 hover:bg-emerald-500/15 transition-colors">Belgeyi Aç</a>`
         : '';
 
-      const zebraClass = rowIdx % 2 !== 0 ? 'bg-black/[0.03]' : '';
-      return `<tr class="border-b border-border-main hover:bg-primary/5 transition-colors ${zebraClass}">
-        <td class="px-3 py-3 text-center align-middle">
+      const zebraClass = rowIdx % 2 !== 0 ? 'bg-emerald-500/[0.03]' : 'bg-surface';
+      return `<tr class="border-b border-border-main hover:bg-emerald-500/10 transition-colors ${zebraClass}">
+        <td class="hidden sm:table-cell px-3 py-3 text-center align-middle">
           <input type="checkbox" class="cert-select-row h-4 w-4 rounded border-border-main bg-surface-hover text-emerald-500 focus:ring-emerald-500/40" value="${id}">
         </td>
-        <td class="px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${belgeTarihi || '—'}</td>
-        <td class="px-4 py-3 font-bold text-main text-xs align-middle">${escHtml(standartDisplay || '—')}</td>
-        <td class="px-4 py-3 text-muted font-mono text-xs align-middle whitespace-nowrap">${escHtml(sertNo || '—')}</td>
-        <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(akredite || '—')}</td>
-        <td class="px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${escHtml(gozT || '—')}</td>
-        <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(danisman || '—')}</td>
-        <td class="px-4 py-3 text-center align-middle">${statusHtml}</td>
-        <td class="px-4 py-3 text-center align-middle">
+        <td class="hidden sm:table-cell px-3 sm:px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${belgeTarihi || '—'}</td>
+        <td class="px-3 sm:px-4 py-3 font-bold text-main text-xs align-middle">${escHtml(standartDisplay || '—')}</td>
+        <td class="hidden sm:table-cell px-3 sm:px-4 py-3 text-muted font-mono text-xs align-middle whitespace-nowrap">${escHtml(sertNo || '—')}</td>
+        <td class="hidden md:table-cell px-3 sm:px-4 py-3 text-muted text-xs align-middle">${escHtml(akredite || '—')}</td>
+        <td class="hidden md:table-cell px-3 sm:px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${escHtml(gozT || '—')}</td>
+        <td class="hidden md:table-cell px-3 sm:px-4 py-3 text-muted text-xs align-middle">${escHtml(danisman || '—')}</td>
+        <td class="px-3 sm:px-4 py-3 text-center align-middle">${statusHtml}</td>
+        <td class="px-3 sm:px-4 py-3 text-center align-middle">
           <div class="inline-flex items-center gap-1.5">
-            <a href="/company/certificate?id=${encodeURIComponent(firmaId)}&edit=${encodeURIComponent(id)}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/15 transition-colors" title="Sertifikayi Duzenle" aria-label="Sertifikayi duzenle">
+            <a href="/certificates/add?id=${encodeURIComponent(firmaId)}&edit=${encodeURIComponent(id)}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-indigo-500/20 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/15 transition-colors" title="Sertifikayı Düzenle" aria-label="Sertifikayı düzenle">
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"></path>
               </svg>
             </a>
-            <a href="/company/certificate?id=${encodeURIComponent(firmaId)}&clone=${encodeURIComponent(id)}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" title="Sertifikayi Kopyala" aria-label="Sertifikayi kopyala">
+            <a href="/certificates/add?id=${encodeURIComponent(firmaId)}&clone=${encodeURIComponent(id)}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" title="Sertifikayı Kopyala" aria-label="Sertifikayı kopyala">
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
                 <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
               </svg>
             </a>
-            <button type="button" class="cert-toggle-detail inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" data-target="cert-detail-${id}" aria-expanded="false" title="Detay Goster" aria-label="Detay goster">
+            <button type="button" class="cert-toggle-detail inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" data-target="cert-detail-${id}" aria-expanded="false" title="Detay Göster" aria-label="Detay göster">
               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path>
                 <circle cx="12" cy="12" r="3"></circle>
@@ -1450,11 +1522,11 @@ import {
           </div>
         </td>
       </tr>
-      <tr id="cert-detail-${id}" class="hidden border-b border-border-main bg-surface-hover/40">
+      <tr id="cert-detail-${id}" class="hidden border-b border-border-main bg-surface-hover">
         <td colspan="9" class="px-4 sm:px-7 py-4">
           <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div class="grid flex-1 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              ${detailCards || `<div class="rounded-xl border border-dashed border-border-main p-3 text-xs text-muted">Ek detay bulunamadi.</div>`}
+              ${detailCards || `<div class="rounded-xl border border-dashed border-border-main p-3 text-xs text-muted">Ek detay bulunamadı.</div>`}
             </div>
             <div class="flex flex-wrap items-center gap-2 xl:justify-end">
               ${detailLink}
@@ -1481,7 +1553,7 @@ import {
 
     // Update add cert link
     const btnAddCert = document.getElementById('btn-add-cert') as HTMLAnchorElement | null;
-    if (btnAddCert) btnAddCert.href = `/company/certificate?id=${encodeURIComponent(firmaId)}`;
+    if (btnAddCert) btnAddCert.href = getCompanyCertificateHref();
 
     const folderLink = document.getElementById('cert-folder-link') as HTMLAnchorElement | null;
     if (folderLink) folderLink.href = '/documents/view';
@@ -1602,7 +1674,7 @@ import {
       }
 
       const testId = String(isRaw ? (t[0] || rowIdx) : (g(t, 'ID', 'id') || rowIdx));
-      const zebraClass = rowIdx % 2 !== 0 ? 'bg-black/[0.03]' : '';
+      const zebraClass = rowIdx % 2 !== 0 ? 'bg-surface-hover' : '';
 
       return `<tr class="border-b border-border-main hover:bg-primary/5 transition-colors ${zebraClass}">
         <td class="px-3 py-3 text-center align-middle">

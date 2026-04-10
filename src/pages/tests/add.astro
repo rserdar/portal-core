@@ -1,0 +1,204 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Test Ekle">
+  <div class="max-w-5xl mx-auto pb-24 space-y-6">
+    <section class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
+      <div id="test-add-skeleton" class="p-6 sm:p-8 animate-pulse space-y-4">
+        <div class="h-3 w-28 rounded bg-surface-hover"></div>
+        <div class="h-8 w-72 rounded bg-surface-hover"></div>
+        <div class="h-24 rounded-3xl bg-surface-hover"></div>
+      </div>
+
+      <div id="test-add-picker" class="hidden p-6 sm:p-8 space-y-5">
+        <div class="space-y-2">
+          <p class="text-[10px] font-black uppercase tracking-[0.24em] text-violet-400">Test Merkezi</p>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Firma Seçerek Devam Et</h1>
+          <p class="text-sm leading-relaxed text-muted max-w-2xl">Bu ekranı header’dan açtığında önce ilgili firmayı seçebilirsin. Firma profilinden geldiğinde bu adım otomatik geçilir.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Seçimi</label>
+            <input id="test-company-search" list="test-company-list" type="text" placeholder="Firma ara..." class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main" />
+            <datalist id="test-company-list"></datalist>
+          </div>
+          <button id="test-company-continue" type="button" class="inline-flex items-center justify-center rounded-2xl bg-violet-600 px-5 py-3 text-sm font-black text-white hover:bg-violet-500 transition-colors">
+            Test Akışına Geç
+          </button>
+        </div>
+
+        <p id="test-company-status" class="text-xs font-semibold text-muted">Firma listesi hazırlanıyor...</p>
+      </div>
+
+      <div id="test-add-shell" class="hidden">
+        <div class="p-6 sm:p-8 border-b border-border-main space-y-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="test-company-id" class="text-[10px] font-black uppercase tracking-[0.24em] px-2.5 py-1 rounded-full border border-violet-500/20 bg-violet-500/10 text-violet-300">M0</span>
+            <span id="test-company-nick" class="text-[10px] font-black uppercase tracking-[0.24em] px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Firma</span>
+          </div>
+          <div class="space-y-2">
+            <h1 id="test-company-unvan" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Firma yükleniyor...</h1>
+            <p class="text-sm leading-relaxed text-muted max-w-3xl">Test ekleme akışını ayrı domain altında topluyoruz. Form ve rapor mantığı bir sonraki adımda bu sayfaya taşınacak.</p>
+          </div>
+        </div>
+
+        <div class="p-6 sm:p-8">
+          <div class="rounded-[1.5rem] border border-border-main bg-surface-hover p-5 sm:p-6 space-y-3">
+            <p class="text-[10px] font-black uppercase tracking-[0.24em] text-violet-400">Hazırlık</p>
+            <h2 class="text-lg font-black tracking-tight text-main">Test Modülü İçin İlk Giriş Hazır</h2>
+            <p id="test-context-summary" class="text-sm leading-relaxed text-muted">Firma bağlamı yüklendiğinde bu ekran gerçek test formunu barındıracak.</p>
+            <div class="flex flex-wrap gap-2 pt-2">
+              <a id="test-back-company" href="/search" class="inline-flex items-center justify-center rounded-xl border border-border-main bg-surface px-4 py-2 text-xs font-black uppercase tracking-wide text-main hover:bg-surface-hover transition-colors">Firma Profili</a>
+              <a href="/tests" class="inline-flex items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 px-4 py-2 text-xs font-black uppercase tracking-wide text-violet-300 hover:bg-violet-500/15 transition-colors">Test Merkezi</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="test-add-error" class="hidden p-8">
+        <p class="text-sm font-bold text-rose-400">Firma bağlamı yüklenemedi.</p>
+      </div>
+    </section>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api } from '../../lib/api';
+  import { $companies } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
+  import { loadCompanyOperationContext } from '../../features/operations/context';
+
+  const params = new URLSearchParams(location.search);
+  let activeFirmaId = params.get('firmaId') || params.get('id') || '';
+
+  const els = {
+    skeleton: document.getElementById('test-add-skeleton'),
+    picker: document.getElementById('test-add-picker'),
+    shell: document.getElementById('test-add-shell'),
+    error: document.getElementById('test-add-error'),
+    companySearch: document.getElementById('test-company-search') as HTMLInputElement | null,
+    companyList: document.getElementById('test-company-list'),
+    companyContinue: document.getElementById('test-company-continue') as HTMLButtonElement | null,
+    status: document.getElementById('test-company-status'),
+  };
+
+  function getCompanyValue(company: any, ...keys: string[]) {
+    if (!company || typeof company !== 'object') return '';
+    for (const key of keys) {
+      const value = company[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return String(value).trim();
+      }
+    }
+    return '';
+  }
+
+  function getCompanyId(company: any) {
+    return getCompanyValue(company, 'Firma No', 'FirmaNo', 'firmaNo', 'id', 'ID');
+  }
+
+  function getCompanyNick(company: any) {
+    return getCompanyValue(company, 'Firma Adı', 'nickname', 'Nick', 'nick', 'FirmaAdi');
+  }
+
+  function getCompanyDisplayName(company: any) {
+    return getCompanyNick(company) || getCompanyValue(company, 'Unvan', 'unvan');
+  }
+
+  function companyLabel(company: any) {
+    const nick = getCompanyDisplayName(company) || 'Firma';
+    const companyId = getCompanyId(company) || '—';
+    return `${nick} (${companyId})`;
+  }
+
+  function setStatus(message: string, isError = false) {
+    if (!els.status) return;
+    els.status.textContent = message;
+    els.status.className = `text-xs font-semibold ${isError ? 'text-rose-400' : 'text-muted'}`;
+  }
+
+  function syncCompanyList() {
+    if (!els.companyList) return;
+    const frag = document.createDocumentFragment();
+    ($companies.get() as any[]).forEach((company) => {
+      const option = document.createElement('option');
+      option.value = companyLabel(company);
+      frag.appendChild(option);
+    });
+    els.companyList.innerHTML = '';
+    els.companyList.appendChild(frag);
+    if (($companies.get() as any[]).length > 0) setStatus('Bir firma seçip devam edebilirsin.');
+  }
+
+  function resolveCompanyFromInput() {
+    const raw = els.companySearch?.value.trim() || '';
+    if (!raw) return null;
+    return ($companies.get() as any[]).find((company) => {
+      return companyLabel(company) === raw || getCompanyDisplayName(company) === raw || getCompanyId(company) === raw;
+    }) || null;
+  }
+
+  function showPicker() {
+    els.skeleton?.classList.add('hidden');
+    els.error?.classList.add('hidden');
+    els.shell?.classList.add('hidden');
+    els.picker?.classList.remove('hidden');
+  }
+
+  async function initPicker() {
+    showPicker();
+    syncCompanyList();
+    $companies.subscribe(() => syncCompanyList());
+    await SyncManager.init();
+    if (($companies.get() as any[]).length === 0) {
+      const res = await api.getCompanies();
+      if (res.success && Array.isArray(res.data)) $companies.set(res.data);
+    }
+
+    els.companySearch?.addEventListener('input', () => {
+      const selected = resolveCompanyFromInput();
+      setStatus(selected ? 'Firma seçildi. Devam edebilirsin.' : 'Listeden geçerli bir firma seç.');
+    });
+
+    els.companyContinue?.addEventListener('click', async () => {
+      const selected = resolveCompanyFromInput();
+      const selectedId = selected ? getCompanyId(selected) : '';
+      if (!selectedId) {
+        setStatus('Devam etmek için listeden geçerli bir firma seç.', true);
+        return;
+      }
+      activeFirmaId = selectedId;
+      await renderWithContext();
+    });
+  }
+
+  async function renderWithContext() {
+    if (!activeFirmaId) {
+      await initPicker();
+      return;
+    }
+
+    const context = await loadCompanyOperationContext(activeFirmaId);
+    if (!context) {
+      els.skeleton?.classList.add('hidden');
+      els.picker?.classList.add('hidden');
+      els.error?.classList.remove('hidden');
+      return;
+    }
+
+    (document.getElementById('test-company-id') as HTMLElement | null)!.textContent = `M${context.firmaId}`;
+    (document.getElementById('test-company-nick') as HTMLElement | null)!.textContent = context.nick || 'Firma';
+    (document.getElementById('test-company-unvan') as HTMLElement | null)!.textContent = context.unvan || context.nick || `Firma #${context.firmaId}`;
+    (document.getElementById('test-context-summary') as HTMLElement | null)!.textContent = `${context.nick || context.unvan || 'Firma'} için test modülü başlangıç ekranı hazır. Bu firmaya ait ${context.tests.length} test ve ${context.certificates.length} sertifika kaydı bağlama alınabiliyor.`;
+    (document.getElementById('test-back-company') as HTMLAnchorElement | null)!.href = `/company?id=${encodeURIComponent(context.firmaId)}`;
+
+    els.skeleton?.classList.add('hidden');
+    els.picker?.classList.add('hidden');
+    els.error?.classList.add('hidden');
+    els.shell?.classList.remove('hidden');
+  }
+
+  void renderWithContext();
+</script>

@@ -1,9 +1,10 @@
 # 🤖 Project Intelligence & Context (AI_CONTEXT.md v5.4.0)
 
 > [!IMPORTANT]
-> **High-Performance Architecture (v5.4.0):** Bu proje runtime okumalarında **Cloudflare KV** kullanır; Cloudflare Worker (`src/workers/proxy.js`) Cache-Aside + KV-primary-read modelini uygular.
+> **KV-Primary Architecture (v5.5.0):** Bu proje hem okuma hem yazma için **Cloudflare KV**'yi birincil veri tabanı olarak kullanır. Cloudflare Worker (`src/workers/proxy.js`) tüm veri operasyonlarını yönetir.
 > - **KV Binding:** `env.DB` (linked to Namespace ID: `8eb0dc6ffe2947729b29f0db1c84fd52`).
-> - **Strategy:** KV first for reads (0ms latent), GAS for writes.
+> - **Strategy:** KV-primary for ALL reads AND writes. Google Sheets is manual backup ONLY — no automatic write-back.
+> - **Google Native Exception:** Docs, Drive, Calendar, Gmail operasyonları GAS üzerinden çalışır (KV bypass). Bu servisler hiçbir zaman KV'ye taşınamaz.
 > - **Bulk Hydration:** A "SİSTEMİ SENKRONİZE ET" button triggers a bulk export from GAS to KV and local IndexedDB.
 
 > [!CAUTION]
@@ -17,10 +18,10 @@
 ## 🏗️ Core Architecture & Data Strategy
 
 ### 1. Database & Persistence Layer
-- **Primary Database (Current):** **Cloudflare KV** for runtime reads (Phase 3.5 active).
-- **Backup / Recovery Store:** **Google Sheets** (authoritative backup + restore source/target via GAS).
-- **Phase 3.5 Durumu:** Master/reference data (`standards`, `auditors`, `consultants`, `testdocs`, `sysdocs`) için **KV-primary write** aktiftir (Sheets'e otomatik write-back yok; manuel `Sheets -> KV` sync ile çekilir).
-- **Core Write Notu:** `addCompany`, `addCertificate`, `scheduleAudit`, vb. operasyonlar şu an bilinçli olarak **GAS write** kullanır; Calendar/Docs/Drive gibi side-effect zincirleri nedeniyle doğrudan KV write'a çevrilmemiştir.
+- **Primary Database:** **Cloudflare KV** — hem okuma hem yazma için tek ve birincil veri deposu.
+- **Backup / Recovery Store:** **Google Sheets** — yalnızca manuel backup ve restore kaynağı. Otomatik write-back yoktur, hiçbir zaman olmayacaktır.
+- **Write Kuralı:** Google'ın native servislerine (Calendar, Docs, Drive, Gmail) bağımlı olmayan **TÜM yazma operasyonları doğrudan KV'ye yazılır**. Sheets'e otomatik yazma yapılmaz.
+- **Google Native Side Effects:** `scheduleAudit`, `updateSurveillance` gibi Calendar bağımlı operasyonlarda **veri yine KV'ye yazılır**; Calendar event / Drive dosya oluşturma için ek GAS çağrısı yapılır. GAS burada yalnızca side-effect engine'i olarak kullanılır, authoritative data store değil.
 - **Backend Engine:** **Modular Google Apps Script** (GAS) in `src/gas/api/`.
 - **Migration In Progress:** Legacy GAS files are preserved in `src/gas/legacy/` as migration reference. Original paths (`src/gas/server/`, `src/gas/client/`) have been removed to avoid confusion.
 - **Client Cache:** **IndexedDB** (`medicert-portal-db`) + **Nanostores**.
@@ -62,7 +63,7 @@
 
 > [!CAUTION]
 > Bu bölüm, geliştirilen veya migration yapılan **her fonksiyon** için uyulması zorunlu mimari kararı tanımlar.
-> **Özetle:** Google'ın native servislerine (Docs, Drive, Calendar, Gmail, LanguageApp) doğrudan bağımlı olmayan her şey KV üzerinden çözülecek. GAS yalnızca bu native servisler için vardır.
+> **Özetle:** Google'ın native servislerine (Docs, Drive, Calendar, Gmail, LanguageApp) doğrudan bağımlı olmayan **her okuma ve yazma operasyonu KV üzerinden çözülür**. GAS yalnızca Google Native side-effect engine'i olarak vardır — authoritative data store değil. Sheets manuel backup kaynağıdır.
 
 ### Kural 1 — Okuma (READ) Operasyonları: Her Zaman KV-First
 
@@ -93,33 +94,37 @@ Browser → CF Worker → KV hit? → Dön (0ms)
 | `getMasterData` | `cache:getMasterData:{"type":"X"}` | ✅ Aktif (`standards/auditors/consultants/testdocs/sysdocs`) |
 | `getAvailableSets` | `cache:getAvailableSets:{}` | Planlı (henüz cacheableActions listesinde değil) |
 
-### Kural 2 — Yazma (WRITE) Operasyonları: Varsayılan GAS Yaz + KV Geçersiz Kıl
+### Kural 2 — Yazma (WRITE) Operasyonları: Her Zaman KV-Primary
 
-Sadece Google Sheets'e veri yazan operasyonlar (Calendar, Docs, Drive **olmadan**) şu pattern'i izler:
+Google'ın native servislerine bağımlı olmayan **TÜM yazma operasyonları doğrudan KV'ye yazılır**. Sheets'e otomatik write-back yapılmaz, yapılmamalıdır.
 
 ```
-Browser → CF Worker → GAS (Sheets'e yaz) → Başarılı?
+Browser → CF Worker → KV'ye yaz (primary) → Başarılı?
                                             ↓ evet
-                      İlgili KV key(ler)ini sil (invalidate) → Dön
+                      Dön  (Sheets'e yazılmaz)
 ```
 
-KV invalidation, `ctx.waitUntil(env.DB.delete(key))` ile worker içinde yapılır. Böylece bir sonraki okumada taze veri GAS'tan çekilip KV'ye yazılır.
+> [!CAUTION]
+> **Sheets'e write-back kesinlikle yapılmaz.** `addCompany`, `addTest`, `addProforma`, `scheduleAudit` dahil tüm operasyonlar için authoritative store KV'dir. Sheets yalnızca "SİSTEMİ SENKRONİZE ET" veya manuel backup akışlarıyla güncellenir.
 
 > [!NOTE]
-> **Phase 3.5 istisnası:** Master data güncellemeleri (`updateMasterData`) KV üzerinde yapılır (KV-primary write). Core operasyonlar ise side-effect bağımlılıkları nedeniyle Kural 2 (GAS write + invalidate) modelinde kalır.
+> **Google Native side-effect içeren operasyonlar** (`scheduleAudit`, `updateSurveillance`): **Veri KV'ye yazılır.** Calendar event / Drive dosya oluşturma için ek bir GAS çağrısı yapılır. GAS bu akışta yalnızca side-effect engine'i olarak kullanılır.
 
-| Action | GAS'ta Ne Yapıyor | Sonrasında Silinmesi Gereken KV Key(ler) |
+> [!WARNING]
+> **Geçici Devre Dışı — Google Calendar Side-Effects:** KV-primary altyapısı tamamlanana kadar, Ekleme ve Düzenleme operasyonlarındaki (`scheduleAudit`, `updateSurveillance`) **Google Calendar GAS çağrıları geçici olarak devre dışı bırakılmıştır.** Bu operasyonlar şu an yalnızca KV'ye yazar; Calendar event oluşturma/güncelleme atlanır. İlerleyen aşamalarda Calendar entegrasyonu yeniden devreye alınacaktır.
+
+| Action | Yazma Hedefi | Etkilenen KV Key(ler) |
 | :--- | :--- | :--- |
-| `addCompany` | Sheets'e satır ekler | `cache:getCompanies:{}`, `cache:index:companiesById` |
-| `updateCompany` | Sheets'te satır günceller | `cache:getCompanies:{}`, `cache:index:companiesById`, `cache:getCompanyById:{"id":"X"}` |
-| `addCertificate` | Sheets'e ekler + Calendar event | `cache:getCertificates:{}`, `cache:index:certificatesByFirmaId`, `cache:getCertificatesByFirmaId:{"firmaId":"X"}` |
-| `updateCertificate` | Sheets günceller + Calendar event | Aynı sertifika keyleri |
-| `updateCertificateField` | Sheets tek hücre günceller | `cache:getCertificatesByFirmaId:{"firmaId":"X"}`, ilgili cert key |
-| `updateSurveillance` | Sheets günceller + Calendar arşiv | İlgili firma cert keyleri |
-| `addTest` | Sheets'e ekler | `cache:index:testsByFirmaId`, `cache:getTestsByFirmaId:{"firmaId":"X"}` |
-| `scheduleAudit` | Sheets'e ekler + Calendar event | `cache:index:auditsByFirmaId`, `cache:getAuditsByFirmaId:{"firmaId":"X"}` |
-| `addProforma` | Sheets'e ekler | `cache:getProformaByFirmaId:{"firmaId":"X"}` |
-| `updateMasterData` | **KV-primary** master dataset güncellemesi (Sheets write-back devre dışı) | `cache:getMasterData:*` |
+| `addCompany` | **KV-primary** | `cache:getCompanies:{}`, `cache:index:companiesById` güncellenir |
+| `updateCompany` | **KV-primary** | `cache:getCompanies:{}`, `cache:index:companiesById`, `cache:getCompanyById:{"id":"X"}` güncellenir |
+| `addCertificate` | **KV-primary** | `cache:getCertificates:{}`, `cache:index:certificateById`, `cache:index:certificatesByFirmaId` güncellenir |
+| `updateCertificate` | **KV-primary** | Aynı sertifika key/indexleri güncellenir |
+| `updateCertificateField` | **KV-primary** | İlgili sertifika key/indexleri güncellenir |
+| `updateSurveillance` | **KV-primary** + Calendar GAS side-effect | İlgili firma cert keyleri güncellenir |
+| `addTest` | **KV-primary** | `cache:index:testsByFirmaId`, `cache:getTestsByFirmaId:{"firmaId":"X"}` güncellenir |
+| `scheduleAudit` | **KV-primary** + Calendar GAS side-effect | `cache:index:auditsByFirmaId`, `cache:getAuditsByFirmaId:{"firmaId":"X"}` güncellenir |
+| `addProforma` | **KV-primary** | `cache:getProformaByFirmaId:{"firmaId":"X"}` güncellenir |
+| `updateMasterData` | **KV-primary** | `cache:getMasterData:*` güncellenir |
 
 ### Kural 3 — Google Native Servis Operasyonları: Her Zaman GAS, KV Bypass
 

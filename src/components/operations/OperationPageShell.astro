@@ -2,12 +2,12 @@
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import { ArrowLeft } from 'lucide-astro';
 import {
-  COMPANY_OPERATION_DEFINITIONS,
-  type CompanyOperationPageKey,
-} from '../../features/company-ops/definitions';
+  OPERATION_DEFINITIONS,
+  type OperationPageKey,
+} from '../../features/operations/definitions';
 
 interface Props {
-  pageKey: CompanyOperationPageKey;
+  pageKey: OperationPageKey;
   title: string;
   description: string;
 }
@@ -64,7 +64,7 @@ const { pageKey, title, description } = Astro.props;
 
         <div class="px-6 sm:px-8 py-4 border-b border-border-main bg-surface-hover/40">
           <div class="flex flex-wrap gap-2">
-            {COMPANY_OPERATION_DEFINITIONS.map((definition) => {
+            {OPERATION_DEFINITIONS.map((definition) => {
               const active = definition.key === pageKey;
               return (
                 <a

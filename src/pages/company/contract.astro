@@ -1,5 +1,5 @@
 ---
-import OperationPageShell from '../../components/company/OperationPageShell.astro';
+import OperationPageShell from '../../components/operations/OperationPageShell.astro';
 ---
 
 <OperationPageShell
@@ -55,8 +55,8 @@ import OperationPageShell from '../../components/company/OperationPageShell.astr
 </OperationPageShell>
 
 <script>
-  import { loadCompanyOperationContext } from '../../features/company-ops/context';
-  import { COMPANY_OPERATION_DEFINITIONS, buildCompanyOperationHref } from '../../features/company-ops/definitions';
+  import { loadCompanyOperationContext } from '../../features/operations/context';
+  import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
 
   const params = new URLSearchParams(location.search);
   const firmaId = params.get('id') || '';
@@ -78,8 +78,8 @@ import OperationPageShell from '../../components/company/OperationPageShell.astr
     (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${firmaId}`);
     document.querySelectorAll<HTMLAnchorElement>('[data-op-link]').forEach((link) => {
       const key = link.dataset.opLink as 'form' | 'proforma' | 'draft' | 'contract';
-      const definition = COMPANY_OPERATION_DEFINITIONS.find((item) => item.key === key);
-      if (definition) link.href = buildCompanyOperationHref(definition.href, firmaId);
+      const definition = OPERATION_DEFINITIONS.find((item) => item.key === key);
+      if (definition) link.href = buildOperationHref(definition.href, firmaId);
     });
 
     document.getElementById('op-company-id')!.textContent = `M${context.firmaId}`;

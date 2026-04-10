@@ -1,0 +1,750 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Sertifika Yönetimi">
+  <div class="space-y-6">
+
+    <!-- 🎛️ Filtreleme Paneli -->
+    <div class="bg-surface border border-border-main shadow-xl p-3 sm:p-5 rounded-2xl sm:rounded-3xl space-y-3 sm:space-y-4">
+
+      <!-- Üst satır: Sync + Export + Bulk Actions -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div id="sync-indicator" class="flex items-center gap-2 px-3 py-1.5 bg-surface border border-border-main rounded-lg text-[10px] uppercase tracking-wider text-muted font-bold shrink-0">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]"></span>
+          <span class="hidden xs:inline">Güncel</span>
+        </div>
+        <div class="flex items-center gap-2 ml-auto sm:ml-0">
+          <button id="export-csv-btn" class="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-border-main bg-surface text-[10px] font-black uppercase tracking-wider text-muted hover:text-primary transition-all whitespace-nowrap">
+            CSV
+          </button>
+          <button id="export-excel-btn" class="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-border-main bg-surface text-[10px] font-black uppercase tracking-wider text-muted hover:text-emerald-400 transition-all whitespace-nowrap">
+            Excel
+          </button>
+        </div>
+
+        <!-- Bulk Actions (JS ile gösterilir) -->
+        <div id="bulk-actions" class="hidden flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto bg-surface border border-primary/30 px-3 sm:px-4 py-2 rounded-xl animate-fade-in">
+          <span id="selected-count" class="text-[10px] font-black text-indigo-400">0 SEÇİLİ</span>
+          <div class="h-4 w-px bg-border-main hidden sm:block"></div>
+          <button id="bulk-done-btn" class="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-wider px-2 py-1 rounded-lg hover:bg-emerald-500/10 whitespace-nowrap">
+            ✓ Gözetim Yapıldı
+          </button>
+          <div class="h-4 w-px bg-border-main hidden sm:block"></div>
+          <button id="bulk-pending-btn" class="text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors uppercase tracking-wider px-2 py-1 rounded-lg hover:bg-amber-500/10 whitespace-nowrap">
+            ⏸ Beklemeye Al
+          </button>
+        </div>
+      </div>
+
+      <!-- Arama + Filtreler -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+        <div class="sm:col-span-2 relative group">
+          <input
+            type="text"
+            id="global-search"
+            placeholder="Firma, Standart veya Belge No ile ara..."
+            class="w-full bg-surface-hover border border-border-main rounded-xl px-10 sm:px-11 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all text-main placeholder:text-muted"
+          />
+          <svg class="absolute left-3 sm:left-3.5 top-3 sm:top-3.5 text-muted group-focus-within:text-indigo-400 transition-colors pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
+
+        <select id="standard-filter" class="bg-surface-hover border border-border-main rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 text-main appearance-none cursor-pointer transition-all">
+          <option value="">Tüm Standartlar</option>
+          <option value="9001">ISO 9001</option>
+          <option value="14001">ISO 14001</option>
+          <option value="45001">ISO 45001</option>
+          <option value="22000">ISO 22000</option>
+          <option value="27001">ISO 27001</option>
+          <option value="13485">ISO 13485</option>
+          <option value="10002">ISO 10002</option>
+        </select>
+
+        <select id="status-filter" class="bg-surface-hover border border-border-main rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 text-main appearance-none cursor-pointer transition-all">
+          <option value="">Tüm Durumlar</option>
+          <option value="TRUE">Aktif (Gözetim Tamam)</option>
+          <option value="FALSE">Bekliyor (Gözetim Gerekli)</option>
+        </select>
+      </div>
+
+      <!-- Meta + Sayfa boyutu -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 justify-between">
+        <div class="flex flex-wrap items-center gap-2 text-[11px] text-muted">
+          <span id="dataset-summary" class="rounded-lg border border-border-main bg-surface px-2.5 py-1.5 font-bold uppercase tracking-wider text-main">0 kayıt</span>
+          <span id="page-summary" class="rounded-lg border border-border-main bg-surface px-2.5 py-1.5 font-medium">Sayfa 1 / 1</span>
+          <span class="hidden sm:inline rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5 font-medium text-emerald-300">En yeni üstte</span>
+        </div>
+
+        <label class="inline-flex items-center gap-2 rounded-lg border border-border-main bg-surface px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted">
+          Sayfa
+          <select id="page-size-select" class="rounded-md border border-border-main bg-surface px-1.5 py-0.5 text-[11px] text-main outline-none">
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </label>
+      </div>
+
+    </div><!-- /Filtreleme Paneli -->
+
+    <!-- 📊 Veri Tablosu -->
+    <div class="bg-surface border border-border-main shadow-2xl rounded-2xl sm:rounded-3xl overflow-hidden">
+      <div class="w-full overflow-x-auto">
+        <table class="w-full min-w-[480px] border-collapse text-center align-middle">
+          <thead>
+            <tr class="bg-surface-hover border-b border-border-main text-muted">
+              <th class="w-8 sm:w-10 px-3 sm:px-6 py-3 sm:py-4 text-center align-middle">
+                <input type="checkbox" id="select-all" class="w-4 h-4 rounded border-gray-700 text-indigo-600 bg-transparent cursor-pointer">
+              </th>
+              <th class="hidden sm:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Sert. Tarihi</th>
+              <th class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest">Firma Adı</th>
+              <th class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest">Standart</th>
+              <th class="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest">Denetim</th>
+              <th class="hidden sm:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Sert. No</th>
+              <th class="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Gözetim Tarihi</th>
+              <th class="hidden lg:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest">Akredite</th>
+              <th class="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest">Danışman</th>
+              <th class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest">Detay</th>
+            </tr>
+          </thead>
+          <tbody id="cert-table-body" class="divide-y divide-border-main">
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Yükleniyor -->
+      <div id="table-loader" class="px-8 py-32 flex flex-col items-center justify-center gap-4">
+        <div class="w-12 h-12 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+        <p class="text-sm text-muted animate-pulse font-medium">Sertifikalar yükleniyor...</p>
+      </div>
+
+      <!-- Boş Durum -->
+      <div id="empty-state" class="hidden px-8 py-32 flex flex-col items-center justify-center gap-4">
+        <div class="w-16 h-16 rounded-2xl bg-surface-hover flex items-center justify-center text-muted">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+        </div>
+        <p class="text-lg font-bold text-muted">Sertifika bulunamadı</p>
+        <p class="text-xs text-muted">Filtre kriterlerinizi değiştirmeyi deneyin.</p>
+      </div>
+
+      <div id="pagination-bar" class="hidden border-t border-border-main bg-surface-hover px-3 sm:px-4 py-3 sm:py-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div id="pagination-meta" class="text-xs text-muted">1 - 20 / 0 kayıt</div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="prev-page-btn" class="rounded-lg border border-border-main bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-main transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40">
+              Önceki
+            </button>
+            <div id="page-number-list" class="flex flex-wrap items-center gap-1.5"></div>
+            <button id="next-page-btn" class="rounded-lg border border-border-main bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-main transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40">
+              Sonraki
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api } from '../../lib/api';
+  import { $certificates, $syncStatus } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
+
+  const tableBody = document.getElementById('cert-table-body');
+  const tableLoader = document.getElementById('table-loader');
+  const emptyState = document.getElementById('empty-state');
+  const globalSearch = document.getElementById('global-search') as HTMLInputElement;
+  const standardFilter = document.getElementById('standard-filter') as HTMLSelectElement;
+  const statusFilter = document.getElementById('status-filter') as HTMLSelectElement;
+  const syncIndicator = document.getElementById('sync-indicator');
+  const exportCsvBtn = document.getElementById('export-csv-btn') as HTMLButtonElement;
+  const exportExcelBtn = document.getElementById('export-excel-btn') as HTMLButtonElement;
+  const datasetSummary = document.getElementById('dataset-summary');
+  const pageSummary = document.getElementById('page-summary');
+  const pageSizeSelect = document.getElementById('page-size-select') as HTMLSelectElement;
+  const paginationBar = document.getElementById('pagination-bar');
+  const paginationMeta = document.getElementById('pagination-meta');
+  const pageNumberList = document.getElementById('page-number-list');
+  const prevPageBtn = document.getElementById('prev-page-btn') as HTMLButtonElement;
+  const nextPageBtn = document.getElementById('next-page-btn') as HTMLButtonElement;
+
+  let filters = { search: '', standard: '', status: '' };
+  let currentPage = 1;
+  let pageSize = 20;
+
+  function normalizeKey(value: any) {
+    return String(value || '')
+      .trim()
+      .toLocaleLowerCase('tr-TR')
+      .replace(/[ıİ]/g, 'i')
+      .replace(/[ğĞ]/g, 'g')
+      .replace(/[üÜ]/g, 'u')
+      .replace(/[şŞ]/g, 's')
+      .replace(/[öÖ]/g, 'o')
+      .replace(/[çÇ]/g, 'c')
+      .replace(/[^a-z0-9]+/g, '');
+  }
+
+  function pickValue(item: any, aliases: string[], fallback = '') {
+    for (const key of aliases) {
+      if (item && item[key] !== undefined && item[key] !== null && String(item[key]).trim() !== '') {
+        return String(item[key]);
+      }
+    }
+
+    if (item && typeof item === 'object') {
+      const normalizedAliases = aliases.map((alias) => normalizeKey(alias));
+      for (const [rawKey, rawValue] of Object.entries(item)) {
+        if (rawValue === undefined || rawValue === null) continue;
+        if (String(rawValue).trim() === '') continue;
+        if (normalizedAliases.includes(normalizeKey(rawKey))) {
+          return String(rawValue);
+        }
+      }
+    }
+
+    return fallback;
+  }
+
+  function pickExistingField(item: any, aliases: string[], fallback: string) {
+    for (const key of aliases) {
+      if (item && Object.prototype.hasOwnProperty.call(item, key)) return key;
+    }
+
+    if (item && typeof item === 'object') {
+      const normalizedAliases = aliases.map((alias) => normalizeKey(alias));
+      for (const rawKey of Object.keys(item)) {
+        if (normalizedAliases.includes(normalizeKey(rawKey))) return rawKey;
+      }
+    }
+
+    return fallback;
+  }
+
+  function escHtml(v: any) {
+    return String(v ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function escAttr(v: any) {
+    return escHtml(v).replace(/"/g, "&quot;");
+  }
+
+  function normalizeStandard(item: any) {
+    const mainStandart = pickValue(item, ["Standart", "standard"], "-");
+    const otherStandart = pickValue(item, ["Other Standard", "Other", "other", "Diğer", "diger", "Diger", "diğer", "Diğer Standart", "digerStandart"], "");
+    const sLow = mainStandart.toLowerCase().trim();
+    const isOther = sLow === 'diğer' || sLow === 'diger' || sLow === 'other';
+    return (isOther && otherStandart) ? otherStandart : mainStandart;
+  }
+
+  function getDenetim(item: any) {
+    return pickValue(item, ["Denetim Tipi", "Denetim", "denetim", "denetimTipi"], "-");
+  }
+
+  function getOtherStandard(item: any) {
+    return pickValue(item, ["Other Standard", "Other", "other", "Diğer", "diger", "Diger", "diğer", "Diğer Standart", "digerStandart"], "-");
+  }
+
+  function getStatusLabel(item: any) {
+    const raw = pickValue(item, ["Durum", "durum", "Gözetim", "Gözetim Conf.", "gozetimConfirmed"], "");
+    const normalized = String(raw).trim().toUpperCase();
+    if (normalized === "TRUE") return "Aktif";
+    if (normalized === "FALSE") return "Bekliyor";
+    return raw || "-";
+  }
+
+  function getQueryLink(item: any) {
+    return pickValue(item, ["Sorgulama Linki", "Sorgu Linki", "Query Link", "queryLink", "qr", "QR Code"], "");
+  }
+
+  function getCertificateLink(item: any) {
+    return pickValue(item, ["Sertifika Linki", "Cert Link", "certLink", "certiLink"], "");
+  }
+
+  function normalizeLink(value: string) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (/^www\./i.test(raw)) return `https://${raw}`;
+    return raw;
+  }
+
+  function getCertificateId(item: any, fallback = '-') {
+    const direct = pickValue(item, ["ID", "Id", "id", "Certificate ID", "certificateId", "sertifikaId"], "");
+    if (direct) return direct;
+
+    if (item && typeof item === 'object') {
+      const entries = Object.entries(item);
+      if (entries.length > 0) {
+        const [firstKey, firstValue] = entries[0];
+        const keyLooksUnnamed = normalizeKey(firstKey) === '';
+        const valueText = String(firstValue ?? '').trim();
+        if ((keyLooksUnnamed || entries.length > 0) && valueText) {
+          return valueText;
+        }
+      }
+    }
+
+    return fallback;
+  }
+
+  function parseDateValue(raw: string) {
+    const value = String(raw || '').trim();
+    if (!value) return null;
+
+    const trMatch = value.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/);
+    if (trMatch) {
+      const [, dd, mm, yyyy, hh = '00', min = '00'] = trMatch;
+      const dt = new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min));
+      return Number.isNaN(dt.getTime()) ? null : dt;
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  function getCreatedAt(item: any) {
+    return pickValue(item, [
+      "Kayıt Tarihi", "Kayit Tarihi", "Created At", "createdAt", "created_at",
+      "Timestamp", "timestamp", "Eklenme Tarihi", "Eklenme", "Date Created"
+    ], "");
+  }
+
+  function getSortableTimestamp(item: any, originalIndex: number) {
+    const candidates = [
+      getCreatedAt(item),
+      pickValue(item, ["Sertifika Tarihi", "gst", "GST"], ""),
+      pickValue(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ"], "")
+    ];
+
+    for (const candidate of candidates) {
+      const parsed = parseDateValue(candidate);
+      if (parsed) return parsed.getTime();
+    }
+
+    const idRaw = pickValue(item, ["ID", "id"], "");
+    const idNumber = Number(String(idRaw).replace(/[^\d.-]/g, ''));
+    if (!Number.isNaN(idNumber) && String(idRaw).trim() !== '') {
+      return idNumber;
+    }
+
+    return originalIndex;
+  }
+
+  function getDetailedEntries(item: any) {
+    return Object.entries(item || {})
+      .filter(([key, value]) => {
+        if (value === undefined || value === null) return false;
+        const text = String(value).trim();
+        return text !== '';
+      })
+      .sort(([a], [b]) => a.localeCompare(b, 'tr'));
+  }
+
+  function getVisiblePageNumbers(totalPages: number, page: number) {
+    const pages = new Set<number>([1, totalPages, page - 1, page, page + 1]);
+    return Array.from(pages).filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
+  }
+
+  function updatePagination(totalItems: number) {
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const safePage = Math.min(currentPage, totalPages);
+    currentPage = safePage;
+
+    if (pageSummary) pageSummary.textContent = `Sayfa ${safePage} / ${totalPages}`;
+    if (datasetSummary) datasetSummary.textContent = `${totalItems} kayıt`;
+
+    if (!paginationBar || !paginationMeta || !pageNumberList || !prevPageBtn || !nextPageBtn) return;
+
+    if (totalItems === 0) {
+      paginationBar.classList.add('hidden');
+      pageNumberList.innerHTML = '';
+      paginationMeta.textContent = '0 kayıt';
+      prevPageBtn.disabled = true;
+      nextPageBtn.disabled = true;
+      return;
+    }
+
+    paginationBar.classList.remove('hidden');
+    const start = (safePage - 1) * pageSize + 1;
+    const end = Math.min(totalItems, safePage * pageSize);
+    paginationMeta.textContent = `${start} - ${end} / ${totalItems} kayıt`;
+
+    prevPageBtn.disabled = safePage <= 1;
+    nextPageBtn.disabled = safePage >= totalPages;
+
+    const pages = getVisiblePageNumbers(totalPages, safePage);
+    pageNumberList.innerHTML = '';
+    pages.forEach((pageNum, index) => {
+      if (index > 0 && pages[index - 1] !== pageNum - 1) {
+        const dots = document.createElement('span');
+        dots.className = 'px-1 text-xs text-muted';
+        dots.textContent = '...';
+        pageNumberList.appendChild(dots);
+      }
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = String(pageNum);
+      btn.className = `min-w-[38px] rounded-xl border px-3 py-2 text-[11px] font-bold transition-colors ${
+        pageNum === safePage
+          ? 'border-indigo-500/50 bg-indigo-500/15 text-indigo-200'
+          : 'border-border-main bg-surface text-main hover:bg-surface-hover'
+      }`;
+      btn.addEventListener('click', () => {
+        currentPage = pageNum;
+        renderTable($certificates.get());
+      });
+      pageNumberList.appendChild(btn);
+    });
+  }
+
+  $certificates.subscribe(certs => {
+    tableLoader?.classList.add('hidden');
+    renderTable(certs || []);
+  });
+
+  $syncStatus.subscribe(status => {
+    if (!syncIndicator) return;
+    const dot = syncIndicator.querySelector('span');
+    const text = syncIndicator.lastChild;
+    if (status === 'syncing') {
+      if (dot) { dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse'; }
+      if (text) text.textContent = ' GÜNCELLENİYOR';
+    } else {
+      if (dot) { dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]'; }
+      if (text) text.textContent = ' GÜNCEL';
+    }
+  });
+
+  function getFilteredData(data: readonly any[]) {
+    return data.filter((item: any) => {
+      const firma = pickValue(item, ["Firma Adı", "Nickname", "nick"]);
+      const id = getCertificateId(item, "");
+      const certNo = pickValue(item, ["Sertifika No", "sNo", "SNo", "sno"]);
+      const standart = normalizeStandard(item);
+      const denetim = getDenetim(item);
+      const danisman = pickValue(item, ["Danışman", "Danisman", "dan", "danisman"]);
+      const gozetim = pickValue(item, ["Gözetim", "Gözetim Conf.", "gozetimConfirmed"], "FALSE").toUpperCase();
+      const matchSearch = `${firma}${id}${certNo}${standart}${denetim}${danisman}`.toLowerCase().includes(filters.search.toLowerCase());
+      const matchStd = !filters.standard || standart.includes(filters.standard);
+      const matchStatus = !filters.status || gozetim === filters.status;
+      return matchSearch && matchStd && matchStatus;
+    });
+  }
+
+  function renderTable(data: readonly any[]) {
+    if (!tableBody) return;
+    try {
+      const filtered = getFilteredData(data)
+        .map((item, originalIndex) => ({ item, originalIndex }))
+        .sort((a, b) => getSortableTimestamp(b.item, b.originalIndex) - getSortableTimestamp(a.item, a.originalIndex));
+
+      tableBody.innerHTML = '';
+      updateBulkUI();
+
+      if (filtered.length === 0) {
+        emptyState?.classList.remove('hidden');
+        updatePagination(0);
+        return;
+      }
+      emptyState?.classList.add('hidden');
+
+      updatePagination(filtered.length);
+      const startIndex = (currentPage - 1) * pageSize;
+      const paged = filtered.slice(startIndex, startIndex + pageSize);
+
+      paged.forEach(({ item, originalIndex }: any) => {
+        const id = getCertificateId(item, String(originalIndex + 1));
+        const firmaId = pickValue(item, ["Firma No", "firmaNo", "firmano"], "-");
+        const idAttr = escAttr(id || String(originalIndex));
+        const sertifikaTarihi = pickValue(item, ["Sertifika Tarihi", "gst", "GST"], "-");
+        const firma = pickValue(item, ["Firma Adı", "Nickname", "nick"], "-");
+        const standart = normalizeStandard(item);
+        const denetim = getDenetim(item);
+        const certNo = pickValue(item, ["Sertifika No", "sNo", "SNo", "sno"], "-");
+        const gozetimTarihi = pickValue(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ"], "-");
+        const akredite = pickValue(item, ["Akredite", "akredite"], "-");
+        const danisman = pickValue(item, ["Danışman", "Danisman", "dan", "danisman"], "-");
+        const durum = getStatusLabel(item);
+        const notlar = pickValue(item, ["Notlar", "Not", "not"], "-");
+        const sorgulamaLinki = normalizeLink(getQueryLink(item));
+        const sertifikaLinki = normalizeLink(getCertificateLink(item));
+        const detailRowId = `cert-detail-${idAttr}`;
+
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-border-main hover:bg-surface-hover transition-colors';
+        tr.innerHTML = `
+          <td class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle">
+            <input type="checkbox" class="cert-checkbox w-4 h-4 rounded border-gray-700 text-indigo-600 bg-transparent cursor-pointer" data-id="${idAttr}">
+          </td>
+          <td class="hidden sm:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs text-main whitespace-nowrap">${escHtml(sertifikaTarihi)}</td>
+          <td class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle">
+            <div class="text-sm font-semibold text-main leading-tight">${escHtml(firma)}</div>
+            <div class="mt-0.5 text-[10px] font-mono text-muted hidden sm:block">ID: ${escHtml(firmaId)}</div>
+          </td>
+          <td class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs text-main">${escHtml(standart)}</td>
+          <td class="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs text-main">${escHtml(denetim)}</td>
+          <td class="hidden sm:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs font-mono text-main">${escHtml(certNo)}</td>
+          <td class="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs text-main whitespace-nowrap">${escHtml(gozetimTarihi)}</td>
+          <td class="hidden lg:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs text-main">${escHtml(akredite)}</td>
+          <td class="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs text-main">${escHtml(danisman)}</td>
+          <td class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle">
+            <button
+              type="button"
+              class="detail-toggle-btn inline-flex items-center gap-1.5 rounded-lg sm:rounded-xl border border-border-main bg-surface px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-main transition-colors hover:bg-surface-hover"
+              data-target="${detailRowId}"
+            >
+              Detay
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+
+        const detailTr = document.createElement('tr');
+        detailTr.id = detailRowId;
+        detailTr.className = 'hidden border-b border-border-main bg-surface-hover';
+        detailTr.innerHTML = `
+          <td colspan="10" class="px-3 sm:px-6 pb-4 pt-1 align-middle overflow-hidden max-w-0">
+            <div class="rounded-xl border border-border-main bg-surface p-3">
+              <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
+                <div class="rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
+                  <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Sertifika ID</div>
+                  <div class="text-xs font-mono text-main break-all">${escHtml(id || '-')}</div>
+                </div>
+                <div class="rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
+                  <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Durum</div>
+                  <div class="text-xs text-main">${escHtml(durum)}</div>
+                </div>
+                <div class="col-span-2 md:col-span-1 rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
+                  <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Notlar</div>
+                  <div class="text-xs text-main break-words">${escHtml(notlar)}</div>
+                </div>
+                <div class="col-span-2 md:col-span-1 xl:col-span-1 rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
+                  <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Sorgulama Linki</div>
+                  <div class="text-xs break-all">
+                    ${sorgulamaLinki ? `<a href="${escAttr(sorgulamaLinki)}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline underline-offset-2">${escHtml(sorgulamaLinki)}</a>` : '<span class="text-muted">—</span>'}
+                  </div>
+                </div>
+                <div class="col-span-2 md:col-span-1 xl:col-span-1 rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
+                  <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Sertifika Linki</div>
+                  <div class="text-xs break-all">
+                    ${sertifikaLinki ? `<a href="${escAttr(sertifikaLinki)}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline underline-offset-2">${escHtml(sertifikaLinki)}</a>` : '<span class="text-muted">—</span>'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
+        `;
+        tableBody.appendChild(detailTr);
+      });
+
+      attachTableActions();
+    } catch (error) {
+      console.error('[certificates] renderTable failed:', error);
+      tableBody.innerHTML = '';
+      emptyState?.classList.remove('hidden');
+      updatePagination(0);
+    }
+  }
+
+  // --- TOPLU İŞLEMLER ---
+  const selectAll = document.getElementById('select-all') as HTMLInputElement;
+  const bulkActionsBar = document.getElementById('bulk-actions');
+  const selectedCountDisplay = document.getElementById('selected-count');
+  const bulkDoneBtn = document.getElementById('bulk-done-btn');
+  const bulkPendingBtn = document.getElementById('bulk-pending-btn');
+
+  function updateBulkUI() {
+    const checked = document.querySelectorAll('.cert-checkbox:checked');
+    if (selectedCountDisplay) selectedCountDisplay.textContent = `${checked.length} SEÇİLİ`;
+    if (checked.length > 0) {
+      bulkActionsBar?.classList.remove('hidden');
+      bulkActionsBar?.classList.add('flex');
+    } else {
+      bulkActionsBar?.classList.add('hidden');
+      bulkActionsBar?.classList.remove('flex');
+      if (selectAll) selectAll.checked = false;
+    }
+  }
+
+  selectAll?.addEventListener('change', (e) => {
+    const isChecked = (e.target as HTMLInputElement).checked;
+    document.querySelectorAll('.cert-checkbox').forEach(cb => {
+      (cb as HTMLInputElement).checked = isChecked;
+    });
+    updateBulkUI();
+  });
+
+  tableBody?.addEventListener('change', (e) => {
+    if ((e.target as HTMLElement).classList.contains('cert-checkbox')) {
+      updateBulkUI();
+    }
+  });
+
+  async function callBulkUpdate(status: boolean) {
+    const checked = Array.from(document.querySelectorAll('.cert-checkbox:checked'))
+      .map(cb => (cb as HTMLElement).dataset.id);
+    if (checked.length === 0) return;
+    if (!confirm(`${checked.length} adet belgenin gözetim durumunu güncellemek istediğinizden emin misiniz?`)) return;
+    const res = await api.call('updateSurveillance', { ids: checked, status });
+    if (res.success) {
+      alert('İşlem Başarılı!');
+      window.location.reload();
+    } else {
+      alert('Hata: ' + res.error);
+    }
+  }
+
+  bulkDoneBtn?.addEventListener('click', () => callBulkUpdate(true));
+  bulkPendingBtn?.addEventListener('click', () => callBulkUpdate(false));
+
+  function attachTableActions() {
+    document.querySelectorAll('.detail-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const btnEl = e.currentTarget as HTMLElement;
+        const targetId = btnEl.dataset.target;
+        if (!targetId) return;
+        const targetRow = document.getElementById(targetId);
+        if (!targetRow) return;
+        const isHidden = targetRow.classList.contains('hidden');
+        targetRow.classList.toggle('hidden');
+        btnEl.textContent = isHidden ? 'Kapat' : 'Detay';
+      });
+    });
+  }
+
+  globalSearch?.addEventListener('input', (e) => {
+    filters.search = (e.target as HTMLInputElement).value;
+    currentPage = 1;
+    renderTable($certificates.get());
+  });
+  standardFilter?.addEventListener('change', (e) => {
+    filters.standard = (e.target as HTMLSelectElement).value;
+    currentPage = 1;
+    renderTable($certificates.get());
+  });
+  statusFilter?.addEventListener('change', (e) => {
+    filters.status = (e.target as HTMLSelectElement).value;
+    currentPage = 1;
+    renderTable($certificates.get());
+  });
+  pageSizeSelect?.addEventListener('change', (e) => {
+    pageSize = Number((e.target as HTMLSelectElement).value) || 20;
+    currentPage = 1;
+    renderTable($certificates.get());
+  });
+  prevPageBtn?.addEventListener('click', () => {
+    if (currentPage <= 1) return;
+    currentPage -= 1;
+    renderTable($certificates.get());
+  });
+  nextPageBtn?.addEventListener('click', () => {
+    currentPage += 1;
+    renderTable($certificates.get());
+  });
+
+  function toCsvValue(v: any) {
+    const s = String(v ?? '');
+    if (s.includes('"') || s.includes(',') || s.includes('\n')) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  }
+
+  function getExportRows() {
+    const filtered = getFilteredData($certificates.get());
+    return filtered.map((item: any) => ({
+      id: pickValue(item, ["ID", "id"]),
+      firma: pickValue(item, ["Firma Adı", "Nickname", "nick"]),
+      standart: pickValue(item, ["Standart", "standard"]),
+      belgeNo: pickValue(item, ["Sertifika No", "sNo", "SNo", "sno"]),
+      gozetim: pickValue(item, ["Gözetim", "Gözetim Conf.", "gozetimConfirmed"], "FALSE").toUpperCase(),
+      gozetimTarihi: pickValue(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ"]),
+      sertifikaTarihi: pickValue(item, ["Sertifika Tarihi", "gst", "GST"]),
+      not: pickValue(item, ["Not", "not"]),
+      danisman: pickValue(item, ["Danışman", "dan"])
+    }));
+  }
+
+  function downloadFile(filename: string, content: string, mime: string) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  exportCsvBtn?.addEventListener('click', () => {
+    const rows = getExportRows();
+    const headers = ['ID', 'Firma', 'Standart', 'Belge No', 'Gözetim', 'Gözetim Tarihi', 'Sertifika Tarihi', 'Not', 'Danışman'];
+    const lines = [headers.join(',')];
+    rows.forEach(r => {
+      lines.push([
+        toCsvValue(r.id),
+        toCsvValue(r.firma),
+        toCsvValue(r.standart),
+        toCsvValue(r.belgeNo),
+        toCsvValue(r.gozetim),
+        toCsvValue(r.gozetimTarihi),
+        toCsvValue(r.sertifikaTarihi),
+        toCsvValue(r.not),
+        toCsvValue(r.danisman)
+      ].join(','));
+    });
+    downloadFile(`Sertifikalar_${new Date().toISOString().slice(0,10)}.csv`, '\uFEFF' + lines.join('\n'), 'text/csv;charset=utf-8;');
+  });
+
+  exportExcelBtn?.addEventListener('click', () => {
+    const rows = getExportRows();
+    const tableHtml = `
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Firma</th><th>Standart</th><th>Belge No</th><th>Gözetim</th><th>Gözetim Tarihi</th><th>Sertifika Tarihi</th><th>Not</th><th>Danışman</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `<tr><td>${r.id}</td><td>${r.firma}</td><td>${r.standart}</td><td>${r.belgeNo}</td><td>${r.gozetim}</td><td>${r.gozetimTarihi}</td><td>${r.sertifikaTarihi}</td><td>${r.not}</td><td>${r.danisman}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+    const html = `<html><head><meta charset="utf-8" /></head><body>${tableHtml}</body></html>`;
+    downloadFile(`Sertifikalar_${new Date().toISOString().slice(0,10)}.xls`, html, 'application/vnd.ms-excel;charset=utf-8;');
+  });
+
+  async function ensureCertificatesLoaded() {
+    if (($certificates.get() || []).length > 0) return;
+
+    try {
+      const readCertificates = async () => api.getCertificates();
+      let res = await readCertificates();
+
+      if (!res.success && (res.needsHydration || res.error === 'KV_PRIMARY_MISS')) {
+        const syncRes = await api.bulkSync();
+        if (syncRes.success) {
+          res = await readCertificates();
+        }
+      }
+
+      if (res.success && Array.isArray(res.data)) {
+        $certificates.set(res.data);
+      }
+    } catch (error) {
+      console.error('[certificates] ensureCertificatesLoaded failed:', error);
+    } finally {
+      tableLoader?.classList.add('hidden');
+    }
+  }
+
+  SyncManager.init();
+  void ensureCertificatesLoaded();
+</script>

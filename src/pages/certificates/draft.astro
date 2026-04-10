@@ -1,5 +1,5 @@
 ---
-import OperationPageShell from '../../components/company/OperationPageShell.astro';
+import OperationPageShell from '../../components/operations/OperationPageShell.astro';
 ---
 
 <OperationPageShell
@@ -68,31 +68,144 @@ import OperationPageShell from '../../components/company/OperationPageShell.astr
 </OperationPageShell>
 
 <script>
-  import { loadCompanyOperationContext } from '../../features/company-ops/context';
-  import { COMPANY_OPERATION_DEFINITIONS, buildCompanyOperationHref } from '../../features/company-ops/definitions';
+  import { api } from '../../lib/api';
+  import { $companies } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
+  import { loadCompanyOperationContext } from '../../features/operations/context';
+  import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
 
   const params = new URLSearchParams(location.search);
-  const firmaId = params.get('id') || '';
+  let activeFirmaId = params.get('firmaId') || params.get('id') || '';
+
+  function getCompanyValue(company: any, ...keys: string[]) {
+    if (!company || typeof company !== 'object') return '';
+    for (const key of keys) {
+      const value = company[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return String(value).trim();
+      }
+    }
+    return '';
+  }
+
+  function getCompanyId(company: any) {
+    return getCompanyValue(company, 'Firma No', 'FirmaNo', 'firmaNo', 'id', 'ID');
+  }
+
+  function getCompanyNick(company: any) {
+    return getCompanyValue(company, 'Firma Adı', 'nickname', 'Nick', 'nick', 'FirmaAdi');
+  }
+
+  function getCompanyDisplayName(company: any) {
+    return getCompanyNick(company) || getCompanyValue(company, 'Unvan', 'unvan');
+  }
+
+  function companyLabel(company: any) {
+    const nick = getCompanyDisplayName(company) || 'Firma';
+    const companyId = getCompanyId(company) || '—';
+    return `${nick} (${companyId})`;
+  }
+
+  function renderPickerState(message = 'Bir firma seçip draft akışına devam edebilirsin.', isError = false) {
+    const errorBox = document.getElementById('op-error');
+    if (!errorBox) return;
+    errorBox.innerHTML = `
+      <div class="space-y-5">
+        <div class="space-y-2">
+          <p class="text-[10px] font-black uppercase tracking-[0.24em] ${isError ? 'text-rose-400' : 'text-indigo-400'}">Sertifika Merkezi</p>
+          <h2 class="text-2xl font-extrabold tracking-tight text-main">Firma Seçerek Devam Et</h2>
+          <p class="text-sm leading-relaxed ${isError ? 'text-rose-400' : 'text-muted'}">${message}</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Seçimi</label>
+            <input id="draft-company-search" list="draft-company-list" type="text" placeholder="Firma ara..." class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main" />
+            <datalist id="draft-company-list"></datalist>
+          </div>
+          <button id="draft-company-continue" type="button" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-colors">
+            Draft ile Devam Et
+          </button>
+        </div>
+        <p id="draft-company-status" class="text-xs font-semibold ${isError ? 'text-rose-400' : 'text-muted'}">${message}</p>
+      </div>
+    `;
+  }
+
+  function syncCompanyList() {
+    const companyList = document.getElementById('draft-company-list');
+    if (!companyList) return;
+    const frag = document.createDocumentFragment();
+    ($companies.get() as any[]).forEach((company) => {
+      const option = document.createElement('option');
+      option.value = companyLabel(company);
+      frag.appendChild(option);
+    });
+    companyList.innerHTML = '';
+    companyList.appendChild(frag);
+  }
+
+  function resolveCompanyFromInput() {
+    const raw = (document.getElementById('draft-company-search') as HTMLInputElement | null)?.value.trim() || '';
+    if (!raw) return null;
+    return ($companies.get() as any[]).find((company) => {
+      return companyLabel(company) === raw || getCompanyDisplayName(company) === raw || getCompanyId(company) === raw;
+    }) || null;
+  }
+
+  async function preparePicker() {
+    document.getElementById('op-skeleton')?.classList.add('hidden');
+    document.getElementById('op-shell')?.classList.add('hidden');
+    document.getElementById('op-error')?.classList.remove('hidden');
+    (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', '/certificates');
+    renderPickerState();
+    syncCompanyList();
+    $companies.subscribe(() => syncCompanyList());
+    await SyncManager.init();
+    if (($companies.get() as any[]).length === 0) {
+      const res = await api.getCompanies();
+      if (res.success && Array.isArray(res.data)) {
+        $companies.set(res.data);
+      }
+    }
+
+    document.getElementById('draft-company-search')?.addEventListener('input', () => {
+      const status = document.getElementById('draft-company-status');
+      const selected = resolveCompanyFromInput();
+      if (status) status.textContent = selected ? 'Firma seçildi. Devam edebilirsin.' : 'Listeden geçerli bir firma seç.';
+    });
+
+    document.getElementById('draft-company-continue')?.addEventListener('click', async () => {
+      const status = document.getElementById('draft-company-status');
+      const selected = resolveCompanyFromInput();
+      const selectedId = selected ? getCompanyId(selected) : '';
+      if (!selectedId) {
+        if (status) status.textContent = 'Devam etmek için listeden geçerli bir firma seç.';
+        return;
+      }
+      activeFirmaId = selectedId;
+      await boot();
+    });
+  }
 
   async function boot() {
-    if (!firmaId) {
-      document.getElementById('op-skeleton')?.classList.add('hidden');
-      document.getElementById('op-error')?.classList.remove('hidden');
+    if (!activeFirmaId) {
+      await preparePicker();
       return;
     }
 
-    const context = await loadCompanyOperationContext(firmaId);
+    const context = await loadCompanyOperationContext(activeFirmaId);
     if (!context) {
       document.getElementById('op-skeleton')?.classList.add('hidden');
       document.getElementById('op-error')?.classList.remove('hidden');
+      renderPickerState('Firma bilgileri yüklenemedi. Lütfen başka bir firma seçip tekrar dene.', true);
       return;
     }
 
-    (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${firmaId}`);
+    (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${activeFirmaId}`);
     document.querySelectorAll<HTMLAnchorElement>('[data-op-link]').forEach((link) => {
       const key = link.dataset.opLink as 'form' | 'proforma' | 'draft' | 'contract';
-      const definition = COMPANY_OPERATION_DEFINITIONS.find((item) => item.key === key);
-      if (definition) link.href = buildCompanyOperationHref(definition.href, firmaId);
+      const definition = OPERATION_DEFINITIONS.find((item) => item.key === key);
+      if (definition) link.href = buildOperationHref(definition.href, activeFirmaId);
     });
 
     document.getElementById('op-company-id')!.textContent = `M${context.firmaId}`;
@@ -125,8 +238,10 @@ import OperationPageShell from '../../components/company/OperationPageShell.astr
     document.getElementById('draft-preview-mail')!.textContent = context.mail || context.irtibatMail || '—';
 
     document.getElementById('op-skeleton')?.classList.add('hidden');
+    document.getElementById('op-error')?.classList.add('hidden');
     document.getElementById('op-shell')?.classList.remove('hidden');
   }
 
   void boot();
 </script>
+

@@ -1,0 +1,29 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Testler">
+  <div class="max-w-5xl mx-auto pb-24 space-y-6">
+    <section class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
+      <div class="p-6 sm:p-8 border-b border-border-main space-y-3">
+        <p class="text-[10px] font-black uppercase tracking-[0.24em] text-violet-400">Test Merkezi</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Test Akışları Toparlanıyor</h1>
+        <p class="text-sm leading-relaxed text-muted max-w-3xl">Test kayıtları artık ayrı bir ana başlık altında toplanıyor. Listeleme ve yeni kayıt akışları burada büyüyecek.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 sm:p-8">
+        <a href="/tests/add" class="group rounded-[1.5rem] border border-border-main bg-surface-hover p-5 sm:p-6 hover:border-violet-500/30 hover:bg-surface transition-colors">
+          <p class="text-[10px] font-black uppercase tracking-[0.24em] text-violet-400">Yeni Kayıt</p>
+          <h2 class="mt-2 text-lg font-black tracking-tight text-main">Test Ekle</h2>
+          <p class="mt-3 text-sm leading-relaxed text-muted">Firma bağlamlı ya da doğrudan girişle yeni test akışını başlatır.</p>
+        </a>
+
+        <div class="rounded-[1.5rem] border border-border-main bg-surface-hover p-5 sm:p-6">
+          <p class="text-[10px] font-black uppercase tracking-[0.24em] text-muted">Yakında</p>
+          <h2 class="mt-2 text-lg font-black tracking-tight text-main">Test Listesi</h2>
+          <p class="mt-3 text-sm leading-relaxed text-muted">Filtrelenebilir test listesi, rapor erişimi ve test bazlı operasyonlar burada yer alacak.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</DashboardLayout>

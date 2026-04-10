@@ -1,0 +1,1071 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
+---
+
+<DashboardLayout title="Sertifika Ekle">
+  <div class="max-w-5xl mx-auto pb-24 space-y-6">
+    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
+    <div class="flex items-center gap-3">
+      <a id="cert-back-link" href="/company" class="flex items-center gap-2 text-xs font-bold text-muted hover:text-primary transition-colors group">
+        <ArrowLeft size={14} class="group-hover:-translate-x-1 transition-transform" />
+        Firma Profili
+      </a>
+      <span class="text-border-main">/</span>
+      <span class="text-xs font-bold text-muted" id="cert-header-breadcrumb">Sertifika Ekle</span>
+    </div>
+
+    <section class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
+      <div id="cert-page-skeleton">
+        <!-- Spinner -->
+        <div class="flex items-center gap-3 px-6 sm:px-8 pt-6 sm:pt-8 pb-4">
+          <svg class="animate-spin h-4 w-4 shrink-0 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <span class="text-xs font-bold text-muted">Firma ve sertifika bilgileri yükleniyor...</span>
+        </div>
+
+        <!-- Skeleton cards -->
+        <div class="animate-pulse">
+        <!-- Firma header -->
+        <div class="p-6 sm:p-8 border-b border-border-main space-y-4">
+          <div class="flex gap-2">
+            <div class="h-5 w-12 rounded-full bg-surface-hover"></div>
+            <div class="h-5 w-20 rounded-full bg-surface-hover"></div>
+            <div class="h-5 w-24 rounded-full bg-surface-hover"></div>
+          </div>
+          <div class="space-y-2">
+            <div class="h-8 w-64 rounded-lg bg-surface-hover"></div>
+            <div class="h-4 w-full max-w-xl rounded bg-surface-hover"></div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="h-20 rounded-2xl bg-surface-hover"></div>
+            <div class="h-20 rounded-2xl bg-surface-hover"></div>
+            <div class="h-20 rounded-2xl bg-surface-hover"></div>
+          </div>
+        </div>
+
+        <!-- Form sections -->
+        <div class="p-6 sm:p-8 space-y-6">
+          <!-- Temel + Tarihler -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <div class="h-4 w-32 rounded bg-surface-hover"></div>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+              </div>
+            </div>
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <div class="h-4 w-24 rounded bg-surface-hover"></div>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sertifika Bilgileri + Ek Bilgiler -->
+          <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6">
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <div class="h-4 w-36 rounded bg-surface-hover"></div>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+                <div class="h-12 rounded-2xl bg-surface-hover"></div>
+              </div>
+            </div>
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <div class="h-4 w-24 rounded bg-surface-hover"></div>
+              <div class="h-48 rounded-2xl bg-surface-hover"></div>
+            </div>
+          </div>
+
+          <!-- Kapsam + Scope -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <div class="h-4 w-32 rounded bg-surface-hover"></div>
+              <div class="h-56 rounded-2xl bg-surface-hover"></div>
+            </div>
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <div class="h-4 w-32 rounded bg-surface-hover"></div>
+              <div class="h-56 rounded-2xl bg-surface-hover"></div>
+            </div>
+          </div>
+
+          <!-- Submit buttons -->
+          <div class="flex justify-end gap-3">
+            <div class="h-11 w-32 rounded-2xl bg-surface-hover"></div>
+            <div class="h-11 w-40 rounded-2xl bg-surface-hover"></div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <div id="cert-page-select" class="hidden p-6 sm:p-8 space-y-5">
+        <div class="space-y-2">
+          <p class="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-400">Sertifika Merkezi</p>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Firma Seçerek Devam Et</h1>
+          <p class="text-sm leading-relaxed text-muted max-w-2xl">Bu ekranı doğrudan açtığında önce ilgili firmayı seçebilirsin. Firma profilinden geldiğinde bu adım otomatik geçilir.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Seçimi</label>
+            <input id="cert-company-search" list="cert-company-list" type="text" placeholder="Firma ara..." class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+            <datalist id="cert-company-list"></datalist>
+          </div>
+          <button id="cert-company-continue" type="button" class="w-full md:w-auto inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-colors">
+            Firma ile Devam Et
+          </button>
+        </div>
+
+        <p id="cert-page-select-status" class="text-xs font-semibold text-muted">Firma listesi hazırlanıyor...</p>
+      </div>
+
+      <div id="cert-page-error" class="hidden p-8 space-y-2">
+        <p id="cert-page-error-text" class="text-sm font-bold text-rose-400">Firma context'i yuklenemedi.</p>
+        <p id="cert-page-error-detail" class="hidden text-xs font-semibold text-muted"></p>
+      </div>
+
+      <div id="cert-page-shell" class="hidden">
+        <div class="p-6 sm:p-8 border-b border-border-main space-y-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[10px] font-black uppercase tracking-[0.24em] px-2.5 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400" id="cert-company-id">M0</span>
+            <span class="text-[10px] font-black uppercase tracking-[0.24em] px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted" id="cert-company-nick">Firma</span>
+            <span class="text-[10px] font-black uppercase tracking-[0.24em] px-2.5 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400" id="cert-company-dan">Danisman</span>
+          </div>
+
+          <div class="space-y-2 min-w-0">
+            <h1 class="truncate text-2xl sm:text-3xl font-extrabold tracking-tight text-main" id="cert-company-unvan">Firma yukleniyor...</h1>
+            <p class="text-sm font-semibold text-muted" id="cert-company-stats">—</p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">Adres</p>
+              <p class="text-sm font-semibold text-main leading-relaxed" id="cert-company-address">—</p>
+            </div>
+            <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">Mevcut Kapsam</p>
+              <p class="text-sm font-semibold text-main leading-relaxed line-clamp-4" id="cert-company-kapsam">—</p>
+            </div>
+            <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-muted mb-3">Aksiyonlar</p>
+              <div class="flex flex-wrap gap-2">
+                <a id="cert-add-audit-link" href="#" class="inline-flex items-center gap-2 rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors">Denetim Ekle</a>
+                <button id="cert-fill-from-company" type="button" class="inline-flex items-center gap-2 rounded-2xl border border-border-main bg-surface px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface-hover transition-colors">Bilgileri Getir</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form id="certificate-form" class="p-6 sm:p-8 space-y-6">
+          <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <div class="flex items-center justify-between gap-3">
+                <h2 class="text-sm font-black uppercase tracking-widest text-main">Temel Alanlar</h2>
+                <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 1</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Denetim Tipi</label>
+                  <select id="cert-denetim" name="denetim" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500">
+                    <option value="Belgelendirme">Belgelendirme</option>
+                    <option value="Gozetim">Gozetim</option>
+                    <option value="Transfer">Transfer</option>
+                    <option value="Belge Yenileme">Belge Yenileme</option>
+                    <option value="Kapsam Genisletme">Kapsam Genisletme</option>
+                  </select>
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Standart</label>
+                  <select id="cert-standart" name="standart" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500">
+                    <option value="">Yukleniyor...</option>
+                  </select>
+                </div>
+              </div>
+              <div id="other-standard-wrap" class="space-y-2 hidden">
+                <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Diger Standart</label>
+                <input id="cert-other" name="other" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Diger standart" />
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">ISO Tam Adi</label>
+                  <input id="cert-iso-full" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-60 cursor-not-allowed" readonly />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Kisa Adi</label>
+                  <input id="cert-nick" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-60 cursor-not-allowed" readonly />
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <div class="flex items-center justify-between gap-3">
+                <h2 class="text-sm font-black uppercase tracking-widest text-main">Tarihler</h2>
+                <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 2</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Gecerli Sertifika Tarihi</label>
+                  <div class="flex gap-2">
+                    <input id="cert-gst" name="gstRaw" type="date" class="flex-1 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                    <button id="cert-auto-goz" type="button" class="shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-[11px] font-black uppercase tracking-widest text-emerald-300 hover:bg-emerald-500/15 transition-colors">+1</button>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Gozetim Tarihi</label>
+                  <input id="cert-goz" name="gozRaw" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Tescil Tarihi</label>
+                  <input id="cert-stt" name="sttRaw" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Gecerlilik Tarihi</label>
+                  <input id="cert-sgt" name="sgtRaw" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6">
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <div class="flex items-center justify-between gap-3">
+                <h2 class="text-sm font-black uppercase tracking-widest text-main">Sertifika Bilgileri</h2>
+                <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 3</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Oneri sNo</label>
+                  <div class="flex min-w-0 items-stretch gap-2">
+                    <input id="cert-sno-suggested" type="text" class="min-w-0 flex-1 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-60 cursor-not-allowed" readonly />
+                    <button id="cert-apply-suggested" type="button" class="inline-flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15 transition-colors" aria-label="Öneri sertifika numarasını uygula" title="Öneri sertifika numarasını uygula">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14"></path>
+                        <path d="m13 5 7 7-7 7"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Sertifika No</label>
+                  <input id="cert-sno" name="sno" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Sertifika numarasi" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Akreditasyon</label>
+                  <input id="cert-akreditasyon" name="akreditasyon" type="text" value="IAKS" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Akredite Kurulus</label>
+                  <input id="cert-akredite" name="akredite" type="text" value="Medicert" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Kod / NACE</label>
+                  <input id="cert-kod" name="kod" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Danisman</label>
+                  <input id="cert-dan" name="dan" list="consultant-list" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                  <datalist id="consultant-list"></datalist>
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Durum</label>
+                  <input id="cert-durum" name="durum" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Durum" />
+                </div>
+                <div class="space-y-2">
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Logo</label>
+                  <input id="cert-logo" name="logo" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Drive dosya ID veya URL" />
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <h2 class="text-sm font-black uppercase tracking-widest text-main">Ek Bilgiler</h2>
+              <div class="space-y-2">
+                <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Notlar</label>
+                <textarea id="cert-not" name="not" rows={7} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[180px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Notlar"></textarea>
+              </div>
+              <label id="cert-gozetim-row" class="hidden flex items-center gap-3 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main">
+                <input id="cert-gozetim-done" type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface text-primary" />
+                Gozetim yapildi mi?
+              </label>
+            </div>
+          </section>
+
+          <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <div class="flex items-center justify-between gap-3">
+                <h2 class="text-sm font-black uppercase tracking-widest text-main">Turkce Kapsam</h2>
+                <div class="flex gap-2">
+                  <button id="cert-kapsam-upper" type="button" class="rounded-2xl border border-border-main bg-surface-hover px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface transition-colors">BUYUK</button>
+                  <button id="cert-kapsam-translate" type="button" class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors">EN Cevir</button>
+                </div>
+              </div>
+              <textarea id="cert-kapsam" name="kapsam" rows={9} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
+            </div>
+
+            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+              <div class="flex items-center justify-between gap-3">
+                <h2 class="text-sm font-black uppercase tracking-widest text-main">Ingilizce Scope</h2>
+                <div class="flex gap-2">
+                  <button id="cert-scope-upper" type="button" class="rounded-2xl border border-border-main bg-surface-hover px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface transition-colors">BIG</button>
+                  <button id="cert-scope-translate" type="button" class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors">TR Cevir</button>
+                </div>
+              </div>
+              <textarea id="cert-scope" name="scope" rows={9} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
+            </div>
+          </section>
+
+          <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+            <button id="cert-clear" type="button" class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-main hover:bg-surface-hover transition-colors">Formu Temizle</button>
+            <a id="cert-cancel" href="/certificates" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-bold text-rose-400 hover:bg-rose-500/15 transition-colors">
+              <X size={14} />
+              İptal
+            </a>
+            <button id="cert-submit" type="submit" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+              <FilePlus2 size={15} />
+              <span id="cert-submit-label">Sertifika Ekle</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api } from '../../lib/api';
+  import { $companies } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
+  import { loadCompanyOperationContext } from '../../features/operations/context';
+  import {
+    normalizeLegacyIsoRows,
+    buildSuggestedCertPrefix,
+    mergeCertNoSuggestion,
+    addOneYearMinusOneDay,
+    toDisplayDate,
+    buildCertificateQrLink,
+    type LegacyIsoOption,
+  } from '../../features/operations/certificate-form';
+
+  const params = new URLSearchParams(location.search);
+  const initialFirmaId = params.get('firmaId') || params.get('id') || '';
+  const editId = params.get('edit') || '';
+  const cloneId = params.get('clone') || '';
+
+  const els = {
+    skeleton: document.getElementById('cert-page-skeleton'),
+    select: document.getElementById('cert-page-select'),
+    selectStatus: document.getElementById('cert-page-select-status'),
+    companySearch: document.getElementById('cert-company-search') as HTMLInputElement | null,
+    companyList: document.getElementById('cert-company-list'),
+    companyContinue: document.getElementById('cert-company-continue') as HTMLButtonElement | null,
+    error: document.getElementById('cert-page-error'),
+    shell: document.getElementById('cert-page-shell'),
+    form: document.getElementById('certificate-form') as HTMLFormElement | null,
+    backLink: document.getElementById('cert-back-link') as HTMLAnchorElement | null,
+    standSelect: document.getElementById('cert-standart') as HTMLSelectElement | null,
+    otherWrap: document.getElementById('other-standard-wrap'),
+    otherInput: document.getElementById('cert-other') as HTMLInputElement | null,
+    isoFull: document.getElementById('cert-iso-full') as HTMLInputElement | null,
+    nick: document.getElementById('cert-nick') as HTMLInputElement | null,
+    gst: document.getElementById('cert-gst') as HTMLInputElement | null,
+    goz: document.getElementById('cert-goz') as HTMLInputElement | null,
+    sno: document.getElementById('cert-sno') as HTMLInputElement | null,
+    suggested: document.getElementById('cert-sno-suggested') as HTMLInputElement | null,
+    kapsam: document.getElementById('cert-kapsam') as HTMLTextAreaElement | null,
+    scope: document.getElementById('cert-scope') as HTMLTextAreaElement | null,
+    logo: document.getElementById('cert-logo') as HTMLInputElement | null,
+    dan: document.getElementById('cert-dan') as HTMLInputElement | null,
+    consultantList: document.getElementById('consultant-list'),
+    submit: document.getElementById('cert-submit') as HTMLButtonElement | null,
+    submitLabel: document.getElementById('cert-submit-label'),
+  };
+
+  let companyContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
+  let standards: LegacyIsoOption[] = [];
+  let editingCertificate: Record<string, any> | null = null;
+  let activeFirmaId = initialFirmaId;
+  let selectedCompany: any = null;
+  let formBindingsReady = false;
+
+  function isEditMode() {
+    return Boolean(editId);
+  }
+
+  function isCloneMode() {
+    return !isEditMode() && Boolean(cloneId);
+  }
+
+  function getCompanyValue(company: any, ...keys: string[]) {
+    if (!company || typeof company !== 'object') return '';
+    for (const key of keys) {
+      const value = company[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return String(value).trim();
+      }
+    }
+    return '';
+  }
+
+  function getCompanyId(company: any) {
+    return getCompanyValue(company, 'Firma No', 'FirmaNo', 'firmaNo', 'id', 'ID');
+  }
+
+  function getCompanyNick(company: any) {
+    return getCompanyValue(company, 'Firma Adı', 'nickname', 'Nick', 'nick', 'FirmaAdi');
+  }
+
+  function getCompanyDisplayName(company: any) {
+    return getCompanyNick(company) || getCompanyValue(company, 'Unvan', 'unvan');
+  }
+
+  function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const colors = {
+      success: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-50',
+      error: 'border-rose-500/30 bg-rose-500/15 text-rose-50',
+      info: 'border-indigo-500/30 bg-indigo-500/15 text-indigo-50',
+    } as const;
+
+    const toast = document.createElement('div');
+    toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border backdrop-blur-md shadow-2xl text-sm font-bold max-w-sm translate-y-4 opacity-0 transition-all duration-300 ${colors[type]}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      });
+    });
+
+    setTimeout(() => {
+      toast.classList.add('translate-y-4', 'opacity-0');
+      setTimeout(() => toast.remove(), 300);
+    }, 2600);
+  }
+
+  function companyLabel(company: any) {
+    const nick = getCompanyDisplayName(company) || 'Firma';
+    const companyId = getCompanyId(company) || '—';
+    return `${nick} (${companyId})`;
+  }
+
+  function setSelectStatus(message: string, isError = false) {
+    if (!els.selectStatus) return;
+    els.selectStatus.textContent = message;
+    els.selectStatus.className = `text-xs font-semibold ${isError ? 'text-rose-400' : 'text-muted'}`;
+  }
+
+  function showCompanyPicker() {
+    els.skeleton?.classList.add('hidden');
+    els.error?.classList.add('hidden');
+    els.shell?.classList.add('hidden');
+    els.select?.classList.remove('hidden');
+    if (els.backLink) els.backLink.href = '/certificates';
+  }
+
+  function syncCompanyList(companies: any[]) {
+    if (!els.companyList) return;
+    const frag = document.createDocumentFragment();
+    companies.forEach((company) => {
+      const option = document.createElement('option');
+      option.value = companyLabel(company);
+      frag.appendChild(option);
+    });
+    els.companyList.innerHTML = '';
+    els.companyList.appendChild(frag);
+    if (companies.length > 0) {
+      setSelectStatus('Bir firma seçip devam edebilirsin.');
+    }
+  }
+
+  function resolveCompanyFromInput() {
+    const raw = els.companySearch?.value.trim() || '';
+    const companies = $companies.get() as any[];
+    if (!raw) return null;
+    return companies.find((company) => {
+      const label = companyLabel(company);
+      return label === raw || getCompanyDisplayName(company) === raw || getCompanyId(company) === raw;
+    }) || null;
+  }
+
+  function setShellError() {
+    els.select?.classList.add('hidden');
+    els.skeleton?.classList.add('hidden');
+    els.error?.classList.remove('hidden');
+  }
+
+  function showError(message: string, detail = '') {
+    setShellError();
+    const textEl = document.getElementById('cert-page-error-text');
+    const detailEl = document.getElementById('cert-page-error-detail');
+    if (textEl) textEl.textContent = message;
+    if (detailEl) {
+      if (detail) {
+        detailEl.textContent = detail;
+        detailEl.classList.remove('hidden');
+      } else {
+        detailEl.textContent = '';
+        detailEl.classList.add('hidden');
+      }
+    }
+  }
+
+  function hydrateHeader() {
+    if (!companyContext) return;
+    const editing = isEditMode();
+    const cloning = isCloneMode();
+    document.getElementById('cert-header-breadcrumb')!.textContent = editing
+      ? 'Sertifika Duzenle'
+      : cloning
+        ? 'Sertifika Kopyala'
+        : 'Sertifika Ekle';
+    document.getElementById('cert-company-id')!.textContent = `M${companyContext.firmaId}`;
+    document.getElementById('cert-company-nick')!.textContent = companyContext.nick || 'Firma';
+    document.getElementById('cert-company-dan')!.textContent = companyContext.danisman || 'Danisman atanamamis';
+    document.getElementById('cert-company-unvan')!.textContent = companyContext.unvan || companyContext.nick || `Firma #${companyContext.firmaId}`;
+    document.getElementById('cert-company-address')!.textContent = [companyContext.adres, [companyContext.sehir, companyContext.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
+    document.getElementById('cert-company-kapsam')!.textContent = companyContext.kapsam || 'Kapsam bulunamadi.';
+    document.getElementById('cert-company-stats')!.textContent = editing
+      ? `${companyContext.certificates.length} sertifika arasindan #${editId} duzenleniyor.`
+      : cloning
+        ? `${companyContext.certificates.length} sertifika arasindan #${cloneId} kopyalaniyor.`
+        : `${companyContext.certificates.length} sertifika, ${companyContext.tests.length} test kaydi bulundu.`;
+    if (els.nick) els.nick.value = companyContext.nick;
+    if (els.submitLabel) {
+      els.submitLabel.textContent = editing
+        ? 'Sertifikayi Guncelle'
+        : cloning
+          ? 'Gozetim Sertifikasi Olustur'
+          : 'Sertifika Ekle';
+    }
+    document.getElementById('cert-gozetim-row')?.classList.toggle('hidden', !editing);
+  }
+
+  function renderStandards() {
+    if (!els.standSelect) return;
+    els.standSelect.innerHTML = '<option value="">Seciniz...</option>';
+    standards.forEach((item) => {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = item.id;
+      option.dataset.prefix = item.prefix;
+      option.dataset.fullName = item.fullName;
+      els.standSelect?.appendChild(option);
+    });
+    if (standards.length === 0) {
+      ['9001', '14001', '45001', '22000', '27001', '13485', '10002', '50001', 'CE', 'Diğer'].forEach((value) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        option.dataset.prefix = value;
+        option.dataset.fullName = value;
+        els.standSelect?.appendChild(option);
+      });
+    }
+  }
+
+  function updateStandardMeta() {
+    if (!els.standSelect) return;
+    const selected = els.standSelect.selectedOptions[0];
+    const standardText = selected?.textContent?.trim() || '';
+    const prefix = selected?.dataset.prefix || standardText;
+    const fullName = selected?.dataset.fullName || standardText;
+    if (els.isoFull) els.isoFull.value = fullName;
+    if (els.suggested) els.suggested.value = buildSuggestedCertPrefix(prefix, activeFirmaId);
+
+    const shouldShowOther = ['DİĞER', 'DIGER', 'OTHER', 'CE'].includes(standardText.toUpperCase());
+    els.otherWrap?.classList.toggle('hidden', !shouldShowOther);
+    if (!shouldShowOther && els.otherInput) els.otherInput.value = '';
+  }
+
+  async function loadStandards() {
+    const res = await api.getMasterData('standards');
+    const rows = res?.data?.dataset?.rows || [];
+    standards = normalizeLegacyIsoRows(rows);
+    renderStandards();
+  }
+
+  async function loadConsultants() {
+    const res = await api.call('getConsultants');
+    const consultants: string[] = Array.isArray(res?.data) ? res.data : [];
+    if (!els.consultantList) return;
+    els.consultantList.innerHTML = '';
+    consultants.forEach((name) => {
+      const option = document.createElement('option');
+      option.value = name;
+      els.consultantList?.appendChild(option);
+    });
+  }
+
+  function normalizeObjectValue(record: Record<string, any>, aliases: string[]) {
+    for (const key of aliases) {
+      const value = record?.[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return String(value).trim();
+      }
+    }
+    if (record && typeof record === 'object') {
+      const normalizeKey = (value: any) => String(value || '')
+        .trim()
+        .toLocaleLowerCase('tr-TR')
+        .replace(/[ıİ]/g, 'i')
+        .replace(/[ğĞ]/g, 'g')
+        .replace(/[üÜ]/g, 'u')
+        .replace(/[şŞ]/g, 's')
+        .replace(/[öÖ]/g, 'o')
+        .replace(/[çÇ]/g, 'c')
+        .replace(/[^a-z0-9]/g, '');
+      const normalizedAliases = aliases.map((alias) => normalizeKey(alias));
+      for (const [rawKey, rawValue] of Object.entries(record)) {
+        if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') continue;
+        if (normalizedAliases.includes(normalizeKey(rawKey))) {
+          return String(rawValue).trim();
+        }
+      }
+    }
+    return '';
+  }
+
+  function getCertificateRecordId(record: Record<string, any> | null | undefined) {
+    if (!record || typeof record !== 'object') return '';
+    const direct = normalizeObjectValue(record, ['ID', 'Id', 'id', 'Certificate ID', 'certificateId', 'sertifikaId']);
+    if (direct) return direct;
+
+    const entries = Object.entries(record);
+    if (entries.length > 0) {
+      const [firstKey, firstValue] = entries[0];
+      const normalizedFirstKey = String(firstKey || '')
+        .trim()
+        .toLocaleLowerCase('tr-TR')
+        .replace(/[ıİ]/g, 'i')
+        .replace(/[ğĞ]/g, 'g')
+        .replace(/[üÜ]/g, 'u')
+        .replace(/[şŞ]/g, 's')
+        .replace(/[öÖ]/g, 'o')
+        .replace(/[çÇ]/g, 'c')
+        .replace(/[^a-z0-9]/g, '');
+      const firstValueText = String(firstValue ?? '').trim();
+      if (firstValueText && (normalizedFirstKey === '' || entries.length > 0)) {
+        return firstValueText;
+      }
+    }
+
+    return '';
+  }
+
+  function normalizeCertificateRecord(record: any): Record<string, any> | null {
+    if (!record) return null;
+
+    if (Array.isArray(record)) {
+      return {
+        ID: String(record[0] ?? '').trim(),
+        'Firma Adı': String(record[1] ?? '').trim(),
+        'Firma No': String(record[2] ?? '').trim(),
+        Standart: String(record[3] ?? '').trim(),
+        'Denetim Tipi': String(record[4] ?? '').trim(),
+        'Sertifika No': String(record[5] ?? '').trim(),
+        'Sertifika Tarihi': String(record[6] ?? '').trim(),
+        'Gözetim Tarihi': String(record[7] ?? '').trim(),
+        'Son Tetkik Tarihi': String(record[8] ?? '').trim(),
+        'Tescil Tarihi': String(record[8] ?? '').trim(),
+        'Sertifika Tescil Tarihi': String(record[8] ?? '').trim(),
+        'Sertifika Geçerlilik Tarihi': String(record[9] ?? '').trim(),
+        Kapsam: String(record[10] ?? '').trim(),
+        Scope: String(record[11] ?? '').trim(),
+        Logo: String(record[12] ?? '').trim(),
+        Kod: String(record[13] ?? '').trim(),
+        Akreditasyon: String(record[14] ?? '').trim(),
+        Akredite: String(record[15] ?? '').trim(),
+        'Danışman': String(record[16] ?? '').trim(),
+        Durum: String(record[17] ?? '').trim(),
+        Not: String(record[18] ?? '').trim(),
+        'Gözetim Conf.': String(record[19] ?? '').trim(),
+        'Other Standard': String(record[20] ?? '').trim(),
+        'Calendar ID': String(record[21] ?? '').trim(),
+        'QR Code': String(record[22] ?? '').trim(),
+        'Cert Link': String(record[23] ?? '').trim(),
+      };
+    }
+
+    if (typeof record === 'object') {
+      return {
+        ID: normalizeObjectValue(record, ['ID', 'Id', 'id', 'certId', 'Certificate ID', 'certificateId', 'sertifikaId']),
+        'Firma Adı': normalizeObjectValue(record, ['Firma Adı', 'Nickname', 'nick', 'isim']),
+        'Firma No': normalizeObjectValue(record, ['Firma No', 'firmaNo', 'firmano']),
+        Standart: normalizeObjectValue(record, ['Standart', 'standart', 'standard']),
+        'Denetim Tipi': normalizeObjectValue(record, ['Denetim Tipi', 'Denetim', 'denetim', 'denetimTipi']),
+        'Sertifika No': normalizeObjectValue(record, ['Sertifika No', 'sNo', 'SNo', 'sno']),
+        'Sertifika Tarihi': normalizeObjectValue(record, ['Sertifika Tarihi', 'gst', 'GST', 'sTarihi']),
+        'Gözetim Tarihi': normalizeObjectValue(record, ['Gözetim Tarihi', 'Sertifika Gözetim Tarihi', 'goz', 'GOZ', 'sGozetimT']),
+        'Son Tetkik Tarihi': normalizeObjectValue(record, ['Tescil Tarihi', 'Sertifika Tescil Tarihi', 'Son Tetkik Tarihi', 'stt', 'STT', 'sTT']),
+        'Tescil Tarihi': normalizeObjectValue(record, ['Tescil Tarihi', 'Sertifika Tescil Tarihi', 'Son Tetkik Tarihi', 'stt', 'STT', 'sTT']),
+        'Sertifika Geçerlilik Tarihi': normalizeObjectValue(record, ['Sertifika Geçerlilik Tarihi', 'sgt', 'SGT', 'sGT']),
+        Kapsam: normalizeObjectValue(record, ['Kapsam', 'kapsam']),
+        Scope: normalizeObjectValue(record, ['Scope', 'scope']),
+        Logo: normalizeObjectValue(record, ['Logo', 'logo']),
+        Kod: normalizeObjectValue(record, ['Kod', 'kod', 'NACE', 'nace']),
+        Akreditasyon: normalizeObjectValue(record, ['Akreditasyon', 'akreditasyon']),
+        Akredite: normalizeObjectValue(record, ['Akredite', 'akredite']),
+        'Danışman': normalizeObjectValue(record, ['Danışman', 'Danisman', 'dan', 'danisman']),
+        Durum: normalizeObjectValue(record, ['Durum', 'durum']),
+        Not: normalizeObjectValue(record, ['Not', 'not']),
+        'Gözetim Conf.': normalizeObjectValue(record, ['Gözetim Conf.', 'gozetimConfirmed', 'gozetimConf', 'gozetim']),
+        'Other Standard': normalizeObjectValue(record, ['Other Standard', 'Other', 'other', 'Diğer', 'diger', 'Diger', 'diğer', 'Diğer Standart', 'digerStandart']),
+        'Calendar ID': normalizeObjectValue(record, ['Calendar ID', 'eventId', 'calendar']),
+        'QR Code': normalizeObjectValue(record, ['QR Code', 'qr', 'search']),
+        'Cert Link': normalizeObjectValue(record, ['Cert Link', 'certLink', 'certiLink']),
+      };
+    }
+
+    return null;
+  }
+
+  function toInputDate(value: string) {
+    if (!value) return '';
+    const parts = value.split('.');
+    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    return value;
+  }
+
+  function normalizeDenetimValue(value: string) {
+    const trimmed = String(value || '').trim();
+    if (trimmed === '1. Gozetim' || trimmed === '2. Gozetim') {
+      return 'Gozetim';
+    }
+    return trimmed;
+  }
+
+  function fillFromCompanyContext() {
+    if (!companyContext) return;
+    if (els.kapsam) els.kapsam.value = companyContext.kapsam || '';
+    if (els.scope) els.scope.value = companyContext.scope || '';
+    if (els.logo) els.logo.value = companyContext.logo || '';
+    if (els.dan) els.dan.value = companyContext.danisman || '';
+    (document.getElementById('cert-kod') as HTMLInputElement | null)!.value = companyContext.nace || '';
+  }
+
+  function getEditingValue(...aliases: string[]) {
+    return normalizeObjectValue(editingCertificate || {}, aliases);
+  }
+
+  async function refreshContextFromKv() {
+    await SyncManager.checkAndSync();
+    const refreshed = await loadCompanyOperationContext(activeFirmaId);
+    if (refreshed) {
+      companyContext = refreshed;
+    }
+    return refreshed;
+  }
+
+  async function resolveExistingCertificate(sourceId: string, options: { retryWithKv?: boolean } = {}) {
+    if (!sourceId) return null;
+    const { retryWithKv = true } = options;
+
+    const res = await api.getCertificateById(sourceId);
+    const apiRecord = normalizeCertificateRecord(res?.data);
+    if (apiRecord) return apiRecord;
+
+    const local = (companyContext?.certificates as any[] | undefined)?.find((item) => getCertificateRecordId(item as Record<string, any>) === sourceId) || null;
+    const localRecord = normalizeCertificateRecord(local);
+    if (localRecord) return localRecord;
+
+    if (retryWithKv) {
+      await refreshContextFromKv();
+      return resolveExistingCertificate(sourceId, { retryWithKv: false });
+    }
+
+    return null;
+  }
+
+  async function loadExistingCertificate() {
+    const sourceId = editId || cloneId;
+    if (!sourceId) return;
+    const cert = await resolveExistingCertificate(sourceId);
+    if (!cert) {
+      throw new Error(`Sertifika bulunamadi: ${sourceId}`);
+    }
+
+    editingCertificate = cert;
+
+    const standardValue = normalizeObjectValue(cert, ['Standart', 'standart']);
+    const otherValue = normalizeObjectValue(cert, ['Other Standard', 'Other', 'other', 'Diğer', 'diger', 'Diger', 'diğer', 'Diğer Standart', 'digerStandart', 'other']);
+
+    if (els.standSelect) {
+      const option = Array.from(els.standSelect.options).find((item) => item.textContent?.trim() === standardValue);
+      if (option) els.standSelect.value = option.value;
+      else if (standardValue) {
+        const custom = document.createElement('option');
+        custom.value = standardValue;
+        custom.textContent = standardValue;
+        custom.dataset.prefix = standardValue;
+        custom.dataset.fullName = standardValue;
+        els.standSelect.appendChild(custom);
+        els.standSelect.value = standardValue;
+      }
+      updateStandardMeta();
+    }
+
+    if (els.otherInput) els.otherInput.value = otherValue;
+    if (els.isoFull && !els.isoFull.value) els.isoFull.value = standardValue;
+    (document.getElementById('cert-denetim') as HTMLSelectElement | null)!.value = normalizeDenetimValue(
+      normalizeObjectValue(cert, ['Denetim Tipi', 'denetim', 'Denetim', 'denetimTipi']),
+    );
+    if (els.sno) els.sno.value = normalizeObjectValue(cert, ['Sertifika No', 'sNo', 'SNo', 'sno']);
+    if (els.gst) els.gst.value = toInputDate(normalizeObjectValue(cert, ['Sertifika Tarihi', 'gst', 'GST', 'sTarihi']));
+    if (els.goz) els.goz.value = toInputDate(normalizeObjectValue(cert, ['Gözetim Tarihi', 'Sertifika Gözetim Tarihi', 'goz', 'GOZ', 'sGozetimT']));
+    (document.getElementById('cert-stt') as HTMLInputElement | null)!.value = toInputDate(normalizeObjectValue(cert, ['Tescil Tarihi', 'Sertifika Tescil Tarihi', 'Son Tetkik Tarihi', 'stt', 'STT', 'sTT']));
+    (document.getElementById('cert-sgt') as HTMLInputElement | null)!.value = toInputDate(normalizeObjectValue(cert, ['Sertifika Geçerlilik Tarihi', 'sgt', 'SGT', 'sGT']));
+    if (els.kapsam) els.kapsam.value = normalizeObjectValue(cert, ['Kapsam', 'kapsam']);
+    if (els.scope) els.scope.value = normalizeObjectValue(cert, ['Scope', 'scope']);
+    if (els.logo) els.logo.value = normalizeObjectValue(cert, ['Logo', 'logo']);
+    (document.getElementById('cert-kod') as HTMLInputElement | null)!.value = normalizeObjectValue(cert, ['Kod', 'kod', 'NACE', 'nace']);
+    (document.getElementById('cert-akreditasyon') as HTMLInputElement | null)!.value = normalizeObjectValue(cert, ['Akreditasyon', 'akreditasyon']) || 'IAKS';
+    (document.getElementById('cert-akredite') as HTMLInputElement | null)!.value = normalizeObjectValue(cert, ['Akredite', 'akredite']) || 'Medicert';
+    if (els.dan) els.dan.value = normalizeObjectValue(cert, ['Danışman', 'Danisman', 'dan', 'danisman']);
+    (document.getElementById('cert-durum') as HTMLInputElement | null)!.value = normalizeObjectValue(cert, ['Durum', 'durum']);
+    (document.getElementById('cert-not') as HTMLTextAreaElement | null)!.value = normalizeObjectValue(cert, ['Not', 'not']);
+    const gozetimValue = normalizeObjectValue(cert, ['Gözetim Conf.', 'gozetimConfirmed', 'gozetimConf', 'gozetim']);
+    (document.getElementById('cert-gozetim-done') as HTMLInputElement | null)!.checked = ['TRUE', 'true'].includes(gozetimValue);
+
+    if (cloneId) {
+      const denetimSelect = document.getElementById('cert-denetim') as HTMLSelectElement | null;
+      if (denetimSelect) {
+        denetimSelect.value = 'Gozetim';
+      }
+      if (els.gst) els.gst.value = '';
+      if (els.goz) els.goz.value = '';
+      (document.getElementById('cert-sgt') as HTMLInputElement | null)!.value = '';
+      (document.getElementById('cert-gozetim-done') as HTMLInputElement | null)!.checked = false;
+    }
+  }
+
+  function bindActions() {
+    if (formBindingsReady) return;
+    formBindingsReady = true;
+
+    const returnUrl = activeFirmaId ? `/company?id=${activeFirmaId}` : '/certificates';
+    els.backLink && (els.backLink.href = returnUrl);
+    const cancelBtn = document.getElementById('cert-cancel') as HTMLAnchorElement | null;
+    if (cancelBtn) cancelBtn.href = returnUrl;
+    const addAuditLink = document.getElementById('cert-add-audit-link') as HTMLAnchorElement | null;
+    if (addAuditLink) addAuditLink.href = `/audits/add?firmaId=${encodeURIComponent(activeFirmaId)}&returnUrl=${encodeURIComponent(window.location.href)}`;
+
+    els.standSelect?.addEventListener('change', updateStandardMeta);
+
+    document.getElementById('cert-auto-goz')?.addEventListener('click', () => {
+      if (els.goz && els.gst) els.goz.value = addOneYearMinusOneDay(els.gst.value);
+    });
+
+    document.getElementById('cert-fill-from-company')?.addEventListener('click', fillFromCompanyContext);
+
+    document.getElementById('cert-apply-suggested')?.addEventListener('click', () => {
+      if (!els.sno || !els.suggested) return;
+      els.sno.value = mergeCertNoSuggestion(els.suggested.value, els.sno.value);
+    });
+
+    document.getElementById('cert-kapsam-upper')?.addEventListener('click', () => {
+      if (els.kapsam) els.kapsam.value = els.kapsam.value.toLocaleUpperCase('tr-TR');
+    });
+
+    document.getElementById('cert-scope-upper')?.addEventListener('click', () => {
+      if (els.scope) els.scope.value = els.scope.value.toLocaleUpperCase('en-US');
+    });
+
+    document.getElementById('cert-kapsam-translate')?.addEventListener('click', async () => {
+      if (!els.kapsam || !els.scope || !els.kapsam.value.trim()) return;
+      const res = await api.translate(els.kapsam.value, true);
+      if (res.success && els.scope) els.scope.value = String(res.data || '');
+      else showToast(`Ceviri hatasi: ${res.error}`, 'error');
+    });
+
+    document.getElementById('cert-scope-translate')?.addEventListener('click', async () => {
+      if (!els.scope || !els.kapsam || !els.scope.value.trim()) return;
+      const res = await api.translate(els.scope.value, false);
+      if (res.success && els.kapsam) els.kapsam.value = String(res.data || '');
+      else showToast(`Ceviri hatasi: ${res.error}`, 'error');
+    });
+
+    document.getElementById('cert-clear')?.addEventListener('click', () => {
+      els.form?.reset();
+      if (companyContext) {
+        hydrateHeader();
+      }
+      renderStandards();
+      updateStandardMeta();
+      if (editId || cloneId) {
+        void loadExistingCertificate();
+      } else {
+        if (els.kapsam) els.kapsam.value = '';
+        if (els.scope) els.scope.value = '';
+        if (els.logo) els.logo.value = '';
+        if (els.dan) els.dan.value = '';
+        (document.getElementById('cert-kod') as HTMLInputElement | null)!.value = '';
+      }
+    });
+
+    els.form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!companyContext || !els.standSelect || !els.submit) return;
+
+      const selected = els.standSelect.selectedOptions[0];
+      const standardText = selected?.textContent?.trim() || '';
+      if (!standardText) {
+        showToast('Lutfen bir standart secin.', 'error');
+        return;
+      }
+
+      const certInfo = {
+        nick: companyContext.nick || getEditingValue('Firma Adı', 'Nickname', 'nick', 'isim'),
+        firmano: companyContext.firmaId || getEditingValue('Firma No', 'firmaNo', 'firmano'),
+        standart: standardText,
+        other: els.otherInput?.value.trim() || getEditingValue('Other Standard', 'Other', 'other'),
+        denetim: normalizeDenetimValue((document.getElementById('cert-denetim') as HTMLSelectElement | null)?.value || ''),
+        sno: els.sno?.value.trim() || '',
+        gst: toDisplayDate(els.gst?.value || ''),
+        goz: toDisplayDate(els.goz?.value || ''),
+        stt: toDisplayDate((document.getElementById('cert-stt') as HTMLInputElement | null)?.value || ''),
+        sgt: toDisplayDate((document.getElementById('cert-sgt') as HTMLInputElement | null)?.value || ''),
+        kapsam: els.kapsam?.value.trim() || '',
+        scope: els.scope?.value.trim() || '',
+        logo: els.logo?.value.trim() || getEditingValue('Logo', 'logo'),
+        kod: (document.getElementById('cert-kod') as HTMLInputElement | null)?.value.trim() || getEditingValue('Kod', 'kod', 'NACE', 'nace'),
+        akreditasyon: (document.getElementById('cert-akreditasyon') as HTMLInputElement | null)?.value.trim() || getEditingValue('Akreditasyon', 'akreditasyon'),
+        akredite: (document.getElementById('cert-akredite') as HTMLInputElement | null)?.value.trim() || getEditingValue('Akredite', 'akredite'),
+        dan: els.dan?.value.trim() || getEditingValue('Danışman', 'Danisman', 'dan', 'danisman'),
+        durum: (document.getElementById('cert-durum') as HTMLInputElement | null)?.value.trim() || getEditingValue('Durum', 'durum'),
+        not: (document.getElementById('cert-not') as HTMLTextAreaElement | null)?.value.trim() || getEditingValue('Not', 'not'),
+        gozetimConfirmed: (document.getElementById('cert-gozetim-done') as HTMLInputElement | null)?.checked ? 'TRUE' : 'FALSE',
+        qr: buildCertificateQrLink(companyContext.unvan || companyContext.nick, (els.isoFull?.value || standardText), els.sno?.value || ''),
+        calendar: getEditingValue('Calendar ID', 'eventId', 'calendar'),
+        certLink: getEditingValue('Cert Link', 'certLink', 'certiLink'),
+      };
+
+      els.submit.disabled = true;
+      const originalText = els.submit.innerHTML;
+      els.submit.innerHTML = 'Kaydediliyor...';
+
+      const response = editId
+        ? await api.updateCertificate(editId, certInfo)
+        : await api.addCertificate(certInfo);
+      if (response.success) {
+        await SyncManager.checkAndSync();
+        showToast(
+          editId
+            ? 'Sertifika basariyla guncellendi.'
+            : cloneId
+              ? 'Gozetim sertifikasi basariyla olusturuldu.'
+              : 'Sertifika basariyla eklendi.',
+          'success',
+        );
+        setTimeout(() => {
+          window.location.href = `/company?id=${encodeURIComponent(companyContext.firmaId)}`;
+        }, 800);
+        return;
+      }
+
+      showToast(`Hata: ${response.error}`, 'error');
+      els.submit.disabled = false;
+      els.submit.innerHTML = originalText;
+    });
+  }
+
+  async function prepareCompanyPicker() {
+    showCompanyPicker();
+    syncCompanyList($companies.get() as any[]);
+    $companies.subscribe((companies) => syncCompanyList(companies as any[]));
+    await SyncManager.init();
+    if (($companies.get() as any[]).length === 0) {
+      const res = await api.getCompanies();
+      if (res.success && Array.isArray(res.data)) {
+        $companies.set(res.data);
+      }
+    }
+
+    els.companySearch?.addEventListener('input', () => {
+      selectedCompany = resolveCompanyFromInput();
+      setSelectStatus(selectedCompany ? 'Firma seçildi. Devam edebilirsin.' : 'Listeden geçerli bir firma seç.');
+    });
+
+    els.companyContinue?.addEventListener('click', async () => {
+      selectedCompany = resolveCompanyFromInput();
+      const selectedId = selectedCompany ? getCompanyId(selectedCompany) : '';
+      if (!selectedId) {
+        setSelectStatus('Devam etmek için listeden geçerli bir firma seç.', true);
+        return;
+      }
+      activeFirmaId = selectedId;
+      await loadScreen();
+    });
+  }
+
+  async function loadScreen() {
+    if (!activeFirmaId) {
+      showCompanyPicker();
+      return;
+    }
+
+    try {
+      // Tüm bağımsız istekleri aynı anda başlat.
+      // api.call() inFlightRequests ile deduplicate ettiği için
+      // loadExistingCertificate içindeki getCertificateById çağrısı
+      // burada başlayan isteğin sonucunu kullanır, ekstra round-trip olmaz.
+      if (editId || cloneId) {
+        api.getCertificateById(editId || cloneId);
+      }
+
+      const [ctx] = await Promise.all([
+        loadCompanyOperationContext(activeFirmaId),
+        loadStandards(),
+        loadConsultants(),
+      ]);
+
+      companyContext = ctx;
+      if (!companyContext) {
+        showError('Firma contexti yuklenemedi.', `Firma ID: ${activeFirmaId}`);
+        return;
+      }
+
+      els.select?.classList.add('hidden');
+      hydrateHeader();
+      await loadExistingCertificate();
+      bindActions();
+
+      els.skeleton?.classList.add('hidden');
+      els.error?.classList.add('hidden');
+      els.shell?.classList.remove('hidden');
+    } catch (error: any) {
+      console.error('Certificate add screen failed:', error);
+      showError('Sertifika ekrani yuklenemedi.', error?.message || String(error || 'Bilinmeyen hata'));
+    }
+  }
+
+  async function boot() {
+    if (!activeFirmaId) {
+      await prepareCompanyPicker();
+      return;
+    }
+
+    try {
+      await loadScreen();
+    } catch (error: any) {
+      console.error('Certificate boot failed:', error);
+      showError('Sertifika sayfasi acilirken hata olustu.', error?.message || String(error || 'Bilinmeyen hata'));
+    }
+  }
+
+  void boot();
+</script>
