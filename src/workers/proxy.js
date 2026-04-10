@@ -84,8 +84,11 @@ export default {
       const n = parseInt(String(raw ?? "0"), 10);
       return isNaN(n) ? 0 : n;
     };
-    const normalizeHeader = (value) =>
-      String(value || "")
+    const headerCache = new Map();
+    const normalizeHeader = (value) => {
+      const s = String(value || "");
+      if (headerCache.has(s)) return headerCache.get(s);
+      const res = s
         .trim()
         .toLocaleLowerCase("tr-TR")
         .replace(/[ıİ]/g, "i")
@@ -95,19 +98,52 @@ export default {
         .replace(/[öÖ]/g, "o")
         .replace(/[çÇ]/g, "c")
         .replace(/[^a-z0-9]+/g, "");
+      headerCache.set(s, res);
+      return res;
+    };
+
+    const getPicker = (record) => {
+      const src = record && typeof record === "object" ? record : {};
+      let normalizedMap = null;
+
+      return (aliases, fallback = "") => {
+        // Fast path: exact key match
+        for (const alias of aliases) {
+          const val = src[alias];
+          if (val !== undefined && val !== null && String(val).trim() !== "") return String(val).trim();
+        }
+
+        // Lazy initialization
+        if (!normalizedMap) {
+          normalizedMap = new Map();
+          for (const [key, value] of Object.entries(src)) {
+            if (value !== undefined && value !== null && String(value).trim() !== "") {
+              normalizedMap.set(normalizeHeader(key), String(value).trim());
+            }
+          }
+        }
+
+        // Normalized checking
+        for (const alias of aliases) {
+          const norm = normalizeHeader(alias);
+          if (normalizedMap.has(norm)) return normalizedMap.get(norm);
+        }
+        return fallback;
+      };
+    };
+
     const pickObjectValue = (record, aliases, fallback = "") => {
       const src = record && typeof record === "object" ? record : {};
       for (const alias of aliases) {
-        const value = src[alias];
-        if (value !== undefined && value !== null && String(value).trim() !== "") {
-          return String(value).trim();
-        }
+        const val = src[alias];
+        if (val !== undefined && val !== null && String(val).trim() !== "") return String(val).trim();
       }
-      const normalizedAliases = aliases.map((alias) => normalizeHeader(alias));
-      for (const [rawKey, rawValue] of Object.entries(src)) {
-        if (rawValue === undefined || rawValue === null || String(rawValue).trim() === "") continue;
-        if (normalizedAliases.includes(normalizeHeader(rawKey))) {
-          return String(rawValue).trim();
+      for (const alias of aliases) {
+        const norm = normalizeHeader(alias);
+        for (const [key, value] of Object.entries(src)) {
+          if (value !== undefined && value !== null && String(value).trim() !== "") {
+            if (normalizeHeader(key) === norm) return String(value).trim();
+          }
         }
       }
       return fallback;
@@ -166,30 +202,31 @@ export default {
     const createCanonicalCertificate = (source, options = {}) => {
       const normalizedSource = normalizeCertificateSource(source);
       const input = normalizedSource && typeof normalizedSource === "object" ? normalizedSource : {};
+      const pick = getPicker(input);
       const id = String(options.id ?? getCertificateId(input) ?? "").trim();
-      const nick = pickObjectValue(input, ["nick", "nickname", "Nickname", "Firma Adı", "isim"]);
-      const firmaNo = pickObjectValue(input, ["firmano", "firmaNo", "Firma No", "fno"]);
-      const standart = pickObjectValue(input, ["standart", "standard", "Standart"]);
-      const denetim = pickObjectValue(input, ["denetim", "Denetim Tipi", "Denetim", "denetimTipi"]);
-      const sno = pickObjectValue(input, ["sno", "sNo", "Sertifika No", "sertNo", "SertifikaNo"]);
-      const gst = pickObjectValue(input, ["gst", "sTarihi", "Sertifika Tarihi", "Belge Tarihi"]);
-      const goz = pickObjectValue(input, ["goz", "sGozetimT", "Gözetim Tarihi", "Sertifika Gözetim Tarihi"]);
-      const stt = pickObjectValue(input, ["stt", "sTT", "Tescil Tarihi", "Sertifika Tescil Tarihi", "Son Tetkik Tarihi"]);
-      const sgt = pickObjectValue(input, ["sgt", "sGT", "Sertifika Geçerlilik Tarihi"]);
-      const kapsam = pickObjectValue(input, ["kapsam", "Kapsam"]);
-      const scope = pickObjectValue(input, ["scope", "Scope"]);
-      const akreditasyon = pickObjectValue(input, ["akreditasyon", "Akreditasyon", "akrn"]);
-      const akredite = pickObjectValue(input, ["akredite", "Akredite"]);
-      const dan = pickObjectValue(input, ["dan", "danisman", "Danışman", "Danisman"]);
-      const other = pickObjectValue(input, ["other", "Other Standard", "Other", "Diğer", "Diger", "Diğer Standart"]);
-      const durum = pickObjectValue(input, ["durum", "Durum"]);
-      const not = pickObjectValue(input, ["not", "Not"]);
-      const gozetimConf = pickObjectValue(input, ["gozetimConfirmed", "gozetimConf", "Gözetim Conf.", "gozetim"]);
-      const calendar = pickObjectValue(input, ["calendar", "Calendar ID", "eventId"]);
-      const qr = pickObjectValue(input, ["qr", "QR Code"]);
-      const certLink = pickObjectValue(input, ["certLink", "certiLink", "Cert Link"]);
-      const logo = pickObjectValue(input, ["logo", "Logo"]);
-      const kod = pickObjectValue(input, ["kod", "Kod", "NACE", "nace"]);
+      const nick = pick(["nick", "nickname", "Nickname", "Firma Adı", "isim"]);
+      const firmaNo = pick(["firmano", "firmaNo", "Firma No", "fno"]);
+      const standart = pick(["standart", "standard", "Standart"]);
+      const denetim = pick(["denetim", "Denetim Tipi", "Denetim", "denetimTipi"]);
+      const sno = pick(["sno", "sNo", "Sertifika No", "sertNo", "SertifikaNo"]);
+      const gst = pick(["gst", "sTarihi", "Sertifika Tarihi", "Belge Tarihi"]);
+      const goz = pick(["goz", "sGozetimT", "Gözetim Tarihi", "Sertifika Gözetim Tarihi"]);
+      const stt = pick(["stt", "sTT", "Tescil Tarihi", "Sertifika Tescil Tarihi", "Son Tetkik Tarihi"]);
+      const sgt = pick(["sgt", "sGT", "Sertifika Geçerlilik Tarihi"]);
+      const kapsam = pick(["kapsam", "Kapsam"]);
+      const scope = pick(["scope", "Scope"]);
+      const akreditasyon = pick(["akreditasyon", "Akreditasyon", "akrn"]);
+      const akredite = pick(["akredite", "Akredite"]);
+      const dan = pick(["dan", "danisman", "Danışman", "Danisman"]);
+      const other = pick(["other", "Other Standard", "Other", "Diğer", "Diger", "Diğer Standart"]);
+      const durum = pick(["durum", "Durum"]);
+      const not = pick(["not", "Not"]);
+      const gozetimConf = pick(["gozetimConfirmed", "gozetimConf", "Gözetim Conf.", "gozetim"]);
+      const calendar = pick(["calendar", "Calendar ID", "eventId"]);
+      const qr = pick(["qr", "QR Code"]);
+      const certLink = pick(["certLink", "certiLink", "Cert Link"]);
+      const logo = pick(["logo", "Logo"]);
+      const kod = pick(["kod", "Kod", "NACE", "nace"]);
 
       return {
         ...(input || {}),
@@ -352,73 +389,49 @@ export default {
       return next;
     };
     const createEtag = (value) => stableStringify(stripMeta(value));
-    const pickRowValue = (record, aliases, fallback = "") => {
-      const src = record && typeof record === "object" ? record : {};
-      for (const alias of aliases) {
-        const value = src[alias];
-        if (value !== undefined && value !== null && String(value).trim() !== "") {
-          return String(value).trim();
-        }
-      }
-      return fallback;
-    };
-    const pickCompanyValue = (record, aliases, fallback = "") => {
-      const src = record && typeof record === "object" ? record : {};
-      for (const alias of aliases) {
-        const value = src[alias];
-        if (value !== undefined && value !== null && String(value).trim() !== "") {
-          return String(value).trim();
-        }
-      }
-      const normalizedAliases = aliases.map((alias) => normalizeHeader(alias));
-      for (const [rawKey, rawValue] of Object.entries(src)) {
-        if (rawValue === undefined || rawValue === null || String(rawValue).trim() === "") continue;
-        if (normalizedAliases.includes(normalizeHeader(rawKey))) {
-          return String(rawValue).trim();
-        }
-      }
-      return fallback;
-    };
+    const pickRowValue = (record, aliases, fallback = "") => pickObjectValue(record, aliases, fallback);
+    const pickCompanyValue = (record, aliases, fallback = "") => pickObjectValue(record, aliases, fallback);
     const getCompanyId = (record) => pickCompanyValue(record, ["Firma No", "FirmaNo", "firmaNo", "id", "ID"]);
     const getCompanyConsultant = (record) => pickCompanyValue(record, ["Danışman", "Danisman", "dan", "danisman"]);
     const createCanonicalCompany = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
+      const pick = getPicker(input);
       const id = String(options.id ?? getCompanyId(input) ?? "").trim();
-      const nick = pickCompanyValue(input, ["Firma Adı", "FirmaAdi", "nickname", "nick", "Nick"]);
-      const unvan = pickCompanyValue(input, ["Unvan", "unvan"]);
-      const adres = pickCompanyValue(input, ["Adres", "adres"]);
-      const sehir = pickCompanyValue(input, ["İl", "Il", "Şehir", "Sehir", "sehir", "il"]);
-      const ulke = pickCompanyValue(input, ["Ülke", "Ulke", "ulke"], "TÜRKİYE");
-      const yazisma = pickCompanyValue(input, ["Yazışma Adresi", "YazismaAdresi", "yazisma", "Şube Adresi"]);
-      const vergiD = pickCompanyValue(input, ["Vergi Dairesi", "VergiDairesi", "vergiD"]);
-      const vergiN = pickCompanyValue(input, ["Vergi Numarası", "VergiNumarasi", "vergiN"]);
-      const tel = pickCompanyValue(input, ["Telefon", "Tel", "tel"]);
-      const faks = pickCompanyValue(input, ["Faks", "faks"]);
-      const www = pickCompanyValue(input, ["İnternet", "Internet", "Web", "www", "web"]);
-      const mail = pickCompanyValue(input, ["Mail", "mail", "E-Posta"]);
-      const yetA = pickCompanyValue(input, ["Yetkili Adı", "YetkiliAdi", "yetA"]);
-      const yetU = pickCompanyValue(input, ["Yetkili Ünvanı", "Yetkili Unvani", "YetkiliUnvani", "yetU"]);
-      const kyt = pickCompanyValue(input, ["KYT", "Kalite Yönetim Temsilcisi", "kyt"]);
-      const irtA = pickCompanyValue(input, ["İrtibat Kişisi", "IrtibatKisi", "irtA"]);
-      const irtU = pickCompanyValue(input, ["İrtibat Ünvanı", "IrtibatUnvani", "irtU"]);
-      const irtN = pickCompanyValue(input, ["İrtibat Tel", "IrtibatKisiNumarasi", "irtN"]);
-      const irtM = pickCompanyValue(input, ["İrtibat Mail", "IrtibatKisisMail", "irtM"]);
-      const kapsam = pickCompanyValue(input, ["Türkçe Kapsam", "Sertifika Kapsamı (TR)", "Kapsam", "kapsam"]);
-      const scope = pickCompanyValue(input, ["İngilizce Kapsam", "Sertifika Kapsamı (EN)", "Scope", "scope"]);
-      const yapis = pickCompanyValue(input, ["Yapılan İş", "YapilanIs", "yapis"]);
-      const tcs = pickCompanyValue(input, ["Toplam Çalışan Sayısı", "TCS", "tcs"], "0");
-      const ycs = pickCompanyValue(input, ["Yönetim Çalışan Sayısı", "YCS", "ycs"], "0");
-      const ucs = pickCompanyValue(input, ["Üretim Çalışan Sayısı", "UCS", "ucs"], "0");
-      const yzcs = pickCompanyValue(input, ["Yarı Zamanlı Çalışan Sayısı", "YZCS", "yzcs"], "0");
-      const tascs = pickCompanyValue(input, ["Taşeron Çalışan Sayısı", "TASCS", "tascs"], "0");
-      const alan = pickCompanyValue(input, ["Alan", "alan"]);
-      const dept = pickCompanyValue(input, ["Departman", "departman", "dept"]);
-      const vardiya = pickCompanyValue(input, ["Vardiya", "vardiya"], "1");
-      const logo = pickCompanyValue(input, ["Firma Logosu", "LogoKaşe", "LogoKase", "logoK", "logo", "kase"]);
-      const dan = pickCompanyValue(input, ["Danışman", "Danisman", "dan", "danisman"]);
-      const ea = pickCompanyValue(input, ["EA", "ea"]);
-      const nace = pickCompanyValue(input, ["NACE", "nace"]);
-      const not = pickCompanyValue(input, ["Firma Not", "Not", "not"]);
+      const nick = pick(["Firma Adı", "FirmaAdi", "nickname", "nick", "Nick"]);
+      const unvan = pick(["Unvan", "unvan"]);
+      const adres = pick(["Adres", "adres"]);
+      const sehir = pick(["İl", "Il", "Şehir", "Sehir", "sehir", "il"]);
+      const ulke = pick(["Ülke", "Ulke", "ulke"], "TÜRKİYE");
+      const yazisma = pick(["Yazışma Adresi", "YazismaAdresi", "yazisma", "Şube Adresi"]);
+      const vergiD = pick(["Vergi Dairesi", "VergiDairesi", "vergiD"]);
+      const vergiN = pick(["Vergi Numarası", "VergiNumarasi", "vergiN"]);
+      const tel = pick(["Telefon", "Tel", "tel"]);
+      const faks = pick(["Faks", "faks"]);
+      const www = pick(["İnternet", "Internet", "Web", "www", "web"]);
+      const mail = pick(["Mail", "mail", "E-Posta"]);
+      const yetA = pick(["Yetkili Adı", "YetkiliAdi", "yetA"]);
+      const yetU = pick(["Yetkili Ünvanı", "Yetkili Unvani", "YetkiliUnvani", "yetU"]);
+      const kyt = pick(["KYT", "Kalite Yönetim Temsilcisi", "kyt"]);
+      const irtA = pick(["İrtibat Kişisi", "IrtibatKisi", "irtA"]);
+      const irtU = pick(["İrtibat Ünvanı", "IrtibatUnvani", "irtU"]);
+      const irtN = pick(["İrtibat Tel", "IrtibatKisiNumarasi", "irtN"]);
+      const irtM = pick(["İrtibat Mail", "IrtibatKisisMail", "irtM"]);
+      const kapsam = pick(["Türkçe Kapsam", "Sertifika Kapsamı (TR)", "Kapsam", "kapsam"]);
+      const scope = pick(["İngilizce Kapsam", "Sertifika Kapsamı (EN)", "Scope", "scope"]);
+      const yapis = pick(["Yapılan İş", "YapilanIs", "yapis"]);
+      const tcs = pick(["Toplam Çalışan Sayısı", "TCS", "tcs"], "0");
+      const ycs = pick(["Yönetim Çalışan Sayısı", "YCS", "ycs"], "0");
+      const ucs = pick(["Üretim Çalışan Sayısı", "UCS", "ucs"], "0");
+      const yzcs = pick(["Yarı Zamanlı Çalışan Sayısı", "YZCS", "yzcs"], "0");
+      const tascs = pick(["Taşeron Çalışan Sayısı", "TASCS", "tascs"], "0");
+      const alan = pick(["Alan", "alan"]);
+      const dept = pick(["Departman", "departman", "dept"]);
+      const vardiya = pick(["Vardiya", "vardiya"], "1");
+      const logo = pick(["Firma Logosu", "LogoKaşe", "LogoKase", "logoK", "logo", "kase"]);
+      const dan = pick(["Danışman", "Danisman", "dan", "danisman"]);
+      const ea = pick(["EA", "ea"]);
+      const nace = pick(["NACE", "nace"]);
+      const not = pick(["Firma Not", "Not", "not"]);
 
       const canonical = {
         ...(input || {}),
@@ -508,30 +521,31 @@ export default {
     };
     const createCanonicalTestRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
-      const id = String(options.id ?? pickRowValue(input, ["ID", "id"]) ?? "").trim();
+      const pick = getPicker(input);
+      const id = String(options.id ?? pick(["ID", "id"]) ?? "").trim();
       return [
         id,
-        pickRowValue(input, ["firmaAdi", "fname", "nick"]),
-        pickRowValue(input, ["firmaNo", "fno"]),
-        pickRowValue(input, ["testAdi"]),
-        pickRowValue(input, ["marka"]),
-        pickRowValue(input, ["urun"]),
-        pickRowValue(input, ["urunKodu"]),
-        pickRowValue(input, ["urunNo"]),
-        pickRowValue(input, ["lot"]),
-        pickRowValue(input, ["urunKabul"]),
-        pickRowValue(input, ["kabulSaat"]),
-        pickRowValue(input, ["testBaslangic"]),
-        pickRowValue(input, ["testBitis"]),
-        pickRowValue(input, ["raporTarihi"]),
-        pickRowValue(input, ["raporNo"]),
-        pickRowValue(input, ["numuneSayisi"]),
-        pickRowValue(input, ["numuneUT"]),
-        pickRowValue(input, ["numuneSKT"]),
-        pickRowValue(input, ["urunBilgi"]),
-        pickRowValue(input, ["gorsel1"]),
-        pickRowValue(input, ["gorsel2"]),
-        pickRowValue(input, ["detay"]),
+        pick(["firmaAdi", "fname", "nick"]),
+        pick(["firmaNo", "fno"]),
+        pick(["testAdi"]),
+        pick(["marka"]),
+        pick(["urun"]),
+        pick(["urunKodu"]),
+        pick(["urunNo"]),
+        pick(["lot"]),
+        pick(["urunKabul"]),
+        pick(["kabulSaat"]),
+        pick(["testBaslangic"]),
+        pick(["testBitis"]),
+        pick(["raporTarihi"]),
+        pick(["raporNo"]),
+        pick(["numuneSayisi"]),
+        pick(["numuneUT"]),
+        pick(["numuneSKT"]),
+        pick(["urunBilgi"]),
+        pick(["gorsel1"]),
+        pick(["gorsel2"]),
+        pick(["detay"]),
       ];
     };
     const getTestId = (row) => Array.isArray(row) ? String(row[0] ?? "").trim() : pickRowValue(row, ["ID", "id"]);
@@ -567,18 +581,19 @@ export default {
     };
     const createCanonicalProformaRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
-      const id = String(options.id ?? pickRowValue(input, ["ID", "id", "Fatura No", "faturaNo"]) ?? "").trim();
+      const pick = getPicker(input);
+      const id = String(options.id ?? pick(["ID", "id", "Fatura No", "faturaNo"]) ?? "").trim();
       return [
         id,
-        pickRowValue(input, ["nick", "nickname", "firmaAdi"]),
-        pickRowValue(input, ["firmaNo", "fno"]),
-        pickRowValue(input, ["kdvsiz"], "0"),
-        pickRowValue(input, ["kdvOran"], "20"),
-        pickRowValue(input, ["kdv"], "0"),
-        pickRowValue(input, ["toplam"], "0"),
-        pickRowValue(input, ["birim", "lira"], "TL"),
-        pickRowValue(input, ["tarih"]),
-        pickRowValue(input, ["konu"]),
+        pick(["nick", "nickname", "firmaAdi"]),
+        pick(["firmaNo", "fno"]),
+        pick(["kdvsiz"], "0"),
+        pick(["kdvOran"], "20"),
+        pick(["kdv"], "0"),
+        pick(["toplam"], "0"),
+        pick(["birim", "lira"], "TL"),
+        pick(["tarih"]),
+        pick(["konu"]),
       ];
     };
     const getProformaId = (row) => Array.isArray(row) ? String(row[0] ?? "").trim() : pickRowValue(row, ["ID", "id", "Fatura No", "faturaNo"]);
@@ -634,41 +649,42 @@ export default {
     const getAuditFirmaId = (row) => Array.isArray(row) ? String(row[2] ?? "").trim() : pickRowValue(row, ["firmaNo", "firmano"]);
     const createCanonicalAuditRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
+      const pick = getPicker(input);
       const id = String(options.id ?? getAuditId(input) ?? "").trim();
       return [
         id,
-        pickRowValue(input, ["nick", "nickname"]),
-        pickRowValue(input, ["firmano", "firmaNo"]),
-        pickRowValue(input, ["standart"]),
-        pickRowValue(input, ["denetim", "denetimTipi"]),
-        pickRowValue(input, ["a1Full", "a1Denetci"]),
-        pickRowValue(input, ["a1Auditor", "a1Denetci", "a1Full"]),
-        pickRowValue(input, ["a2Full", "a2Denetci"]),
-        pickRowValue(input, ["a2Auditor", "a2Denetci", "a2Full"]),
-        pickRowValue(input, ["a1Basla", "a1Baslav2"]),
-        pickRowValue(input, ["a1Bitis", "a1Bitisv2"]),
-        pickRowValue(input, ["a1Md"]),
-        pickRowValue(input, ["a1La", "a1Lead"]),
-        pickRowValue(input, ["a1Fa"]),
-        pickRowValue(input, ["a1Sa"]),
-        pickRowValue(input, ["a2Basla", "a2Baslav2"]),
-        pickRowValue(input, ["a2Bitis", "a2Bitisv2"]),
-        pickRowValue(input, ["a2Md"]),
-        pickRowValue(input, ["a2La", "a2Lead"]),
-        pickRowValue(input, ["a2Fa"]),
-        pickRowValue(input, ["a2Sa"]),
-        pickRowValue(input, ["qms"]),
-        pickRowValue(input, ["mdd"]),
-        pickRowValue(input, ["ems"]),
-        pickRowValue(input, ["ohs"]),
-        pickRowValue(input, ["fsms"]),
-        pickRowValue(input, ["isms"]),
-        pickRowValue(input, ["engy"]),
-        pickRowValue(input, ["gmp"]),
-        pickRowValue(input, ["a1kDenet"]),
-        pickRowValue(input, ["a2kDenet"]),
-        pickRowValue(input, ["a1EventId"]),
-        pickRowValue(input, ["a2EventId"]),
+        pick(["nick", "nickname"]),
+        pick(["firmano", "firmaNo"]),
+        pick(["standart"]),
+        pick(["denetim", "denetimTipi"]),
+        pick(["a1Full", "a1Denetci"]),
+        pick(["a1Auditor", "a1Denetci", "a1Full"]),
+        pick(["a2Full", "a2Denetci"]),
+        pick(["a2Auditor", "a2Denetci", "a2Full"]),
+        pick(["a1Basla", "a1Baslav2"]),
+        pick(["a1Bitis", "a1Bitisv2"]),
+        pick(["a1Md"]),
+        pick(["a1La", "a1Lead"]),
+        pick(["a1Fa"]),
+        pick(["a1Sa"]),
+        pick(["a2Basla", "a2Baslav2"]),
+        pick(["a2Bitis", "a2Bitisv2"]),
+        pick(["a2Md"]),
+        pick(["a2La", "a2Lead"]),
+        pick(["a2Fa"]),
+        pick(["a2Sa"]),
+        pick(["qms"]),
+        pick(["mdd"]),
+        pick(["ems"]),
+        pick(["ohs"]),
+        pick(["fsms"]),
+        pick(["isms"]),
+        pick(["engy"]),
+        pick(["gmp"]),
+        pick(["a1kDenet"]),
+        pick(["a2kDenet"]),
+        pick(["a1EventId"]),
+        pick(["a2EventId"]),
       ];
     };
     const auditRowToInfo = (row) => ({
@@ -738,6 +754,16 @@ export default {
         status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    const jsonResponseWithRawData = (rawData, extra = {}, status = 200) => {
+      const extraEntries = Object.entries(extra);
+      const extraSuffix = extraEntries.length
+        ? `,${extraEntries.map(([key, value]) => `${JSON.stringify(key)}:${JSON.stringify(value)}`).join(",")}`
+        : "";
+      return new Response(`{"success":true,"data":${rawData}${extraSuffix}}`, {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    };
 
     const origin = request.headers.get("Origin");
     const isAllowedOrigin = origin
@@ -782,6 +808,15 @@ export default {
           "getFolderId",
           "getRecentFiles"
         ];
+        const rawCachePassthroughActions = new Set([
+          "getCompanies",
+          "getCertificates",
+          "getRecentCertificates",
+          "getConsultants",
+          "getMasterData",
+          "getFolderId",
+          "getRecentFiles"
+        ]);
         const gasWriteActions = [
           "editCell",
           "importBackup"
@@ -794,6 +829,9 @@ export default {
         if (env.DB && cacheableActions.includes(action)) {
           const cached = await env.DB.get(cacheKey);
           if (cached) {
+            if (rawCachePassthroughActions.has(action)) {
+              return jsonResponseWithRawData(cached, { fromCache: true });
+            }
             const data = JSON.parse(cached);
             if (action === "getAudits" && !hasUsableAuditDates(data)) {
               const rebuilt = await rebuildAuditsFromIndex();
@@ -1073,11 +1111,11 @@ export default {
                 env.DB.put(indexKeys.proformasById, JSON.stringify(proformasById), { expirationTtl: CACHE_TTL }),
                 env.DB.put(indexKeys.standardsById, JSON.stringify(standardsById), { expirationTtl: CACHE_TTL }),
               ]);
-              await Promise.all([
+              ctx.waitUntil(Promise.all([
                 purgeCachePrefix("cache:getCertificateById:"),
                 purgeCachePrefix("cache:getCertificatesByFirmaId:"),
                 purgeCachePrefix("cache:getRecentCertificates:"),
-              ]);
+              ]));
 
               return jsonResponse({
                 success: true, 

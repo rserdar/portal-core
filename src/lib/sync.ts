@@ -8,7 +8,7 @@ import { $companies, $certificates, $syncStatus, $lastSyncTime } from './store';
  * Akış:
  * 1) İlk açılışta IndexedDB'den anında render
  * 2) Arka planda KV tazeleme
- * 3) KV miss olursa bulk hydration (GAS -> KV)
+ * 3) KV miss olursa manuel hydration beklenir (otomatik GAS çağrısı yok)
  */
 
 export const SyncManager = {
@@ -56,29 +56,21 @@ export const SyncManager = {
           ]);
         };
 
-        let [compRes, certRes] = await fetchCore();
+        const [compRes, certRes] = await fetchCore();
         const needsHydration = [compRes, certRes].some((r: any) => !r.success && (r.needsHydration || r.error === 'KV_PRIMARY_MISS'));
 
-        // Faz 2: KV miss durumunda tek sefer bulk hydrate ve tekrar dene.
         if (needsHydration) {
-          console.log('[Sync] KV miss detected. Running bulkSync hydration...');
-          const bulkRes = await api.bulkSync();
-          if (!bulkRes.success) throw new Error(bulkRes.error || 'bulkSync failed');
-          [compRes, certRes] = await fetchCore();
+          console.warn('[Sync] KV miss detected. Automatic hydration is disabled; waiting for manual sync.');
+          throw new Error('KV verisi hazır değil. Lütfen Ayarlar veya ana ekrandaki senkronizasyonu manuel başlatın.');
         }
 
         if (!compRes.success || !certRes.success) {
           throw new Error(compRes.error || certRes.error || "One or more fetch requests failed.");
         }
 
-        // Master/reference datalar için de hydration kontrolü yap.
         const masterProbe = await api.getMasterData('standards');
         if (!masterProbe.success && (masterProbe.needsHydration || masterProbe.error === 'KV_PRIMARY_MISS')) {
-          console.log('[Sync] Master KV miss detected. Running bulkSyncMaster hydration...');
-          const masterSyncRes = await api.bulkSyncMaster();
-          if (!masterSyncRes.success) {
-            console.warn('[Sync] bulkSyncMaster failed:', masterSyncRes.error);
-          }
+          console.warn('[Sync] Master KV miss detected. Automatic master hydration is disabled.');
         }
 
         const now = Date.now();

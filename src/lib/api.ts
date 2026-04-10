@@ -154,25 +154,13 @@ export const api = {
   },
   async getAudits() {
     let result = await this.call("getAudits");
-    if (!result.success && (result.needsHydration || result.error === "KV_PRIMARY_MISS")) {
-      const sync = await this.bulkSync();
-      if (sync.success) {
-        result = await this.call("getAudits");
-      }
-    }
     if (result.success) {
       result = { ...result, data: normalizeAuditList(result.data) };
     }
     return result;
   },
   async getAuditsByFirmaId(firmaId: string | number) { 
-    let result = await this.call("getAuditsByFirmaId", { firmaId });
-    if (!result.success && (result.needsHydration || result.error === "KV_PRIMARY_MISS")) {
-      const sync = await this.bulkSync();
-      if (sync.success) {
-        result = await this.call("getAuditsByFirmaId", { firmaId });
-      }
-    }
+    const result = await this.call("getAuditsByFirmaId", { firmaId });
     return result; 
   },
   async updateAudit(id: string | number, data: any) {

@@ -727,18 +727,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     if (($certificates.get() || []).length > 0) return;
 
     try {
-      const readCertificates = async () => api.getCertificates();
-      let res = await readCertificates();
-
-      if (!res.success && (res.needsHydration || res.error === 'KV_PRIMARY_MISS')) {
-        const syncRes = await api.bulkSync();
-        if (syncRes.success) {
-          res = await readCertificates();
-        }
-      }
+      const res = await api.getCertificates();
 
       if (res.success && Array.isArray(res.data)) {
         $certificates.set(res.data);
+      } else if (res.needsHydration || res.error === 'KV_PRIMARY_MISS') {
+        console.warn('[certificates] KV miss detected. Manual sync is required before certificates can be loaded.');
       }
     } catch (error) {
       console.error('[certificates] ensureCertificatesLoaded failed:', error);
