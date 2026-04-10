@@ -1,0 +1,46 @@
+const TOAST_CONTAINER_ID = 'toast-container';
+
+export type ToastType = 'success' | 'error' | 'info';
+
+export function ensureToastContainer(): HTMLElement | null {
+  let container = document.getElementById(TOAST_CONTAINER_ID);
+  if (container) {
+    if (container.parentElement !== document.body) {
+      document.body.appendChild(container);
+    }
+    return container;
+  }
+
+  container = document.createElement('div');
+  container.id = TOAST_CONTAINER_ID;
+  container.className = 'fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm';
+  document.body.appendChild(container);
+  return container;
+}
+
+export function showToast(message: string, type: ToastType = 'info') {
+  const container = ensureToastContainer();
+  if (!container) return;
+
+  const colors = {
+    success: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-50',
+    error: 'border-rose-500/30 bg-rose-500/15 text-rose-50',
+    info: 'border-indigo-500/30 bg-indigo-500/15 text-indigo-50',
+  } as const;
+
+  const toast = document.createElement('div');
+  toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border backdrop-blur-md shadow-2xl text-sm font-bold max-w-sm translate-y-4 opacity-0 transition-all duration-300 ${colors[type]}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      toast.classList.remove('translate-y-4', 'opacity-0');
+    });
+  });
+
+  setTimeout(() => {
+    toast.classList.add('translate-y-4', 'opacity-0');
+    setTimeout(() => toast.remove(), 300);
+  }, 2600);
+}

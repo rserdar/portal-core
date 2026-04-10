@@ -20,6 +20,7 @@ import {
 
   <!-- Back + skeleton header -->
   <div class="max-w-6xl mx-auto pb-20 space-y-6">
+    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
 
     <!-- Navigation -->
     <div class="flex items-center gap-3">
@@ -569,6 +570,7 @@ import {
   import { api } from '../../lib/api';
   import { $certificates } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
+  import { showToast } from '../../lib/toast';
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -623,6 +625,11 @@ import {
     }
 
     return fallback;
+  }
+
+  function isTruthyFlag(value: unknown): boolean {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    return ['true', '1', 'yes', 'on', 'evet'].includes(normalized);
   }
 
   function setEl(id: string, value: string) {
@@ -1382,7 +1389,7 @@ import {
         danisman     = String(c[16] || '').trim();
         durum        = String(c[17] || '').trim();
         note         = String(c[18] || '').trim();
-        gozetimConf  = String(c[19] || '').toUpperCase() === 'TRUE';
+        gozetimConf  = isTruthyFlag(c[19]);
         otherStandart= String(c[20] || '').trim();
         eventId      = String(c[21] || '').trim();
         qr           = String(c[22] || '').trim();
@@ -1405,7 +1412,7 @@ import {
         eventId      = g(c, 'Calendar ID', 'eventId');
         qr           = g(c, 'QR Code', 'qr');
         certLink     = g(c, 'Cert Link', 'certLink');
-        gozetimConf  = String(g(c, 'Gözetim Conf.', 'gozetimConfirmed', 'gozetimConf')).toUpperCase() === 'TRUE';
+        gozetimConf  = isTruthyFlag(g(c, 'Gözetim Conf.', 'gozetimConfirmed', 'gozetimConf', 'gozetim'));
       }
 
       const sLow = standart.toLowerCase();
@@ -1725,7 +1732,7 @@ import {
         if (res?.success) {
           await loadTests();
         } else {
-          alert('Silme işlemi başarısız.');
+          showToast('Silme işlemi başarısız.', 'error');
           btn.disabled = false;
         }
       });

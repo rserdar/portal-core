@@ -49,7 +49,7 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
     </div>
 
     <!-- Toast -->
-    <div id="toast-container" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
 
     <form id="edit-form" class="hidden space-y-8">
       <!-- Hidden ID -->
@@ -310,6 +310,7 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
 
 <script>
   import { api } from '../../lib/api';
+  import { showToast } from '../../lib/toast';
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -328,27 +329,6 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
   function setVal(id: string, value: string) {
     const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
     if (el) el.value = value;
-  }
-
-  function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const colors = {
-      success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-      error:   'border-rose-500/30 bg-rose-500/10 text-rose-300',
-      info:    'border-indigo-500/30 bg-indigo-500/10 text-indigo-300',
-    };
-    const toast = document.createElement('div');
-    toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border backdrop-blur-md shadow-2xl text-sm font-bold max-w-sm translate-y-4 opacity-0 transition-all duration-300 ${colors[type]}`;
-    toast.innerHTML = message;
-    container.appendChild(toast);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      toast.classList.remove('translate-y-4', 'opacity-0');
-    }));
-    setTimeout(() => {
-      toast.classList.add('translate-y-4', 'opacity-0');
-      setTimeout(() => toast.remove(), 300);
-    }, 4000);
   }
 
   // ─── URL Param ────────────────────────────────────────────────────────────────

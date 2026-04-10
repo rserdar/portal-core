@@ -271,35 +271,7 @@ const quickActions = [
   import { $companies, $certificates, $lastSyncTime } from '../lib/store';
   import { SyncManager } from '../lib/sync';
   import { api } from '../lib/api';
-
-  // ─── Toast System ────────────────────────���───────────────────────────────────
-
-  function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    const colors = {
-      success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
-      error:   'border-rose-500/30 bg-rose-500/10 text-rose-300',
-      info:    'border-indigo-500/30 bg-indigo-500/10 text-indigo-300',
-    };
-
-    const toast = document.createElement('div');
-    toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border backdrop-blur-md shadow-2xl text-sm font-bold max-w-sm translate-y-4 opacity-0 transition-all duration-300 ${colors[type]}`;
-    toast.innerHTML = message;
-    container.appendChild(toast);
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        toast.classList.remove('translate-y-4', 'opacity-0');
-      });
-    });
-
-    setTimeout(() => {
-      toast.classList.add('translate-y-4', 'opacity-0');
-      setTimeout(() => toast.remove(), 300);
-    }, 4000);
-  }
+  import { showToast } from '../lib/toast';
 
   // ─── CountUp Animation ───────────────────────────��──────────────────────────��
 
@@ -683,17 +655,21 @@ const quickActions = [
 
         const res = await api.bulkSync();
 
-        if (res.success && res.stats) {
+        if (res.success) {
+          const companies = res.stats?.companies;
+          const certs = res.stats?.certRows ?? res.stats?.certs;
           showToast(
-            `✓ Senkronizasyon tamamlandı — ${res.stats.companies} firma, ${res.stats.certRows ?? res.stats.certs} sertifika CF Edge'e aktarıldı.`,
+            companies !== undefined || certs !== undefined
+              ? `Senkronizasyon tamamlandı: ${companies ?? 0} firma, ${certs ?? 0} sertifika CF Edge'e aktarıldı.`
+              : 'Senkronizasyon tamamlandı.',
             'success'
           );
           await SyncManager.checkAndSync();
         } else {
-          showToast(`✕ Senkronizasyon başarısız: ${res.error || 'Bağlantı kesildi.'}`, 'error');
+          showToast(`Senkronizasyon başarısız: ${res.error || 'Bağlantı kesildi.'}`, 'error');
         }
       } catch (err: any) {
-        showToast(`✕ Beklenmeyen hata: ${err?.message || err}`, 'error');
+        showToast(`Beklenmeyen hata: ${err?.message || err}`, 'error');
       } finally {
         btnSync.disabled = false;
         if (syncLabel) syncLabel.textContent = 'SİSTEMİ SENKRONİZE ET (KV)';

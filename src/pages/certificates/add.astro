@@ -347,6 +347,7 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
+  import { showToast } from '../../lib/toast';
   import { loadCompanyOperationContext } from '../../features/operations/context';
   import {
     normalizeLegacyIsoRows,
@@ -428,33 +429,6 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
 
   function getCompanyDisplayName(company: any) {
     return getCompanyNick(company) || getCompanyValue(company, 'Unvan', 'unvan');
-  }
-
-  function showToast(message: string, type: 'success' | 'error' | 'info' = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    const colors = {
-      success: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-50',
-      error: 'border-rose-500/30 bg-rose-500/15 text-rose-50',
-      info: 'border-indigo-500/30 bg-indigo-500/15 text-indigo-50',
-    } as const;
-
-    const toast = document.createElement('div');
-    toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border backdrop-blur-md shadow-2xl text-sm font-bold max-w-sm translate-y-4 opacity-0 transition-all duration-300 ${colors[type]}`;
-    toast.textContent = message;
-    container.appendChild(toast);
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        toast.classList.remove('translate-y-4', 'opacity-0');
-      });
-    });
-
-    setTimeout(() => {
-      toast.classList.add('translate-y-4', 'opacity-0');
-      setTimeout(() => toast.remove(), 300);
-    }, 2600);
   }
 
   function companyLabel(company: any) {
@@ -749,6 +723,11 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     return trimmed;
   }
 
+  function isTruthyCheckboxValue(value: unknown) {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    return ['true', '1', 'yes', 'on', 'evet'].includes(normalized);
+  }
+
   function fillFromCompanyContext() {
     if (!companyContext) return;
     if (els.kapsam) els.kapsam.value = companyContext.kapsam || '';
@@ -839,7 +818,7 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     (document.getElementById('cert-durum') as HTMLInputElement | null)!.value = normalizeObjectValue(cert, ['Durum', 'durum']);
     (document.getElementById('cert-not') as HTMLTextAreaElement | null)!.value = normalizeObjectValue(cert, ['Not', 'not']);
     const gozetimValue = normalizeObjectValue(cert, ['Gözetim Conf.', 'gozetimConfirmed', 'gozetimConf', 'gozetim']);
-    (document.getElementById('cert-gozetim-done') as HTMLInputElement | null)!.checked = ['TRUE', 'true'].includes(gozetimValue);
+    (document.getElementById('cert-gozetim-done') as HTMLInputElement | null)!.checked = isTruthyCheckboxValue(gozetimValue);
 
     if (cloneId) {
       const denetimSelect = document.getElementById('cert-denetim') as HTMLSelectElement | null;

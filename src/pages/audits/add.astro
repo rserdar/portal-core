@@ -4,13 +4,14 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <DashboardLayout title="Denetim Planla">
   <div class="max-w-6xl mx-auto pb-24 space-y-6">
+    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
     <div class="flex items-center gap-3">
       <a href="/audits" class="flex items-center gap-2 text-xs font-bold text-muted hover:text-primary transition-colors group">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:-translate-x-1 transition-transform"><path d="m15 18-6-6 6-6"></path></svg>
         Denetim Merkezi
       </a>
       <span class="text-border-main">/</span>
-      <span class="text-xs font-bold text-muted">Denetim Planla</span>
+      <span id="audit-breadcrumb-label" class="text-xs font-bold text-muted">Denetim Planla</span>
     </div>
 
     <section class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
@@ -18,7 +19,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted" id="audit-company-badge">Firma Seçimi Bekleniyor</span>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Denetim Planla</h1>
+        <h1 id="audit-page-title" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Denetim Planla</h1>
       </div>
 
       <div class="p-6 sm:p-8 space-y-6">
@@ -168,7 +169,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
               </a>
               <button id="add-audit-button" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3.5 text-sm font-black text-white hover:bg-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed sm:py-3">
                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
-                Denetim Ekle
+                <span id="audit-submit-label">Denetim Ekle</span>
               </button>
             </div>
           </section>
@@ -250,6 +251,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
+  import { showToast } from '../../lib/toast';
   import {
     uniqueColumnValues,
     filterAuditorsByStandard,
@@ -263,6 +265,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
   const params = new URLSearchParams(window.location.search);
   const preselectedFirmaId = params.get('firmaId') || params.get('id') || '';
+  const editAuditId = params.get('edit') || '';
 
   const backBtn = document.getElementById('audit-back-btn') as HTMLAnchorElement | null;
   if (backBtn) {
@@ -282,12 +285,21 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   const companySummary = document.getElementById('audit-company-summary');
   const companyNameEl = document.getElementById('audit-company-name');
   const companyIdPillEl = document.getElementById('audit-company-id-pill');
+  const breadcrumbLabel = document.getElementById('audit-breadcrumb-label');
+  const pageTitleEl = document.getElementById('audit-page-title');
   const xstandartInput = document.getElementById('xstandartInput') as HTMLSelectElement | null;
   const denetimInput = document.getElementById('denetimInput') as HTMLSelectElement | null;
   const saveBtn = document.getElementById('add-audit-button') as HTMLButtonElement | null;
+  const saveLabel = document.getElementById('audit-submit-label');
 
   let selectedCompany: any = null;
   let auditorRows: any[][] = [];
+  let editingAudit: Record<string, any> | null = null;
+  let reloadCalendarView: (() => Promise<void>) | null = null;
+
+  function isEditMode() {
+    return Boolean(editAuditId);
+  }
 
   function getCompanyValue(company: any, ...keys: string[]) {
     if (!company || typeof company !== 'object') return '';
@@ -310,6 +322,139 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
   function getCompanyDisplayName(company: any) {
     return getCompanyNick(company) || getCompanyValue(company, 'Unvan', 'unvan');
+  }
+
+  function normalizeAuditLookupKey(value: any): string {
+    return String(value || '')
+      .trim()
+      .toLocaleLowerCase('tr-TR')
+      .replace(/[ıİ]/g, 'i')
+      .replace(/[ğĞ]/g, 'g')
+      .replace(/[üÜ]/g, 'u')
+      .replace(/[şŞ]/g, 's')
+      .replace(/[öÖ]/g, 'o')
+      .replace(/[çÇ]/g, 'c')
+      .replace(/[^a-z0-9]/g, '');
+  }
+
+  function getAuditValue(record: any, aliases: string[], fallback = ''): string {
+    if (Array.isArray(record)) {
+      return fallback;
+    }
+    const source = record && typeof record === 'object' ? record : {};
+    for (const alias of aliases) {
+      const value = source[alias];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return String(value).trim();
+      }
+    }
+    const normalizedAliases = aliases.map((alias) => normalizeAuditLookupKey(alias));
+    for (const [rawKey, rawValue] of Object.entries(source)) {
+      if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') continue;
+      if (normalizedAliases.includes(normalizeAuditLookupKey(rawKey))) {
+        return String(rawValue).trim();
+      }
+    }
+    return fallback;
+  }
+
+  function getAuditRecordId(record: any): string {
+    if (Array.isArray(record)) return String(record[0] ?? '').trim();
+    return getAuditValue(record, ['id', 'ID']);
+  }
+
+  function normalizeAuditRecord(record: any): Record<string, any> | null {
+    if (!record) return null;
+    if (Array.isArray(record)) {
+      return {
+        id: String(record[0] ?? '').trim(),
+        nick: String(record[1] ?? '').trim(),
+        firmano: String(record[2] ?? '').trim(),
+        standart: String(record[3] ?? '').trim(),
+        denetim: String(record[4] ?? '').trim(),
+        a1Full: String(record[5] ?? '').trim(),
+        a1Denetci: String(record[6] ?? '').trim(),
+        a2Full: String(record[7] ?? '').trim(),
+        a2Denetci: String(record[8] ?? '').trim(),
+        a1Basla: String(record[9] ?? '').trim(),
+        a1Bitis: String(record[10] ?? '').trim(),
+        a1Md: String(record[11] ?? '').trim(),
+        a1La: String(record[12] ?? '').trim(),
+        a1Fa: String(record[13] ?? '').trim(),
+        a1Sa: String(record[14] ?? '').trim(),
+        a2Basla: String(record[15] ?? '').trim(),
+        a2Bitis: String(record[16] ?? '').trim(),
+        a2Md: String(record[17] ?? '').trim(),
+        a2La: String(record[18] ?? '').trim(),
+        a2Fa: String(record[19] ?? '').trim(),
+        a2Sa: String(record[20] ?? '').trim(),
+        qms: String(record[21] ?? '').trim(),
+        mdd: String(record[22] ?? '').trim(),
+        ems: String(record[23] ?? '').trim(),
+        ohs: String(record[24] ?? '').trim(),
+        fsms: String(record[25] ?? '').trim(),
+        isms: String(record[26] ?? '').trim(),
+        engy: String(record[27] ?? '').trim(),
+        gmp: String(record[28] ?? '').trim(),
+        a1kDenet: String(record[29] ?? '').trim(),
+        a2kDenet: String(record[30] ?? '').trim(),
+        a1EventId: String(record[31] ?? '').trim(),
+        a2EventId: String(record[32] ?? '').trim(),
+      };
+    }
+
+    return {
+      id: getAuditValue(record, ['id', 'ID']),
+      nick: getAuditValue(record, ['nick', 'nickname']),
+      firmano: getAuditValue(record, ['firmano', 'firmaNo']),
+      standart: getAuditValue(record, ['standart', 'standard', 'Standart']),
+      denetim: getAuditValue(record, ['denetim', 'denetimTipi', 'Denetim Tipi']),
+      a1Full: getAuditValue(record, ['a1Full', 'A1 Full']),
+      a1Denetci: getAuditValue(record, ['a1Auditor', 'a1Denetci', 'A1 Auditors']),
+      a2Full: getAuditValue(record, ['a2Full', 'A2 Full']),
+      a2Denetci: getAuditValue(record, ['a2Auditor', 'a2Denetci', 'A2 Auditors']),
+      a1Basla: getAuditValue(record, ['a1Basla', 'a1Baslav2']),
+      a1Bitis: getAuditValue(record, ['a1Bitis', 'a1Bitisv2']),
+      a1Md: getAuditValue(record, ['a1Md']),
+      a1La: getAuditValue(record, ['a1La', 'a1Lead']),
+      a1Fa: getAuditValue(record, ['a1Fa']),
+      a1Sa: getAuditValue(record, ['a1Sa']),
+      a2Basla: getAuditValue(record, ['a2Basla', 'a2Baslav2']),
+      a2Bitis: getAuditValue(record, ['a2Bitis', 'a2Bitisv2']),
+      a2Md: getAuditValue(record, ['a2Md']),
+      a2La: getAuditValue(record, ['a2La', 'a2Lead']),
+      a2Fa: getAuditValue(record, ['a2Fa']),
+      a2Sa: getAuditValue(record, ['a2Sa']),
+      qms: getAuditValue(record, ['qms']),
+      mdd: getAuditValue(record, ['mdd']),
+      ems: getAuditValue(record, ['ems']),
+      ohs: getAuditValue(record, ['ohs']),
+      fsms: getAuditValue(record, ['fsms']),
+      isms: getAuditValue(record, ['isms']),
+      engy: getAuditValue(record, ['engy']),
+      gmp: getAuditValue(record, ['gmp']),
+      a1kDenet: getAuditValue(record, ['a1kDenet']),
+      a2kDenet: getAuditValue(record, ['a2kDenet']),
+      a1EventId: getAuditValue(record, ['a1EventId']),
+      a2EventId: getAuditValue(record, ['a2EventId']),
+    };
+  }
+
+  function toInputDate(value: string) {
+    if (!value) return '';
+    const parts = String(value).split('.');
+    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    return value;
+  }
+
+  function isTruthyAuditFlag(value: unknown) {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    return ['true', '1', 'yes', 'on', 'evet'].includes(normalized);
+  }
+
+  function setCheckboxValue(id: string, value: unknown) {
+    const checkbox = document.getElementById(id) as HTMLInputElement | null;
+    if (checkbox) checkbox.checked = isTruthyAuditFlag(value);
   }
 
   function companyLabel(company: any) {
@@ -354,6 +499,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       companySummary?.classList.add('hidden');
       companyPicker?.classList.remove('hidden');
     }
+  }
+
+  function updateModeLabels() {
+    if (breadcrumbLabel) breadcrumbLabel.textContent = isEditMode() ? 'Denetim Duzenle' : 'Denetim Planla';
+    if (pageTitleEl) pageTitleEl.textContent = isEditMode() ? 'Denetim Duzenle' : 'Denetim Planla';
+    if (saveLabel) saveLabel.textContent = isEditMode() ? 'Denetimi Guncelle' : 'Denetim Ekle';
   }
 
   function syncCompanyList(companies: any[]) {
@@ -466,11 +617,122 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     resetCheckboxes();
     refreshAuditorDropdowns();
     toggleStage2();
+    if (isEditMode()) {
+      void loadExistingAudit();
+    }
   }
 
-  async function addAudit() {
-    if (!selectedCompany) return alert('Lutfen bir firma secin.');
-    if (!(xstandartInput?.value || '').trim()) return alert('Lutfen standart secin.');
+  async function resolveExistingAudit(sourceId: string) {
+    if (!sourceId) return null;
+    const candidates: any[] = [];
+
+    if (preselectedFirmaId) {
+      const byFirmaRes = await api.getAuditsByFirmaId(preselectedFirmaId);
+      if (byFirmaRes.success && Array.isArray(byFirmaRes.data)) {
+        candidates.push(...byFirmaRes.data);
+      }
+    } else {
+      const allRes = await api.getAudits();
+      if (allRes.success && Array.isArray(allRes.data)) {
+        candidates.push(...allRes.data);
+      }
+    }
+
+    const match = candidates.find((item) => getAuditRecordId(item) === sourceId);
+    return normalizeAuditRecord(match);
+  }
+
+  async function ensureAuditCompanyContext(audit: Record<string, any>) {
+    const firmaId = String(audit.firmano || '').trim();
+    if (!firmaId) return;
+    if (selectedCompany && String(getCompanyId(selectedCompany)) === firmaId) return;
+
+    const local = ($companies.get() as any[]).find((company) => String(getCompanyId(company)) === firmaId);
+    if (local) {
+      setSelectedCompany(local);
+      return;
+    }
+
+    const res = await api.getCompanyById(firmaId);
+    if (res.success && res.data) {
+      setSelectedCompany(res.data);
+      return;
+    }
+
+    setSelectedCompany({
+      'Firma No': firmaId,
+      'Firma Adı': audit.nick || `Firma #${firmaId}`,
+    });
+  }
+
+  async function loadExistingAudit() {
+    if (!isEditMode()) return;
+    const audit = await resolveExistingAudit(editAuditId);
+    if (!audit) {
+      showToast(`Denetim bulunamadi: ${editAuditId}`, 'error');
+      return;
+    }
+
+    editingAudit = audit;
+    await ensureAuditCompanyContext(audit);
+
+    if (xstandartInput) {
+      xstandartInput.value = audit.standart || '';
+      refreshAuditorDropdowns();
+    }
+    if (denetimInput) {
+      denetimInput.value = audit.denetim || '';
+      toggleStage2();
+    }
+
+    const setValue = (id: string, value: string) => {
+      const input = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+      if (input) input.value = value || '';
+    };
+
+    setValue('a1Basla', toInputDate(audit.a1Basla));
+    setValue('a1Bitis', toInputDate(audit.a1Bitis));
+    setValue('a1Full', audit.a1Full || '');
+    setValue('a1Manday', audit.a1Md || '');
+    setValue('a1Md', audit.a1Md || '');
+    setValue('leadAuditorInput1', audit.a1La || '');
+    setValue('secondAuditorInput1', audit.a1Fa || '');
+    setValue('thirdAuditorInput1', audit.a1Sa || '');
+    setValue('a1Denetciler', audit.a1Denetci || '');
+    setValue('a1KDenetci', audit.a1kDenet || '');
+    setValue('a2Basla', toInputDate(audit.a2Basla));
+    setValue('a2Bitis', toInputDate(audit.a2Bitis));
+    setValue('a2Full', audit.a2Full || '');
+    setValue('a2Manday', audit.a2Md || '');
+    setValue('a2Md', audit.a2Md || '');
+    setValue('leadAuditorInput2', audit.a2La || '');
+    setValue('secondAuditorInput2', audit.a2Fa || '');
+    setValue('thirdAuditorInput2', audit.a2Sa || '');
+    setValue('a2Denetciler', audit.a2Denetci || '');
+    setValue('a2KDenetci', audit.a2kDenet || '');
+
+    setCheckboxValue('9C', audit.qms);
+    setCheckboxValue('13C', audit.mdd);
+    setCheckboxValue('14C', audit.ems);
+    setCheckboxValue('22C', audit.fsms);
+    setCheckboxValue('27C', audit.isms);
+    setCheckboxValue('45C', audit.ohs);
+    setCheckboxValue('50C', audit.engy);
+    setCheckboxValue('GMPC', audit.gmp);
+
+    updateAuditors('a1');
+    updateAuditors('a2');
+  }
+
+  async function saveAudit() {
+    if (!selectedCompany) {
+      showToast('Lutfen bir firma secin.', 'error');
+      return;
+    }
+    if (!(xstandartInput?.value || '').trim()) {
+      showToast('Lutfen standart secin.', 'error');
+      return;
+    }
     if (!saveBtn) return;
 
     saveBtn.disabled = true;
@@ -517,13 +779,22 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       a2kDenet: value('a2KDenetci'),
     };
 
-    const res = await api.call('scheduleAudit', { data: auditInfo });
+    const res = isEditMode()
+      ? await api.updateAudit(editAuditId, auditInfo)
+      : await api.call('scheduleAudit', { data: auditInfo });
     if (res.success) {
       await SyncManager.checkAndSync();
-      clearAuditForm();
-      alert("Denetim basariyla eklendi ve Takvim'e islendi.");
+      if (reloadCalendarView) {
+        await reloadCalendarView();
+      }
+      if (isEditMode()) {
+        showToast('Denetim basariyla guncellendi.', 'success');
+      } else {
+        clearAuditForm();
+        showToast('Denetim basariyla kaydedildi.', 'success');
+      }
     } else {
-      alert(`Hata: ${res.error}`);
+      showToast(`Hata: ${res.error}`, 'error');
     }
 
     saveBtn.disabled = false;
@@ -561,10 +832,11 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     document.getElementById('a2Plus1')?.addEventListener('click', () => setEndDate('a2', 1));
     document.getElementById('a2Plus2')?.addEventListener('click', () => setEndDate('a2', 2));
     document.getElementById('clear-audit-button')?.addEventListener('click', clearAuditForm);
-    document.getElementById('add-audit-button')?.addEventListener('click', addAudit);
+    document.getElementById('add-audit-button')?.addEventListener('click', saveAudit);
   }
 
   async function boot() {
+    updateModeLabels();
     if (preselectedFirmaId) {
       companyPicker?.classList.add('hidden');
       companySummary?.classList.remove('hidden');
@@ -573,6 +845,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     $companies.subscribe((companies) => syncCompanyList(companies as any[]));
     await hydratePreselectedCompany();
     await loadMasterRows();
+    await loadExistingAudit();
     bindEvents();
     toggleStage2();
   }
@@ -1000,6 +1273,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       }
     }
 
+    reloadCalendarView = loadAudits;
+
     // Form degisikliklerinde takvimi yenile (catisma kontrolu)
     ['a1Basla','a1Bitis','a2Basla','a2Bitis',
      'leadAuditorInput1','secondAuditorInput1','thirdAuditorInput1',
@@ -1023,4 +1298,3 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     void loadAudits();
   })();
 </script>
-

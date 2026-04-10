@@ -11,6 +11,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <DashboardLayout title="Yeni Firma Ekle">
   <div class="max-w-5xl mx-auto pb-20">
+    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
     <form id="add-company-form" class="space-y-8">
       
       <!-- section: Genel Bilgiler -->
@@ -218,6 +219,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 <script>
   import { api } from '../../lib/api';
   import { SyncManager } from '../../lib/sync';
+  import { showToast } from '../../lib/toast';
 
   // Global helpers
   declare global {
@@ -273,7 +275,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       if (response.success) {
         targetInput.value = response.data;
       } else {
-        alert("Çeviri hatası oluştu: " + response.error);
+        showToast(`Çeviri hatası oluştu: ${response.error}`, 'error');
       }
       targetInput.placeholder = "";
     }
@@ -311,11 +313,11 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       if (response.success) {
         // 🔄 Yerel veriyi anında güncelle (Sync)
         await SyncManager.checkAndSync();
-        
-        alert('Firma başarıyla eklendi! Arama listesine yönlendiriliyorsunuz.');
+
+        showToast('Firma başarıyla eklendi! Arama listesine yönlendiriliyorsunuz.', 'success');
         window.location.href = '/search';
       } else {
-        alert('Hata: ' + response.error);
+        showToast(`Hata: ${response.error}`, 'error');
         if (submitBtn) submitBtn.disabled = false;
         if (submitIcon) submitIcon.classList.remove('hidden');
         if (loadingIcon) loadingIcon.classList.add('hidden');
@@ -326,7 +328,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   // Başlat
   loadConsultants();
 </script>
-
 
 
 

@@ -233,6 +233,27 @@ export default {
         nace: kod,
       };
     };
+    const listKvJsonValues = async (prefix) => {
+      if (!env.DB) return [];
+      const values = [];
+      let cursor = undefined;
+      do {
+        const page = await env.DB.list({ prefix, cursor });
+        if (page.keys && page.keys.length) {
+          const rawValues = await Promise.all(page.keys.map((entry) => env.DB.get(entry.name)));
+          rawValues.forEach((raw) => {
+            if (!raw) return;
+            try {
+              values.push(JSON.parse(raw));
+            } catch (_) {
+              // Ignore malformed cache entries; canonical rebuild below will use valid rows.
+            }
+          });
+        }
+        cursor = page.list_complete ? undefined : page.cursor;
+      } while (cursor);
+      return values;
+    };
     const loadCertificateState = async () => {
       if (!env.DB) return null;
       const [allRaw, byFirmaRaw, byIdRaw] = await Promise.all([
@@ -250,13 +271,28 @@ export default {
       if (!Array.isArray(certificates) && certsByFirmaId && typeof certsByFirmaId === "object") {
         certificates = Object.values(certsByFirmaId).flatMap((value) => Array.isArray(value) ? value : []);
       }
+      if (!Array.isArray(certificates)) {
+        const groupedCertificateCaches = await listKvJsonValues("cache:getCertificatesByFirmaId:");
+        if (groupedCertificateCaches.length) {
+          certificates = groupedCertificateCaches.flatMap((value) => Array.isArray(value) ? value : []);
+        }
+      }
+      if (!Array.isArray(certificates)) {
+        const singleCertificateCaches = await listKvJsonValues("cache:getCertificateById:");
+        if (singleCertificateCaches.length) {
+          certificates = singleCertificateCaches.filter((value) => value && typeof value === "object");
+        }
+      }
       if (!Array.isArray(certificates)) return null;
 
-      const canonicalCertificates = certificates.map((certificate) => createCanonicalCertificate(certificate)).filter((certificate) => getCertificateId(certificate));
+      const canonicalCertificates = certificates
+        .map((certificate) => createCanonicalCertificate(certificate))
+        .filter((certificate) => getCertificateId(certificate));
       certById = buildCertificatesById(canonicalCertificates);
-      certsByFirmaId = buildCertificatesByFirmaId(canonicalCertificates);
+      const dedupedCertificates = Object.values(certById);
+      certsByFirmaId = buildCertificatesByFirmaId(dedupedCertificates);
       return {
-        certificates: canonicalCertificates,
+        certificates: dedupedCertificates,
         certById,
         certsByFirmaId,
       };

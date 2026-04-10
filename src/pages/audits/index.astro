@@ -316,11 +316,17 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         </td>
         <td class="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs text-main">${denetimTipi}</td>
         <td class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle">
-          <button
-            type="button"
-            class="audit-detail-toggle inline-flex items-center rounded-lg sm:rounded-xl border border-border-main bg-surface px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-main transition-colors hover:bg-surface-hover"
-            data-target="${detailRowId}"
-          >Detay</button>
+          <div class="inline-flex items-center gap-2">
+            <a
+              href="/audits/add?firmaId=${encodeURIComponent(firmaNo)}&edit=${encodeURIComponent(auditId)}"
+              class="inline-flex items-center rounded-lg sm:rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-300 transition-colors hover:bg-indigo-500/15"
+            >Düzenle</a>
+            <button
+              type="button"
+              class="audit-detail-toggle inline-flex items-center rounded-lg sm:rounded-xl border border-border-main bg-surface px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-main transition-colors hover:bg-surface-hover"
+              data-target="${detailRowId}"
+            >Detay</button>
+          </div>
         </td>
       `;
       tableBody.appendChild(tr);
@@ -393,5 +399,4 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   // Başlat
   loadAudits();
 </script>
-
 

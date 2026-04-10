@@ -11,6 +11,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <DashboardLayout title="Doküman Sorgulama">
   <div class="max-w-6xl mx-auto space-y-8 pb-20">
+    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
     
     <!-- 🏢 1. Firma Seçimi & Klasör Butonu -->
     <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl flex flex-col md:flex-row items-center gap-6">
@@ -83,6 +84,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
+  import { showToast } from '../../lib/toast';
 
   const companySearch = document.getElementById('company-search') as HTMLInputElement;
   const companyList = document.getElementById('company-list');
@@ -201,10 +203,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         btnElem.classList.remove('animate-spin', 'text-rose-500');
 
         if (res.success) {
-            alert("PDF Başarıyla oluşturuldu! Listeyi yeniliyorum...");
+            showToast('PDF başarıyla oluşturuldu! Listeyi yeniliyorum...', 'success');
             loadDocuments(selectedNickname);
         } else {
-            alert("Hata: " + res.data.error);
+            showToast(`Hata: ${res.data.error}`, 'error');
         }
       });
     });

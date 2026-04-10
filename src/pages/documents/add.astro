@@ -11,6 +11,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <DashboardLayout title="Doküman Üret">
   <div class="max-w-4xl mx-auto space-y-8 pb-20">
+    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
     
     <!-- 🏢 1. Firma Seçimi -->
     <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
@@ -120,6 +121,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
+  import { showToast } from '../../lib/toast';
 
   const companySearch = document.getElementById('company-search') as HTMLInputElement;
   const companyList = document.getElementById('company-list');
@@ -207,7 +209,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   // 🏗️ Üretimi Başlat (Batch Processing)
   generateBtn?.addEventListener('click', async () => {
     const setName = setSelect.value;
-    if (!setName) return alert('Lütfen bir set seçiniz.');
+    if (!setName) {
+      showToast('Lütfen bir set seçiniz.', 'error');
+      return;
+    }
     if (!selectedCompany) return;
 
     if (!confirm(`${setName} setindeki tüm dokümanlar üretilecektir. Onaylıyor musunuz?`)) return;
@@ -278,7 +283,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       }
 
     } catch (e: any) {
-      alert("Üretim sırasında hata: " + e.message);
+      showToast(`Üretim sırasında hata: ${e.message}`, 'error');
       if (progressText) progressText.textContent = "❌ Hata oluştu.";
     } finally {
       generateBtn.disabled = false;
