@@ -33,6 +33,10 @@ const { pageKey, title, description } = Astro.props;
         <div class="h-20 rounded-2xl bg-surface-hover"></div>
       </div>
 
+      <div id="op-select" class="hidden p-6 sm:p-8">
+        <slot name="select" />
+      </div>
+
       <div id="op-shell" class="hidden">
         <div class="p-6 sm:p-8 border-b border-border-main space-y-4">
           <div class="flex flex-wrap items-center gap-2">

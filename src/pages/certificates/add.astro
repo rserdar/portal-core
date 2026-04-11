@@ -347,7 +347,7 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
-  import { showToast } from '../../lib/toast';
+  import { setFlashToast, showToast } from '../../lib/toast';
   import { loadCompanyOperationContext } from '../../features/operations/context';
   import {
     normalizeLegacyIsoRows,
@@ -382,6 +382,8 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     nick: document.getElementById('cert-nick') as HTMLInputElement | null,
     gst: document.getElementById('cert-gst') as HTMLInputElement | null,
     goz: document.getElementById('cert-goz') as HTMLInputElement | null,
+    stt: document.getElementById('cert-stt') as HTMLInputElement | null,
+    sgt: document.getElementById('cert-sgt') as HTMLInputElement | null,
     sno: document.getElementById('cert-sno') as HTMLInputElement | null,
     suggested: document.getElementById('cert-sno-suggested') as HTMLInputElement | null,
     kapsam: document.getElementById('cert-kapsam') as HTMLTextAreaElement | null,
@@ -391,6 +393,14 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     consultantList: document.getElementById('consultant-list'),
     submit: document.getElementById('cert-submit') as HTMLButtonElement | null,
     submitLabel: document.getElementById('cert-submit-label'),
+    denetim: document.getElementById('cert-denetim') as HTMLSelectElement | null,
+    kod: document.getElementById('cert-kod') as HTMLInputElement | null,
+    akreditasyon: document.getElementById('cert-akreditasyon') as HTMLInputElement | null,
+    akredite: document.getElementById('cert-akredite') as HTMLInputElement | null,
+    durum: document.getElementById('cert-durum') as HTMLInputElement | null,
+    not: document.getElementById('cert-not') as HTMLTextAreaElement | null,
+    gozetimRow: document.getElementById('cert-gozetim-row'),
+    gozetimDone: document.getElementById('cert-gozetim-done') as HTMLInputElement | null,
   };
 
   let companyContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
@@ -502,22 +512,28 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     if (!companyContext) return;
     const editing = isEditMode();
     const cloning = isCloneMode();
-    document.getElementById('cert-header-breadcrumb')!.textContent = editing
-      ? 'Sertifika Duzenle'
-      : cloning
-        ? 'Sertifika Kopyala'
-        : 'Sertifika Ekle';
-    document.getElementById('cert-company-id')!.textContent = `M${companyContext.firmaId}`;
-    document.getElementById('cert-company-nick')!.textContent = companyContext.nick || 'Firma';
-    document.getElementById('cert-company-dan')!.textContent = companyContext.danisman || 'Danisman atanamamis';
-    document.getElementById('cert-company-unvan')!.textContent = companyContext.unvan || companyContext.nick || `Firma #${companyContext.firmaId}`;
-    document.getElementById('cert-company-address')!.textContent = [companyContext.adres, [companyContext.sehir, companyContext.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
-    document.getElementById('cert-company-kapsam')!.textContent = companyContext.kapsam || 'Kapsam bulunamadi.';
-    document.getElementById('cert-company-stats')!.textContent = editing
-      ? `${companyContext.certificates.length} sertifika arasindan #${editId} duzenleniyor.`
-      : cloning
-        ? `${companyContext.certificates.length} sertifika arasindan #${cloneId} kopyalaniyor.`
-        : `${companyContext.certificates.length} sertifika, ${companyContext.tests.length} test kaydi bulundu.`;
+    const setText = (id: string, value: string) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+    setText(
+      'cert-header-breadcrumb',
+      editing ? 'Sertifika Duzenle' : cloning ? 'Sertifika Kopyala' : 'Sertifika Ekle',
+    );
+    setText('cert-company-id', `M${companyContext.firmaId}`);
+    setText('cert-company-nick', companyContext.nick || 'Firma');
+    setText('cert-company-dan', companyContext.danisman || 'Danisman atanamamis');
+    setText('cert-company-unvan', companyContext.unvan || companyContext.nick || `Firma #${companyContext.firmaId}`);
+    setText('cert-company-address', [companyContext.adres, [companyContext.sehir, companyContext.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—');
+    setText('cert-company-kapsam', companyContext.kapsam || 'Kapsam bulunamadi.');
+    setText(
+      'cert-company-stats',
+      editing
+        ? `${companyContext.certificates.length} sertifika arasindan #${editId} duzenleniyor.`
+        : cloning
+          ? `${companyContext.certificates.length} sertifika arasindan #${cloneId} kopyalaniyor.`
+          : `${companyContext.certificates.length} sertifika, ${companyContext.tests.length} test kaydi bulundu.`,
+    );
     if (els.nick) els.nick.value = companyContext.nick;
     if (els.submitLabel) {
       els.submitLabel.textContent = editing
@@ -645,6 +661,8 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     if (!record) return null;
 
     if (Array.isArray(record)) {
+      const stt = String(record[8] ?? '').trim();
+      const sgt = String(record[9] ?? '').trim();
       return {
         ID: String(record[0] ?? '').trim(),
         'Firma Adı': String(record[1] ?? '').trim(),
@@ -654,10 +672,11 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
         'Sertifika No': String(record[5] ?? '').trim(),
         'Sertifika Tarihi': String(record[6] ?? '').trim(),
         'Gözetim Tarihi': String(record[7] ?? '').trim(),
-        'Son Tetkik Tarihi': String(record[8] ?? '').trim(),
-        'Tescil Tarihi': String(record[8] ?? '').trim(),
-        'Sertifika Tescil Tarihi': String(record[8] ?? '').trim(),
-        'Sertifika Geçerlilik Tarihi': String(record[9] ?? '').trim(),
+        // Legacy sheet stores a single STT/Tescil column at index 8.
+        'Son Tetkik Tarihi': stt,
+        'Tescil Tarihi': stt,
+        'Sertifika Tescil Tarihi': stt,
+        'Sertifika Geçerlilik Tarihi': sgt,
         Kapsam: String(record[10] ?? '').trim(),
         Scope: String(record[11] ?? '').trim(),
         Logo: String(record[12] ?? '').trim(),
@@ -734,7 +753,8 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     if (els.scope) els.scope.value = companyContext.scope || '';
     if (els.logo) els.logo.value = companyContext.logo || '';
     if (els.dan) els.dan.value = companyContext.danisman || '';
-    (document.getElementById('cert-kod') as HTMLInputElement | null)!.value = companyContext.nace || '';
+    const kodInput = document.getElementById('cert-kod') as HTMLInputElement | null;
+    if (kodInput) kodInput.value = companyContext.nace || '';
   }
 
   function getEditingValue(...aliases: string[]) {
@@ -800,35 +820,32 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
 
     if (els.otherInput) els.otherInput.value = otherValue;
     if (els.isoFull && !els.isoFull.value) els.isoFull.value = standardValue;
-    (document.getElementById('cert-denetim') as HTMLSelectElement | null)!.value = normalizeDenetimValue(
+    if (els.denetim) els.denetim.value = normalizeDenetimValue(
       normalizeObjectValue(cert, ['Denetim Tipi', 'denetim', 'Denetim', 'denetimTipi']),
     );
     if (els.sno) els.sno.value = normalizeObjectValue(cert, ['Sertifika No', 'sNo', 'SNo', 'sno']);
     if (els.gst) els.gst.value = toInputDate(normalizeObjectValue(cert, ['Sertifika Tarihi', 'gst', 'GST', 'sTarihi']));
     if (els.goz) els.goz.value = toInputDate(normalizeObjectValue(cert, ['Gözetim Tarihi', 'Sertifika Gözetim Tarihi', 'goz', 'GOZ', 'sGozetimT']));
-    (document.getElementById('cert-stt') as HTMLInputElement | null)!.value = toInputDate(normalizeObjectValue(cert, ['Tescil Tarihi', 'Sertifika Tescil Tarihi', 'Son Tetkik Tarihi', 'stt', 'STT', 'sTT']));
-    (document.getElementById('cert-sgt') as HTMLInputElement | null)!.value = toInputDate(normalizeObjectValue(cert, ['Sertifika Geçerlilik Tarihi', 'sgt', 'SGT', 'sGT']));
+    if (els.stt) els.stt.value = toInputDate(normalizeObjectValue(cert, ['Tescil Tarihi', 'Sertifika Tescil Tarihi', 'Son Tetkik Tarihi', 'stt', 'STT', 'sTT']));
+    if (els.sgt) els.sgt.value = toInputDate(normalizeObjectValue(cert, ['Sertifika Geçerlilik Tarihi', 'sgt', 'SGT', 'sGT']));
     if (els.kapsam) els.kapsam.value = normalizeObjectValue(cert, ['Kapsam', 'kapsam']);
     if (els.scope) els.scope.value = normalizeObjectValue(cert, ['Scope', 'scope']);
     if (els.logo) els.logo.value = normalizeObjectValue(cert, ['Logo', 'logo']);
-    (document.getElementById('cert-kod') as HTMLInputElement | null)!.value = normalizeObjectValue(cert, ['Kod', 'kod', 'NACE', 'nace']);
-    (document.getElementById('cert-akreditasyon') as HTMLInputElement | null)!.value = normalizeObjectValue(cert, ['Akreditasyon', 'akreditasyon']) || 'IAKS';
-    (document.getElementById('cert-akredite') as HTMLInputElement | null)!.value = normalizeObjectValue(cert, ['Akredite', 'akredite']) || 'Medicert';
+    if (els.kod) els.kod.value = normalizeObjectValue(cert, ['Kod', 'kod', 'NACE', 'nace']);
+    if (els.akreditasyon) els.akreditasyon.value = normalizeObjectValue(cert, ['Akreditasyon', 'akreditasyon']) || 'IAKS';
+    if (els.akredite) els.akredite.value = normalizeObjectValue(cert, ['Akredite', 'akredite']) || 'Medicert';
     if (els.dan) els.dan.value = normalizeObjectValue(cert, ['Danışman', 'Danisman', 'dan', 'danisman']);
-    (document.getElementById('cert-durum') as HTMLInputElement | null)!.value = normalizeObjectValue(cert, ['Durum', 'durum']);
-    (document.getElementById('cert-not') as HTMLTextAreaElement | null)!.value = normalizeObjectValue(cert, ['Not', 'not']);
+    if (els.durum) els.durum.value = normalizeObjectValue(cert, ['Durum', 'durum']);
+    if (els.not) els.not.value = normalizeObjectValue(cert, ['Not', 'not']);
     const gozetimValue = normalizeObjectValue(cert, ['Gözetim Conf.', 'gozetimConfirmed', 'gozetimConf', 'gozetim']);
-    (document.getElementById('cert-gozetim-done') as HTMLInputElement | null)!.checked = isTruthyCheckboxValue(gozetimValue);
+    if (els.gozetimDone) els.gozetimDone.checked = isTruthyCheckboxValue(gozetimValue);
 
     if (cloneId) {
-      const denetimSelect = document.getElementById('cert-denetim') as HTMLSelectElement | null;
-      if (denetimSelect) {
-        denetimSelect.value = 'Gozetim';
-      }
+      if (els.denetim) els.denetim.value = 'Gozetim';
       if (els.gst) els.gst.value = '';
       if (els.goz) els.goz.value = '';
-      (document.getElementById('cert-sgt') as HTMLInputElement | null)!.value = '';
-      (document.getElementById('cert-gozetim-done') as HTMLInputElement | null)!.checked = false;
+      if (els.sgt) els.sgt.value = '';
+      if (els.gozetimDone) els.gozetimDone.checked = false;
     }
   }
 
@@ -892,7 +909,7 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
         if (els.scope) els.scope.value = '';
         if (els.logo) els.logo.value = '';
         if (els.dan) els.dan.value = '';
-        (document.getElementById('cert-kod') as HTMLInputElement | null)!.value = '';
+        if (els.kod) els.kod.value = '';
       }
     });
 
@@ -912,22 +929,22 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
         firmano: companyContext.firmaId || getEditingValue('Firma No', 'firmaNo', 'firmano'),
         standart: standardText,
         other: els.otherInput?.value.trim() || getEditingValue('Other Standard', 'Other', 'other'),
-        denetim: normalizeDenetimValue((document.getElementById('cert-denetim') as HTMLSelectElement | null)?.value || ''),
+        denetim: normalizeDenetimValue(els.denetim?.value || ''),
         sno: els.sno?.value.trim() || '',
         gst: toDisplayDate(els.gst?.value || ''),
         goz: toDisplayDate(els.goz?.value || ''),
-        stt: toDisplayDate((document.getElementById('cert-stt') as HTMLInputElement | null)?.value || ''),
-        sgt: toDisplayDate((document.getElementById('cert-sgt') as HTMLInputElement | null)?.value || ''),
+        stt: toDisplayDate(els.stt?.value || ''),
+        sgt: toDisplayDate(els.sgt?.value || ''),
         kapsam: els.kapsam?.value.trim() || '',
         scope: els.scope?.value.trim() || '',
         logo: els.logo?.value.trim() || getEditingValue('Logo', 'logo'),
-        kod: (document.getElementById('cert-kod') as HTMLInputElement | null)?.value.trim() || getEditingValue('Kod', 'kod', 'NACE', 'nace'),
-        akreditasyon: (document.getElementById('cert-akreditasyon') as HTMLInputElement | null)?.value.trim() || getEditingValue('Akreditasyon', 'akreditasyon'),
-        akredite: (document.getElementById('cert-akredite') as HTMLInputElement | null)?.value.trim() || getEditingValue('Akredite', 'akredite'),
+        kod: els.kod?.value.trim() || getEditingValue('Kod', 'kod', 'NACE', 'nace'),
+        akreditasyon: els.akreditasyon?.value.trim() || getEditingValue('Akreditasyon', 'akreditasyon'),
+        akredite: els.akredite?.value.trim() || getEditingValue('Akredite', 'akredite'),
         dan: els.dan?.value.trim() || getEditingValue('Danışman', 'Danisman', 'dan', 'danisman'),
-        durum: (document.getElementById('cert-durum') as HTMLInputElement | null)?.value.trim() || getEditingValue('Durum', 'durum'),
-        not: (document.getElementById('cert-not') as HTMLTextAreaElement | null)?.value.trim() || getEditingValue('Not', 'not'),
-        gozetimConfirmed: (document.getElementById('cert-gozetim-done') as HTMLInputElement | null)?.checked ? 'TRUE' : 'FALSE',
+        durum: els.durum?.value.trim() || getEditingValue('Durum', 'durum'),
+        not: els.not?.value.trim() || getEditingValue('Not', 'not'),
+        gozetimConfirmed: els.gozetimDone?.checked ? 'TRUE' : 'FALSE',
         qr: buildCertificateQrLink(companyContext.unvan || companyContext.nick, (els.isoFull?.value || standardText), els.sno?.value || ''),
         calendar: getEditingValue('Calendar ID', 'eventId', 'calendar'),
         certLink: getEditingValue('Cert Link', 'certLink', 'certiLink'),
@@ -942,14 +959,13 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
         : await api.addCertificate(certInfo);
       if (response.success) {
         await SyncManager.checkAndSync();
-        showToast(
-          editId
-            ? 'Sertifika basariyla guncellendi.'
-            : cloneId
-              ? 'Gozetim sertifikasi basariyla olusturuldu.'
-              : 'Sertifika basariyla eklendi.',
-          'success',
-        );
+        const successMessage = editId
+          ? 'Sertifika basariyla guncellendi.'
+          : cloneId
+            ? 'Gozetim sertifikasi basariyla olusturuldu.'
+            : 'Sertifika basariyla eklendi.';
+        setFlashToast(successMessage, 'success');
+        showToast(successMessage, 'success');
         setTimeout(() => {
           window.location.href = `/company?id=${encodeURIComponent(companyContext.firmaId)}`;
         }, 800);

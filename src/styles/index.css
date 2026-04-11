@@ -5,6 +5,7 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-surface: var(--surface-color);
+  --color-surface-hover: var(--surface-hover);
   --color-main: var(--text-color);
   --color-muted: var(--muted-text);
   --color-border-main: var(--border-color);

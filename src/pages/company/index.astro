@@ -570,7 +570,7 @@ import {
   import { api } from '../../lib/api';
   import { $certificates } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
-  import { showToast } from '../../lib/toast';
+  import { consumeFlashToast, showToast } from '../../lib/toast';
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1101,6 +1101,8 @@ import {
 
   const params = new URLSearchParams(location.search);
   const firmaId = params.get('id') || params.get('firmaId') || '';
+
+  consumeFlashToast();
 
   if (!firmaId) {
     document.getElementById('hero-skeleton')!.innerHTML = '<p class="text-sm text-rose-400 font-bold">Geçersiz firma ID.</p>';

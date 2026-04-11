@@ -251,7 +251,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
-  import { showToast } from '../../lib/toast';
+  import { setFlashToast, showToast } from '../../lib/toast';
   import {
     uniqueColumnValues,
     filterAuditorsByStandard,
@@ -266,14 +266,14 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   const params = new URLSearchParams(window.location.search);
   const preselectedFirmaId = params.get('firmaId') || params.get('id') || '';
   const editAuditId = params.get('edit') || '';
+  const returnUrl = params.get('returnUrl') || '';
 
   const backBtn = document.getElementById('audit-back-btn') as HTMLAnchorElement | null;
   if (backBtn) {
-    const returnUrl = params.get('returnUrl');
     backBtn.href = returnUrl
       ? returnUrl
       : preselectedFirmaId
-        ? `/certificates/add?id=${encodeURIComponent(preselectedFirmaId)}`
+        ? `/company?id=${encodeURIComponent(preselectedFirmaId)}`
         : '/certificates';
   }
 
@@ -556,10 +556,16 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const rows = filterAuditorsByStandard(auditorRows, xstandartInput?.value || '');
     const names = uniqueColumnValues(rows, 1);
     ['leadAuditorInput1', 'secondAuditorInput1', 'thirdAuditorInput1', 'leadAuditorInput2', 'secondAuditorInput2', 'thirdAuditorInput2'].forEach((id) => fillSelect(id, names));
-    resetCheckboxes();
+    const currentSelections = ['9C', '13C', '14C', '22C', '27C', '45C', '50C', 'GMPC'].reduce<Record<string, boolean>>((acc, id) => {
+      acc[id] = Boolean((document.getElementById(id) as HTMLInputElement | null)?.checked);
+      return acc;
+    }, {});
     const checkboxId = checkboxIdForStandard(xstandartInput?.value || '');
-    const checkbox = checkboxId ? document.getElementById(checkboxId) as HTMLInputElement | null : null;
-    if (checkbox) checkbox.checked = true;
+    if (checkboxId) currentSelections[checkboxId] = true;
+    Object.entries(currentSelections).forEach(([id, checked]) => {
+      const checkbox = document.getElementById(id) as HTMLInputElement | null;
+      if (checkbox) checkbox.checked = checked;
+    });
   }
 
   function updateRange(stage: 'a1' | 'a2') {
@@ -579,14 +585,16 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const lead = (document.getElementById(stage === 'a1' ? 'leadAuditorInput1' : 'leadAuditorInput2') as HTMLSelectElement | null)?.value || '';
     const second = (document.getElementById(stage === 'a1' ? 'secondAuditorInput1' : 'secondAuditorInput2') as HTMLSelectElement | null)?.value || '';
     const third = (document.getElementById(stage === 'a1' ? 'thirdAuditorInput1' : 'thirdAuditorInput2') as HTMLSelectElement | null)?.value || '';
-    const rawDays = (document.getElementById(`${stage}Md`) as HTMLInputElement | null)?.value || '';
+    const rawDays = (document.getElementById(`${stage}Manday`) as HTMLInputElement | null)?.value || (document.getElementById(`${stage}Md`) as HTMLInputElement | null)?.value || '';
     const summary = buildAuditorSummary(auditorRows, [lead, second, third], rawDays);
     const names = document.getElementById(stage === 'a1' ? 'a1Denetciler' : 'a2Denetciler') as HTMLInputElement | null;
     const short = document.getElementById(stage === 'a1' ? 'a1KDenetci' : 'a2KDenetci') as HTMLInputElement | null;
     const manDay = document.getElementById(`${stage}Manday`) as HTMLInputElement | null;
+    const md = document.getElementById(`${stage}Md`) as HTMLInputElement | null;
     if (names) names.value = summary.names;
     if (short) short.value = summary.shortNames;
     if (manDay) manDay.value = summary.totalManDays || rawDays;
+    if (md) md.value = manDay?.value || summary.totalManDays || rawDays;
   }
 
   function setEndDate(stage: 'a1' | 'a2', offset: number) {
@@ -733,6 +741,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       showToast('Lutfen standart secin.', 'error');
       return;
     }
+    if (!((document.getElementById('a1Basla') as HTMLInputElement | null)?.value || '').trim()) {
+      showToast('Lutfen Asama 1 baslangic tarihini girin.', 'error');
+      return;
+    }
     if (!saveBtn) return;
 
     saveBtn.disabled = true;
@@ -787,11 +799,23 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       if (reloadCalendarView) {
         await reloadCalendarView();
       }
+      const successMessage = isEditMode()
+        ? 'Denetim basariyla guncellendi.'
+        : 'Denetim basariyla kaydedildi.';
+      setFlashToast(successMessage, 'success');
       if (isEditMode()) {
-        showToast('Denetim basariyla guncellendi.', 'success');
+        showToast(successMessage, 'success');
       } else {
         clearAuditForm();
-        showToast('Denetim basariyla kaydedildi.', 'success');
+        showToast(successMessage, 'success');
+      }
+
+      if (preselectedFirmaId) {
+        const targetUrl = returnUrl || `/company?id=${encodeURIComponent(preselectedFirmaId)}`;
+        window.setTimeout(() => {
+          window.location.href = targetUrl;
+        }, 800);
+        return;
       }
     } else {
       showToast(`Hata: ${res.error}`, 'error');
@@ -823,6 +847,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     });
     [['leadAuditorInput1', 'a1'], ['secondAuditorInput1', 'a1'], ['thirdAuditorInput1', 'a1'], ['leadAuditorInput2', 'a2'], ['secondAuditorInput2', 'a2'], ['thirdAuditorInput2', 'a2']].forEach(([id, stage]) => {
       document.getElementById(id)?.addEventListener('change', () => updateAuditors(stage as 'a1' | 'a2'));
+    });
+    [['a1Manday', 'a1'], ['a2Manday', 'a2']].forEach(([id, stage]) => {
+      document.getElementById(id)?.addEventListener('input', () => updateAuditors(stage as 'a1' | 'a2'));
     });
 
     document.getElementById('a1Equal')?.addEventListener('click', () => setEndDate('a1', 0));

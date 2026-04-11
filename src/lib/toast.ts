@@ -1,4 +1,5 @@
 const TOAST_CONTAINER_ID = 'toast-container';
+const FLASH_TOAST_KEY = 'portal_flash_toast';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -43,4 +44,26 @@ export function showToast(message: string, type: ToastType = 'info') {
     toast.classList.add('translate-y-4', 'opacity-0');
     setTimeout(() => toast.remove(), 300);
   }, 2600);
+}
+
+export function setFlashToast(message: string, type: ToastType = 'info') {
+  try {
+    sessionStorage.setItem(FLASH_TOAST_KEY, JSON.stringify({ message, type }));
+  } catch {
+    // Ignore storage failures; regular toasts still work in-page.
+  }
+}
+
+export function consumeFlashToast() {
+  try {
+    const raw = sessionStorage.getItem(FLASH_TOAST_KEY);
+    if (!raw) return;
+    sessionStorage.removeItem(FLASH_TOAST_KEY);
+    const parsed = JSON.parse(raw) as { message?: string; type?: ToastType };
+    if (parsed?.message) {
+      showToast(parsed.message, parsed.type || 'info');
+    }
+  } catch {
+    sessionStorage.removeItem(FLASH_TOAST_KEY);
+  }
 }

@@ -11,6 +11,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
 <DashboardLayout title="Firma Ara">
   <div class="space-y-4">
+    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
     <!-- Arama Kontrol Alanı -->
     <div class="bg-surface border border-border-main shadow-lg p-3 sm:p-5 rounded-2xl flex items-center gap-3">
       <div class="hidden md:flex items-center gap-3 bg-indigo-600/20 px-4 py-2 rounded-full border border-indigo-500/30 shrink-0">
@@ -93,6 +94,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   import { api } from '../lib/api';
   import { $companies, $syncStatus } from '../lib/store';
   import { SyncManager } from '../lib/sync';
+  import { consumeFlashToast } from '../lib/toast';
 
   const loader = document.getElementById('table-loader');
   const searchInput = document.getElementById('searchInput') as HTMLInputElement;
@@ -104,6 +106,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   let pageSize = 20;
   const urlParams = new URLSearchParams(window.location.search);
   const initialQuery = urlParams.get('q') || '';
+
+  consumeFlashToast();
 
   // 📡 Store ve Sync Yönetimi
   $companies.subscribe(data => {
@@ -158,11 +162,11 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     
     // 🏷️ Optimize Edilmiş Nickname/Marka Eşleşmesi
     const nickname = pickField(company, [
-      'Markası', 'Marka Adı', 'Kısa Adı', 'Kısa Ad', 'Marka', 'marka', 
-      'Nickname', 'nickname', 'Firma Adı', 'unvan'
+      'Markası', 'Marka Adı', 'Kısa Adı', 'Kısa Ad', 'Marka', 'marka',
+      'Nick', 'Nickname', 'nickname', 'Firma Adı', 'FirmaAdi', 'unvan'
     ], '-');
     
-    const city = pickField(company, ['city', 'City', 'CITY', 'il', 'İl', 'sehir', 'şehir'], '-');
+    const city = pickField(company, ['city', 'City', 'CITY', 'il', 'İl', 'sehir', 'şehir', 'Sehir', 'Şehir'], '-');
     
     // 🔍 Sadeleştirilmiş Arama Kapsamı
     const searchStr = normalize(`${unvan} ${nickname} ${id}`);

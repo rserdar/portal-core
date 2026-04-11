@@ -56,22 +56,27 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="md:col-span-1 space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Şehir / Ülke</label>
-            <div class="flex gap-2">
-              <input type="text" name="sehir" id="sehir-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden flex-1" placeholder="Şehir">
-              <input type="text" name="ulke" id="ulke-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden flex-1" placeholder="Ülke" value="TÜRKİYE">
-            </div>
-          </div>
           <div class="md:col-span-2 space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Tam Adres</label>
             <input type="text" name="adres" id="adres-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Merkez Adres Bilgisi">
           </div>
+          <div class="md:col-span-1 space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Şehir / Ülke</label>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" name="sehir" id="sehir-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Şehir">
+              <input type="text" name="ulke" id="ulke-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ülke" value="TÜRKİYE">
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Şube / Yazışma Adresi</label>
+          <input type="text" name="yazisma" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Şube veya yazışma adresi (farklıysa)">
         </div>
 
         <div class="space-y-6 mt-4">
           <div class="space-y-3">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-2">
               <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Türkçe Kapsam</label>
               <div class="flex gap-2">
                 <button type="button" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold hover:bg-surface-hover transition-all" onclick="window.convertCase('kapsam', 'tr')">TR BÜYÜK</button>
@@ -82,7 +87,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           </div>
 
           <div class="space-y-3">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-2">
               <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">İngilizce Kapsam (Scope)</label>
               <div class="flex gap-2">
                 <button type="button" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold hover:bg-surface-hover transition-all" onclick="window.convertCase('scope', 'en')">EN UPPER</button>
@@ -103,17 +108,21 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           <h2 class="text-xl font-bold">İletişim & Vergi</h2>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Telefon</label>
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Telefon</label>
             <input type="text" name="tel" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="+90 ...">
           </div>
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">E-Posta</label>
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Faks</label>
+            <input type="text" name="faks" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="+90 ...">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">E-Posta</label>
             <input type="email" name="mail" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="info@firma.com">
           </div>
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Web Sitesi</label>
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Web Sitesi</label>
             <input type="text" name="www" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="www.firma.com">
           </div>
         </div>
@@ -126,6 +135,40 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Vergi Numarası</label>
             <input type="text" name="vergiN" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Yönetim Temsilcisi</label>
+            <input type="text" name="kyt" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ad Soyad">
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Yetkili Adı</label>
+            <input type="text" name="yetA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ad Soyad">
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Yetkili Unvanı</label>
+            <input type="text" name="yetU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Genel Müdür, vb.">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">İrtibat Kişisi</label>
+            <input type="text" name="irtA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ad Soyad">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">İrtibat Unvanı</label>
+            <input type="text" name="irtU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Unvan">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">İrtibat Telefonu</label>
+            <input type="text" name="irtN" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="+90 ...">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">İrtibat E-Posta</label>
+            <input type="email" name="irtM" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="irtibat@firma.com">
           </div>
         </div>
       </section>
@@ -141,9 +184,24 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase">Alan (m²)</label>
+            <input type="text" name="alan" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="0">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase">Vardiya</label>
+            <input type="number" name="vardiya" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" value="1">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase">Departman Sayısı</label>
+            <input type="number" name="departman" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" value="0">
+          </div>
+          <div class="space-y-2">
             <label class="text-[10px] font-bold text-gray-500 uppercase">Toplam Çalışan</label>
             <input type="number" name="tcs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" value="0">
           </div>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <div class="space-y-2">
             <label class="text-[10px] font-bold text-gray-500 uppercase">Yönetim</label>
             <input type="number" name="ycs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" value="0">
@@ -153,8 +211,16 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
             <input type="number" name="ucs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" value="0">
           </div>
           <div class="space-y-2">
-            <label class="text-[10px] font-bold text-gray-500 uppercase">Vardiya</label>
-            <input type="number" name="vardiya" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" value="1">
+            <label class="text-[10px] font-bold text-gray-500 uppercase">Aynı İşte Çalışan</label>
+            <input type="number" name="acs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" value="0">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase">Yarı Zamanlı</label>
+            <input type="number" name="yzcs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" value="0">
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase">Taşeron</label>
+            <input type="number" name="tascs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" value="0">
           </div>
         </div>
 
@@ -199,6 +265,36 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         </div>
       </section>
 
+      <!-- section: Doküman & Teknik Dosya -->
+      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.6s;">
+        <div class="flex items-center gap-3 border-b border-border-main pb-4">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+          </div>
+          <h2 class="text-xl font-bold">Doküman & Teknik Dosya</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Firma Sınıfı</label>
+            <input type="text" name="sinif" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Sınıf bilgisi">
+          </div>
+          <div class="flex items-center gap-3 bg-surface-hover border border-border-main rounded-xl px-4 py-3">
+            <input type="checkbox" name="dokuman" id="dokuman-cb" class="w-4 h-4 rounded accent-rose-500">
+            <label for="dokuman-cb" class="text-sm font-semibold cursor-pointer select-none">Firma Dokümanları mevcut</label>
+          </div>
+          <div class="flex items-center gap-3 bg-surface-hover border border-border-main rounded-xl px-4 py-3">
+            <input type="checkbox" name="teknik" id="teknik-cb" class="w-4 h-4 rounded accent-rose-500">
+            <label for="teknik-cb" class="text-sm font-semibold cursor-pointer select-none">Teknik Dosyası var</label>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Teknik Dosya Kapsamı</label>
+          <textarea name="tkapsam" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden min-h-[100px]" placeholder="CE kapsamı veya teknik dosya içeriği..."></textarea>
+        </div>
+      </section>
+
       <!-- sticky: Footer Actions -->
       <div class="sticky bottom-8 z-50 bg-surface border border-border-main shadow-2xl p-4 rounded-2xl flex items-center justify-between">
         <button type="button" id="cancel-btn" class="px-6 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-surface-hover transition font-bold text-sm">İPTAL</button>
@@ -218,8 +314,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <script>
   import { api } from '../../lib/api';
+  import { DB } from '../../lib/db';
   import { SyncManager } from '../../lib/sync';
-  import { showToast } from '../../lib/toast';
+  import { showToast, setFlashToast } from '../../lib/toast';
 
   // Global helpers
   declare global {
@@ -302,6 +399,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       
       const formData = new FormData(form);
       const companyInfo = Object.fromEntries(formData.entries());
+      companyInfo.dokuman = formData.has('dokuman') ? 'TRUE' : 'FALSE';
+      companyInfo.teknik = formData.has('teknik') ? 'TRUE' : 'FALSE';
       
       // Loading state
       if (submitBtn) submitBtn.disabled = true;
@@ -311,11 +410,34 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       const response = await api.call('addCompany', { companyInfo });
       
       if (response.success) {
-        // 🔄 Yerel veriyi anında güncelle (Sync)
+        const createdId = String((response as any)?.data?.id || (response as any)?.id || '').trim();
+        const createdCompany = (response as any)?.data?.company;
+
+        if (createdCompany && createdId) {
+          try {
+            const companies = (await DB.get<any[]>(DB.COMPANIES)) || [];
+            const nextCompanies = companies.filter((item) => {
+              const itemId = String(item?.id || item?.ID || item?.['Firma No'] || item?.firmaNo || '').trim();
+              return itemId !== createdId;
+            });
+            nextCompanies.push(createdCompany);
+            await DB.save(DB.COMPANIES, nextCompanies);
+          } catch (cacheError) {
+            console.warn('Company cache update skipped:', cacheError);
+          }
+        }
+
+        // 🔄 Yerel veriyi arka planda da tazele
         await SyncManager.checkAndSync();
 
-        showToast('Firma başarıyla eklendi! Arama listesine yönlendiriliyorsunuz.', 'success');
-        window.location.href = '/search';
+        const successMessage = 'Firma başarıyla eklendi.';
+        setFlashToast(successMessage, 'success');
+        showToast(`${successMessage} Firma profiline yönlendiriliyorsunuz.`, 'success');
+
+        const targetUrl = createdId ? `/company?id=${encodeURIComponent(createdId)}` : '/search';
+        window.setTimeout(() => {
+          window.location.href = targetUrl;
+        }, 700);
       } else {
         showToast(`Hata: ${response.error}`, 'error');
         if (submitBtn) submitBtn.disabled = false;
@@ -328,6 +450,4 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   // Başlat
   loadConsultants();
 </script>
-
-
 

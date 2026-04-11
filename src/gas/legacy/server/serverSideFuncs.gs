@@ -680,10 +680,10 @@ function addCertificate(crtInfo) {
       crtInfo.standart,      // Standart
       crtInfo.denetim,       // Denetim
       crtInfo.sno,           // Sertifika No
-      crtInfo.gst,           // Geçerlilik Tarihi
-      crtInfo.goz,           // Gözetim Tarihi
-      crtInfo.stt,           // Son Tarih
-      crtInfo.sgt,           // Sertifika Geçerlilik Tarihi
+      crtInfo.gst,           // Geçerli Sertifika Tarihi (gst)
+      crtInfo.goz,           // Gözetim Tarihi (goz)
+      crtInfo.stt,           // Tescil / Son Tetkik Tarihi (stt)
+      crtInfo.sgt,           // Sertifika Geçerlilik Tarihi (sgt)
       crtInfo.kapsam,        // Kapsam
       crtInfo.scope,         // Scope
       crtInfo.logo,          // Logo

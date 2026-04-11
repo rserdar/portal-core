@@ -428,10 +428,17 @@ export default {
       const dept = pick(["Departman", "departman", "dept"]);
       const vardiya = pick(["Vardiya", "vardiya"], "1");
       const logo = pick(["Firma Logosu", "LogoKaşe", "LogoKase", "logoK", "logo", "kase"]);
+      const kase = pick(["Kaşe İmza", "Kase Imza", "Kaşe&İmza", "kase"]);
       const dan = pick(["Danışman", "Danisman", "dan", "danisman"]);
       const ea = pick(["EA", "ea"]);
       const nace = pick(["NACE", "nace"]);
       const not = pick(["Firma Not", "Not", "not"]);
+      const sinif = pick(["Firma Sınıfı", "Firma Sinifi", "sinif"]);
+      const dokuman = pick(["Doküman", "Dokuman", "dokuman"]);
+      const teknik = pick(["Teknik Dosya", "teknik"]);
+      const tkapsam = pick(["Teknik Dosya Kapsamı", "Teknik Dosya Kaspamı", "tkapsam"]);
+      const medikal = pick(["Medikal Sektör", "medikal"]);
+      const gida = pick(["Gıda Sektörü", "Gida Sektoru", "gida"]);
 
       const canonical = {
         ...(input || {}),
@@ -467,10 +474,17 @@ export default {
         Departman: dept, departman: dept, dept,
         Vardiya: vardiya, vardiya,
         "Firma Logosu": logo, LogoKase: logo, logoK: logo, logo,
+        "Kaşe İmza": kase, "Kase Imza": kase, kase,
         "Danışman": dan, Danisman: dan, dan, danisman: dan,
         EA: ea, ea,
         NACE: nace, nace,
         "Firma Not": not, Not: not, not,
+        "Firma Sınıfı": sinif, "Firma Sinifi": sinif, sinif,
+        "Doküman": dokuman, Dokuman: dokuman, dokuman,
+        "Teknik Dosya": teknik, teknik,
+        "Teknik Dosya Kapsamı": tkapsam, "Teknik Dosya Kaspamı": tkapsam, tkapsam,
+        "Medikal Sektör": medikal, medikal,
+        "Gıda Sektörü": gida, "Gida Sektoru": gida, gida,
       };
       canonical.__etag = createEtag(canonical);
       return canonical;
