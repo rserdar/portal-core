@@ -150,13 +150,23 @@ function isPathActive(target: string) {
             <div class="relative shrink-0">
               <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-primary to-primary-hover p-[2px]">
                 <div id="header-user-avatar" class="w-full h-full rounded-full bg-surface flex items-center justify-center overflow-hidden border-2 border-transparent shadow-inner">
-                  <img
-                    id="header-user-picture"
-                    src={user.picture || ""}
-                    alt={user.name}
-                    class:list={["w-full h-full object-cover", !user.picture && "hidden"]}
-                    referrerpolicy="no-referrer"
-                  />
+                  {user.picture && (
+                    <img
+                      id="header-user-picture"
+                      src={user.picture}
+                      alt={user.name}
+                      class="w-full h-full object-cover"
+                      referrerpolicy="no-referrer"
+                    />
+                  )}
+                  {!user.picture && (
+                    <img
+                      id="header-user-picture"
+                      class="w-full h-full object-cover hidden"
+                      referrerpolicy="no-referrer"
+                      alt=""
+                    />
+                  )}
                   <span id="header-user-initials" class:list={["text-xs font-black text-primary", user.picture && "hidden"]}>{user.initials}</span>
                 </div>
               </div>
@@ -225,13 +235,23 @@ function isPathActive(target: string) {
         <div class="relative shrink-0">
           <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-primary-hover p-[2px]">
             <div class="w-full h-full rounded-full bg-surface flex items-center justify-center overflow-hidden border-2 border-transparent shadow-inner">
-              <img
-                id="header-user-picture-mobile"
-                src={user.picture || ""}
-                alt={user.name}
-                class:list={["w-full h-full object-cover", !user.picture && "hidden"]}
-                referrerpolicy="no-referrer"
-              />
+              {user.picture && (
+                <img
+                  id="header-user-picture-mobile"
+                  src={user.picture}
+                  alt={user.name}
+                  class="w-full h-full object-cover"
+                  referrerpolicy="no-referrer"
+                />
+              )}
+              {!user.picture && (
+                <img
+                  id="header-user-picture-mobile"
+                  class="w-full h-full object-cover hidden"
+                  referrerpolicy="no-referrer"
+                  alt=""
+                />
+              )}
               <span id="header-user-initials-mobile" class:list={["text-xs font-black text-primary", user.picture && "hidden"]}>{user.initials}</span>
             </div>
           </div>
@@ -344,6 +364,7 @@ function isPathActive(target: string) {
     try {
       const response = await fetch('/cdn-cgi/access/get-identity', {
         credentials: 'include',
+        redirect: 'error',
         headers: { Accept: 'application/json' },
       });
 

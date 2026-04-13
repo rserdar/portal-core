@@ -47,7 +47,7 @@ const quickActions = [
     {stats.map((item) => {
       const Icon = item.icon;
       return (
-        <div class="bg-surface border border-border-main shadow-xl p-3 sm:p-6 rounded-2xl sm:rounded-[2rem] relative overflow-hidden group md:hover:scale-[1.02] transition-all duration-300">
+        <div class="bg-surface border border-border-main shadow-xl p-3 sm:p-6 rounded-2xl relative overflow-hidden group md:hover:scale-[1.02] transition-all duration-300">
           <div class={`absolute -right-4 -bottom-4 w-24 h-24 ${item.glowClass} rounded-full blur-2xl transition-colors`}></div>
 
           <div class="flex items-center justify-between gap-2 mb-3 sm:mb-6 relative z-10">
@@ -91,7 +91,7 @@ const quickActions = [
         {quickActions.map((action) => {
           const Icon = action.icon;
           return (
-            <a href={action.href} class="bg-surface border border-border-main shadow-xl p-3 sm:p-5 rounded-2xl sm:rounded-[1.5rem] flex items-center justify-between gap-2 sm:gap-3 hover:bg-surface-hover hover:border-primary/20 transition-all group overflow-hidden relative">
+            <a href={action.href} class="bg-surface border border-border-main shadow-xl p-3 sm:p-5 rounded-2xl flex items-center justify-between gap-2 sm:gap-3 hover:bg-surface-hover hover:border-primary/20 transition-all group overflow-hidden relative">
               <div class="flex items-center gap-2 sm:gap-4 relative z-10 min-w-0">
                 <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-surface-hover border border-border-main flex items-center justify-center text-muted group-hover:text-primary group-hover:bg-primary/10 transition-all shrink-0">
                   <Icon size={18} />
@@ -108,7 +108,7 @@ const quickActions = [
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-surface border border-border-main shadow-xl p-5 rounded-[1.5rem] relative overflow-hidden group h-full">
+        <div class="bg-surface border border-border-main shadow-xl p-5 rounded-2xl relative overflow-hidden group h-full">
           <div class="absolute right-0 bottom-0 w-20 h-20 bg-cyan-500/10 blur-2xl rounded-full group-hover:bg-cyan-500/20 transition-colors"></div>
           <div class="relative z-10 flex h-full flex-col">
             <div class="inline-flex items-center gap-2 rounded-full bg-surface-hover border border-border-main px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">
@@ -131,7 +131,7 @@ const quickActions = [
           </div>
         </div>
 
-        <div class="bg-surface border border-border-main shadow-xl p-5 rounded-[1.5rem] relative overflow-hidden group h-full">
+        <div class="bg-surface border border-border-main shadow-xl p-5 rounded-2xl relative overflow-hidden group h-full">
           <div class="absolute right-0 bottom-0 w-20 h-20 bg-rose-500/10 blur-2xl rounded-full group-hover:bg-rose-500/20 transition-colors"></div>
           <div class="relative z-10 flex h-full flex-col">
             <div>
@@ -173,7 +173,7 @@ const quickActions = [
     <!-- Right Panel -->
     <div class="space-y-6 order-first lg:order-last">
       <!-- Pro Tip -->
-      <div class="hidden sm:block bg-surface border border-border-main shadow-xl p-6 sm:p-8 rounded-[2.5rem] relative overflow-hidden group">
+      <div class="hidden sm:block bg-surface border border-border-main shadow-xl p-6 sm:p-8 rounded-2xl relative overflow-hidden group">
         <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-600/10 rounded-full blur-3xl group-hover:bg-indigo-600/20 transition-colors animate-pulse"></div>
         <h3 class="text-sm font-bold text-indigo-400 mb-3 flex items-center gap-2 uppercase tracking-widest italic">
           <Zap size={14} fill="currentColor" />
@@ -185,7 +185,7 @@ const quickActions = [
       </div>
 
       <!-- Status + Sync -->
-      <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] flex flex-col gap-4 sm:gap-6">
+      <div class="bg-surface border border-border-main shadow-xl p-4 sm:p-6 rounded-2xl flex flex-col gap-4 sm:gap-6">
         <div>
           <h3 class="text-sm font-bold text-main uppercase tracking-widest mb-4 flex items-center gap-2">
             <RefreshCw size={14} class="text-indigo-400" />
@@ -233,7 +233,7 @@ const quickActions = [
     <TurkeyMap />
   </div>
 
-  <div class="mt-10 dashboard-deferred bg-surface border border-border-main shadow-2xl p-5 sm:p-8 rounded-[2.5rem] relative overflow-hidden">
+  <div class="mt-10 dashboard-deferred bg-surface border border-border-main shadow-2xl p-5 sm:p-8 rounded-2xl relative overflow-hidden">
     <div class="flex items-center justify-between gap-3 mb-6 sm:mb-8">
       <h2 class="text-base sm:text-lg font-bold text-main uppercase tracking-tight">Son Eklenen Firmalar</h2>
       <a href="/search" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-hover border border-border-main shadow-sm text-[10px] font-bold text-muted hover:text-indigo-400 transition-colors shrink-0">

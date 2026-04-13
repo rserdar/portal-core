@@ -50,7 +50,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
             <div id="audit-company-picker" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label class="space-y-2 block">
                 <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Secimi</span>
-                <input id="company-search" list="company-list" type="text" placeholder="Firma arayin..." class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" />
+                <input id="company-search" list="company-list" type="text" autocomplete="off" placeholder="Firma arayin..." class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" />
                 <datalist id="company-list"></datalist>
               </label>
 
@@ -115,7 +115,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                     </div>
                   </div>
                   <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Bitis Tarihi</span><input id="a1Bitis" type="date" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
-                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Tam Tarih</span><input id="a1Full" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Tam Tarih</span><input id="a1Full" type="text" autocomplete="off" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
                   <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Adam / Gun</span><input id="a1Manday" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
                 </div>
                 <input id="a1Md" type="hidden" />
@@ -145,7 +145,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                     </div>
                   </div>
                   <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Bitis Tarihi</span><input id="a2Bitis" type="date" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
-                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Tam Tarih</span><input id="a2Full" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
+                  <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Tam Tarih</span><input id="a2Full" type="text" autocomplete="off" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
                   <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Adam / Gun</span><input id="a2Manday" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
                 </div>
                 <input id="a2Md" type="hidden" />

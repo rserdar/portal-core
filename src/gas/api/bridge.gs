@@ -197,7 +197,8 @@ function doPost(e) {
       // --- DOKÜMAN & DOSYA SERVİSLERİ ---
       case "getFolderId":
         result.data = DriveService.getCompanyFolderId(params.nickname);
-        result.success = true;
+        result.success = Boolean(result.data);
+        if (!result.success) result.error = "Firma klasörü bulunamadı.";
         break;
 
       case "getRecentFiles":
@@ -226,16 +227,11 @@ function doPost(e) {
         result.success = pdfRes.success;
         break;
 
-      case "getAvailableSets":
-        result.data = DocumentService.getAvailableSets();
-        result.success = true;
-        break;
-
-      case "prepareBatchFolders":
-        const batchRes = DocumentService.prepareBatchFolders(params.data);
-        result.data = batchRes;
-        result.success = batchRes.success;
-        if (!batchRes.success) result.error = batchRes.error;
+      case "createBatchFolders":
+        const batchFolderRes = DocumentService.createBatchFolders(params.nick, params.uniqueSubFolders);
+        result.data = batchFolderRes.data;
+        result.success = batchFolderRes.success;
+        if (!batchFolderRes.success) result.error = batchFolderRes.error;
         break;
 
       case "generateSingleBatchDoc":
@@ -268,17 +264,7 @@ function doPost(e) {
         if (!contractRes.success) result.error = contractRes.error;
         break;
 
-      case "buildCertPayload":
-      case "sertifikaVeri":
-        result.data = DocumentService.buildCertPayload(params.id, params.lang, params.select);
-        result.success = true;
-        break;
 
-      case "buildTestPayload":
-      case "testVeri":
-        result.data = DocumentService.buildTestPayload(params.id, params.lang);
-        result.success = true;
-        break;
 
       // --- DENETİM & GÖZETİM ---
       case "getAudits":

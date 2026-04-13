@@ -3,7 +3,7 @@ import { Building2, Award, CalendarClock, Map as MapIcon, UserRound } from 'luci
 import turkeySvg from '../assets/images/turkey.svg?raw';
 ---
 
-<section id="turkey-map-dashboard" class="bg-surface border border-border-main shadow-2xl rounded-[2rem] md:rounded-[2.5rem] overflow-hidden relative">
+<section id="turkey-map-dashboard" class="map-dashboard-shell bg-surface border border-border-main rounded-2xl overflow-hidden relative isolate">
   <div class="absolute inset-x-0 top-0 h-36 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.16),transparent_52%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.1),transparent_36%)] pointer-events-none"></div>
   <div class="relative z-10 p-6 md:p-8 border-b border-border-main">
     <div class="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
@@ -16,17 +16,17 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
         <p class="max-w-3xl text-xs md:text-sm text-muted leading-relaxed">Harita firma dağılımını il bazında gösterir. Sağ panelde seçili ilin aktif sertifikaları ve bu ay yenileme bekleyen kayıtları yer alır.</p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 w-full xl:w-auto xl:min-w-[28rem]">
-        <div class="rounded-[1.5rem] border border-border-main bg-surface-hover px-4 py-4 relative overflow-hidden group/summary">
+        <div class="rounded-xl border border-border-main bg-surface-hover px-4 py-4 relative overflow-hidden group/summary">
           <div class="absolute right-3 bottom-2 text-indigo-400/10 group-hover/summary:text-indigo-400/20 transition-colors"><MapIcon size={26} /></div>
           <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Aktif İl Sayısı</p>
           <p id="map-summary-cities" class="mt-2 text-2xl font-black tracking-tight text-main">0</p>
         </div>
-        <button id="map-summary-top-city-btn" type="button" class="rounded-[1.5rem] border border-border-main bg-surface-hover px-4 py-4 relative overflow-hidden text-left transition-all hover:border-indigo-500/40 hover:bg-surface group/summary">
+        <button id="map-summary-top-city-btn" type="button" class="rounded-xl border border-border-main bg-surface-hover px-4 py-4 relative overflow-hidden text-left transition-all hover:border-indigo-500/40 hover:bg-surface group/summary">
           <div class="absolute right-3 bottom-2 text-indigo-400/10 group-hover/summary:text-indigo-400/20 transition-colors"><Building2 size={26} /></div>
           <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">En Yoğun İl</p>
           <p id="map-summary-top-city" class="mt-2 text-lg font-black tracking-tight text-indigo-400">—</p>
         </button>
-        <div class="rounded-[1.5rem] border border-border-main bg-surface-hover px-4 py-4 relative overflow-hidden group/summary">
+        <div class="rounded-xl border border-border-main bg-surface-hover px-4 py-4 relative overflow-hidden group/summary">
           <div class="absolute right-3 bottom-2 text-indigo-400/10 group-hover/summary:text-indigo-400/20 transition-colors"><Award size={26} /></div>
           <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Türkiye'deki Firma Sayısı</p>
           <p id="map-summary-companies" class="mt-2 text-2xl font-black tracking-tight text-main">0</p>
@@ -37,21 +37,21 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
 
   <div class="md:hidden p-5 border-b border-border-main">
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <div class="rounded-[1.25rem] border border-border-main bg-surface-hover px-4 py-4">
+      <div class="rounded-xl border border-border-main bg-surface-hover px-4 py-4">
         <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Aktif İl Sayısı</p>
         <p id="map-summary-cities-mobile" class="mt-2 text-2xl font-black tracking-tight text-main">0</p>
       </div>
-      <button id="map-summary-top-city-btn-mobile" type="button" class="rounded-[1.25rem] border border-border-main bg-surface-hover px-4 py-4 text-left transition-all hover:border-indigo-500/40 hover:bg-surface">
+      <button id="map-summary-top-city-btn-mobile" type="button" class="rounded-xl border border-border-main bg-surface-hover px-4 py-4 text-left transition-all hover:border-indigo-500/40 hover:bg-surface">
         <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">En Yoğun İl</p>
         <p id="map-summary-top-city-mobile" class="mt-2 text-lg font-black tracking-tight text-indigo-400">—</p>
       </button>
-      <div class="rounded-[1.25rem] border border-border-main bg-surface-hover px-4 py-4">
+      <div class="rounded-xl border border-border-main bg-surface-hover px-4 py-4">
         <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Türkiye'deki Firma Sayısı</p>
         <p id="map-summary-companies-mobile" class="mt-2 text-2xl font-black tracking-tight text-main">0</p>
       </div>
     </div>
 
-    <div class="mt-4 rounded-[1.5rem] border border-border-main bg-surface-hover px-4 py-4">
+    <div class="mt-4 rounded-xl border border-border-main bg-surface-hover px-4 py-4">
       <div class="flex items-center justify-between gap-3">
         <div>
           <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Öne Çıkan İller</p>
@@ -64,16 +64,16 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
 
   <div class="hidden md:grid grid-cols-1 xl:grid-cols-[minmax(0,1.45fr)_22rem]">
     <div class="p-5 md:p-8 border-b xl:border-b-0 xl:border-r border-border-main">
-      <div class="rounded-[1.5rem] md:rounded-[2rem] border border-border-main bg-[linear-gradient(180deg,rgba(255,255,255,0.03),transparent)] p-4 md:p-6">
+      <div class="p-0 md:p-2">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
           <div>
             <p class="text-[10px] font-black uppercase tracking-[0.22em] text-muted">Isı Haritası</p>
             <p class="text-sm text-main font-bold">Yoğunluğa göre tonlanan iller</p>
           </div>
           <div class="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
-            <span class="inline-flex items-center gap-2 rounded-full border border-border-main bg-surface px-3 py-1"><span class="h-2.5 w-2.5 rounded-full bg-indigo-300/40"></span>Düşük</span>
-            <span class="inline-flex items-center gap-2 rounded-full border border-border-main bg-surface px-3 py-1"><span class="h-2.5 w-2.5 rounded-full bg-indigo-500/70"></span>Orta</span>
-            <span class="inline-flex items-center gap-2 rounded-full border border-border-main bg-surface px-3 py-1"><span class="h-2.5 w-2.5 rounded-full bg-cyan-400"></span>Yüksek</span>
+            <span class="inline-flex items-center gap-2 rounded-full border border-border-main bg-surface px-3 py-1"><span class="h-2.5 w-2.5 rounded-full" style="background:rgba(165,180,252,0.75)"></span>Düşük</span>
+            <span class="inline-flex items-center gap-2 rounded-full border border-border-main bg-surface px-3 py-1"><span class="h-2.5 w-2.5 rounded-full" style="background:rgba(99,102,241,0.85)"></span>Orta</span>
+            <span class="inline-flex items-center gap-2 rounded-full border border-border-main bg-surface px-3 py-1"><span class="h-2.5 w-2.5 rounded-full" style="background:rgba(6,182,212,0.93)"></span>Yüksek</span>
           </div>
         </div>
         <div class="relative">
@@ -83,7 +83,7 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
           </div>
         </div>
 
-        <div class="mt-5 rounded-[1.5rem] border border-border-main bg-surface-hover px-4 py-4">
+        <div class="mt-5 rounded-xl border border-border-main bg-surface-hover px-4 py-4">
           <div class="flex items-center justify-between gap-3">
             <div>
               <p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Öne Çıkan İller</p>
@@ -95,15 +95,15 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
       </div>
     </div>
 
-    <aside class="p-5 md:p-8 bg-[linear-gradient(180deg,rgba(99,102,241,0.06),transparent_32%)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.55),transparent_40%)]">
-      <div id="city-panel-empty" class="flex h-full min-h-[16rem] md:min-h-[22rem] flex-col items-center justify-center rounded-[1.5rem] md:rounded-[2rem] border border-dashed border-border-main bg-surface-hover px-5 md:px-6 py-8 md:py-10 text-center">
-        <div class="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-indigo-500/10 text-indigo-400 mb-5"><MapIcon size={28} /></div>
+    <aside class="p-5 md:p-8 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.55),transparent_40%)]">
+      <div id="city-panel-empty" class="flex h-full min-h-[16rem] md:min-h-[22rem] flex-col items-center justify-center rounded-xl md:rounded-2xl border border-dashed border-border-main bg-surface-hover px-5 md:px-6 py-8 md:py-10 text-center">
+        <div class="flex h-16 w-16 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 mb-5"><MapIcon size={28} /></div>
         <p class="text-lg font-black tracking-tight text-main">Bir İl Seçin</p>
         <p class="mt-2 max-w-[18rem] text-xs leading-relaxed text-muted">Haritadan herhangi bir ile tıklayarak o bölgedeki firma yoğunluğunu ve sertifika hareketlerini açabilirsin.</p>
       </div>
 
       <div id="city-panel-content" class="hidden space-y-5">
-        <div class="rounded-[1.5rem] md:rounded-[2rem] border border-border-main bg-surface px-4 md:px-5 py-4 md:py-5 shadow-xl">
+        <div class="rounded-xl md:rounded-2xl border border-border-main bg-surface px-4 md:px-5 py-4 md:py-5 shadow-xl">
           <div class="flex items-start justify-between gap-4">
             <div>
               <p class="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Seçili İl</p>
@@ -114,22 +114,22 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
         </div>
 
         <div class="grid grid-cols-1 gap-3">
-          <button type="button" id="city-card-companies" class="rounded-[1.5rem] border border-border-main bg-surface px-4 py-4 text-left relative overflow-hidden transition-all hover:border-indigo-500/40 hover:bg-surface-hover group/card">
+          <button type="button" id="city-card-companies" class="rounded-xl border border-border-main bg-surface px-4 py-4 text-left relative overflow-hidden transition-all hover:border-indigo-500/40 hover:bg-surface-hover group/card">
             <div class="absolute right-3 bottom-2 text-indigo-400/10 group-hover/card:text-indigo-400/25 transition-colors"><Building2 size={24} /></div>
             <div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Toplam Firma</p><Building2 size={15} class="text-indigo-400" /></div>
             <p id="city-stat-companies" class="mt-2 text-3xl font-black tracking-tight text-main">0</p>
           </button>
-          <div class="rounded-[1.5rem] border border-emerald-500/20 bg-emerald-500/10 px-4 py-4 relative overflow-hidden group/card">
+          <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-4 relative overflow-hidden group/card">
             <div class="absolute right-3 bottom-2 text-emerald-300/10 group-hover/card:text-emerald-300/20 transition-colors"><Award size={24} /></div>
             <div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300">Aktif Sertifika</p><Award size={15} class="text-emerald-400" /></div>
             <p id="city-stat-active-certs" class="mt-2 text-3xl font-black tracking-tight text-emerald-400">0</p>
           </div>
-          <div class="rounded-[1.5rem] border border-amber-500/20 bg-amber-500/10 px-4 py-4 relative overflow-hidden group/card">
+          <div class="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-4 relative overflow-hidden group/card">
             <div class="absolute right-3 bottom-2 text-amber-300/10 group-hover/card:text-amber-300/20 transition-colors"><CalendarClock size={24} /></div>
             <div class="flex items-center justify-between"><p id="city-month-label" class="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">Bu Ay Bekleyen</p><CalendarClock size={15} class="text-amber-400" /></div>
             <p id="city-stat-pending-certs" class="mt-2 text-3xl font-black tracking-tight text-amber-400">0</p>
           </div>
-          <div class="rounded-[1.5rem] border border-border-main bg-surface px-4 py-4 relative overflow-hidden group/card">
+          <div class="rounded-xl border border-border-main bg-surface px-4 py-4 relative overflow-hidden group/card">
             <div class="absolute right-3 bottom-2 text-cyan-400/10 group-hover/card:text-cyan-400/20 transition-colors"><UserRound size={24} /></div>
             <div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-[0.18em] text-muted">Danışman Yoğunluğu</p><UserRound size={15} class="text-cyan-400" /></div>
             <p id="city-stat-consultants" class="mt-2 text-sm font-black tracking-tight text-main">—</p>
@@ -141,25 +141,75 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
 </section>
 
 <style is:global>
-  #turkey-map-dashboard #svg-turkey { width: 100%; height: auto; filter: drop-shadow(0 20px 40px rgba(14, 165, 233, 0.08)); }
-  #turkey-map-dashboard .turkey path { fill: rgba(51, 65, 85, 0.22); stroke: rgba(148, 163, 184, 0.35); stroke-width: 0.85; transition: fill 0.2s ease, stroke 0.2s ease, transform 0.2s ease, filter 0.2s ease; cursor: pointer; vector-effect: non-scaling-stroke; }
-  .dark #turkey-map-dashboard .turkey path { fill: rgba(30, 41, 59, 0.95); stroke: rgba(148, 163, 184, 0.2); }
-  #turkey-map-dashboard .turkey path:hover, #turkey-map-dashboard .turkey g:focus-visible path { stroke: rgba(125, 211, 252, 0.95); stroke-width: 1.15; filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.35)); transform: translateY(-1px); }
-  #turkey-map-dashboard .turkey path.active {
-    fill: rgba(34, 197, 94, 0.72) !important;
-    stroke: rgba(134, 239, 172, 1);
-    stroke-width: 1.35;
-    filter: drop-shadow(0 0 14px rgba(34, 197, 94, 0.28));
+  #turkey-map-dashboard.map-dashboard-shell {
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 10px 30px rgba(15, 23, 42, 0.08);
   }
-  .dark #turkey-map-dashboard .turkey path.active {
-    fill: rgba(16, 185, 129, 0.82) !important;
+
+  .dark #turkey-map-dashboard.map-dashboard-shell {
+    box-shadow:
+      0 1px 2px rgba(2, 6, 23, 0.35),
+      0 18px 40px rgba(2, 6, 23, 0.38);
+  }
+
+  /* SVG kapsayıcı — light modda gölge olmasın, dark modda hafif */
+  #turkey-map-dashboard #svg-turkey {
+    width: 100%;
+    height: auto;
+    filter: none;
+  }
+
+  .dark #turkey-map-dashboard #svg-turkey {
+    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.25));
+  }
+
+  /* Boş iller — Light mod */
+  #turkey-map-dashboard .turkey path {
+    fill: rgba(203, 213, 225, 0.75);
+    stroke: rgba(148, 163, 184, 0.55);
+    stroke-width: 0.85;
+    transition: fill 0.22s ease, stroke 0.22s ease, filter 0.22s ease;
+    cursor: pointer;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* Boş iller — Dark mod */
+  .dark #turkey-map-dashboard .turkey path {
+    fill: rgba(30, 41, 59, 0.82);
+    stroke: rgba(71, 85, 105, 0.5);
+  }
+
+  /* Hover — transform yok, sadece glow */
+  #turkey-map-dashboard .turkey path:hover,
+  #turkey-map-dashboard .turkey g:focus-visible path {
+    stroke: rgba(125, 211, 252, 0.9);
+    stroke-width: 1.2;
+    filter: drop-shadow(0 0 7px rgba(56, 189, 248, 0.45));
+  }
+
+  /* Seçili il — Light mod */
+  #turkey-map-dashboard .turkey path.map-active {
+    fill: rgba(16, 185, 129, 0.72);
+    stroke: rgba(167, 243, 208, 0.9);
+    stroke-width: 1.4;
+    filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.35));
+  }
+
+  /* Seçili il — Dark mod */
+  .dark #turkey-map-dashboard .turkey path.map-active {
+    fill: rgba(16, 185, 129, 0.85);
     stroke: rgba(167, 243, 208, 0.95);
-    filter: drop-shadow(0 0 18px rgba(16, 185, 129, 0.35));
+    filter: drop-shadow(0 0 14px rgba(16, 185, 129, 0.4));
   }
+
+  /* Focus temizle */
   #turkey-map-dashboard .turkey g:focus,
   #turkey-map-dashboard .turkey g:focus-visible,
   #turkey-map-dashboard .turkey path:focus,
   #turkey-map-dashboard .turkey path:focus-visible { outline: none !important; }
+
+  /* İl yazılarını gizle */
   #turkey-map-dashboard .turkey text { display: none; }
 </style>
 
@@ -369,8 +419,19 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
     });
   }
 
+  // Heatmap renk seviyeleri: 5 basamak, açık→koyu mavi/cyan
+  const HEAT_COLORS = [
+    'rgba(165, 180, 252, 0.60)',  // seviye 1 — çok düşük (indigo-300)
+    'rgba(129, 140, 248, 0.72)',  // seviye 2 — düşük     (indigo-400)
+    'rgba(99,  102, 241, 0.82)',  // seviye 3 — orta      (indigo-500)
+    'rgba(34,  211, 238, 0.82)',  // seviye 4 — yüksek    (cyan-400)
+    'rgba(6,   182, 212, 0.93)',  // seviye 5 — çok yüksek (cyan-500)
+  ];
+
   function updateHeatmap() {
-    const maxCount = Math.max(...Array.from(cityStats.values()).map((stat) => stat.companyCount), 1);
+    const counts = Array.from(cityStats.values()).map((s) => s.companyCount).filter((c) => c > 0);
+    const maxCount = counts.length > 0 ? Math.max(...counts) : 1;
+
     document.querySelectorAll('#turkey-map-dashboard .turkey g').forEach((group) => {
       const cityName = group.dataset.cityName || '';
       const cityCode = group.dataset.cityCode || '';
@@ -379,12 +440,17 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
       const path = group.querySelector('path');
       if (!path) return;
       if (stat) stat.code = cityCode || stat.code;
+
       if (!stat || stat.companyCount === 0) {
         path.style.fill = '';
+        path.style.filter = '';
         return;
       }
+
       const ratio = stat.companyCount / maxCount;
-      path.style.fill = ratio > 0.66 ? 'rgba(34, 211, 238, 0.88)' : ratio > 0.33 ? 'rgba(99, 102, 241, 0.78)' : 'rgba(129, 140, 248, 0.52)';
+      const level = ratio > 0.8 ? 4 : ratio > 0.6 ? 3 : ratio > 0.35 ? 2 : ratio > 0.15 ? 1 : 0;
+      path.style.fill = HEAT_COLORS[level];
+      path.style.filter = '';
     });
   }
 
@@ -409,9 +475,15 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
     if (activeEl) activeEl.textContent = String(stat.activeCerts);
     if (pendingEl) pendingEl.textContent = String(stat.pendingThisMonth);
     if (consultantsEl) consultantsEl.textContent = consultants;
-    document.querySelectorAll('#turkey-map-dashboard .turkey path').forEach((path) => path.classList.remove('active'));
+    document.querySelectorAll('#turkey-map-dashboard .turkey path').forEach((path) => {
+      path.classList.remove('map-active');
+      path.style.filter = '';
+    });
     const activePath = document.querySelector(`#turkey-map-dashboard .turkey g[data-city-name="${cityName}"] path`);
-    if (activePath) activePath.classList.add('active');
+    if (activePath) {
+      activePath.classList.add('map-active');
+      activePath.style.fill = '';
+    }
   }
 
   const cityCompaniesCard = document.getElementById('city-card-companies');

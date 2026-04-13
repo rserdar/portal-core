@@ -1,11 +1,14 @@
-# 🤖 Project Intelligence & Context (AI_CONTEXT.md v5.4.0)
+# 🤖 Project Intelligence & Context (AI_CONTEXT.md v5.6.1)
 
 > [!IMPORTANT]
-> **KV-Primary Architecture (v5.5.0):** Bu proje hem okuma hem yazma için **Cloudflare KV**'yi birincil veri tabanı olarak kullanır. Cloudflare Worker (`src/workers/proxy.js`) tüm veri operasyonlarını yönetir.
+> **KV-Primary Architecture (v5.6.1):** Bu proje hem okuma hem yazma için **Cloudflare KV**'yi birincil veri tabanı olarak kullanır. Cloudflare Worker (`src/workers/proxy.js`) tüm veri operasyonlarını yönetir.
 > - **KV Binding:** `env.DB` (linked to Namespace ID: `8eb0dc6ffe2947729b29f0db1c84fd52`).
-> - **Strategy:** KV-primary for ALL reads AND writes. Google Sheets is manual backup ONLY — no automatic write-back.
+> - **Strategy:** KV-primary for ALL operational reads AND writes. Google Sheets is backup / restore ONLY — operational database değildir.
 > - **Google Native Exception:** Docs, Drive, Calendar, Gmail operasyonları GAS üzerinden çalışır (KV bypass). Bu servisler hiçbir zaman KV'ye taşınamaz.
 > - **Bulk Hydration:** A "SİSTEMİ SENKRONİZE ET" button triggers a bulk export from GAS to KV and local IndexedDB.
+> - **Performance Manifesto:** `bulkSync` / `importBackup` dışındaki hiçbir write path full dataset rebuild yapamaz. Günlük write operasyonları yalnızca etkilenen KV index/key'lerini incremental günceller.
+> - **New Hard Rule:** Doküman üretimi için gereken operasyonel payload'lar Google Sheets'ten okunamaz; Worker bunları KV indexlerinden kurar ve GAS'e hazır veri gönderir.
+> - **Operational Status:** `buildCertPayload` ve `buildTestPayload` operasyonel path'te Worker/KV tarafından üretilir; GAS tarafındaki sheet-backed helper'lar yalnızca legacy/fallback referansıdır.
 
 > [!CAUTION]
 > **Mimari Karar — KV-First (v5.3.0):** Hem mevcut hem de henüz migration yapılmamış TÜM fonksiyonlar için geliştirme stratejisi aşağıdaki kurallara göre yapılmalıdır. Bunun tek istisnası Google'ın native servislerini (Docs, Drive, Calendar, Gmail) doğrudan kullanan operasyonlardır — bunlar GAS'tan hiçbir zaman çıkarılamaz.
@@ -40,6 +43,20 @@
   1. İlk çağrı (`replace=true`) sadece `requiresConfirmation=true` + `confirmation.token` döner, yazma yapmaz.
   2. İkinci çağrıda `confirm=true`, `confirmText="GOOGLE_SHEETS_BACKUP_ONAY"` ve geçerli `confirmToken` gönderilmeden restore başlamaz.
 
+### 1.2 Worker Manifestosu
+- **KV-authoritative:** Browser tarafındaki operasyonel veri için tek otorite Cloudflare KV'dir. Sheets yalnızca backup / recovery kaynağıdır.
+- **Sheets is not a database:** Yeni eklenen veya KV'de güncellenen operasyonel kayıtları bulmak için Sheets'e gidilmesi mimari ihlaldir.
+- **Payloads come from KV:** `buildCertPayload`, `buildTestPayload`, benzeri üretim payload'ları Worker/KV tarafında kurulmalı; GAS bu payload'ları yalnızca consume etmelidir.
+- **No operational Sheet reads:** Firma/sertifika/test/denetim/proforma/standart verisini doküman üretmek, listelemek, tek kayıt bulmak veya işlem yapmak için Sheets'ten okumak yasaktır.
+- **Allowed Sheet usage only:** `bulkSync`, `bulkSyncMaster`, `exportBackup`, `importBackup`, ve gerçekten şablon/master veri kaynağı olarak korunması gereken nadir Google-native senaryolar.
+- **Incremental write zorunluluğu:** `add/update` operasyonları tek kayıt değişimi için tüm dataset'i `JSON.parse`/`JSON.stringify` yapamaz.
+- **Index-first tasarım:** Liste cache'leri disposable kabul edilir; kalıcı doğruluk `cache:index:*` ve küçük `cache:meta:*NextId` anahtarlarında korunur.
+- **Aggregate cache politikası:** `cache:getCompanies:{}`, `cache:getCertificates:{}`, `cache:getAudits:{}`, `cache:getConsultants:{}` gibi toplu cache'ler write anında yeniden üretilmez; invalidate edilir ve gerekirse indexten rebuild edilir.
+- **bulkSync istisnası:** Full dataset rebuild yalnızca `bulkSync`, `bulkSyncMaster`, `importBackup` gibi açıkça toplu veri senaryolarında serbesttir.
+- **KV/GAS kota ekonomisi:** Bir write path tek kayıt için gereksiz KV `get/list/put/delete` zinciri kuramaz; GAS'a ancak Google-native side-effect veya açık backup/sync ihtiyacı varsa gidilir.
+- **CORS disiplini:** Worker yalnızca allowlist origin'leri kabul eder. `Origin` header'ı olan ama allowlist dışında kalan browser istekleri 403 ile reddedilir. `OPTIONS` cevapları ile `POST` cevapları aynı policy'yi taşır.
+- **Sync güvenliği:** “SİSTEMİ SENKRONİZE ET (KV)” ana bulk hydration kapısıdır; bu akış korunmalı, hızlandırılabilir ama incremental write mantığıyla karıştırılmamalıdır.
+
 ### 🏗️ Legacy Infrastructure Context (The "Gold Standard")
 - **Frontend:** Bootstrap 5.3 + Tabulator v6.3 (Professional Data Grid).
 - **Libraries:** Luxon (Date handling), SheetJS (Excel Exports).
@@ -64,6 +81,15 @@
 > [!CAUTION]
 > Bu bölüm, geliştirilen veya migration yapılan **her fonksiyon** için uyulması zorunlu mimari kararı tanımlar.
 > **Özetle:** Google'ın native servislerine (Docs, Drive, Calendar, Gmail, LanguageApp) doğrudan bağımlı olmayan **her okuma ve yazma operasyonu KV üzerinden çözülür**. GAS yalnızca Google Native side-effect engine'i olarak vardır — authoritative data store değil. Sheets manuel backup kaynağıdır.
+
+### 2.1 Operational Data vs Backup Boundary
+
+- **Cloudflare KV:** Operasyonel veri tabanı. UI, Worker, payload üretimi, CRUD, dashboard ve şirket/sertifika/test/denetim/proforma akışları buradan beslenir.
+- **Google Apps Script:** Google-native işlem motoru. Drive/Docs/Calendar/Gmail/PDF gibi side-effect işleri yapar; veri kaynağı rolü üstlenmez.
+- **Google Sheets:** Yalnızca backup, restore, bulk hydration ve istisnai master/template kaynakları için kullanılır.
+- **Kesin sınır:** "Veriyi bulmak için Sheets'e gidelim" yaklaşımı yasaktır. Doğru akış "KV'den hazır payload kur, GAS ile işlemi yap" olmalıdır.
+- **Yanlış örnek:** `DocumentService.buildCertPayload()` içinde `CertificateService.getById()` / `CompanyService.getById()` / `Standarts` sheet okuması.
+- **Doğru örnek:** Worker `certificateById + companyById + standardsById` indexlerinden payload kurar, GAS `generateIso` ile sadece belgeyi üretir.
 
 ### Kural 1 — Okuma (READ) Operasyonları: Her Zaman KV-First
 
@@ -94,7 +120,7 @@ Browser → CF Worker → KV hit? → Dön (0ms)
 | `getMasterData` | `cache:getMasterData:{"type":"X"}` | ✅ Aktif (`standards/auditors/consultants/testdocs/sysdocs`) |
 | `getAvailableSets` | `cache:getAvailableSets:{}` | Planlı (henüz cacheableActions listesinde değil) |
 
-### Kural 2 — Yazma (WRITE) Operasyonları: Her Zaman KV-Primary
+### Kural 2 — Yazma (WRITE) Operasyonları: Her Zaman KV-Primary + Incremental
 
 Google'ın native servislerine bağımlı olmayan **TÜM yazma operasyonları doğrudan KV'ye yazılır**. Sheets'e otomatik write-back yapılmaz, yapılmamalıdır.
 
@@ -107,23 +133,33 @@ Browser → CF Worker → KV'ye yaz (primary) → Başarılı?
 > [!CAUTION]
 > **Sheets'e write-back kesinlikle yapılmaz.** `addCompany`, `addTest`, `addProforma`, `scheduleAudit` dahil tüm operasyonlar için authoritative store KV'dir. Sheets yalnızca "SİSTEMİ SENKRONİZE ET" veya manuel backup akışlarıyla güncellenir.
 
+> [!IMPORTANT]
+> **Full rebuild yasağı:** `bulkSync` / `importBackup` dışındaki write operasyonları `cache:get*:{}` aggregate listelerini yeniden üretmez. Bu operasyonlar yalnızca:
+> - ilgili `cache:index:*` anahtarını,
+> - tekil `cache:get...ById:*` / `cache:get...ByFirmaId:*` anahtarlarını,
+> - gerekiyorsa `cache:meta:*NextId` sayaçlarını
+> günceller veya invalidate eder.
+
 > [!NOTE]
 > **Google Native side-effect içeren operasyonlar** (`scheduleAudit`, `updateSurveillance`): **Veri KV'ye yazılır.** Calendar event / Drive dosya oluşturma için ek bir GAS çağrısı yapılır. GAS bu akışta yalnızca side-effect engine'i olarak kullanılır.
+
+> [!IMPORTANT]
+> **Doküman üretim payload kuralı:** `buildCertPayload`, `buildTestPayload` gibi helper'lar operasyonel path'te Sheets okuyamaz. Bunlar ya Worker/KV tarafına taşınmalı ya da GAS içinde sadece hazır payload doğrulama/consume görevinde kalmalıdır.
 
 > [!WARNING]
 > **Geçici Devre Dışı — Google Calendar Side-Effects:** KV-primary altyapısı tamamlanana kadar, Ekleme ve Düzenleme operasyonlarındaki (`scheduleAudit`, `updateSurveillance`) **Google Calendar GAS çağrıları geçici olarak devre dışı bırakılmıştır.** Bu operasyonlar şu an yalnızca KV'ye yazar; Calendar event oluşturma/güncelleme atlanır. İlerleyen aşamalarda Calendar entegrasyonu yeniden devreye alınacaktır.
 
 | Action | Yazma Hedefi | Etkilenen KV Key(ler) |
 | :--- | :--- | :--- |
-| `addCompany` | **KV-primary** | `cache:getCompanies:{}`, `cache:index:companiesById` güncellenir |
-| `updateCompany` | **KV-primary** | `cache:getCompanies:{}`, `cache:index:companiesById`, `cache:getCompanyById:{"id":"X"}` güncellenir |
-| `addCertificate` | **KV-primary** | `cache:getCertificates:{}`, `cache:index:certificateById`, `cache:index:certificatesByFirmaId` güncellenir |
-| `updateCertificate` | **KV-primary** | Aynı sertifika key/indexleri güncellenir |
-| `updateCertificateField` | **KV-primary** | İlgili sertifika key/indexleri güncellenir |
-| `updateSurveillance` | **KV-primary** + Calendar GAS side-effect | İlgili firma cert keyleri güncellenir |
-| `addTest` | **KV-primary** | `cache:index:testsByFirmaId`, `cache:getTestsByFirmaId:{"firmaId":"X"}` güncellenir |
-| `scheduleAudit` | **KV-primary** + Calendar GAS side-effect | `cache:index:auditsByFirmaId`, `cache:getAuditsByFirmaId:{"firmaId":"X"}` güncellenir |
-| `addProforma` | **KV-primary** | `cache:getProformaByFirmaId:{"firmaId":"X"}` güncellenir |
+| `addCompany` | **KV-primary** | `cache:index:companiesById`, `cache:meta:companyNextId`, `cache:getCompanyById:{"id":"X"}` güncellenir; aggregate cache invalidate edilir |
+| `updateCompany` | **KV-primary** | `cache:index:companiesById`, `cache:getCompanyById:{"id":"X"}` güncellenir; aggregate cache invalidate edilir |
+| `addCertificate` | **KV-primary** | `cache:index:certificateById`, `cache:index:certificatesByFirmaId`, `cache:meta:certificateNextId`, ilgili firma cache'i güncellenir; aggregate cache invalidate edilir |
+| `updateCertificate` | **KV-primary** | Aynı sertifika indexleri + ilgili firma cache'i güncellenir; aggregate cache invalidate edilir |
+| `updateCertificateField` | **KV-primary** | İlgili sertifika indexleri + ilgili firma cache'i güncellenir; aggregate cache invalidate edilir |
+| `updateSurveillance` | **KV-primary** + Calendar GAS side-effect | Yalnızca etkilenen sertifika indexleri / firma cache'leri güncellenir; full rebuild yapılmaz |
+| `addTest` | **KV-primary** | `cache:index:testsByFirmaId`, `cache:meta:testNextId`, `cache:getTestsByFirmaId:{"firmaId":"X"}` güncellenir |
+| `scheduleAudit` | **KV-primary** + Calendar GAS side-effect | `cache:index:auditsByFirmaId`, `cache:meta:auditNextId`, `cache:getAuditsByFirmaId:{"firmaId":"X"}` güncellenir; aggregate audit cache invalidate edilir |
+| `addProforma` | **KV-primary** | `cache:index:proformasById`, `cache:index:proformasByFirmaId`, `cache:meta:proformaNextId`, ilgili firma cache'i güncellenir |
 | `updateMasterData` | **KV-primary** | `cache:getMasterData:*` güncellenir |
 
 ### Kural 3 — Google Native Servis Operasyonları: Her Zaman GAS, KV Bypass
@@ -151,20 +187,26 @@ Yeni bir READ action eklendiğinde, eğer verisi `SyncService.getFullExport()` t
 ## 📂 Technical Directory Matrix
 
 ### `/src/gas/api/` (Modern Services)
-- `BaseService.gs`: Shared spreadsheet access, logging, and `LAST_UPDATE` management.
-- `CompanyService.gs`: Specialized logic for the `Firmalar` sheet. Methods: `getAllForSync`, `getById`, `add`, `update`, `getConsultants`.
-- `CertificateService.gs`: Specialized logic for the `Sertifika` sheet. Methods: `getAll`, `getById`, `getByFirmaId`, `add`, `update`, `updateField`, `updateGozetim`, `getRecent`.
+- `BaseService.gs`: Shared spreadsheet access, logging, and `LAST_UPDATE` management. Backup/hydration katmanı için korunur; operasyonel KV path'inde kullanılmamalıdır.
+- `CompanyService.gs`: Legacy/compat spreadsheet service for the `Firmalar` sheet. Backup/hydration dışında operasyonel path'ten çıkarılmalıdır.
+- `CertificateService.gs`: Legacy/compat spreadsheet service for the `Sertifika` sheet. Backup/hydration dışında operasyonel path'ten çıkarılmalıdır.
 - `AuditService.gs`: Calendar Integration & Surveillance Archiving. Methods: `getAudits`, `getByFirmaId`, `scheduleAudit`, `updateSurveillance`.
 - `DriveService.gs`: Recursive folder scanning and hierarchy management. Methods: `getCompanyFolderId`, `listRecentFiles`, `uploadFile`, `getOrCreateSubFolder`, `_scanRecursive`.
-- `DocumentService.gs`: Batch generation engine for ISO/test/form documents. Methods: `generateIsoCertificate`, `generateTestReport`, `generateAppForm`, `generateDraftCertificate`, `generateContract`, `buildCertPayload`, `buildTestPayload`, `getAvailableSets`, `prepareBatchFolders`, `generateSingleBatchDoc`, `_insertLogoInHeaders`, `_insertLogoInBody`, `_formatTestDate`.
+- `DocumentService.gs`: Batch generation engine for ISO/test/form documents. Hedef durum: yalnızca hazır payload consume eder; sheet-backed `buildCertPayload` / `buildTestPayload` helper'ları operasyonel path'ten çıkarılmalıdır.
 - `PDFService.gs`: **Primary Converter:** Local `pdf.serdar.cc` (with Token). **Fallback:** iLovePDF. Methods: `convertToPdf`, `_tryLocalConverter`, `_tryILovePDF`.
-- `TestService.gs`: Specialized logic for the `Testler` sheet. Methods: `getByFirmaId`, `add`, `update`.
+- `TestService.gs`: Legacy/compat spreadsheet service for the `Testler` sheet. Backup/hydration dışında operasyonel path'ten çıkarılmalıdır.
 - `SyncService.gs`: Full data export/import for KV and backup operations. Methods: `getFullExport`, `exportBackup`, `importBackup`.
-- `ProformaService.gs`: Proforma retrieval and insert operations. Methods: `getByFirmaId`, `getById`, `add`.
-- `StandardService.gs`: Standard lookup operations. Methods: `getById`.
+- `ProformaService.gs`: Legacy/compat spreadsheet service. Backup/hydration dışında operasyonel path'ten çıkarılmalıdır.
+- `StandardService.gs`: Legacy/compat spreadsheet lookup. Standart verisi operasyonel path'te KV master data üzerinden çözülmelidir.
 - `MasterDataService.gs`: Reference/master dataset management. Methods: `get`, `getForSync`, `update`, `getLegacyIso`, `getLegacyAuditors`.
 - `NotificationService.gs`: Mail workflows and scheduled checks. Methods: `sendSurveillanceEmail`, `sendTableReport`, `runMonthlyCheck`.
 - `TranslationService.gs`: Specialized automated translation for ISO scope text (TR↔EN) via GAS `LanguageApp`. Methods: `translate`, `toEn`, `toTr`. **Note:** Operational tool for data entry, not UI localization.
+
+### `/src/gas/api/` Current Dependency Audit
+- **Operationally acceptable:** `DriveService.gs`, `PDFService.gs`, Google-native kısımlarıyla `NotificationService.gs`, Calendar side-effect kısımlarıyla `AuditService.gs`.
+- **Backup/Hydration only kalmalı:** `CompanyService.gs`, `CertificateService.gs`, `TestService.gs`, `ProformaService.gs`, `StandardService.gs`, `BaseService.gs` spreadsheet helpersi.
+- **Refactor target:** `DocumentService.gs` içindeki payload builder helper'ları KV/Worker tarafına taşınmalı.
+- **Allowed Sheets reads:** `SyncService.gs` ve `MasterDataService.gs` backup/hydration/master-template senaryolarında kalabilir.
 
 ### `/src/lib/` (Core Logic)
 - `api.ts`: Fetch wrapper for CF Worker.
@@ -179,7 +221,7 @@ Yeni bir READ action eklendiğinde, eğer verisi `SyncService.getFullExport()` t
 - `certificate-form.ts`: Legacy sertifika ekleme kartindan tasinan standart/tarih/QR/sNo onerisi helper'larini barindirir.
 
 ### `/src/workers/` (Cloudflare Worker)
-- `proxy.js`: **The deployed Cloudflare Worker.** Handles CORS, injects `API_KEY` secret into every request body before forwarding to GAS. Copy-paste this file into the Cloudflare Worker dashboard or deploy via `wrangler deploy`.
+- `proxy.js`: **The deployed Cloudflare Worker.** Handles strict CORS allowlist, injects `API_KEY` secret into every request body before forwarding to GAS, and applies incremental KV write rules.
   - `bulkSyncMaster`: Standarts/Auditors/Consultants/TestDoc/SysDoc verilerini GAS'tan KV'ye hydrate eder.
 
 ### `/src/pages/` (UI Modules)
@@ -628,6 +670,6 @@ Used in `edit.astro` and `search.astro`:
 3. **GAS Backend:** Ensure `API_KEY` script property is set to `mc-portal-3.0_8a2d7f9e4c1b5a6c3d2e1f0b9a8c7d6e` for local proxy calls.
 
 ---
-**Status:** Secured, Source-Validated & KV-Primary-Read Active.
-**Architecture Version:** 5.4.0
-**Current Phase:** 3.5 (KV primary reads + master data KV-primary writes; core ops GAS-write due to side-effects)
+**Status:** Secured, Source-Validated & KV-Primary-Read/Write Active.
+**Architecture Version:** 5.5.0
+**Current Phase:** 3.6 (KV-primary reads + incremental KV writes + strict CORS allowlist + bulkSync-preserved + Sheets-dependency removal in progress)

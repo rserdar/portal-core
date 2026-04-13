@@ -1,0 +1,2 @@
+/*
+  Permissions-Policy: identity-credentials-get=(), digital-credentials-get=(), publickey-credentials-get=(), otp-credentials=(), payment=()

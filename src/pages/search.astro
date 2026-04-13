@@ -1,80 +1,124 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
-
-/**
- * 🔍 Firma Arama (v3.0.0 - Professional Grid)
- * 
- * Legacy main.html + search.html mantığıyla yeniden tasarlandı.
- * Yüksek veri yoğunluğu, Türkçe karakter duyarlı filtreleme ve kurumsal UI.
- */
 ---
 
 <DashboardLayout title="Firma Ara">
   <div class="space-y-4">
     <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
-    <!-- Arama Kontrol Alanı -->
-    <div class="bg-surface border border-border-main shadow-lg p-3 sm:p-5 rounded-2xl flex items-center gap-3">
-      <div class="hidden md:flex items-center gap-3 bg-indigo-600/20 px-4 py-2 rounded-full border border-indigo-500/30 shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-indigo-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">Arama</span>
-      </div>
 
-      <div class="flex-1 relative">
+    <!-- Quick Preview Modal -->
+    <div id="preview-modal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
+      <div id="preview-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+      <div class="relative bg-surface border border-border-main shadow-2xl rounded-2xl p-5 sm:p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto custom-scrollbar">
+        <!-- Header -->
+        <div class="flex items-start justify-between gap-3 mb-5">
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap gap-1.5 mb-2" id="modal-badges"></div>
+            <h2 class="text-base sm:text-lg font-extrabold text-main tracking-tight leading-tight truncate" id="modal-nick"></h2>
+            <p class="text-xs text-muted mt-0.5 truncate" id="modal-unvan"></p>
+          </div>
+          <button id="modal-close" class="w-8 h-8 flex items-center justify-center rounded-xl border border-border-main text-muted hover:text-main hover:bg-surface-hover transition-all shrink-0 mt-0.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Kapsam (TR) -->
+        <div class="mb-4" id="modal-kapsam-block">
+          <div class="flex items-center gap-1.5 mb-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-muted shrink-0"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+            <span class="text-[10px] font-black uppercase tracking-widest text-muted">Kapsam</span>
+          </div>
+          <p class="text-sm text-main leading-relaxed italic pl-0.5" id="modal-kapsam"></p>
+        </div>
+
+        <!-- Scope (EN) -->
+        <div class="mb-4" id="modal-scope-block">
+          <div class="flex items-center gap-1.5 mb-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-muted shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+            <span class="text-[10px] font-black uppercase tracking-widest text-muted">Scope</span>
+          </div>
+          <p class="text-sm text-main leading-relaxed italic pl-0.5" id="modal-scope"></p>
+        </div>
+
+        <!-- Sertifikalar -->
+        <div id="modal-certs-block">
+          <div class="flex items-center gap-1.5 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-muted shrink-0"><path d="M12 15l-2 5L7 19l-2 3V2l2 2 3-2 2 5 3-2 3 4-3 1 3 5-3-1z"/></svg>
+            <span class="text-[10px] font-black uppercase tracking-widest text-muted">Sertifikalar</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5" id="modal-certs"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arama Çubuğu -->
+    <div class="bg-surface border border-border-main shadow-lg p-3 sm:p-4 rounded-2xl flex items-center gap-3">
+      <div class="relative flex-1">
+        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <input
           type="search"
           id="searchInput"
-          placeholder="Ünvan, şehir veya ID... (İpucu: Firma @ Şehir)"
-          class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main placeholder:text-muted focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all shadow-inner text-sm"
+          placeholder="Ünvan, şehir veya ID… (İpucu: Firma @ Şehir)"
+          autocomplete="off"
+          class="w-full bg-surface-hover border border-border-main rounded-xl pl-10 pr-4 py-2.5 text-main placeholder:text-muted focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm"
         />
       </div>
-
       <div class="flex items-center gap-2 shrink-0">
-        <span id="searchCounter" class="text-sm font-mono font-bold text-muted bg-surface-hover px-2.5 py-1.5 rounded-lg border border-border-main shadow-sm">0</span>
-        <div id="sync-indicator" class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 bg-surface border border-border-main rounded-lg text-[10px] uppercase font-bold tracking-tighter text-muted">
+        <span id="searchCounter" class="text-xs font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-lg min-w-[2.75rem] text-center tabular-nums">0</span>
+        <div id="sync-indicator" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface-hover border border-border-main rounded-lg text-[10px] uppercase font-bold tracking-tight text-muted shrink-0">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>
           <span class="hidden sm:inline sync-status-text">HAZIR</span>
         </div>
       </div>
     </div>
 
-    <div class="bg-surface border border-border-main shadow-2xl rounded-2xl overflow-hidden relative">
-      <div class="overflow-x-auto min-h-[400px]">
-        <table class="w-full text-left border-collapse align-middle">
+    <!-- Tablo Kartı -->
+    <div class="bg-surface border border-border-main shadow-xl rounded-2xl overflow-hidden">
+
+      <!-- Desktop Tablo (sm ve üzeri) -->
+      <div class="hidden sm:block">
+        <table class="w-full table-fixed border-collapse">
+          <colgroup>
+            <col class="w-12" />   <!-- # -->
+            <col />                <!-- Firma — kalan tüm alanı alır -->
+            <col class="w-28" />   <!-- Şehir -->
+            <col class="w-36" />   <!-- İşlemler (3 ikon buton) -->
+          </colgroup>
           <thead class="bg-surface-hover border-b border-border-main">
-            <tr class="text-[11px] font-bold uppercase tracking-widest text-muted">
-              <!-- Mobil: 2 sütun -->
-              <th class="sm:hidden px-4 py-3">Firma</th>
-              <th class="sm:hidden px-3 py-3 text-center w-14">Drive</th>
-              <!-- Desktop: 6 sütun -->
-              <th class="hidden sm:table-cell px-5 py-4 text-center w-16">#</th>
-              <th class="hidden sm:table-cell px-5 py-4">Unvan</th>
-              <th class="hidden sm:table-cell px-5 py-4 w-48">Klasör</th>
-              <th class="hidden sm:table-cell px-5 py-4 text-center w-32">Şehir</th>
-              <th class="hidden sm:table-cell px-5 py-4 text-center w-24">Gözat</th>
-              <th class="hidden sm:table-cell px-5 py-4 text-center w-24">Sil</th>
+            <tr class="text-[10px] font-black uppercase tracking-widest text-muted text-center">
+              <th class="px-4 py-3.5">#</th>
+              <th class="px-5 py-3.5 text-left">Firma</th>
+              <th class="px-4 py-3.5">Şehir</th>
+              <th class="px-4 py-3.5">İşlemler</th>
             </tr>
           </thead>
-          <tbody id="searchResults" class="divide-y divide-border-main">
-            <!-- Dinamik içerik buraya gelecek -->
-          </tbody>
+          <tbody id="searchResults" class="divide-y divide-border-main"></tbody>
         </table>
       </div>
-      
-      <!-- Loader (Legacy Modal/Spinner Dengi) -->
-      <div id="table-loader" class="py-20 text-center flex flex-col items-center justify-center gap-3">
-        <div class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-        <p class="text-xs font-bold text-muted tracking-widest uppercase animate-pulse">Veri Senkronize Ediliyor</p>
+
+      <!-- Mobil Liste (sm altı) -->
+      <div class="sm:hidden divide-y divide-border-main" id="searchResultsMobile"></div>
+
+      <!-- Boş durum mesajı -->
+      <div id="empty-state" class="hidden py-16 flex flex-col items-center justify-center gap-3 text-center px-6">
+        <div class="w-14 h-14 rounded-2xl bg-surface-hover border border-border-main flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
+        <p class="text-sm font-bold text-muted uppercase tracking-widest">Eşleşen kayıt bulunamadı</p>
       </div>
 
-      <!-- Pagination Bar (v4.1.0) -->
-      <div id="pagination-container" class="bg-surface-hover border-t border-border-main px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3 hidden">
-        <div class="flex items-center gap-4">
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold text-muted uppercase tracking-widest hidden sm:inline">SAYFA:</span>
-            <span id="page-indicator" class="text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-md border border-primary/20">1 / 1</span>
-          </div>
-          <div class="flex items-center gap-2 border-l border-border-main pl-4">
-            <span class="text-[10px] font-bold text-muted uppercase tracking-widest hidden sm:inline">GÖSTER:</span>
+      <!-- Yükleniyor -->
+      <div id="table-loader" class="py-20 flex flex-col items-center justify-center gap-3">
+        <div class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        <p class="text-xs font-bold text-muted tracking-widest uppercase animate-pulse">Veri Yükleniyor</p>
+      </div>
+
+      <!-- Sayfalama -->
+      <div id="pagination-container" class="bg-surface-hover border-t border-border-main px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 hidden">
+        <div class="flex items-center gap-3">
+          <span id="page-indicator" class="text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 tabular-nums">1 / 1</span>
+          <div class="flex items-center gap-2 border-l border-border-main pl-3">
+            <span class="text-[10px] font-bold text-muted uppercase tracking-widest hidden sm:inline">Göster:</span>
             <select id="pageSizeSelect" class="bg-surface border border-border-main rounded-lg px-2 py-1 text-[11px] font-bold text-main outline-none focus:ring-1 focus:ring-primary/40 transition-all cursor-pointer">
               <option value="20">20</option>
               <option value="50">50</option>
@@ -82,9 +126,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             </select>
           </div>
         </div>
-        <div id="pagination-controls" class="flex items-center gap-1.5">
-          <!-- Butonlar JS ile buraya gelecek -->
-        </div>
+        <div id="pagination-controls" class="flex items-center gap-1.5"></div>
       </div>
     </div>
   </div>
@@ -92,11 +134,11 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
 <script>
   import { api } from '../lib/api';
-  import { $companies, $syncStatus } from '../lib/store';
+  import { $companies, $syncStatus, $certificates } from '../lib/store';
   import { SyncManager } from '../lib/sync';
   import { consumeFlashToast } from '../lib/toast';
 
-  const loader = document.getElementById('table-loader');
+  const loader = document.getElementById('table-loader') as HTMLElement;
   const searchInput = document.getElementById('searchInput') as HTMLInputElement;
   const syncIndicator = document.getElementById('sync-indicator');
   const pageSizeSelect = document.getElementById('pageSizeSelect') as HTMLSelectElement;
@@ -109,7 +151,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
   consumeFlashToast();
 
-  // 📡 Store ve Sync Yönetimi
   $companies.subscribe(data => {
     if (data && data.length > 0) {
       if (loader) loader.classList.add('hidden');
@@ -122,36 +163,27 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     const dot = syncIndicator.querySelector('span');
     const textEl = syncIndicator.querySelector('.sync-status-text');
     if (!dot) return;
-
     if (status === 'syncing') {
       dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse';
       if (textEl) textEl.textContent = 'GÜNCELLENİYOR';
     } else {
-      dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+      dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]';
       if (textEl) textEl.textContent = 'HAZIR';
     }
   });
 
-  // 🧼 Normalleştirme (Legacy normalizeString Dengi)
   function normalize(str: any): string {
     if (!str) return '';
     return str.toString()
       .toLocaleLowerCase('tr-TR')
-      .replace(/ı/g, 'i')
-      .replace(/ğ/g, 'g')
-      .replace(/ü/g, 'u')
-      .replace(/ş/g, 's')
-      .replace(/ö/g, 'o')
-      .replace(/ç/g, 'c')
-      .trim();
+      .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
+      .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c').trim();
   }
 
   function pickField(company: any, keys: string[], fallback = ''): string {
     for (const key of keys) {
       const value = company?.[key];
-      if (value !== undefined && value !== null && String(value).trim() !== '') {
-        return String(value).trim();
-      }
+      if (value !== undefined && value !== null && String(value).trim() !== '') return String(value).trim();
     }
     return fallback;
   }
@@ -159,124 +191,143 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   function mapCompany(company: any) {
     const id = pickField(company, ['id', 'ID', 'Firma No', 'firmaNo', 'firma_no', 'no']);
     const unvan = pickField(company, ['unvan', 'Unvan', 'UNVAN', 'firmaUnvan', 'firma_unvan'], '-');
-    
-    // 🏷️ Optimize Edilmiş Nickname/Marka Eşleşmesi
     const nickname = pickField(company, [
       'Markası', 'Marka Adı', 'Kısa Adı', 'Kısa Ad', 'Marka', 'marka',
       'Nick', 'Nickname', 'nickname', 'Firma Adı', 'FirmaAdi', 'unvan'
     ], '-');
-    
     const city = pickField(company, ['city', 'City', 'CITY', 'il', 'İl', 'sehir', 'şehir', 'Sehir', 'Şehir'], '-');
-    
-    // 🔍 Sadeleştirilmiş Arama Kapsamı
     const searchStr = normalize(`${unvan} ${nickname} ${id}`);
-
     return { id, unvan, nickname, city, searchStr };
   }
 
-  // 🖼️ Render (Pagination & Grid Management)
+  // Desktop ikonları (16px)
+  const folderSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
+  const eyeSvg   = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  const trashSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+  // Mobil ikonları — dokunma hedefi için biraz daha büyük (18px)
+  const folderSvgLg = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
+  const eyeSvgLg   = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  const trashSvgLg = `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+
+  function getInitials(nick: string): string {
+    return String(nick || '').trim().split(/\s+/).filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
+  }
+
   function renderResults(companies: readonly any[], term: string) {
     const resultsBody = document.getElementById('searchResults') as HTMLTableSectionElement;
+    const resultsMobile = document.getElementById('searchResultsMobile') as HTMLElement;
     const paginationContainer = document.getElementById('pagination-container');
+    const emptyState = document.getElementById('empty-state');
     const counter = document.getElementById('searchCounter');
-    if (!resultsBody || !counter || !paginationContainer) return;
-    
-    // 1. Akıllı Filtreleme (@ Operatörü)
+    if (!resultsBody || !resultsMobile || !counter || !paginationContainer || !emptyState) return;
+
     const normalizedTerm = normalize(term);
     const mapped = companies.map(mapCompany);
-    
-    let filtered;
+
+    let filtered: ReturnType<typeof mapCompany>[];
     if (normalizedTerm.includes('@')) {
       const [namePart, cityPart] = normalizedTerm.split('@').map(s => s.trim());
-      filtered = mapped.filter(c => {
-        const nameMatch = c.searchStr.includes(namePart);
-        const cityMatch = normalize(c.city).includes(cityPart);
-        return nameMatch && cityMatch;
-      });
+      filtered = mapped.filter(c => c.searchStr.includes(namePart) && normalize(c.city).includes(cityPart));
     } else {
-      filtered = mapped.filter(c => {
-        const haystack = `${c.searchStr} ${normalize(c.city)}`;
-        return haystack.includes(normalizedTerm);
-      });
+      filtered = mapped.filter(c => `${c.searchStr} ${normalize(c.city)}`.includes(normalizedTerm));
     }
 
     counter.textContent = filtered.length.toString();
 
-    // 2. Pagination Parçalama
     const totalPages = Math.ceil(filtered.length / pageSize) || 1;
     if (currentPage > totalPages) currentPage = totalPages;
-    
     const start = (currentPage - 1) * pageSize;
     const paginatedItems = filtered.slice(start, start + pageSize);
 
-    // 3. Render Tablo Gövdesi
+    // Temizle
     resultsBody.innerHTML = '';
-    
+    resultsMobile.innerHTML = '';
+
     if (paginatedItems.length === 0) {
-      resultsBody.innerHTML = `<tr><td colspan="8" class="py-16 text-center text-muted uppercase font-bold tracking-widest text-[10px]">EŞLEŞEN KAYIT BULUNAMADI</td></tr>`;
       paginationContainer.classList.add('hidden');
+      emptyState.classList.remove('hidden');
+      emptyState.classList.add('flex');
       return;
     }
 
+    emptyState.classList.add('hidden');
+    emptyState.classList.remove('flex');
     paginationContainer.classList.remove('hidden');
     renderPaginationUI(filtered.length);
+
     const pageIndicator = document.getElementById('page-indicator');
     if (pageIndicator) pageIndicator.textContent = `${currentPage} / ${totalPages}`;
 
-    const folderIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
-
     paginatedItems.forEach((c) => {
-      const tr = document.createElement('tr');
-      tr.className = 'hover:bg-surface-hover transition-colors group text-sm';
       const safeId = c.id || '';
-      const shortUnvan = c.unvan && c.unvan.length > 48 ? c.unvan.slice(0, 48) + '…' : (c.unvan || '-');
+      const encodedId = encodeURIComponent(safeId);
+      const initials = getInitials(c.nickname);
 
+      // ── Desktop satırı ──
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-surface-hover transition-colors group/row';
       tr.innerHTML = `
-        <!-- ── Mobil: Firma bilgi hücresi ── -->
-        <td class="sm:hidden px-4 py-3 align-middle">
-          <a href="/company?id=${encodeURIComponent(safeId)}" class="block">
-            <div class="flex items-center justify-between gap-2">
-              <span class="font-black text-main text-sm uppercase tracking-tight leading-snug group-hover:text-primary transition-colors">${c.nickname || '-'}</span>
-              ${c.city ? `<span class="text-[9px] font-bold text-muted bg-surface-hover border border-border-main px-1.5 py-0.5 rounded-md uppercase tracking-wide shrink-0">${c.city}</span>` : ''}
+        <td class="px-4 py-3 text-center">
+          <span class="text-[11px] font-mono font-bold text-muted">${safeId || '-'}</span>
+        </td>
+        <td class="px-5 py-3 overflow-hidden">
+          <a href="/company?id=${encodedId}" class="flex items-center gap-3 min-w-0 group/link">
+            <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 group-hover/link:bg-indigo-500/20 transition-colors">
+              <span class="text-[10px] font-black text-indigo-400 uppercase">${initials}</span>
             </div>
-            <div class="text-[11px] text-muted mt-0.5 leading-snug">${shortUnvan}</div>
+            <div class="min-w-0 flex-1">
+              <div class="font-bold text-sm text-main group-hover/link:text-primary transition-colors truncate uppercase tracking-tight leading-tight">${c.nickname || '-'}</div>
+              <div class="text-[11px] text-muted truncate mt-0.5 leading-tight">${c.unvan || '-'}</div>
+            </div>
           </a>
         </td>
-        <!-- ── Mobil: Klasör hücresi ── -->
-        <td class="sm:hidden px-2 py-3 align-middle text-center w-14">
-          <button class="folder-btn w-11 h-11 flex items-center justify-center bg-surface-hover border border-border-main rounded-xl text-primary hover:bg-primary/10 transition-colors mx-auto" data-nickname="${c.nickname}" title="Drive Klasörü Aç">
-            ${folderIcon}
-          </button>
+        <td class="px-4 py-3 text-center">
+          <span class="inline-block text-[11px] font-bold text-muted bg-surface-hover border border-border-main px-2 py-0.5 rounded-md uppercase tracking-wide truncate max-w-full">${c.city || '-'}</span>
         </td>
-
-        <!-- ── Desktop: Bireysel hücreler ── -->
-        <td class="hidden sm:table-cell px-5 py-3 text-center text-muted font-mono text-xs">${safeId || '-'}</td>
-        <td class="hidden sm:table-cell px-5 py-3 text-left">
-          <a href="/company?id=${encodeURIComponent(safeId)}" class="block group/link">
-            <div class="font-bold text-main group-hover/link:text-primary transition-colors uppercase tracking-tight truncate">${c.nickname || '-'}</div>
-            <div class="text-[10px] text-muted uppercase tracking-tighter mt-0.5 opacity-80 truncate">${c.unvan || '-'}</div>
-          </a>
-        </td>
-        <td class="hidden sm:table-cell px-5 py-3 max-w-[192px]">
-          <button class="folder-btn flex items-center gap-2 text-primary hover:text-primary-hover font-bold underline decoration-primary/30 underline-offset-4 decoration-dashed overflow-hidden" data-nickname="${c.nickname}">
-            ${folderIcon}
-            <span class="truncate text-xs">${c.nickname || 'AÇ'}</span>
-          </button>
-        </td>
-        <td class="hidden sm:table-cell px-5 py-3 text-center text-muted font-medium text-xs tracking-tight">${c.city || '-'}</td>
-        <td class="hidden sm:table-cell px-5 py-3 text-center">
-          <a href="/company?id=${encodeURIComponent(safeId)}" class="inline-flex items-center justify-center px-4 py-1.5 border border-primary/30 rounded-lg text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-sm">
-            GÖZAT
-          </a>
-        </td>
-        <td class="hidden sm:table-cell px-5 py-3 text-center">
-          <button class="delete-btn px-4 py-1.5 border border-rose-500/20 rounded-lg text-xs font-bold text-rose-500/70 hover:bg-rose-500 hover:text-white transition-all shadow-sm" data-id="${safeId}">
-            SİL
-          </button>
+        <td class="px-4 py-3">
+          <div class="flex items-center justify-center gap-1.5">
+            <button class="folder-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all" data-nickname="${c.nickname}" title="Drive Klasörü">
+              ${folderSvg}
+            </button>
+            <button class="eye-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-white hover:border-primary transition-all" data-id="${safeId}" title="Hızlı Önizleme">
+              ${eyeSvg}
+            </button>
+            <button class="delete-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all" data-id="${safeId}" title="Sil">
+              ${trashSvg}
+            </button>
+          </div>
         </td>
       `;
-
       resultsBody.appendChild(tr);
+
+      // ── Mobil kart ──
+      const card = document.createElement('div');
+      card.className = 'flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors';
+      card.innerHTML = `
+        <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+          <span class="text-xs font-black text-indigo-400 uppercase">${initials}</span>
+        </div>
+        <a href="/company?id=${encodedId}" class="flex-1 min-w-0 block">
+          <div class="font-bold text-sm text-main uppercase tracking-tight truncate">${c.nickname || '-'}</div>
+          <div class="text-[11px] text-muted truncate mt-0.5">${c.unvan || '-'}</div>
+          <div class="flex items-center gap-1.5 mt-1">
+            ${c.city && c.city !== '-' ? `<span class="text-[10px] font-bold text-muted uppercase">${c.city}</span><span class="text-muted text-[10px]">·</span>` : ''}
+            <span class="text-[10px] font-mono text-muted/70">M${safeId}</span>
+          </div>
+        </a>
+        <div class="flex items-center gap-2 shrink-0">
+          <button class="folder-btn w-11 h-11 flex items-center justify-center rounded-xl border border-border-main bg-surface-hover text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 active:scale-95 transition-all touch-manipulation" data-nickname="${c.nickname}" title="Drive Klasörü">
+            ${folderSvgLg}
+          </button>
+          <button class="eye-btn w-11 h-11 flex items-center justify-center rounded-xl border border-primary/30 bg-primary/8 text-primary hover:bg-primary hover:text-white active:scale-95 transition-all touch-manipulation" data-id="${safeId}" title="Hızlı Önizleme">
+            ${eyeSvgLg}
+          </button>
+          <button class="delete-btn w-11 h-11 flex items-center justify-center rounded-xl border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white active:scale-95 transition-all touch-manipulation" data-id="${safeId}" title="Sil">
+            ${trashSvgLg}
+          </button>
+        </div>
+      `;
+      resultsMobile.appendChild(card);
     });
 
     attachEvents();
@@ -285,85 +336,229 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   function renderPaginationUI(totalCount: number) {
     const controls = document.getElementById('pagination-controls');
     if (!controls) return;
-    
     const totalPages = Math.ceil(totalCount / pageSize) || 1;
     controls.innerHTML = '';
 
-    // "Önceki" Butonu
     const prevBtn = document.createElement('button');
-    prevBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>`;
-    prevBtn.className = `p-1.5 rounded-lg border border-border-main transition-all ${currentPage > 1 ? 'text-primary hover:bg-primary/10' : 'text-muted opacity-30 cursor-not-allowed'}`;
+    prevBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>`;
+    prevBtn.className = `p-1.5 rounded-lg border border-border-main transition-all ${currentPage > 1 ? 'text-primary hover:bg-primary/10 hover:border-primary/30' : 'text-muted opacity-30 cursor-not-allowed'}`;
+    prevBtn.disabled = currentPage <= 1;
     prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; refreshUI(); } };
     controls.appendChild(prevBtn);
 
-    // Dinamik Sayfa Numaraları (Sadece komşuları ve baş/son gösterelim)
     let range: number[] = [];
-    const delta = 1;
     for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
-            range.push(i);
-        }
+      if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) range.push(i);
     }
 
     let last: number | null = null;
     range.forEach(i => {
-        if (last && i - last > 1) {
-            const dots = document.createElement('span');
-            dots.textContent = '...';
-            dots.className = 'px-2 text-muted text-xs';
-            controls.appendChild(dots);
-        }
-        const pageBtn = document.createElement('button');
-        pageBtn.textContent = i.toString();
-        pageBtn.className = `w-8 h-8 rounded-lg border text-xs font-black transition-all ${
-            i === currentPage 
-            ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' 
-            : 'border-border-main text-muted hover:text-primary hover:bg-primary/10'
-        }`;
-        pageBtn.onclick = () => { currentPage = i; refreshUI(); };
-        controls.appendChild(pageBtn);
-        last = i;
+      if (last && i - last > 1) {
+        const dots = document.createElement('span');
+        dots.textContent = '…';
+        dots.className = 'px-1.5 text-muted text-xs';
+        controls.appendChild(dots);
+      }
+      const pageBtn = document.createElement('button');
+      pageBtn.textContent = i.toString();
+      pageBtn.className = `w-8 h-8 rounded-lg border text-xs font-black transition-all ${
+        i === currentPage
+          ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
+          : 'border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30'
+      }`;
+      pageBtn.onclick = () => { currentPage = i; refreshUI(); };
+      controls.appendChild(pageBtn);
+      last = i;
     });
 
-    // "Sonraki" Butonu
     const nextBtn = document.createElement('button');
-    nextBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`;
-    nextBtn.className = `p-1.5 rounded-lg border border-border-main transition-all ${currentPage < totalPages ? 'text-primary hover:bg-primary/10' : 'text-muted opacity-30 cursor-not-allowed'}`;
+    nextBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`;
+    nextBtn.className = `p-1.5 rounded-lg border border-border-main transition-all ${currentPage < totalPages ? 'text-primary hover:bg-primary/10 hover:border-primary/30' : 'text-muted opacity-30 cursor-not-allowed'}`;
+    nextBtn.disabled = currentPage >= totalPages;
     nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; refreshUI(); } };
     controls.appendChild(nextBtn);
   }
 
   function refreshUI() {
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Opsiyonel: Tablo genişse tablo başına scroll
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     renderResults($companies.get(), currentTerm);
   }
 
+  // ── Quick Preview Modal ──────────────────────────────────────────────────────
+
+  /** Bir objeden birden fazla olası key ile değer okur (basit versiyon) */
+  function gField(obj: any, ...keys: string[]): string {
+    for (const k of keys) {
+      const v = obj?.[k];
+      if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+    }
+    return '';
+  }
+
+  function escHtml(value: any): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function certBadge(standard: string): string {
+    const s = standard.trim();
+    if (!s) return '';
+    // Renk: ISO 9001 → indigo, ISO 14001 → emerald, ISO 45001 → amber, ISO 13485 → cyan, diğerleri → muted
+    let cls = 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20';
+    const sl = s.toLowerCase();
+    if (sl.includes('14001')) cls = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+    else if (sl.includes('45001')) cls = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+    else if (sl.includes('13485')) cls = 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
+    else if (sl.includes('27001')) cls = 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+    else if (sl.includes('50001')) cls = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+    return `<span class="text-[10px] font-bold px-2.5 py-1 rounded-full border ${cls}">${escHtml(s)}</span>`;
+  }
+
+  function openPreviewModal(companyId: string) {
+    const modal = document.getElementById('preview-modal') as HTMLElement;
+    if (!modal) return;
+
+    // Ham firma kaydını bul
+    const allCompanies = $companies.get();
+    const raw = allCompanies.find((c: any) => {
+      const id = gField(c, 'id', 'ID', 'Firma No', 'firmaNo', 'firma_no', 'no');
+      return String(id) === String(companyId);
+    });
+
+    if (!raw) return;
+
+    const nick    = gField(raw, 'Markası', 'Marka Adı', 'Kısa Adı', 'Kısa Ad', 'Marka', 'marka', 'Nick', 'Nickname', 'nickname', 'Firma Adı', 'FirmaAdi', 'unvan', 'Unvan');
+    const unvan   = gField(raw, 'unvan', 'Unvan', 'UNVAN', 'firmaUnvan', 'firma_unvan');
+    const il      = gField(raw, 'city', 'City', 'CITY', 'il', 'İl', 'sehir', 'şehir', 'Sehir', 'Şehir');
+    const kapsam  = gField(raw, 'Türkçe Kapsam', 'Sertifika Kapsamı (TR)', 'Kapsam', 'kapsam');
+    const scope   = gField(raw, 'İngilizce Kapsam', 'Sertifika Kapsamı (EN)', 'Scope', 'scope');
+    const dan     = gField(raw, 'Danışman', 'Danisman', 'dan', 'danisman');
+
+    // Firma'ya ait sertifikaları filtrele
+    const allCerts = $certificates.get();
+    const firmaCerts = allCerts.filter((cert: any) => {
+      const fn = gField(cert, 'Firma No', 'FirmaNo', 'firmaNo', 'firma_no');
+      return String(fn) === String(companyId);
+    });
+
+    // Benzersiz standartlar
+    const standards = Array.from(new Set(
+      firmaCerts
+        .map((cert: any) => {
+          const s = gField(cert, 'Standart', 'standart');
+          const other = gField(cert, 'Other Standard', 'Other', 'other', 'Diğer', 'diger', 'Diğer Standart', 'digerStandart');
+          const sl = s.toLowerCase();
+          const isOther = sl === 'diğer' || sl === 'diger' || sl === 'other';
+          return isOther && other ? other : s;
+        })
+        .filter(Boolean)
+    )) as string[];
+
+    // Modal doldur
+    const badgesEl = document.getElementById('modal-badges');
+    if (badgesEl) {
+      let html = `<span class="text-[10px] font-bold px-2.5 py-1 rounded-full border bg-indigo-500/10 text-indigo-400 border-indigo-500/20">M${escHtml(companyId)}</span>`;
+      if (il) html += `<span class="text-[10px] font-bold px-2.5 py-1 rounded-full border bg-surface-hover text-muted border-border-main">${escHtml(il)}</span>`;
+      if (dan) html += `<span class="text-[10px] font-bold px-2.5 py-1 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">${escHtml(dan)}</span>`;
+      badgesEl.innerHTML = html;
+    }
+
+    const nickEl = document.getElementById('modal-nick');
+    if (nickEl) nickEl.textContent = nick || '-';
+
+    const unvanEl = document.getElementById('modal-unvan');
+    if (unvanEl) unvanEl.textContent = unvan || '';
+
+    const kapsamBlock = document.getElementById('modal-kapsam-block');
+    const kapsamEl = document.getElementById('modal-kapsam');
+    if (kapsamEl && kapsamBlock) {
+      if (kapsam) {
+        kapsamEl.textContent = kapsam;
+        kapsamBlock.classList.remove('hidden');
+      } else {
+        kapsamBlock.classList.add('hidden');
+      }
+    }
+
+    const scopeBlock = document.getElementById('modal-scope-block');
+    const scopeEl = document.getElementById('modal-scope');
+    if (scopeEl && scopeBlock) {
+      if (scope) {
+        scopeEl.textContent = scope;
+        scopeBlock.classList.remove('hidden');
+      } else {
+        scopeBlock.classList.add('hidden');
+      }
+    }
+
+    const certsBlock = document.getElementById('modal-certs-block');
+    const certsEl = document.getElementById('modal-certs');
+    if (certsEl && certsBlock) {
+      if (standards.length > 0) {
+        certsEl.innerHTML = standards.map(certBadge).join('');
+        certsBlock.classList.remove('hidden');
+      } else {
+        certsBlock.classList.add('hidden');
+      }
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePreviewModal() {
+    const modal = document.getElementById('preview-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+  }
+
+  // Modal kapat olayları (tek sefer bağla)
+  document.getElementById('modal-close')?.addEventListener('click', closePreviewModal);
+  document.getElementById('preview-backdrop')?.addEventListener('click', closePreviewModal);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePreviewModal(); });
+
+  // ────────────────────────────────────────────────────────────────────────────
+
   function attachEvents() {
-    // Klasör Aç
+    document.querySelectorAll('.eye-btn').forEach(el => {
+      const btn = el as HTMLButtonElement;
+      btn.onclick = () => openPreviewModal(btn.dataset.id || '');
+    });
+
     document.querySelectorAll('.folder-btn').forEach(el => {
       const btn = el as HTMLButtonElement;
       btn.onclick = async () => {
         const nick = btn.dataset.nickname;
-        const originalContent = btn.innerHTML;
-        btn.innerHTML = '<div class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>';
+        const prev = btn.innerHTML;
+        btn.innerHTML = '<div class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>';
+        btn.disabled = true;
         const res = await api.call('getFolderId', { nickname: nick });
-        btn.innerHTML = originalContent;
+        btn.innerHTML = prev;
+        btn.disabled = false;
         if (res.success && res.data) window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
       };
     });
 
-    // Silme (İki aşamalı onayla)
     document.querySelectorAll('.delete-btn').forEach(el => {
       const btn = el as HTMLButtonElement;
+      let timer: ReturnType<typeof setTimeout>;
       btn.onclick = () => {
-        if (btn.textContent?.trim() === 'SİL') {
-          btn.textContent = 'ONAYLA?';
-          btn.classList.add('bg-red-600', 'text-white', 'border-red-600');
-          setTimeout(() => {
-            btn.textContent = 'SİL';
-            btn.classList.remove('bg-red-600', 'text-white', 'border-red-600');
+        if (btn.dataset.confirm !== 'true') {
+          btn.dataset.confirm = 'true';
+          const prev = btn.innerHTML;
+          btn.innerHTML = 'Onayla?';
+          btn.classList.add('bg-rose-500', 'text-white', 'border-rose-500');
+          timer = setTimeout(() => {
+            btn.dataset.confirm = '';
+            btn.innerHTML = prev;
+            btn.classList.remove('bg-rose-500', 'text-white', 'border-rose-500');
           }, 3000);
         } else {
+          clearTimeout(timer);
           // api.call('deleteCompany', { id: btn.dataset.id });
           console.log('Delete target:', btn.dataset.id);
         }
@@ -371,15 +566,12 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     });
   }
 
-  // 🔍 Arama Event
   searchInput?.addEventListener('input', (e) => {
-    const target = e.target as HTMLInputElement;
-    currentTerm = target.value;
-    currentPage = 1; // Her aramada sayfayı sıfırla
+    currentTerm = (e.target as HTMLInputElement).value;
+    currentPage = 1;
     renderResults($companies.get(), currentTerm);
   });
 
-  // ⚙️ Page Size Event
   pageSizeSelect?.addEventListener('change', () => {
     pageSize = parseInt(pageSizeSelect.value);
     currentPage = 1;
@@ -392,8 +584,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   }
 
   SyncManager.init().then(() => {
-    if (initialQuery) {
-      renderResults($companies.get(), currentTerm);
-    }
+    if (initialQuery) renderResults($companies.get(), currentTerm);
   });
 </script>

@@ -6,12 +6,14 @@ import { CONFIG } from './config';
  * Yeni mimaride tüm istekler Cloudflare Worker üzerinden gider.
  * - Okuma: KV-primary (miss durumunda needsHydration dönebilir)
  * - Yazma: KV-primary (Google native side-effect'ler haric)
+ * - İstemci tarafı full rebuild tetiklemez; bulk hydration yalnızca sync akışında yapılır
  */
 
 interface ApiResponse<T = any> {
   success: boolean;
   data: T | null;
   error: string | null;
+  status?: number;
   fromCache?: boolean;
   stats?: any;
   needsHydration?: boolean;
@@ -96,12 +98,44 @@ function stableStringify(value: any): string {
 
 export const api = {
   async call<T = any>(action: string, params: any = {}): Promise<ApiResponse<T>> {
-    const requestKey = `${action}:${stableStringify(params)}`;
-    const existing = inFlightRequests.get(requestKey);
+    const dedupeableActions = new Set([
+      "getCompanies",
+      "getCompanyById",
+      "getCertificates",
+      "getCertificateById",
+      "getCertificatesByFirmaId",
+      "getRecentCertificates",
+      "getAudits",
+      "getAuditsByFirmaId",
+      "getTestsByFirmaId",
+      "getConsultants",
+      "getStandardById",
+      "getProformaByFirmaId",
+      "getProformaById",
+      "getMasterData",
+      "getFolderId",
+      "getRecentFiles",
+    ]);
+    const requestKey = dedupeableActions.has(action)
+      ? `${action}:${stableStringify(params)}`
+      : null;
+    const existing = requestKey ? inFlightRequests.get(requestKey) : null;
     if (existing) return existing as Promise<ApiResponse<T>>;
 
     const controller = new AbortController();
-    const longRunningActions = new Set(["bulkSync", "bulkSyncMaster", "importBackup", "exportBackup"]);
+    const longRunningActions = new Set([
+      "bulkSync",
+      "bulkSyncMaster",
+      "importBackup",
+      "exportBackup",
+      "generateIso",
+      "generateDraftCertificate",
+      "generateContract",
+      "generateAppForm",
+      "generateSingleBatchDoc",
+      "convertToPdf",
+      "uploadFile",
+    ]);
     const timeoutMs = longRunningActions.has(action) ? LONG_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -109,7 +143,10 @@ export const api = {
     try {
       const response = await fetch(CONFIG.WORKER_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
         body: JSON.stringify({ action, params }),
         signal: controller.signal,
       });
@@ -117,22 +154,26 @@ export const api = {
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
         if (payload && typeof payload === 'object') {
-          return payload as ApiResponse<T>;
+          return { status: response.status, ...(payload as ApiResponse<T>) };
         }
-        throw new Error(`HTTP Hatası: ${response.status}`);
+        throw new Error(response.status === 403 ? "CORS veya origin izni reddedildi." : `HTTP Hatası: ${response.status}`);
       }
-      return (payload || { success: false, data: null, error: "Geçersiz yanıt" }) as ApiResponse<T>;
+      return { status: response.status, ...((payload || { success: false, data: null, error: "Geçersiz yanıt" }) as ApiResponse<T>) };
     } catch (error: any) {
       const isAbort = error?.name === 'AbortError';
       console.error("API Çağrı Hatası:", error);
       return { success: false, data: null, error: isAbort ? "İstek zaman aşımına uğradı." : (error.message || "Bilinmeyen hata") };
     } finally {
       clearTimeout(timeoutId);
-      inFlightRequests.delete(requestKey);
+      if (requestKey) {
+        inFlightRequests.delete(requestKey);
+      }
     }
     })();
 
-    inFlightRequests.set(requestKey, requestPromise);
+    if (requestKey) {
+      inFlightRequests.set(requestKey, requestPromise);
+    }
     return requestPromise;
   },
 

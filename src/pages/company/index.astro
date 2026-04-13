@@ -986,6 +986,9 @@ import {
 
     try {
       const folderRes = await api.call('getFolderId', { nickname: currentCompanyNick });
+      if (!folderRes?.success) {
+        throw new Error(folderRes?.error || 'Firma klasörü sorgulanamadı.');
+      }
       const folderId = folderRes?.data;
       if (!folderId) throw new Error('Firma klasörü bulunamadı.');
 

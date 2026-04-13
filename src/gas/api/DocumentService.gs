@@ -20,169 +20,6 @@ const DocumentService = {
     return override && String(override).trim() ? String(override).trim() : this.CONFIG[key];
   },
 
-  _valueByAliases: function(record, aliases, fallback) {
-    const list = Array.isArray(aliases) ? aliases : [aliases];
-    for (const key of list) {
-      if (record && record[key] !== undefined && record[key] !== null && record[key] !== "") {
-        return record[key];
-      }
-    }
-    return fallback !== undefined ? fallback : "";
-  },
-
-  _rowToObject: function(headers, row) {
-    const obj = {};
-    headers.forEach((h, i) => { obj[String(h).trim()] = row[i]; });
-    return obj;
-  },
-
-  _getRowById: function(sheetName, id, idAliases) {
-    const ss = BaseService.openSS();
-    const ws = ss.getSheetByName(sheetName);
-    if (!ws) throw new Error(`${sheetName} sayfası bulunamadı.`);
-
-    const lastRow = ws.getLastRow();
-    if (lastRow < 2) throw new Error(`${sheetName} sayfasında veri bulunamadı.`);
-
-    const lastCol = ws.getLastColumn();
-    const headers = ws.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(h => String(h).trim());
-    const idCol = BaseService.findHeaderIndex(headers, idAliases);
-    if (idCol < 1) throw new Error(`${sheetName} sayfasında ID kolonu bulunamadı.`);
-
-    const idValues = ws.getRange(2, idCol, lastRow - 1, 1).getDisplayValues().flat();
-    const rowIdx = idValues.findIndex(v => String(v).toLowerCase() === String(id).toLowerCase());
-    if (rowIdx === -1) throw new Error(`${sheetName} sayfasında '${id}' bulunamadı.`);
-
-    const row = ws.getRange(rowIdx + 2, 1, 1, lastCol).getDisplayValues()[0];
-    return { headers: headers, row: row, object: this._rowToObject(headers, row) };
-  },
-
-  /**
-   * Legacy sertifikaVeri karşılığı.
-   * Belirli bir sertifika ID'si için ISO üretim payload'unu döner.
-   */
-  buildCertPayload: function(id, lang, select) {
-    try {
-      const certData = this._getRowById("Sertifika", id, ["ID"]);
-      const certObj = certData.object;
-
-      const firmId = this._valueByAliases(certObj, ["Firma No", "FirmaNo", "firmano"]);
-      const standardId = this._valueByAliases(certObj, ["Standart", "Standard", "standart"]);
-      if (!firmId) throw new Error("Sertifika kaydında firma no boş.");
-      if (!standardId) throw new Error("Sertifika kaydında standart boş.");
-
-      const company = CompanyService.getById(firmId);
-      if (!company) throw new Error(`Firmalar sayfasında '${firmId}' bulunamadı.`);
-
-      const stdData = this._getRowById("Standarts", standardId, ["ID", "Standart", "Standard"]);
-      const stdObj = stdData.object;
-
-      return {
-        nick: this._valueByAliases(certObj, ["Nickname", "Nick", "nick"]),
-        id: firmId,
-        standard: this._valueByAliases(certObj, ["Standart", "Standard", "standart"]),
-        sNo: this._valueByAliases(certObj, ["Sno", "SNo", "Sertifika No"]),
-        sTarihi: this._valueByAliases(certObj, ["GST", "Sertifika Tarihi"]),
-        sGozetimT: this._valueByAliases(certObj, ["GOZ", "Sertifika Gözetim Tarihi"]),
-        sTT: this._valueByAliases(certObj, ["STT", "Son Tetkik Tarihi"]),
-        sGT: this._valueByAliases(certObj, ["SGT", "Sertifika Geçerlilik Tarihi"]),
-        sKapsam: this._valueByAliases(certObj, ["Kapsam", "Türkçe Kapsam"]),
-        sScope: this._valueByAliases(certObj, ["Scope", "İngilizce Kapsam"]),
-        logo: this._valueByAliases(certObj, ["Logo", "logo"]),
-        nace: this._valueByAliases(certObj, ["Kod", "Nace", "NACE"]),
-        akrn: this._valueByAliases(certObj, ["Akreditasyon", "Akrn", "AKRN"]),
-        not: this._valueByAliases(certObj, ["Not", "not"]),
-        other: this._valueByAliases(certObj, ["Other", "Diğer", "Diger"]),
-        qrLink: this._valueByAliases(certObj, ["QrCode", "QR Code", "QR", "Search"]),
-        unvan: this._valueByAliases(company, ["Unvan", "unvan"]),
-        adres: this._valueByAliases(company, ["Adres", "adres"]),
-        il: this._valueByAliases(company, ["İl", "Il", "Şehir", "Sehir"]),
-        ulke: this._valueByAliases(company, ["Ülke", "Ulke"]),
-        sube: this._valueByAliases(company, ["Şube", "Sube", "Yazışma Adresi", "Yazisma Adresi"]),
-        trtema: this._valueByAliases(stdObj, ["Temaid", "TemaID", "temaid"]),
-        entema: this._valueByAliases(stdObj, ["Themeid", "ThemeID", "themeid"]),
-        lang: lang || "TR",
-        select: select || ""
-      };
-    } catch (e) {
-      BaseService.logError("buildCertPayload", e, { id: id });
-      return null;
-    }
-  },
-
-  /**
-   * Legacy testVeri karşılığı.
-   * Belirli bir test ID'si için test raporu payload'unu döner.
-   */
-  buildTestPayload: function(id, lang) {
-    try {
-      const testData = this._getRowById("Testler", id, ["ID", "Test No", "TestNo"]);
-      const testObj = testData.object;
-      const testName = this._valueByAliases(testObj, ["Testin Adı", "Test Adı", "TestAdi", "Test Name"]);
-      if (!testName) throw new Error("Test adı boş.");
-
-      const ss = BaseService.openSS();
-      const docWs = ss.getSheetByName("TestDoc");
-      if (!docWs) throw new Error("TestDoc sayfası bulunamadı.");
-
-      const docLastRow = docWs.getLastRow();
-      if (docLastRow < 2) throw new Error("TestDoc sayfası boş.");
-      const docLastCol = docWs.getLastColumn();
-      const docHeaders = docWs.getRange(1, 1, 1, docLastCol).getDisplayValues()[0].map(h => String(h).trim());
-      const docNameCol = BaseService.findHeaderIndex(docHeaders, ["Doküman Adı", "Dokuman Adi"]);
-      if (docNameCol < 1) throw new Error("TestDoc: Doküman Adı sütunu bulunamadı.");
-
-      const docRows = docWs.getRange(2, 1, docLastRow - 1, docLastCol).getDisplayValues();
-      const docRow = docRows.find(r => String(r[docNameCol - 1]).trim() === String(testName).trim());
-      if (!docRow) throw new Error(`TestDoc eşleşmesi bulunamadı: ${testName}`);
-      const docObj = this._rowToObject(docHeaders, docRow);
-
-      const firmId = this._valueByAliases(testObj, ["Firma No", "FirmaNo", "fno"]);
-      const company = CompanyService.getById(firmId);
-      if (!company) throw new Error(`Firmalar sayfasında '${firmId}' bulunamadı.`);
-
-      return {
-        testno: this._valueByAliases(testObj, ["ID", "Test No", "TestNo"]),
-        fnick: this._valueByAliases(testObj, ["Firma Adı", "FirmaAdi", "Nick", "Nickname"]),
-        fno: firmId,
-        testisim: testName,
-        testadi: this._valueByAliases(docObj, ["Türkçe Test Adı", "Turkce Test Adi"]),
-        testname: this._valueByAliases(docObj, ["İngilizce Test Adı", "Ingilizce Test Adi"]),
-        trtema: this._valueByAliases(docObj, ["Türkçe Tema", "Turkce Tema"]),
-        entema: this._valueByAliases(docObj, ["İngilizce Tema", "Ingilizce Tema"]),
-        gunsay: this._valueByAliases(docObj, ["Gün Sayısı", "Gun Sayisi"]),
-        kisabir: this._valueByAliases(docObj, ["Kısaltma", "Kisaltma"]),
-        kisaiki: this._valueByAliases(docObj, ["Kısaltma 2", "Kisaltma 2"]),
-        marka: this._valueByAliases(testObj, ["Marka"]),
-        urun: this._valueByAliases(testObj, ["Ürün", "Urun"]),
-        urunkod: this._valueByAliases(testObj, ["Ürün Kısa Kodu", "Urun Kisa Kodu", "Ürün Kodu", "Urun Kodu"]),
-        urunno: this._valueByAliases(testObj, ["Ürün No", "Urun No"]),
-        lot: this._valueByAliases(testObj, ["Lot"]),
-        kabultarih: this._valueByAliases(testObj, ["Ürün Kabul", "Urun Kabul"]),
-        kabulsaat: this._valueByAliases(testObj, ["Kabul Saat"]),
-        testba: this._valueByAliases(testObj, ["Test Başlangıç", "Test Baslangic"]),
-        testbi: this._valueByAliases(testObj, ["Test Bitiş", "Test Bitis"]),
-        raportarihi: this._valueByAliases(testObj, ["Rapor Tarihi"]),
-        raporno: this._valueByAliases(testObj, ["Rapor No"]),
-        numunesay: this._valueByAliases(testObj, ["Numune Sayısı", "Numune Sayisi"]),
-        numuneut: this._valueByAliases(testObj, ["Numune ÜT", "Numune UT"]),
-        numuneskt: this._valueByAliases(testObj, ["Numune SKT"]),
-        urunbilgi: this._valueByAliases(testObj, ["Ürün Bilgi", "Urun Bilgi"]),
-        gorselbir: this._valueByAliases(testObj, ["Görsel 1", "Gorsel 1"]),
-        gorseliki: this._valueByAliases(testObj, ["Görsel 2", "Gorsel 2"]),
-        detay: this._valueByAliases(testObj, ["Detay"]),
-        lang: lang || "TR",
-        unvan: this._valueByAliases(company, ["Unvan", "unvan"]),
-        adres: this._valueByAliases(company, ["Adres", "adres"]),
-        sehir: this._valueByAliases(company, ["İl", "Il", "Şehir", "Sehir"]),
-        ulke: this._valueByAliases(company, ["Ülke", "Ulke"])
-      };
-    } catch (e) {
-      BaseService.logError("buildTestPayload", e, { id: id });
-      return null;
-    }
-  },
-
   /**
    * ISO Sertifikası Üretir (eski isoBas).
    */
@@ -547,53 +384,22 @@ const DocumentService = {
   },
 
   /**
-   * Kullanılabilir doküman setlerini döner.
-   * Gerçek sheet adı: "SysDoc" (legacy returnDocSelect ile doğrulanmış).
+   * Worker tarafından yönlendirilen klasör oluşturma side-effect isteğini işler.
    */
-  getAvailableSets: function() {
+  createBatchFolders: function(nick, uniqueSubFolders) {
     try {
-      const ss = BaseService.openSS();
-      const sheet = ss.getSheetByName("SysDoc");
-      if (!sheet) throw new Error('"SysDoc" sayfası bulunamadı.');
-
-      const rawValues = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues();
-      return [...new Set(rawValues.flat().filter(v => v))];
-    } catch (e) {
-      BaseService.logError("getAvailableSets", e);
-      return [];
-    }
-  },
-
-  /**
-   * Toplu üretim öncesi klasörleri hazırlar.
-   * Gerçek sheet adı: "SysDoc".
-   */
-  prepareBatchFolders: function(data) {
-    try {
-      const parentFolderId = DriveService.getCompanyFolderId(data.nick);
+      const parentFolderId = DriveService.getCompanyFolderId(nick);
       const docsFolder = DriveService.getOrCreateSubFolder(parentFolderId, "Dokümanlar");
-
-      const ss = BaseService.openSS();
-      const sheet = ss.getSheetByName("SysDoc");
-      if (!sheet) throw new Error('"SysDoc" sayfası bulunamadı.');
-
-      const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 6).getDisplayValues()
-        .filter(row => row[0] === data.setName && row[5]);
-
-      if (rows.length === 0) {
-        throw new Error(`"${data.setName}" setine ait geçerli şablon bulunamadı.`);
-      }
-
+      
       const folderMap = {};
-      const uniqueSubFolders = [...new Set(rows.map(row => row[2]))];
       uniqueSubFolders.forEach(name => {
-        const folder = DriveService.getOrCreateSubFolder(docsFolder.getId(), name);
+        const folder = DriveService.getOrCreateSubFolder(docsFolder.getId(), String(name));
         folderMap[name] = folder.getId();
       });
-
-      return { success: true, rows: rows, folderMap: folderMap };
+      
+      return { success: true, data: folderMap };
     } catch (e) {
-      BaseService.logError("prepareBatchFolders", e);
+      BaseService.logError("createBatchFolders", e);
       return { success: false, error: e.message };
     }
   },

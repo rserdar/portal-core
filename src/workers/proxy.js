@@ -1,9 +1,11 @@
 /**
- * 🛰️ Medicert Portal: Cloudflare Worker Proxy (v5.4 / Phase 3.5)
+ * 🛰️ Medicert Portal: Cloudflare Worker Proxy (v5.5 / Phase 3.6)
  *
  * Mimari özeti:
  * - KV-primary read (miss => needsHydration)
  * - KV-primary write (Sheets write-back devre dışı)
+ * - bulkSync dışında full-dataset rebuild yasak
+ * - günlük write path'leri yalnızca etkilenen index/key üzerinde incremental çalışır
  * - Google-native side-effect'ler geçici olarak kapalı
  *
  * Gereksinimler:
@@ -373,6 +375,64 @@ export default {
         env.DB.put("cache:getCertificates:{}", JSON.stringify(certificates), { expirationTtl: CACHE_TTL }),
         env.DB.put(indexKeys.certificateById, JSON.stringify(certById), { expirationTtl: CACHE_TTL }),
         env.DB.put(indexKeys.certsByFirmaId, JSON.stringify(certsByFirmaId), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.certificateNextId, getNextCertificateId(certificates), { expirationTtl: CACHE_TTL }),
+      ]);
+    };
+    const loadCertificateIndexes = async () => {
+      if (!env.DB) return null;
+      const [byFirmaRaw, byIdRaw, nextIdRaw] = await Promise.all([
+        env.DB.get(indexKeys.certsByFirmaId),
+        env.DB.get(indexKeys.certificateById),
+        env.DB.get(indexKeys.certificateNextId),
+      ]);
+
+      let certById = byIdRaw ? JSON.parse(byIdRaw) : null;
+      let certsByFirmaId = byFirmaRaw ? JSON.parse(byFirmaRaw) : null;
+
+      if ((!certById || typeof certById !== "object") && (!certsByFirmaId || typeof certsByFirmaId !== "object")) {
+        const fullState = await loadCertificateState();
+        if (!fullState) return null;
+        certById = fullState.certById;
+        certsByFirmaId = fullState.certsByFirmaId;
+      }
+
+      if ((!certById || typeof certById !== "object") && certsByFirmaId && typeof certsByFirmaId === "object") {
+        certById = buildCertificatesById(
+          Object.values(certsByFirmaId).flatMap((value) => Array.isArray(value) ? value : [])
+        );
+      }
+
+      if ((!certsByFirmaId || typeof certsByFirmaId !== "object") && certById && typeof certById === "object") {
+        certsByFirmaId = buildCertificatesByFirmaId(Object.values(certById));
+      }
+
+      if (!certById || typeof certById !== "object" || !certsByFirmaId || typeof certsByFirmaId !== "object") {
+        return null;
+      }
+
+      let nextId = parseInt(String(nextIdRaw || "").trim(), 10);
+      if (!Number.isFinite(nextId) || nextId < 1) {
+        nextId = Object.keys(certById).reduce((highest, id) => {
+          const parsed = parseInt(String(id), 10);
+          return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
+        }, 1);
+      }
+
+      return {
+        certById,
+        certsByFirmaId,
+        nextId: String(nextId),
+      };
+    };
+    const saveCertificateIndexes = async (state) => {
+      const certById = state?.certById && typeof state.certById === "object" ? state.certById : {};
+      const certsByFirmaId = state?.certsByFirmaId && typeof state.certsByFirmaId === "object" ? state.certsByFirmaId : {};
+      const nextId = String(state?.nextId || "1");
+      await Promise.all([
+        env.DB.put(indexKeys.certificateById, JSON.stringify(certById), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.certsByFirmaId, JSON.stringify(certsByFirmaId), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.certificateNextId, nextId, { expirationTtl: CACHE_TTL }),
+        env.DB.delete("cache:getCertificates:{}"),
       ]);
     };
     const getNextCertificateId = (certificates) => {
@@ -524,7 +584,41 @@ export default {
         env.DB.put("cache:getCompanies:{}", JSON.stringify(companies), { expirationTtl: CACHE_TTL }),
         env.DB.put(indexKeys.companyById, JSON.stringify(companiesById), { expirationTtl: CACHE_TTL }),
         env.DB.put("cache:getConsultants:{}", JSON.stringify(buildConsultants(companies)), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.companyNextId, getNextCompanyId(companies), { expirationTtl: CACHE_TTL }),
       ]);
+    };
+    const loadCompanyIndexes = async () => {
+      if (!env.DB) return null;
+      const [byIdRaw, nextIdRaw] = await Promise.all([
+        env.DB.get(indexKeys.companyById),
+        env.DB.get(indexKeys.companyNextId),
+      ]);
+      let companiesById = byIdRaw ? JSON.parse(byIdRaw) : null;
+      if (!companiesById || typeof companiesById !== "object") {
+        const fullState = await loadCompanyState();
+        if (!fullState) return null;
+        companiesById = fullState.companiesById;
+      }
+      let nextId = parseInt(String(nextIdRaw || "").trim(), 10);
+      if (!Number.isFinite(nextId) || nextId < 1) {
+        nextId = Object.keys(companiesById).reduce((highest, id) => {
+          const parsed = parseInt(String(id), 10);
+          return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
+        }, 1);
+      }
+      return { companiesById, nextId: String(nextId) };
+    };
+    const saveCompanyIndexes = async (state) => {
+      const companiesById = state?.companiesById && typeof state.companiesById === "object" ? state.companiesById : {};
+      const companies = Object.values(companiesById);
+      const nextId = String(state?.nextId || "1");
+      await Promise.all([
+        env.DB.put(indexKeys.companyById, JSON.stringify(companiesById), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.companyNextId, nextId, { expirationTtl: CACHE_TTL }),
+        env.DB.delete("cache:getCompanies:{}"),
+        env.DB.delete("cache:getConsultants:{}"),
+      ]);
+      return companies;
     };
     const getNextCompanyId = (companies) => {
       const max = (Array.isArray(companies) ? companies : []).reduce((highest, company) => {
@@ -584,7 +678,40 @@ export default {
     };
     const saveTestState = async (state) => {
       const rows = Array.isArray(state?.rows) ? state.rows : [];
-      await env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(buildTestsByFirmaId(rows)), { expirationTtl: CACHE_TTL });
+      await Promise.all([
+        env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(buildTestsByFirmaId(rows)), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.testNextId, getNextTestId(rows), { expirationTtl: CACHE_TTL }),
+      ]);
+    };
+    const loadTestIndexes = async () => {
+      if (!env.DB) return null;
+      const [indexedRaw, nextIdRaw] = await Promise.all([
+        env.DB.get(indexKeys.testsByFirmaId),
+        env.DB.get(indexKeys.testNextId),
+      ]);
+      let testsByFirmaId = indexedRaw ? JSON.parse(indexedRaw) : null;
+      if (!testsByFirmaId || typeof testsByFirmaId !== "object") {
+        const fullState = await loadTestState();
+        if (!fullState) return null;
+        testsByFirmaId = fullState.testsByFirmaId;
+      }
+      let nextId = parseInt(String(nextIdRaw || "").trim(), 10);
+      if (!Number.isFinite(nextId) || nextId < 1) {
+        const rows = Object.values(testsByFirmaId).flatMap((value) => Array.isArray(value) ? value : []);
+        nextId = rows.reduce((highest, row) => {
+          const parsed = parseInt(getTestId(row), 10);
+          return !isNaN(parsed) && parsed >= highest ? parsed + 1 : highest;
+        }, 1);
+      }
+      return { testsByFirmaId, nextId: String(nextId) };
+    };
+    const saveTestIndexes = async (state) => {
+      const testsByFirmaId = state?.testsByFirmaId && typeof state.testsByFirmaId === "object" ? state.testsByFirmaId : {};
+      const nextId = String(state?.nextId || "1");
+      await Promise.all([
+        env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(testsByFirmaId), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.testNextId, nextId, { expirationTtl: CACHE_TTL }),
+      ]);
     };
     const getNextTestId = (rows) => {
       const max = (Array.isArray(rows) ? rows : []).reduce((highest, row) => {
@@ -650,6 +777,47 @@ export default {
       await Promise.all([
         env.DB.put(indexKeys.proformasByFirmaId, JSON.stringify(buildProformasByFirmaId(rows)), { expirationTtl: CACHE_TTL }),
         env.DB.put(indexKeys.proformasById, JSON.stringify(buildProformasById(rows)), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.proformaNextId, getNextProformaId(rows), { expirationTtl: CACHE_TTL }),
+      ]);
+    };
+    const loadProformaIndexes = async () => {
+      if (!env.DB) return null;
+      const [byFirmaRaw, byIdRaw, nextIdRaw] = await Promise.all([
+        env.DB.get(indexKeys.proformasByFirmaId),
+        env.DB.get(indexKeys.proformasById),
+        env.DB.get(indexKeys.proformaNextId),
+      ]);
+      let proformasById = byIdRaw ? JSON.parse(byIdRaw) : null;
+      let proformasByFirmaId = byFirmaRaw ? JSON.parse(byFirmaRaw) : null;
+      if ((!proformasById || typeof proformasById !== "object") && (!proformasByFirmaId || typeof proformasByFirmaId !== "object")) {
+        const fullState = await loadProformaState();
+        if (!fullState) return null;
+        proformasById = fullState.proformasById;
+        proformasByFirmaId = fullState.proformasByFirmaId;
+      }
+      if ((!proformasById || typeof proformasById !== "object") && proformasByFirmaId && typeof proformasByFirmaId === "object") {
+        proformasById = buildProformasById(Object.values(proformasByFirmaId).flatMap((value) => Array.isArray(value) ? value : []));
+      }
+      if ((!proformasByFirmaId || typeof proformasByFirmaId !== "object") && proformasById && typeof proformasById === "object") {
+        proformasByFirmaId = buildProformasByFirmaId(Object.values(proformasById));
+      }
+      let nextId = parseInt(String(nextIdRaw || "").trim(), 10);
+      if (!Number.isFinite(nextId) || nextId < 1) {
+        nextId = Object.keys(proformasById || {}).reduce((highest, id) => {
+          const parsed = parseInt(String(id), 10);
+          return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
+        }, 1);
+      }
+      return { proformasById, proformasByFirmaId, nextId: String(nextId) };
+    };
+    const saveProformaIndexes = async (state) => {
+      const proformasById = state?.proformasById && typeof state.proformasById === "object" ? state.proformasById : {};
+      const proformasByFirmaId = state?.proformasByFirmaId && typeof state.proformasByFirmaId === "object" ? state.proformasByFirmaId : {};
+      const nextId = String(state?.nextId || "1");
+      await Promise.all([
+        env.DB.put(indexKeys.proformasByFirmaId, JSON.stringify(proformasByFirmaId), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.proformasById, JSON.stringify(proformasById), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.proformaNextId, nextId, { expirationTtl: CACHE_TTL }),
       ]);
     };
     const getNextProformaId = (rows) => {
@@ -735,6 +903,38 @@ export default {
       await Promise.all([
         env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(buildAuditsByFirmaId(rows)), { expirationTtl: CACHE_TTL }),
         env.DB.put("cache:getAudits:{}", JSON.stringify(buildAuditObjects(rows)), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.auditNextId, getNextAuditId(rows), { expirationTtl: CACHE_TTL }),
+      ]);
+    };
+    const loadAuditIndexes = async () => {
+      if (!env.DB) return null;
+      const [indexedRaw, nextIdRaw] = await Promise.all([
+        env.DB.get(indexKeys.auditsByFirmaId),
+        env.DB.get(indexKeys.auditNextId),
+      ]);
+      let auditsByFirmaId = indexedRaw ? JSON.parse(indexedRaw) : null;
+      if (!auditsByFirmaId || typeof auditsByFirmaId !== "object") {
+        const fullState = await loadAuditState();
+        if (!fullState) return null;
+        auditsByFirmaId = fullState.auditsByFirmaId;
+      }
+      let nextId = parseInt(String(nextIdRaw || "").trim(), 10);
+      if (!Number.isFinite(nextId) || nextId < 1) {
+        const rows = Object.values(auditsByFirmaId).flatMap((value) => Array.isArray(value) ? value : []);
+        nextId = rows.reduce((highest, row) => {
+          const parsed = parseInt(getAuditId(row), 10);
+          return !isNaN(parsed) && parsed >= highest ? parsed + 1 : highest;
+        }, 1);
+      }
+      return { auditsByFirmaId, nextId: String(nextId) };
+    };
+    const saveAuditIndexes = async (state) => {
+      const auditsByFirmaId = state?.auditsByFirmaId && typeof state.auditsByFirmaId === "object" ? state.auditsByFirmaId : {};
+      const nextId = String(state?.nextId || "1");
+      await Promise.all([
+        env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(auditsByFirmaId), { expirationTtl: CACHE_TTL }),
+        env.DB.put(indexKeys.auditNextId, nextId, { expirationTtl: CACHE_TTL }),
+        env.DB.delete("cache:getAudits:{}"),
       ]);
     };
     const getNextAuditId = (rows) => {
@@ -743,6 +943,206 @@ export default {
         return !isNaN(raw) && raw > highest ? raw : highest;
       }, 0);
       return String(max + 1);
+    };
+    const rowToObject = (headers, row) => {
+      const obj = {};
+      const safeHeaders = Array.isArray(headers) ? headers : [];
+      const safeRow = Array.isArray(row) ? row : [];
+      safeHeaders.forEach((header, index) => {
+        obj[String(header ?? "").trim()] = String(safeRow[index] ?? "").trim();
+      });
+      return obj;
+    };
+    const getMasterDataset = async (type) => {
+      if (!env.DB) return null;
+      const typeKey = `cache:getMasterData:${stableStringify({ type })}`;
+      const typedRaw = await env.DB.get(typeKey);
+      if (typedRaw) {
+        const typedPayload = JSON.parse(typedRaw);
+        const typedDataset = typedPayload?.dataset;
+        if (typedDataset && Array.isArray(typedDataset.headers)) return typedDataset;
+      }
+
+      const allRaw = await env.DB.get("cache:getMasterData:{}");
+      if (!allRaw) return null;
+      const allPayload = JSON.parse(allRaw);
+      const dataset = allPayload?.datasets?.[type];
+      return dataset && Array.isArray(dataset.headers) ? dataset : null;
+    };
+    const buildStandardsByIdFromDataset = (dataset) => {
+      const indexed = {};
+      const headers = Array.isArray(dataset?.headers) ? dataset.headers : [];
+      const rows = Array.isArray(dataset?.rows) ? dataset.rows : [];
+      rows.forEach((row) => {
+        const objectRow = rowToObject(headers, row);
+        // "Standart" (TR sheet header) ve "standard" (EN alias) her ikisi de eşleşmeli.
+        // normalizeHeader("Standart") → "standart", normalizeHeader("standard") → "standard"
+        // Bunlar farklı olduğu için iki alias da listeye eklendi.
+        const standardId = pickObjectValue(objectRow, ["Standart", "standard", "ID", "id", "Standart ID", "Standart No"]);
+        if (!standardId) return;
+        indexed[String(standardId)] = objectRow;
+      });
+      return indexed;
+    };
+    const loadStandardIndexes = async () => {
+      if (!env.DB) return null;
+      const indexedRaw = await env.DB.get(indexKeys.standardsById);
+      if (indexedRaw) {
+        const indexed = JSON.parse(indexedRaw);
+        // Boş obje cache'i geçersiz say — yanlış kurulmuş eski index'i atla
+        if (indexed && typeof indexed === "object" && Object.keys(indexed).length > 0) return indexed;
+      }
+
+      const dataset = await getMasterDataset("standards");
+      if (!dataset) return null;
+      const indexed = buildStandardsByIdFromDataset(dataset);
+      if (Object.keys(indexed).length) {
+        await env.DB.put(indexKeys.standardsById, JSON.stringify(indexed), { expirationTtl: CACHE_TTL });
+      }
+      return indexed;
+    };
+    const findTestById = (testsByFirmaId, targetId) => {
+      for (const rows of Object.values(testsByFirmaId || {})) {
+        const found = (Array.isArray(rows) ? rows : []).find((row) => getTestId(row) === targetId);
+        if (found) return found;
+      }
+      return null;
+    };
+    const getTestValue = (row, index, aliases = []) => {
+      if (Array.isArray(row)) return String(row[index] ?? "").trim();
+      return pickObjectValue(row, aliases, "");
+    };
+    const getTestDocByName = async (testName) => {
+      const dataset = await getMasterDataset("testdocs");
+      if (!dataset) return null;
+      const headers = Array.isArray(dataset.headers) ? dataset.headers : [];
+      const rows = Array.isArray(dataset.rows) ? dataset.rows : [];
+      const target = String(testName || "").trim().toLocaleLowerCase("tr-TR");
+      if (!target) return null;
+      const matchedRow = rows.find((row) => {
+        const objectRow = rowToObject(headers, row);
+        const docName = pickObjectValue(objectRow, ["Doküman Adı", "Dokuman Adi", "Doc Name", "DokumanAdi"], "");
+        return String(docName || "").trim().toLocaleLowerCase("tr-TR") === target;
+      });
+      return matchedRow ? rowToObject(headers, matchedRow) : null;
+    };
+    const buildCertificatePayloadFromKv = async (id, lang, select) => {
+      const certificateState = await loadCertificateIndexes();
+      if (!certificateState) {
+        throw new Error("CERTIFICATE_KV_EMPTY: Sertifika KV verisi boş. Önce senkronizasyon yapın.");
+      }
+      const certObj = certificateState.certById[String(id)] || null;
+      if (!certObj) throw new Error(`Sertifika KV indexinde '${id}' bulunamadı.`);
+
+      const firmId = getCertificateFirmaId(certObj);
+      const standardId = pickObjectValue(certObj, ["Standart", "Standard", "standart"]);
+      if (!firmId) throw new Error("Sertifika kaydında firma no boş.");
+      if (!standardId) throw new Error("Sertifika kaydında standart boş.");
+
+      const companyState = await loadCompanyIndexes();
+      if (!companyState) {
+        throw new Error("COMPANY_KV_EMPTY: Firma KV verisi boş. Önce senkronizasyon yapın.");
+      }
+      const company = companyState.companiesById[String(firmId)] || null;
+      if (!company) throw new Error(`Firma KV indexinde '${firmId}' bulunamadı.`);
+
+      const standardsById = await loadStandardIndexes();
+      if (!standardsById) {
+        throw new Error("STANDARD_KV_EMPTY: Standart KV verisi boş. Önce master senkronizasyonu yapın.");
+      }
+      const stdObj = standardsById[String(standardId)] || null;
+      if (!stdObj) throw new Error(`Standart KV indexinde '${standardId}' bulunamadı.`);
+
+      return {
+        nick: pickObjectValue(certObj, ["Nickname", "Nick", "nick", "Firma Adı", "isim"]),
+        id: String(firmId),
+        standard: pickObjectValue(certObj, ["Standart", "Standard", "standart"]),
+        sNo: pickObjectValue(certObj, ["Sno", "sNo", "Sertifika No", "sertNo", "SertifikaNo"]),
+        sTarihi: pickObjectValue(certObj, ["GST", "gst", "Sertifika Tarihi", "Belge Tarihi", "sTarihi"]),
+        sGozetimT: pickObjectValue(certObj, ["GOZ", "goz", "Gözetim Tarihi", "Sertifika Gözetim Tarihi", "sGozetimT"]),
+        sTT: pickObjectValue(certObj, ["STT", "stt", "Tescil Tarihi", "Sertifika Tescil Tarihi", "Son Tetkik Tarihi", "sTT"]),
+        sGT: pickObjectValue(certObj, ["SGT", "sgt", "Sertifika Geçerlilik Tarihi", "sGT"]),
+        sKapsam: pickObjectValue(certObj, ["Kapsam", "Türkçe Kapsam", "kapsam"]),
+        sScope: pickObjectValue(certObj, ["Scope", "İngilizce Kapsam", "scope"]),
+        logo: pickObjectValue(certObj, ["Logo", "logo"]),
+        nace: pickObjectValue(certObj, ["Kod", "Nace", "NACE", "kod", "nace"]),
+        akrn: pickObjectValue(certObj, ["Akreditasyon", "Akrn", "AKRN", "akrn", "akreditasyon"]),
+        not: pickObjectValue(certObj, ["Not", "not"]),
+        other: pickObjectValue(certObj, ["Other", "Other Standard", "Diğer", "Diger", "other"]),
+        qrLink: pickObjectValue(certObj, ["QrCode", "QR Code", "QR", "Search", "qr", "certLink", "Cert Link"]),
+        unvan: pickObjectValue(company, ["Unvan", "unvan"]),
+        adres: pickObjectValue(company, ["Adres", "adres"]),
+        il: pickObjectValue(company, ["İl", "Il", "Şehir", "Sehir", "sehir", "il"]),
+        ulke: pickObjectValue(company, ["Ülke", "Ulke", "ulke"]),
+        sube: pickObjectValue(company, ["Şube", "Sube", "Yazışma Adresi", "Yazisma Adresi", "yazisma"]),
+        trtema: pickObjectValue(stdObj, ["Temaid", "TemaID", "temaid", "TR Tema", "Türkçe Tema ID"]),
+        entema: pickObjectValue(stdObj, ["Themeid", "ThemeID", "themeid", "EN Tema", "İngilizce Tema ID"]),
+        lang: lang || "TR",
+        select: select || "",
+      };
+    };
+    const buildTestPayloadFromKv = async (id, lang) => {
+      const testState = await loadTestIndexes();
+      if (!testState) {
+        throw new Error("TEST_KV_EMPTY: Test KV verisi boş. Önce senkronizasyon yapın.");
+      }
+      const testRow = findTestById(testState.testsByFirmaId, String(id));
+      if (!testRow) throw new Error(`Test KV indexinde '${id}' bulunamadı.`);
+
+      const testName = getTestValue(testRow, 3, ["Testin Adı", "Test Adı", "TestAdi", "Test Name", "testAdi"]);
+      if (!testName) throw new Error("Test adı boş.");
+
+      const testDoc = await getTestDocByName(testName);
+      if (!testDoc) {
+        throw new Error(`TestDoc master dataset içinde '${testName}' bulunamadı.`);
+      }
+
+      const firmId = getTestFirmaId(testRow);
+      if (!firmId) throw new Error("Test kaydında firma no boş.");
+
+      const companyState = await loadCompanyIndexes();
+      if (!companyState) {
+        throw new Error("COMPANY_KV_EMPTY: Firma KV verisi boş. Önce senkronizasyon yapın.");
+      }
+      const company = companyState.companiesById[String(firmId)] || null;
+      if (!company) throw new Error(`Firma KV indexinde '${firmId}' bulunamadı.`);
+
+      return {
+        testno: getTestValue(testRow, 0, ["ID", "Test No", "TestNo", "id"]),
+        fnick: getTestValue(testRow, 1, ["Firma Adı", "FirmaAdi", "Nick", "Nickname", "firmaAdi", "fname"]),
+        fno: String(firmId),
+        testisim: testName,
+        testadi: pickObjectValue(testDoc, ["Türkçe Test Adı", "Turkce Test Adi"]),
+        testname: pickObjectValue(testDoc, ["İngilizce Test Adı", "Ingilizce Test Adi"]),
+        trtema: pickObjectValue(testDoc, ["Türkçe Tema", "Turkce Tema"]),
+        entema: pickObjectValue(testDoc, ["İngilizce Tema", "Ingilizce Tema"]),
+        gunsay: pickObjectValue(testDoc, ["Gün Sayısı", "Gun Sayisi"]),
+        kisabir: pickObjectValue(testDoc, ["Kısaltma", "Kisaltma"]),
+        kisaiki: pickObjectValue(testDoc, ["Kısaltma 2", "Kisaltma 2"]),
+        marka: getTestValue(testRow, 4, ["Marka", "marka"]),
+        urun: getTestValue(testRow, 5, ["Ürün", "Urun", "urun"]),
+        urunkod: getTestValue(testRow, 6, ["Ürün Kısa Kodu", "Urun Kisa Kodu", "Ürün Kodu", "Urun Kodu", "urunKodu"]),
+        urunno: getTestValue(testRow, 7, ["Ürün No", "Urun No", "urunNo"]),
+        lot: getTestValue(testRow, 8, ["Lot", "lot"]),
+        kabultarih: getTestValue(testRow, 9, ["Ürün Kabul", "Urun Kabul", "urunKabul"]),
+        kabulsaat: getTestValue(testRow, 10, ["Kabul Saat", "kabulSaat"]),
+        testba: getTestValue(testRow, 11, ["Test Başlangıç", "Test Baslangic", "testBaslangic"]),
+        testbi: getTestValue(testRow, 12, ["Test Bitiş", "Test Bitis", "testBitis"]),
+        raportarihi: getTestValue(testRow, 13, ["Rapor Tarihi", "raporTarihi"]),
+        raporno: getTestValue(testRow, 14, ["Rapor No", "raporNo"]),
+        numunesay: getTestValue(testRow, 15, ["Numune Sayısı", "Numune Sayisi", "numuneSayisi"]),
+        numuneut: getTestValue(testRow, 16, ["Numune ÜT", "Numune UT", "numuneUT"]),
+        numuneskt: getTestValue(testRow, 17, ["Numune SKT", "numuneSKT"]),
+        urunbilgi: getTestValue(testRow, 18, ["Ürün Bilgi", "Urun Bilgi", "urunBilgi"]),
+        gorselbir: getTestValue(testRow, 19, ["Görsel 1", "Gorsel 1", "gorsel1"]),
+        gorseliki: getTestValue(testRow, 20, ["Görsel 2", "Gorsel 2", "gorsel2"]),
+        detay: getTestValue(testRow, 21, ["Detay", "detay"]),
+        lang: lang || "TR",
+        unvan: pickObjectValue(company, ["Unvan", "unvan"]),
+        adres: pickObjectValue(company, ["Adres", "adres"]),
+        sehir: pickObjectValue(company, ["İl", "Il", "Şehir", "Sehir", "sehir", "il"]),
+        ulke: pickObjectValue(company, ["Ülke", "Ulke", "ulke"]),
+      };
     };
 
     const allowedOriginPatterns = [
@@ -753,12 +1153,17 @@ export default {
     ];
     const indexKeys = {
       companyById: "cache:index:companiesById",
+      companyNextId: "cache:meta:companyNextId",
       certsByFirmaId: "cache:index:certificatesByFirmaId",
       certificateById: "cache:index:certificateById",
+      certificateNextId: "cache:meta:certificateNextId",
       testsByFirmaId: "cache:index:testsByFirmaId",
+      testNextId: "cache:meta:testNextId",
       auditsByFirmaId: "cache:index:auditsByFirmaId",
+      auditNextId: "cache:meta:auditNextId",
       proformasByFirmaId: "cache:index:proformasByFirmaId",
       proformasById: "cache:index:proformasById",
+      proformaNextId: "cache:meta:proformaNextId",
       standardsById: "cache:index:standardsById"
     };
     const CACHE_TTL = 86400 * 7;
@@ -787,10 +1192,17 @@ export default {
     const corsHeaders = {
       "Access-Control-Allow-Origin": resolvedOrigin,
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
       "Access-Control-Max-Age": "86400",
       "Vary": "Origin",
     };
+
+    if (origin && !isAllowedOrigin) {
+      return new Response(JSON.stringify({ success: false, error: "CORS_ORIGIN_NOT_ALLOWED" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
@@ -831,16 +1243,22 @@ export default {
           "getFolderId",
           "getRecentFiles"
         ]);
+        const kvReadThroughActions = new Set([
+          "getFolderId",
+          "getRecentFiles",
+        ]);
         const gasWriteActions = [
           "editCell",
           "importBackup"
         ];
 
-        // 🔑 KV Cache Key
-        const cacheKey = `cache:${action}:${stableStringify(params)}`;
+        const shouldUseKvCache = !!env.DB && cacheableActions.includes(action);
+        const cacheKey = shouldUseKvCache
+          ? `cache:${action}:${stableStringify(params)}`
+          : null;
 
         // 1. KV'den Kontrol Et (Eğer DB binding varsa)
-        if (env.DB && cacheableActions.includes(action)) {
+        if (shouldUseKvCache) {
           const cached = await env.DB.get(cacheKey);
           if (cached) {
             if (rawCachePassthroughActions.has(action)) {
@@ -862,6 +1280,44 @@ export default {
             if (rebuilt) {
               ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(rebuilt), { expirationTtl: CACHE_TTL }));
               return jsonResponse({ success: true, data: rebuilt, fromCache: true, rebuiltFromIndex: true });
+            }
+          }
+
+          if (action === "getCompanies" || action === "getConsultants") {
+            const indexedRaw = await env.DB.get(indexKeys.companyById);
+            if (indexedRaw) {
+              const indexed = JSON.parse(indexedRaw);
+              const companies = Object.values(indexed || {});
+              const data = action === "getConsultants" ? buildConsultants(companies) : companies;
+              ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(data), { expirationTtl: CACHE_TTL }));
+              return jsonResponse({ success: true, data, fromCache: true, rebuiltFromIndex: true });
+            }
+          }
+
+          if (action === "getCertificates") {
+            const indexedRaw = await env.DB.get(indexKeys.certificateById);
+            if (indexedRaw) {
+              const indexed = JSON.parse(indexedRaw);
+              const data = Object.values(indexed || {});
+              ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(data), { expirationTtl: CACHE_TTL }));
+              return jsonResponse({ success: true, data, fromCache: true, rebuiltFromIndex: true });
+            }
+          }
+
+          if (action === "getRecentCertificates") {
+            const indexedRaw = await env.DB.get(indexKeys.certificateById);
+            if (indexedRaw) {
+              const indexed = JSON.parse(indexedRaw);
+              const limit = Math.max(1, parseInt(String(params?.limit || 25), 10) || 25);
+              const data = Object.values(indexed || {})
+                .sort((a, b) => {
+                  const aId = parseInt(getCertificateId(a), 10);
+                  const bId = parseInt(getCertificateId(b), 10);
+                  return (isNaN(bId) ? 0 : bId) - (isNaN(aId) ? 0 : aId);
+                })
+                .slice(0, limit);
+              ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(data), { expirationTtl: CACHE_TTL }));
+              return jsonResponse({ success: true, data, fromCache: true, rebuiltFromIndex: true });
             }
           }
 
@@ -911,8 +1367,8 @@ export default {
             }
           }
 
-          // Phase 3.5: KV primary read. Miss durumunda GAS fallback yerine hydration sinyali döner.
-          if (kvPrimaryReads) {
+          // Phase 3.5: KV primary read. Drive-backed dinamik okumalarda read-through izinlidir.
+          if (kvPrimaryReads && !kvReadThroughActions.has(action)) {
             return jsonResponse({
               success: false,
               data: null,
@@ -922,6 +1378,75 @@ export default {
               params
             });
           }
+        }
+
+        if (action === "buildCertPayload") {
+          if (!env.DB) {
+            return jsonResponse({ success: false, error: "Cloudflare KV Bağı (DB) bulunamadı!" }, 500);
+          }
+          try {
+            const payload = await buildCertificatePayloadFromKv(params?.id, params?.lang, params?.select);
+            return jsonResponse({ success: true, data: payload, source: "kv" });
+          } catch (error) {
+            return jsonResponse({
+              success: false,
+              data: null,
+              error: `Sertifika payload üretilemedi (${params?.id ?? ""}): ${error.message}`
+            });
+          }
+        }
+
+        if (action === "buildTestPayload") {
+          if (!env.DB) {
+            return jsonResponse({ success: false, error: "Cloudflare KV Bağı (DB) bulunamadı!" }, 500);
+          }
+          try {
+            const payload = await buildTestPayloadFromKv(params?.id, params?.lang);
+            return jsonResponse({ success: true, data: payload, source: "kv" });
+          } catch (error) {
+            return jsonResponse({
+              success: false,
+              data: null,
+              error: `Test payload üretilemedi (${params?.id ?? ""}): ${error.message}`
+            });
+          }
+        }
+
+        if (action === "getAvailableSets") {
+          const dataset = await getMasterDataset("sysdocs");
+          if (!dataset || !dataset.rows) return jsonResponse({ success: true, data: [] });
+          const sets = [...new Set(dataset.rows.map(row => row[0]).filter(Boolean))];
+          return jsonResponse({ success: true, data: sets });
+        }
+
+        if (action === "prepareBatchFolders") {
+          const dataset = await getMasterDataset("sysdocs");
+          if (!dataset || !dataset.rows) return jsonResponse({ success: false, error: "SysDoc KV verisi boş" });
+          
+          const setName = params?.data?.setName;
+          const nick = params?.data?.nick;
+
+          const rows = dataset.rows.filter(row => String(row[0]) === String(setName) && Boolean(row[5]));
+          if (rows.length === 0) return jsonResponse({ success: false, error: `"${setName}" setine ait geçerli şablon bulunamadı.` });
+          
+          const uniqueSubFolders = [...new Set(rows.map(row => row[2]))];
+          
+          // Google Drive'da klasörleri oluşturmak için GAS'a side-effect isteği at
+          const gasRes = await fetch(env.GAS_API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "createBatchFolders",
+              apiKey: env.API_KEY,
+              params: { nick, uniqueSubFolders }
+            })
+          });
+          const payload = await gasRes.json().catch(() => null);
+          if (!gasRes.ok || !payload || !payload.success) {
+            return jsonResponse({ success: false, error: payload?.error || "Klasör oluşturma hatası" });
+          }
+          
+          return jsonResponse({ success: true, rows, folderMap: payload.data });
         }
 
         // 2. Cache Temizleme Aksiyonu (Özel)
@@ -1216,22 +1741,22 @@ export default {
         }
 
         if (env.DB && ["addCompany", "updateCompany"].includes(action)) {
-          const state = await loadCompanyState();
+          const state = await loadCompanyIndexes();
           if (!state) {
             return jsonResponse({ success: false, error: "COMPANY_KV_EMPTY", message: "Firma KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
           }
 
           const nextState = {
-            companies: [...state.companies],
             companiesById: { ...state.companiesById },
+            nextId: String(state.nextId || "1"),
           };
 
           if (action === "addCompany") {
-            const newId = getNextCompanyId(nextState.companies);
+            const newId = String(nextState.nextId);
             const created = createCanonicalCompany(params?.companyInfo || {}, { id: newId });
-            nextState.companies.push(created);
             nextState.companiesById[newId] = created;
-            await saveCompanyState(nextState);
+            nextState.nextId = String(parseInt(newId, 10) + 1);
+            await saveCompanyIndexes(nextState);
             await env.DB.put(`cache:getCompanyById:${stableStringify({ id: newId })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL });
             return jsonResponse({ success: true, data: { id: newId, company: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false });
           }
@@ -1253,30 +1778,33 @@ export default {
           }
 
           const updated = createCanonicalCompany({ ...existing, ...(params?.companyInfo || {}) }, { id: targetId });
-          nextState.companies = nextState.companies.map((company) => getCompanyId(company) === targetId ? updated : company);
           nextState.companiesById[targetId] = updated;
-          await saveCompanyState(nextState);
+          await saveCompanyIndexes(nextState);
           await env.DB.put(`cache:getCompanyById:${stableStringify({ id: targetId })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL });
           return jsonResponse({ success: true, data: { etag: updated.__etag, company: updated }, kvPrimaryWrite: true, sheetsWrite: false });
         }
 
         if (env.DB && ["addTest", "updateTest"].includes(action)) {
-          const state = await loadTestState();
+          const state = await loadTestIndexes();
           if (!state) {
             return jsonResponse({ success: false, error: "TEST_KV_EMPTY", message: "Test KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
           }
 
-          const nextState = { rows: [...state.rows] };
+          const nextState = {
+            testsByFirmaId: { ...state.testsByFirmaId },
+            nextId: String(state.nextId || "1"),
+          };
 
           if (action === "addTest") {
-            const newId = getNextTestId(nextState.rows);
+            const newId = String(nextState.nextId);
             const created = createCanonicalTestRow(params?.testInfo || {}, { id: newId });
-            nextState.rows.push(created);
-            await saveTestState(nextState);
             const firmaId = getTestFirmaId(created);
             if (firmaId) {
-              await env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(buildTestsByFirmaId(nextState.rows)[firmaId] || []), { expirationTtl: CACHE_TTL });
+              nextState.testsByFirmaId[firmaId] = [...(nextState.testsByFirmaId[firmaId] || []), created];
+              await env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(nextState.testsByFirmaId[firmaId] || []), { expirationTtl: CACHE_TTL });
             }
+            nextState.nextId = String(parseInt(newId, 10) + 1);
+            await saveTestIndexes(nextState);
             return jsonResponse({ success: true, data: { id: newId, row: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false });
           }
 
@@ -1284,12 +1812,19 @@ export default {
           if (!targetId) {
             return jsonResponse({ success: false, error: "Test ID boş olamaz." }, 400);
           }
-          const rowIndex = nextState.rows.findIndex((row) => getTestId(row) === targetId);
-          if (rowIndex === -1) {
+          let current = null;
+          let prevFirmaId = "";
+          for (const [firmaId, rows] of Object.entries(nextState.testsByFirmaId)) {
+            const found = (Array.isArray(rows) ? rows : []).find((row) => getTestId(row) === targetId);
+            if (found) {
+              current = found;
+              prevFirmaId = String(firmaId);
+              break;
+            }
+          }
+          if (!current) {
             return jsonResponse({ success: false, error: `Test bulunamadı: ${targetId}` }, 404);
           }
-
-          const current = nextState.rows[rowIndex];
           const updated = createCanonicalTestRow({
             id: targetId,
             firmaAdi: current[1] ?? "",
@@ -1317,55 +1852,71 @@ export default {
             detay: current[21] ?? "",
             ...(params?.testInfo || {})
           }, { id: targetId });
-          nextState.rows[rowIndex] = updated;
-          await saveTestState(nextState);
-          const grouped = buildTestsByFirmaId(nextState.rows);
           const writes = [];
-          const prevFirmaId = getTestFirmaId(current);
           const nextFirmaId = getTestFirmaId(updated);
           if (prevFirmaId) {
-            writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`, JSON.stringify(grouped[prevFirmaId] || []), { expirationTtl: CACHE_TTL }));
+            nextState.testsByFirmaId[prevFirmaId] = (nextState.testsByFirmaId[prevFirmaId] || [])
+              .map((row) => getTestId(row) === targetId ? updated : row);
+            if (nextFirmaId && nextFirmaId !== prevFirmaId) {
+              nextState.testsByFirmaId[prevFirmaId] = (nextState.testsByFirmaId[prevFirmaId] || [])
+                .filter((row) => getTestId(row) !== targetId);
+            }
+            writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`, JSON.stringify(nextState.testsByFirmaId[prevFirmaId] || []), { expirationTtl: CACHE_TTL }));
           }
           if (nextFirmaId && nextFirmaId !== prevFirmaId) {
-            writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(grouped[nextFirmaId] || []), { expirationTtl: CACHE_TTL }));
+            nextState.testsByFirmaId[nextFirmaId] = [...(nextState.testsByFirmaId[nextFirmaId] || []), updated];
+            writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(nextState.testsByFirmaId[nextFirmaId] || []), { expirationTtl: CACHE_TTL }));
+          } else if (nextFirmaId && !prevFirmaId) {
+            nextState.testsByFirmaId[nextFirmaId] = [...(nextState.testsByFirmaId[nextFirmaId] || []), updated];
+            writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(nextState.testsByFirmaId[nextFirmaId] || []), { expirationTtl: CACHE_TTL }));
           }
+          await saveTestIndexes(nextState);
           await Promise.all(writes);
           return jsonResponse({ success: true, data: { id: targetId, row: updated }, kvPrimaryWrite: true, sheetsWrite: false });
         }
 
         if (env.DB && ["addProforma", "addProInfo"].includes(action)) {
-          const state = await loadProformaState();
+          const state = await loadProformaIndexes();
           if (!state) {
             return jsonResponse({ success: false, error: "PROFORMA_KV_EMPTY", message: "Proforma KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
           }
 
-          const newId = getNextProformaId(state.rows);
+          const newId = String(state.nextId);
           const created = createCanonicalProformaRow(params?.proInfo || {}, { id: newId });
-          const nextRows = [...state.rows, created];
+          const nextState = {
+            proformasById: { ...state.proformasById, [newId]: created },
+            proformasByFirmaId: { ...state.proformasByFirmaId },
+            nextId: String(parseInt(newId, 10) + 1),
+          };
           const firmaId = getProformaFirmaId(created);
-          await saveProformaState({ rows: nextRows });
+          if (firmaId) {
+            nextState.proformasByFirmaId[firmaId] = [...(nextState.proformasByFirmaId[firmaId] || []), created];
+          }
+          await saveProformaIndexes(nextState);
           await Promise.all([
             env.DB.put(`cache:getProformaById:${stableStringify({ id: newId })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
             firmaId
-              ? env.DB.put(`cache:getProformaByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(buildProformasByFirmaId(nextRows)[firmaId] || []), { expirationTtl: CACHE_TTL })
+              ? env.DB.put(`cache:getProformaByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(nextState.proformasByFirmaId[firmaId] || []), { expirationTtl: CACHE_TTL })
               : Promise.resolve(),
           ]);
           return jsonResponse({ success: true, data: { id: newId, row: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false });
         }
 
         if (env.DB && ["scheduleAudit", "updateAudit"].includes(action)) {
-          const state = await loadAuditState();
+          const state = await loadAuditIndexes();
           if (!state) {
             return jsonResponse({ success: false, error: "AUDIT_KV_EMPTY", message: "Denetim KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
           }
 
           if (action === "scheduleAudit") {
-            const newId = getNextAuditId(state.rows);
+            const newId = String(state.nextId);
             const created = createCanonicalAuditRow(params?.data || {}, { id: newId });
-            const nextRows = [...state.rows, created];
-            const grouped = buildAuditsByFirmaId(nextRows);
+            const grouped = { ...state.auditsByFirmaId };
             const firmaId = getAuditFirmaId(created);
-            await saveAuditState({ rows: nextRows });
+            if (firmaId) {
+              grouped[firmaId] = [...(grouped[firmaId] || []), created];
+            }
+            await saveAuditIndexes({ auditsByFirmaId: grouped, nextId: String(parseInt(newId, 10) + 1) });
             if (firmaId) {
               await env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(grouped[firmaId] || []), { expirationTtl: CACHE_TTL });
             }
@@ -1376,32 +1927,44 @@ export default {
           if (!targetId) {
             return jsonResponse({ success: false, error: "Denetim ID boş olamaz." }, 400);
           }
-          const nextRows = [...state.rows];
-          const rowIndex = nextRows.findIndex((row) => getAuditId(row) === targetId);
-          if (rowIndex === -1) {
+          let current = null;
+          let prevFirmaId = "";
+          for (const [firmaId, rows] of Object.entries(state.auditsByFirmaId)) {
+            const found = (Array.isArray(rows) ? rows : []).find((row) => getAuditId(row) === targetId);
+            if (found) {
+              current = found;
+              prevFirmaId = String(firmaId);
+              break;
+            }
+          }
+          if (!current) {
             return jsonResponse({ success: false, error: `Denetim bulunamadı: ${targetId}` }, 404);
           }
-
-          const current = nextRows[rowIndex];
           const updated = createCanonicalAuditRow({ ...auditRowToInfo(current), ...(params?.data || params?.auditInfo || {}) }, { id: targetId });
-          nextRows[rowIndex] = updated;
-          const grouped = buildAuditsByFirmaId(nextRows);
+          const grouped = { ...state.auditsByFirmaId };
           const writes = [];
-          const prevFirmaId = getAuditFirmaId(current);
           const nextFirmaId = getAuditFirmaId(updated);
-          await saveAuditState({ rows: nextRows });
           if (prevFirmaId) {
+            grouped[prevFirmaId] = (grouped[prevFirmaId] || []).map((row) => getAuditId(row) === targetId ? updated : row);
+            if (nextFirmaId && nextFirmaId !== prevFirmaId) {
+              grouped[prevFirmaId] = (grouped[prevFirmaId] || []).filter((row) => getAuditId(row) !== targetId);
+            }
             writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`, JSON.stringify(grouped[prevFirmaId] || []), { expirationTtl: CACHE_TTL }));
           }
           if (nextFirmaId && nextFirmaId !== prevFirmaId) {
+            grouped[nextFirmaId] = [...(grouped[nextFirmaId] || []), updated];
+            writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(grouped[nextFirmaId] || []), { expirationTtl: CACHE_TTL }));
+          } else if (nextFirmaId && !prevFirmaId) {
+            grouped[nextFirmaId] = [...(grouped[nextFirmaId] || []), updated];
             writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(grouped[nextFirmaId] || []), { expirationTtl: CACHE_TTL }));
           }
+          await saveAuditIndexes({ auditsByFirmaId: grouped, nextId: state.nextId });
           await Promise.all(writes);
           return jsonResponse({ success: true, data: { id: targetId, row: updated }, kvPrimaryWrite: true, sheetsWrite: false, sideEffectsSkipped: true });
         }
 
         if (env.DB && ["addCertificate", "updateCertificate", "updateCertificateField", "updateGozetim"].includes(action)) {
-          const state = await loadCertificateState();
+          const state = await loadCertificateIndexes();
           if (!state) {
             return jsonResponse({
               success: false,
@@ -1411,21 +1974,21 @@ export default {
           }
 
           const nextState = {
-            certificates: [...state.certificates],
             certById: { ...state.certById },
             certsByFirmaId: { ...state.certsByFirmaId },
+            nextId: String(state.nextId || "1"),
           };
 
           if (action === "addCertificate") {
-            const newId = getNextCertificateId(nextState.certificates);
+            const newId = String(nextState.nextId);
             const created = createCanonicalCertificate(params?.certInfo || {}, { id: newId });
-            nextState.certificates.push(created);
             nextState.certById[newId] = created;
             const createdFirmaId = getCertificateFirmaId(created);
             if (createdFirmaId) {
               nextState.certsByFirmaId[createdFirmaId] = [...(nextState.certsByFirmaId[createdFirmaId] || []), created];
             }
-            await saveCertificateState(nextState);
+            nextState.nextId = String(parseInt(newId, 10) + 1);
+            await saveCertificateIndexes(nextState);
             await Promise.all([
               env.DB.put(`cache:getCertificateById:${stableStringify({ id: newId })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
               createdFirmaId
@@ -1462,11 +2025,28 @@ export default {
 
           const previousFirmaId = getCertificateFirmaId(existing);
           const nextFirmaId = getCertificateFirmaId(updated);
-          nextState.certificates = nextState.certificates.map((certificate) => getCertificateId(certificate) === targetId ? updated : certificate);
           nextState.certById[targetId] = updated;
-          nextState.certsByFirmaId = buildCertificatesByFirmaId(nextState.certificates);
+          if (previousFirmaId && nextState.certsByFirmaId[previousFirmaId]) {
+            nextState.certsByFirmaId[previousFirmaId] = nextState.certsByFirmaId[previousFirmaId]
+              .map((certificate) => getCertificateId(certificate) === targetId ? updated : certificate);
+          }
+          if (nextFirmaId && nextFirmaId !== previousFirmaId) {
+            if (previousFirmaId) {
+              nextState.certsByFirmaId[previousFirmaId] = (nextState.certsByFirmaId[previousFirmaId] || [])
+                .filter((certificate) => getCertificateId(certificate) !== targetId);
+            }
+            nextState.certsByFirmaId[nextFirmaId] = [
+              ...(nextState.certsByFirmaId[nextFirmaId] || []),
+              updated,
+            ];
+          } else if (nextFirmaId && !nextState.certsByFirmaId[nextFirmaId]?.some((certificate) => getCertificateId(certificate) === targetId)) {
+            nextState.certsByFirmaId[nextFirmaId] = [
+              ...(nextState.certsByFirmaId[nextFirmaId] || []),
+              updated,
+            ];
+          }
 
-          await saveCertificateState(nextState);
+          await saveCertificateIndexes(nextState);
 
           const cacheWrites = [
             env.DB.put(`cache:getCertificateById:${stableStringify({ id: targetId })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL }),
@@ -1504,7 +2084,7 @@ export default {
         }
 
         if (env.DB && action === "updateSurveillance") {
-          const state = await loadCertificateState();
+          const state = await loadCertificateIndexes();
           if (!state) {
             return jsonResponse({ success: false, error: "CERTIFICATE_KV_EMPTY", message: "Sertifika KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
           }
@@ -1515,19 +2095,25 @@ export default {
           }
 
           const status = params?.status === true || String(params?.status || "").toUpperCase() === "TRUE" ? "TRUE" : "FALSE";
-          const nextCertificates = state.certificates.map((certificate) => {
-            const id = getCertificateId(certificate);
-            if (!ids.includes(id)) return certificate;
-            return createCanonicalCertificate({ ...certificate, "Gözetim Conf.": status, gozetimConfirmed: status }, { id });
-          });
           const nextState = {
-            certificates: nextCertificates,
-            certById: buildCertificatesById(nextCertificates),
-            certsByFirmaId: buildCertificatesByFirmaId(nextCertificates),
+            certById: { ...state.certById },
+            certsByFirmaId: { ...state.certsByFirmaId },
+            nextId: state.nextId,
           };
-          await saveCertificateState(nextState);
+          const touchedFirmaIds = new Set();
+          ids.forEach((id) => {
+            const existing = nextState.certById[id];
+            if (!existing) return;
+            const updated = createCanonicalCertificate({ ...existing, "Gözetim Conf.": status, gozetimConfirmed: status }, { id });
+            nextState.certById[id] = updated;
+            const firmaId = getCertificateFirmaId(updated);
+            if (!firmaId) return;
+            touchedFirmaIds.add(firmaId);
+            nextState.certsByFirmaId[firmaId] = (nextState.certsByFirmaId[firmaId] || [])
+              .map((certificate) => getCertificateId(certificate) === id ? updated : certificate);
+          });
+          await saveCertificateIndexes(nextState);
 
-          const touchedFirmaIds = [...new Set(ids.map((id) => getCertificateFirmaId(nextState.certById[id])).filter(Boolean))];
           const writes = ids.map((id) => nextState.certById[id]
             ? env.DB.put(`cache:getCertificateById:${stableStringify({ id })}`, JSON.stringify(nextState.certById[id]), { expirationTtl: CACHE_TTL })
             : Promise.resolve());
@@ -1553,10 +2139,42 @@ export default {
           body: JSON.stringify(body),
         });
 
-        const result = await gasResponse.json();
+        const gasText = await gasResponse.text();
+        let result = null;
+        try {
+          result = JSON.parse(gasText);
+        } catch (_) {
+          const preview = String(gasText || "").slice(0, 400);
+          return jsonResponse({
+            success: false,
+            error: "GAS_INVALID_JSON",
+            action,
+            status: gasResponse.status,
+            details: preview || "Boş yanıt"
+          }, 502);
+        }
+
+        if (!gasResponse.ok) {
+          return jsonResponse({
+            success: false,
+            error: result?.error || `GAS_HTTP_${gasResponse.status}`,
+            action,
+            status: gasResponse.status,
+            data: result?.data ?? null
+          }, gasResponse.status);
+        }
+
+        if (!result?.success) {
+          console.error("GAS action failed", {
+            action,
+            params,
+            error: result?.error || null,
+            status: gasResponse.status,
+          });
+        }
 
         // 📥 Başarılıysa KV'ye Yaz (7 Günlük)
-        if (env.DB && result.success && cacheableActions.includes(action)) {
+        if (shouldUseKvCache && result.success) {
           ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(result.data), { expirationTtl: CACHE_TTL }));
         }
 

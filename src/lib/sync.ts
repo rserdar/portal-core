@@ -8,7 +8,8 @@ import { $companies, $certificates, $syncStatus, $lastSyncTime } from './store';
  * Akış:
  * 1) İlk açılışta IndexedDB'den anında render
  * 2) Arka planda KV tazeleme
- * 3) KV miss olursa manuel hydration beklenir (otomatik GAS çağrısı yok)
+ * 3) KV miss olursa yalnızca manuel hydration beklenir (otomatik GAS fallback yok)
+ * 4) bulkSync, günlük CRUD akışından ayrı tutulur
  */
 
 export const SyncManager = {
@@ -58,6 +59,11 @@ export const SyncManager = {
 
         const [compRes, certRes] = await fetchCore();
         const needsHydration = [compRes, certRes].some((r: any) => !r.success && (r.needsHydration || r.error === 'KV_PRIMARY_MISS'));
+        const corsBlocked = [compRes, certRes].some((r: any) => !r.success && (r.status === 403 || r.error === 'CORS_ORIGIN_NOT_ALLOWED'));
+
+        if (corsBlocked) {
+          throw new Error('Worker origin izni reddetti. CORS allowlist veya PUBLIC_WORKER_URL ayarını kontrol edin.');
+        }
 
         if (needsHydration) {
           console.warn('[Sync] KV miss detected. Automatic hydration is disabled; waiting for manual sync.');
