@@ -1,4 +1,4 @@
-export type OperationPageKey = 'form' | 'proforma' | 'draft' | 'contract' | 'audit';
+export type OperationPageKey = 'form' | 'proforma' | 'draft' | 'contract' | 'audit' | 'pdf';
 
 export interface OperationDefinition {
   key: OperationPageKey;
@@ -43,6 +43,13 @@ export const OPERATION_DEFINITIONS: OperationDefinition[] = [
     description: 'Ücret, tarih ve kapsam bilgileri ile sözleşme üretimine odaklanan işlem sayfasıdır.',
     href: '/company/contract',
     badge: 'Sözleşme',
+  },
+  {
+    key: 'pdf',
+    title: 'PDF Çevirici',
+    description: 'Firma klasöründeki Google Docs dosyalarını tarar, hızlıca PDF dönüştürme akışını açar.',
+    href: '/documents/pdf',
+    badge: 'PDF',
   },
 ];
 

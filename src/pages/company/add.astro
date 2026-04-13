@@ -37,10 +37,18 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
             </div>
             <div class="space-y-2">
               <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Danışman</label>
-              <select name="danisman" id="consultant-select" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden appearance-none">
-                <option value="">Seçiniz...</option>
-                <!-- JS ile dolacak -->
-              </select>
+              <div class="space-y-2">
+                <input
+                  type="text"
+                  name="danisman"
+                  id="consultant-input"
+                  list="consultant-list"
+                  class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden"
+                  placeholder="Danışman ara veya seç"
+                >
+                <datalist id="consultant-list"></datalist>
+                <p class="text-[10px] text-indigo-400/70 mt-1 italic leading-tight">* Liste doğrudan danışman veritabanından yüklenir.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -380,14 +388,14 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
   // 🔌 Danışman Listesini Doldur
   async function loadConsultants() {
-    const response = await api.call('getConsultants');
-    const select = document.getElementById('consultant-select') as HTMLSelectElement;
-    if (response.success && select && Array.isArray(response.data)) {
-      response.data.forEach(name => {
+    const response = await api.call<string[]>('getConsultants');
+    const list = document.getElementById('consultant-list') as HTMLDataListElement | null;
+    if (response.success && list && Array.isArray(response.data)) {
+      list.innerHTML = '';
+      response.data.forEach((name) => {
         const opt = document.createElement('option');
         opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
+        list.appendChild(opt);
       });
     }
   }
@@ -450,4 +458,3 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   // Başlat
   loadConsultants();
 </script>
-

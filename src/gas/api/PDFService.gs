@@ -35,6 +35,18 @@ const PDFService = {
     }
   },
 
+  _buildSavedFilePayload: function(saved, method) {
+    return {
+      success: true,
+      url: saved.getUrl(),
+      method: method,
+      fileId: saved.getId(),
+      fileName: saved.getName(),
+      mimeType: saved.getMimeType(),
+      dateCreated: saved.getDateCreated().toISOString()
+    };
+  },
+
   // ─── Local Converter ────────────────────────────────────────────────────────
 
   _tryLocalConverter: function(file, name) {
@@ -70,7 +82,7 @@ const PDFService = {
       finalBlob.setName(name + ".pdf");
       const parentFolder = file.getParents().hasNext() ? file.getParents().next() : DriveApp.getRootFolder();
       const saved = parentFolder.createFile(finalBlob);
-      return { success: true, url: saved.getUrl(), method: "local" };
+      return this._buildSavedFilePayload(saved, "local");
     } catch (e) {
       return { success: false, error: e.message };
     }
@@ -114,7 +126,7 @@ const PDFService = {
       finalBlob.setName(name + ".pdf");
 
       const saved = parentFolder.createFile(finalBlob);
-      return { success: true, url: saved.getUrl(), method: "ilovepdf" };
+      return this._buildSavedFilePayload(saved, "ilovepdf");
     } catch (e) {
       return { success: false, error: e.message };
     }

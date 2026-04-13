@@ -558,7 +558,7 @@ export default {
       }
       return indexed;
     };
-    const buildConsultants = (companies) =>
+    const buildConsultantsFromCompanies = (companies) =>
       [...new Set((Array.isArray(companies) ? companies : [])
         .map((company) => getCompanyConsultant(company))
         .filter((value) => value && String(value).trim()))].sort((a, b) => String(a).localeCompare(String(b), "tr"));
@@ -583,7 +583,6 @@ export default {
       await Promise.all([
         env.DB.put("cache:getCompanies:{}", JSON.stringify(companies), { expirationTtl: CACHE_TTL }),
         env.DB.put(indexKeys.companyById, JSON.stringify(companiesById), { expirationTtl: CACHE_TTL }),
-        env.DB.put("cache:getConsultants:{}", JSON.stringify(buildConsultants(companies)), { expirationTtl: CACHE_TTL }),
         env.DB.put(indexKeys.companyNextId, getNextCompanyId(companies), { expirationTtl: CACHE_TTL }),
       ]);
     };
@@ -616,7 +615,6 @@ export default {
         env.DB.put(indexKeys.companyById, JSON.stringify(companiesById), { expirationTtl: CACHE_TTL }),
         env.DB.put(indexKeys.companyNextId, nextId, { expirationTtl: CACHE_TTL }),
         env.DB.delete("cache:getCompanies:{}"),
-        env.DB.delete("cache:getConsultants:{}"),
       ]);
       return companies;
     };
@@ -953,6 +951,26 @@ export default {
       });
       return obj;
     };
+    const extractConsultantNameFromRow = (headers, row) => {
+      const objectRow = rowToObject(headers, row);
+      const directName = pickObjectValue(objectRow, ["Danışman", "Danisman", "Name", "Ad Soyad", "Adı Soyadı", "Full Name", "FullName"]);
+      if (directName) return directName;
+      const firstName = pickObjectValue(objectRow, ["Ad", "First Name", "İsim", "Isim"]);
+      const lastName = pickObjectValue(objectRow, ["Soyad", "Last Name"]);
+      const combined = `${firstName} ${lastName}`.trim();
+      if (combined) return combined;
+      const fallback = Array.isArray(row) ? String(row[0] ?? "").trim() : "";
+      return fallback;
+    };
+    const buildConsultantsFromDataset = (dataset) => {
+      const headers = Array.isArray(dataset?.headers) ? dataset.headers : [];
+      const rows = Array.isArray(dataset?.rows) ? dataset.rows : [];
+      return [...new Set(
+        rows
+          .map((row) => extractConsultantNameFromRow(headers, row))
+          .filter((value) => value && String(value).trim())
+      )].sort((a, b) => String(a).localeCompare(String(b), "tr"));
+    };
     const getMasterDataset = async (type) => {
       if (!env.DB) return null;
       const typeKey = `cache:getMasterData:${stableStringify({ type })}`;
@@ -1251,6 +1269,19 @@ export default {
           "editCell",
           "importBackup"
         ];
+        const documentListInvalidationActions = new Set([
+          "convertToPdf",
+          "uploadFile",
+          "doUpload",
+          "generateIso",
+          "generateAppForm",
+          "generateDraftCertificate",
+          "draftBas",
+          "generateContract",
+          "sozlesme",
+          "generateSingleBatchDoc",
+          "createBatchFolders"
+        ]);
 
         const shouldUseKvCache = !!env.DB && cacheableActions.includes(action);
         const cacheKey = shouldUseKvCache
@@ -1283,12 +1314,21 @@ export default {
             }
           }
 
+          if (action === "getConsultants") {
+            const consultantDataset = await getMasterDataset("consultants");
+            if (consultantDataset) {
+              const data = buildConsultantsFromDataset(consultantDataset);
+              ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(data), { expirationTtl: CACHE_TTL }));
+              return jsonResponse({ success: true, data, fromCache: true, rebuiltFromMasterData: true });
+            }
+          }
+
           if (action === "getCompanies" || action === "getConsultants") {
             const indexedRaw = await env.DB.get(indexKeys.companyById);
             if (indexedRaw) {
               const indexed = JSON.parse(indexedRaw);
               const companies = Object.values(indexed || {});
-              const data = action === "getConsultants" ? buildConsultants(companies) : companies;
+              const data = action === "getConsultants" ? buildConsultantsFromCompanies(companies) : companies;
               ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(data), { expirationTtl: CACHE_TTL }));
               return jsonResponse({ success: true, data, fromCache: true, rebuiltFromIndex: true });
             }
@@ -1524,11 +1564,18 @@ export default {
 
           const typeKey = `cache:getMasterData:${stableStringify({ type })}`;
           const typePayload = { version: payload.version, updatedAt: payload.updatedAt, dataset: ds };
-
-          await Promise.all([
+          const writes = [
             env.DB.put(allKey, JSON.stringify(payload), { expirationTtl: CACHE_TTL }),
             env.DB.put(typeKey, JSON.stringify(typePayload), { expirationTtl: CACHE_TTL })
-          ]);
+          ];
+
+          if (type === "consultants") {
+            writes.push(
+              env.DB.put("cache:getConsultants:{}", JSON.stringify(buildConsultantsFromDataset(ds)), { expirationTtl: CACHE_TTL })
+            );
+          }
+
+          await Promise.all(writes);
 
           return jsonResponse({
             success: true,
@@ -1725,6 +1772,12 @@ export default {
               writes.push(env.DB.put(key, JSON.stringify(value), { expirationTtl: CACHE_TTL }));
             });
 
+            if (datasets.consultants) {
+              writes.push(
+                env.DB.put(`cache:getConsultants:{}`, JSON.stringify(buildConsultantsFromDataset(datasets.consultants)), { expirationTtl: CACHE_TTL })
+              );
+            }
+
             await Promise.all(writes);
             return jsonResponse({
               success: true,
@@ -1756,8 +1809,10 @@ export default {
             const created = createCanonicalCompany(params?.companyInfo || {}, { id: newId });
             nextState.companiesById[newId] = created;
             nextState.nextId = String(parseInt(newId, 10) + 1);
-            await saveCompanyIndexes(nextState);
-            await env.DB.put(`cache:getCompanyById:${stableStringify({ id: newId })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL });
+            ctx.waitUntil((async () => {
+              await saveCompanyIndexes(nextState);
+              await env.DB.put(`cache:getCompanyById:${stableStringify({ id: newId })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL });
+            })());
             return jsonResponse({ success: true, data: { id: newId, company: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false });
           }
 
@@ -1779,8 +1834,10 @@ export default {
 
           const updated = createCanonicalCompany({ ...existing, ...(params?.companyInfo || {}) }, { id: targetId });
           nextState.companiesById[targetId] = updated;
-          await saveCompanyIndexes(nextState);
-          await env.DB.put(`cache:getCompanyById:${stableStringify({ id: targetId })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL });
+          ctx.waitUntil((async () => {
+            await saveCompanyIndexes(nextState);
+            await env.DB.put(`cache:getCompanyById:${stableStringify({ id: targetId })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL });
+          })());
           return jsonResponse({ success: true, data: { etag: updated.__etag, company: updated }, kvPrimaryWrite: true, sheetsWrite: false });
         }
 
@@ -2194,6 +2251,10 @@ export default {
             ]);
             ctx.waitUntil(Promise.all([...invalidateKeys].map((key) => env.DB.delete(key))));
           }
+        }
+
+        if (env.DB && result.success && documentListInvalidationActions.has(action)) {
+          await purgeCachePrefix("cache:getRecentFiles:");
         }
 
         return jsonResponse(result);

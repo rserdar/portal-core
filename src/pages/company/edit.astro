@@ -75,14 +75,70 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
           </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Danışman</label>
-            <select id="f-dan" name="dan" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold appearance-none">
-              <option value="">Seçiniz...</option>
-            </select>
+            <div class="space-y-2">
+              <input
+                type="text"
+                id="f-dan"
+                name="dan"
+                list="consultant-list"
+                class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold"
+                placeholder="Danışman ara veya seç"
+              />
+              <datalist id="consultant-list"></datalist>
+              <p class="text-[10px] text-indigo-400/70 italic leading-tight">* Liste doğrudan danışman veritabanından yüklenir.</p>
+            </div>
           </div>
         </div>
-        <div class="space-y-2">
-          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Firma Notları</label>
-          <textarea id="f-not" name="not" rows={3} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[80px]" placeholder="Dahili notlar..."></textarea>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          <!-- Logo -->
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Logo</label>
+            <div class="flex gap-2">
+              <input type="text" id="f-logo" name="logo" class="flex-1 bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold text-sm" placeholder="Drive dosya ID'si" />
+              <button type="button" id="btn-logo-select" title="Drive'dan Seç"
+                class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-surface border border-border-main hover:border-indigo-500/40 rounded-xl text-[11px] font-bold text-indigo-400 hover:text-indigo-300 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5 5-5-5M12 12.8V2.5"/></svg>
+                Seç
+              </button>
+              <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/gif" class="hidden" />
+              <button type="button" id="btn-logo-upload" title="Bilgisayardan Yükle"
+                class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-surface border border-border-main hover:border-emerald-500/40 rounded-xl text-[11px] font-bold text-emerald-400 hover:text-emerald-300 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Yükle
+              </button>
+            </div>
+          </div>
+          <!-- Kaşe & İmza -->
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Kaşe & İmza</label>
+            <div class="flex gap-2">
+              <input type="text" id="f-kase" name="kase" class="flex-1 bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold text-sm" placeholder="Drive dosya ID'si" />
+              <button type="button" id="btn-kase-select" title="Drive'dan Seç"
+                class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-surface border border-border-main hover:border-indigo-500/40 rounded-xl text-[11px] font-bold text-indigo-400 hover:text-indigo-300 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 9l-5 5-5-5M12 12.8V2.5"/></svg>
+                Seç
+              </button>
+              <input type="file" id="kase-file-input" accept="image/png,image/jpeg,image/gif" class="hidden" />
+              <button type="button" id="btn-kase-upload" title="Bilgisayardan Yükle"
+                class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-surface border border-border-main hover:border-emerald-500/40 rounded-xl text-[11px] font-bold text-emerald-400 hover:text-emerald-300 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Yükle
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drive Dosya Seçici Mini Panel -->
+        <div id="drive-picker-panel" class="hidden mt-3 bg-surface-hover border border-border-main rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-bold text-muted" id="drive-picker-title">Drive'dan Dosya Seç</p>
+            <button type="button" id="btn-picker-close" class="text-muted hover:text-main transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div id="drive-picker-list" class="space-y-1 max-h-48 overflow-y-auto text-sm">
+            <p class="text-xs text-muted italic">Yükleniyor...</p>
+          </div>
         </div>
       </section>
 
@@ -92,19 +148,19 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
           <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 flex-shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
-          <h2 class="text-base font-bold">Adres & Kapsam</h2>
+          <h2 class="text-base font-bold">Kapsam & Adres</h2>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Şehir / Ülke</label>
-            <div class="flex gap-2">
-              <input type="text" id="f-sehir" name="sehir" class="flex-1 bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Şehir" />
-              <input type="text" id="f-ulke" name="ulke" class="flex-1 bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ülke" />
-            </div>
-          </div>
           <div class="md:col-span-2 space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Tam Adres</label>
             <input type="text" id="f-adres" name="adres" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Merkez Adres" />
+          </div>
+          <div class="md:col-span-1 space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Şehir / Ülke</label>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" id="f-sehir" name="sehir" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Şehir" />
+              <input type="text" id="f-ulke" name="ulke" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ülke" />
+            </div>
           </div>
         </div>
         <div class="space-y-2">
@@ -135,33 +191,33 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
         </div>
       </section>
 
-      <!-- ── 3. İletişim ──────────────────────────────────────────────── -->
+      <!-- ── 3. İletişim & Vergi ────────────────────────────────────────── -->
       <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
         <div class="flex items-center gap-3 border-b border-border-main pb-4">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">
+          <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400 flex-shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.68 9.82a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
-          <h2 class="text-base font-bold">İletişim</h2>
+          <h2 class="text-base font-bold">İletişim & Vergi</h2>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Telefon</label>
-            <input type="text" id="f-tel" name="tel" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Telefon</label>
+            <input type="text" id="f-tel" name="tel" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="+90 ..." />
           </div>
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Faks</label>
-            <input type="text" id="f-faks" name="faks" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Faks</label>
+            <input type="text" id="f-faks" name="faks" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="+90 ..." />
           </div>
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">E-Posta</label>
-            <input type="email" id="f-mail" name="mail" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">E-Posta</label>
+            <input type="email" id="f-mail" name="mail" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="info@firma.com" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Web Sitesi</label>
+            <input type="text" id="f-www" name="www" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="www.firma.com" />
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Web Sitesi</label>
-            <input type="text" id="f-www" name="www" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
-          </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Vergi Dairesi</label>
             <input type="text" id="f-vergiD" name="vergiD" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
@@ -171,46 +227,36 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
             <input type="text" id="f-vergiN" name="vergiN" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
           </div>
         </div>
-      </section>
-
-      <!-- ── 4. Yetkililer ────────────────────────────────────────────── -->
-      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
-        <div class="flex items-center gap-3 border-b border-border-main pb-4">
-          <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 flex-shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          </div>
-          <h2 class="text-base font-bold">Yetkililer & Kişiler</h2>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">KYT / Yönetim Temsilcisi</label>
-            <input type="text" id="f-kyt" name="kyt" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yönetim Temsilcisi</label>
+            <input type="text" id="f-kyt" name="kyt" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ad Soyad" />
           </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yetkili Adı</label>
-            <input type="text" id="f-yetA" name="yetA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <input type="text" id="f-yetA" name="yetA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ad Soyad" />
           </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yetkili Ünvanı</label>
-            <input type="text" id="f-yetU" name="yetU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <input type="text" id="f-yetU" name="yetU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Genel Müdür, vb." />
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">İrtibat Kişisi</label>
-            <input type="text" id="f-irtA" name="irtA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">İrtibat Kişisi</label>
+            <input type="text" id="f-irtA" name="irtA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ad Soyad" />
           </div>
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">İrtibat Ünvanı</label>
-            <input type="text" id="f-irtU" name="irtU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">İrtibat Ünvanı</label>
+            <input type="text" id="f-irtU" name="irtU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Unvan" />
           </div>
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">İrtibat Tel</label>
-            <input type="text" id="f-irtN" name="irtN" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">İrtibat Telefonu</label>
+            <input type="text" id="f-irtN" name="irtN" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="+90 ..." />
           </div>
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">İrtibat Mail</label>
-            <input type="email" id="f-irtM" name="irtM" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">İrtibat E-Posta</label>
+            <input type="email" id="f-irtM" name="irtM" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="irtibat@firma.com" />
           </div>
         </div>
       </section>
@@ -218,16 +264,30 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
       <!-- ── 5. Çalışma Düzeni ────────────────────────────────────────── -->
       <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
         <div class="flex items-center gap-3 border-b border-border-main pb-4">
-          <div class="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400 flex-shrink-0">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 flex-shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           </div>
-          <h2 class="text-base font-bold">Çalışma Düzeni</h2>
+          <h2 class="text-base font-bold">Operasyonel Veriler</h2>
         </div>
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Alan (m²)</label>
+            <input type="text" id="f-alan" name="alan" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Vardiya</label>
+            <input type="number" id="f-vardiya" name="vardiya" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Departman Sayısı</label>
+            <input type="number" id="f-dept" name="departman" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Toplam Çalışan</label>
             <input type="number" id="f-tcs" name="tcs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
           </div>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-6">
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yönetim</label>
             <input type="number" id="f-ycs" name="ycs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
@@ -235,6 +295,10 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Üretim</label>
             <input type="number" id="f-ucs" name="ucs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Aynı İşte Çalışan</label>
+            <input type="number" id="f-acs" name="acs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
           </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yarı Zamanlı</label>
@@ -245,18 +309,14 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
             <input type="number" id="f-tascs" name="tascs" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Alan (m²)</label>
-            <input type="text" id="f-alan" name="alan" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yapılan İşler</label>
+            <textarea id="f-yapis" name="yapis" rows={3} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[80px]"></textarea>
           </div>
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Vardiya</label>
-            <input type="text" id="f-vardiya" name="vardiya" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
-          </div>
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Departman Sayısı</label>
-            <input type="text" id="f-dept" name="dept" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Firma Notları</label>
+            <textarea id="f-not" name="not" rows={3} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[80px]" placeholder="Özel notlar veya hatırlatıcılar..."></textarea>
           </div>
         </div>
       </section>
@@ -264,24 +324,56 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
       <!-- ── 6. Sınıflandırma ─────────────────────────────────────────── -->
       <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
         <div class="flex items-center gap-3 border-b border-border-main pb-4">
-          <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400 flex-shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><polyline points="14 2 14 8 20 8"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/></svg>
           </div>
-          <h2 class="text-base font-bold">Sınıflandırma</h2>
+          <h2 class="text-base font-bold">Sınıflandırma & Kodlar</h2>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">NACE</label>
-            <input type="text" id="f-nace" name="nace" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">EA Kodu</label>
+            <input type="text" id="f-ea" name="ea" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Örn: 19" />
           </div>
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">EA</label>
-            <input type="text" id="f-ea" name="ea" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">NACE Kodu</label>
+            <input type="text" id="f-nace" name="nace" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Örn: 46.12" />
           </div>
-          <div class="space-y-2 md:col-span-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yapılan İşler</label>
-            <input type="text" id="f-yapis" name="yapis" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Medikal</label>
+            <input type="text" id="f-medikal" name="medikal" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
           </div>
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Gıda</label>
+            <input type="text" id="f-gida" name="gida" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 7. Doküman & Teknik Dosya ─────────────────────────────── -->
+      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
+        <div class="flex items-center gap-3 border-b border-border-main pb-4">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <h2 class="text-base font-bold">Doküman & Teknik Dosya</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Firma Sınıfı</label>
+            <input type="text" id="f-sinif" name="sinif" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+          </div>
+          <label class="flex items-center gap-3 bg-surface-hover border border-border-main rounded-xl px-4 py-3">
+            <input type="checkbox" id="f-dokuman" name="dokuman" class="w-4 h-4 rounded accent-rose-500">
+            <span class="text-sm font-semibold cursor-pointer select-none">Firma Dokümanları mevcut</span>
+          </label>
+          <label class="flex items-center gap-3 bg-surface-hover border border-border-main rounded-xl px-4 py-3">
+            <input type="checkbox" id="f-teknik" name="teknik" class="w-4 h-4 rounded accent-rose-500">
+            <span class="text-sm font-semibold cursor-pointer select-none">Teknik Dosyası var</span>
+          </label>
+        </div>
+        <div class="space-y-2">
+          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Teknik Dosya Kapsamı</label>
+          <textarea id="f-tkapsam" name="tkapsam" rows={4} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[100px]"></textarea>
         </div>
       </section>
 
@@ -331,6 +423,13 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
     if (el) el.value = value;
   }
 
+  function setChecked(id: string, value: any) {
+    const el = document.getElementById(id) as HTMLInputElement | null;
+    if (!el) return;
+    const normalized = String(value ?? '').trim().toLocaleLowerCase('tr-TR');
+    el.checked = ['true', '1', 'evet', 'yes', 'var', 'x'].includes(normalized);
+  }
+
   // ─── URL Param ────────────────────────────────────────────────────────────────
 
   const params = new URLSearchParams(location.search);
@@ -347,17 +446,15 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
 
   async function loadConsultants(currentDan: string) {
     const res = await api.call('getConsultants');
-    const select = document.getElementById('f-dan') as HTMLSelectElement | null;
-    if (!select || !res?.data) return;
-    const consultants: string[] = res.data;
-    select.innerHTML = '<option value="">Seçiniz...</option>';
-    consultants.forEach(d => {
+    const list = document.getElementById('consultant-list') as HTMLDataListElement | null;
+    if (!list || !Array.isArray(res?.data)) return;
+    list.innerHTML = '';
+    (res.data as string[]).forEach((name) => {
       const opt = document.createElement('option');
-      opt.value = d;
-      opt.textContent = d;
-      if (d === currentDan) opt.selected = true;
-      select.appendChild(opt);
+      opt.value = name;
+      list.appendChild(opt);
     });
+    setVal('f-dan', currentDan);
   }
 
   // ─── Populate Form ────────────────────────────────────────────────────────────
@@ -404,16 +501,25 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
       ['f-ucs',     ['Üretim Çalışan Sayısı', 'UCS', 'ucs']],
       ['f-yzcs',    ['Yarı Zamanlı Çalışan Sayısı', 'YZCS', 'yzcs']],
       ['f-tascs',   ['Taşeron Çalışan Sayısı', 'TASCS', 'tascs']],
+      ['f-acs',     ['Aynı İşte Çalışan Sayısı', 'ACS', 'acs']],
       ['f-alan',    ['Alan', 'alan']],
       ['f-vardiya', ['Vardiya', 'vardiya']],
       ['f-dept',    ['Departman', 'departman', 'dept']],
       ['f-nace',    ['NACE', 'nace']],
       ['f-ea',      ['EA', 'ea']],
+      ['f-medikal', ['Medikal', 'medikal']],
+      ['f-gida',    ['Gıda', 'Gida', 'gida']],
       ['f-yapis',   ['Yapılan İş', 'YapilanIs', 'yapis']],
+      ['f-logo',    ['Logo', 'logo']],
+      ['f-kase',    ['Kaşe', 'Kase', 'kase']],
+      ['f-sinif',   ['Firma Sınıfı', 'Sinif', 'sinif']],
+      ['f-tkapsam', ['Teknik Dosya Kapsamı', 'TKapsam', 'tkapsam']],
     ];
 
     fields.forEach(([id, keys]) => setVal(id, g(c, ...keys)));
     setVal('f-id', firmaId);
+    setChecked('f-dokuman', g(c, 'Doküman', 'Dokuman', 'dokuman'));
+    setChecked('f-teknik', g(c, 'Teknik', 'teknik'));
     companyEtag = g(c, '__etag');
 
     const dan = g(c, 'Danışman', 'Danisman', 'dan', 'danisman');
@@ -514,14 +620,23 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
       tcs:      val('f-tcs'),
       ycs:      val('f-ycs'),
       ucs:      val('f-ucs'),
+      acs:      val('f-acs'),
       yzcs:     val('f-yzcs'),
       tascs:    val('f-tascs'),
       alan:     val('f-alan'),
       vardiya:  val('f-vardiya'),
-      dept:     val('f-dept'),
+      departman: val('f-dept'),
       nace:     val('f-nace'),
       ea:       val('f-ea'),
+      medikal:  val('f-medikal'),
+      gida:     val('f-gida'),
       yapis:    val('f-yapis'),
+      logo:     val('f-logo'),
+      kase:     val('f-kase'),
+      sinif:    val('f-sinif'),
+      tkapsam:  val('f-tkapsam'),
+      dokuman:  (document.getElementById('f-dokuman') as HTMLInputElement | null)?.checked ? 'TRUE' : 'FALSE',
+      teknik:   (document.getElementById('f-teknik') as HTMLInputElement | null)?.checked ? 'TRUE' : 'FALSE',
     };
 
     try {
@@ -548,6 +663,125 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
     if (firmaId) location.href = `/company?id=${firmaId}`;
     else history.back();
   });
+
+
+  // ─── Drive Dosya Seçici ───────────────────────────────────────────────────────
+
+  const IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+
+  // Hangi input'a yazılacağını tutan state
+  let pickerTargetId: string | null = null;
+
+  async function openDrivePicker(targetInputId: string, label: string) {
+    pickerTargetId = targetInputId;
+    const panel = document.getElementById('drive-picker-panel');
+    const title = document.getElementById('drive-picker-title');
+    const list = document.getElementById('drive-picker-list');
+    if (!panel || !list) return;
+
+    if (title) title.textContent = `${label} için Drive'dan Seç`;
+    list.innerHTML = '<p class="text-xs text-muted italic">Yükleniyor...</p>';
+    panel.classList.remove('hidden');
+
+    // Firma nick'ini form'dan al
+    const nick = val('f-nick');
+    if (!nick) {
+      list.innerHTML = '<p class="text-xs text-rose-400 font-bold">Önce firma kısa adını girin.</p>';
+      return;
+    }
+
+    const res = await api.call('getRecentFiles', { nickname: nick, mimeTypes: IMAGE_MIME_TYPES });
+    if (!res?.success || !Array.isArray(res.data) || res.data.length === 0) {
+      list.innerHTML = '<p class="text-xs text-muted italic">Firma klasöründe resim bulunamadı.</p>';
+      return;
+    }
+
+    list.innerHTML = '';
+    (res.data as { name: string; id: string; url: string }[]).forEach((file) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'w-full text-left px-3 py-2 rounded-xl hover:bg-surface border border-transparent hover:border-border-main text-xs font-semibold transition-all flex items-center gap-2';
+      item.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 text-indigo-400"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span class="truncate">${file.name}</span>`;
+      item.addEventListener('click', () => {
+        if (pickerTargetId) setVal(pickerTargetId, file.id);
+        panel.classList.add('hidden');
+        pickerTargetId = null;
+        showToast(`"${file.name}" seçildi.`, 'success');
+      });
+      list.appendChild(item);
+    });
+  }
+
+  document.getElementById('btn-logo-select')?.addEventListener('click', () => openDrivePicker('f-logo', 'Logo'));
+  document.getElementById('btn-kase-select')?.addEventListener('click', () => openDrivePicker('f-kase', 'Kaşe & İmza'));
+  document.getElementById('btn-picker-close')?.addEventListener('click', () => {
+    document.getElementById('drive-picker-panel')?.classList.add('hidden');
+    pickerTargetId = null;
+  });
+
+  // ─── Drive Dosya Yükleme ──────────────────────────────────────────────────────
+
+  async function handleFileUpload(fileInputId: string, targetInputId: string, uploadBtnId: string) {
+    const fileInput = document.getElementById(fileInputId) as HTMLInputElement | null;
+    const uploadBtn = document.getElementById(uploadBtnId) as HTMLButtonElement | null;
+    if (!fileInput) return;
+
+    fileInput.onchange = async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+
+      const nick = val('f-nick');
+      if (!nick) {
+        showToast('Önce firma kısa adını girin.', 'error');
+        fileInput.value = '';
+        return;
+      }
+
+      if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = `<svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`;
+      }
+
+      try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const base64 = (e.target?.result as string)?.split(',')[1];
+          if (!base64) {
+            showToast('Dosya okunamadı.', 'error');
+            return;
+          }
+
+          const res = await api.uploadFile(
+            { data: base64, mimeType: file.type, fileName: file.name },
+            nick
+          );
+
+          if (res?.data?.fileId) {
+            setVal(targetInputId, res.data.fileId);
+            showToast(`"${file.name}" Drive'a yüklendi.`, 'success');
+          } else {
+            showToast(`Yükleme başarısız: ${res?.error || 'Bilinmeyen hata'}`, 'error');
+          }
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        fileInput.value = '';
+        if (uploadBtn) {
+          uploadBtn.disabled = false;
+          uploadBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Yükle`;
+        }
+      }
+    };
+
+    fileInput.click();
+  }
+
+  document.getElementById('btn-logo-upload')?.addEventListener('click', () =>
+    handleFileUpload('logo-file-input', 'f-logo', 'btn-logo-upload')
+  );
+  document.getElementById('btn-kase-upload')?.addEventListener('click', () =>
+    handleFileUpload('kase-file-input', 'f-kase', 'btn-kase-upload')
+  );
 
   // ─── Boot ─────────────────────────────────────────────────────────────────────
   loadCompany();

@@ -1,5 +1,6 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import { Icon } from 'astro-icon/components';
 import {
   OPERATION_DEFINITIONS,
 } from '../../features/operations/definitions';
@@ -73,6 +74,9 @@ import {
             <a href="/documents/view" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-surface-hover border border-border-main hover:border-indigo-500/30 text-main text-xs font-bold rounded-xl sm:rounded-2xl transition-all">
               <FileText size={14} />Doküman Üret
             </a>
+            <button id="btn-hero-folder" type="button" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-surface-hover border border-border-main hover:border-primary/30 hover:text-primary text-main text-xs font-bold rounded-xl sm:rounded-2xl transition-all">
+              <FolderOpen size={14} />Firma Klasörü
+            </button>
           </div>
         </div>
 
@@ -379,10 +383,10 @@ import {
                 <RefreshCw size={13} />
                 <span class="hidden sm:inline">Yenile</span>
               </button>
-              <a id="cert-folder-link" href="/documents/view" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-bold transition-colors">
+              <button type="button" id="cert-folder-btn" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-main bg-surface hover:bg-surface-hover text-main text-[11px] font-bold transition-colors">
                 <FolderOpen size={13} />
                 <span class="hidden sm:inline">Firma Klasörü</span>
-              </a>
+              </button>
               <a href="/certificates" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-300 text-[11px] font-bold transition-colors">
                 <Award size={13} />
                 <span class="hidden sm:inline">Sertifika Merkezi</span>
@@ -412,16 +416,68 @@ import {
                 <Printer size={12} />
                 Üretim
               </div>
-              <div class="flex flex-wrap gap-2">
-                <button type="button" data-cert-lang="EN" class="cert-lang-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors">EN</button>
-                <button type="button" data-cert-lang="TR" class="cert-lang-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors">TR</button>
-                <button type="button" data-cert-sign="NS" class="cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors">İmzasız</button>
-                <button type="button" data-cert-sign="S" class="cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors">İmzalı</button>
+              <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-start gap-3">
+                <div class="min-w-0 space-y-2">
+                  <p class="text-center text-[10px] font-black uppercase tracking-[0.24em] text-muted">Dil Seçimi</p>
+                  <div class="grid grid-cols-2 gap-1.5 rounded-2xl border border-border-main bg-surface-hover p-1.5">
+                    <button type="button" data-cert-lang="EN" aria-pressed="true" title="English" class="cert-lang-btn inline-flex min-h-[44px] min-w-[60px] items-center justify-center rounded-xl px-4 py-2.5 text-[11px] font-black transition-colors">
+                      <Icon name="flag:gb-4x3" class="h-5 w-6" aria-hidden="true" />
+                      <span class="sr-only">English</span>
+                    </button>
+                    <button type="button" data-cert-lang="TR" aria-pressed="false" title="Türkçe" class="cert-lang-btn inline-flex min-h-[44px] min-w-[60px] items-center justify-center rounded-xl px-4 py-2.5 text-[11px] font-black transition-colors">
+                      <Icon name="flag:tr-4x3" class="h-5 w-6" aria-hidden="true" />
+                      <span class="sr-only">Türkçe</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="min-w-0 space-y-2">
+                  <p class="text-center text-[10px] font-black uppercase tracking-[0.24em] text-muted">İmza Seçimi</p>
+                  <div class="grid grid-cols-2 gap-1.5 rounded-2xl border border-border-main bg-surface-hover p-1.5">
+                    <button type="button" data-cert-sign="S" aria-pressed="true" title="İmzalı" class="cert-sign-btn inline-flex min-h-[44px] min-w-[60px] items-center justify-center rounded-xl px-4 py-2.5 text-[11px] font-black transition-colors">
+                      <Icon name="mdi:pen" class="h-5 w-5" aria-hidden="true" />
+                      <span class="sr-only">İmzalı</span>
+                    </button>
+                    <button type="button" data-cert-sign="NS" aria-pressed="false" title="İmzasız" class="cert-sign-btn inline-flex min-h-[44px] min-w-[60px] items-center justify-center rounded-xl px-4 py-2.5 text-[11px] font-black transition-colors">
+                      <Icon name="mdi:pen-off" class="h-5 w-5" aria-hidden="true" />
+                      <span class="sr-only">İmzasız</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <p class="text-center text-[10px] font-black uppercase tracking-[0.24em] text-muted">Baskı</p>
+                  <button type="button" id="cert-generate-selected" title="Seçilileri Üret" class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <Printer size={16} />
+                    <span class="sr-only">Seçilileri Üret</span>
+                  </button>
+                </div>
               </div>
-              <button type="button" id="cert-generate-selected" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                <Printer size={13} />
-                Seçilileri Üret
-              </button>
+              <div id="cert-generate-progress" class="hidden rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4 space-y-3">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="space-y-1">
+                    <p class="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-300">Üretim İlerlemesi</p>
+                    <p id="cert-generate-status" class="text-sm font-bold text-main">Hazırlanıyor...</p>
+                  </div>
+                  <span id="cert-generate-counts" class="rounded-full border border-emerald-500/20 bg-surface px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-300">0 / 0</span>
+                </div>
+                <div class="h-2 overflow-hidden rounded-full bg-surface-hover">
+                  <div id="cert-generate-progress-bar" class="h-full w-0 rounded-full bg-emerald-500 transition-all duration-300"></div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-[10px] font-bold">
+                  <div class="rounded-xl border border-border-main bg-surface px-3 py-2 text-main">
+                    <span class="block text-muted uppercase tracking-wide">Başarılı</span>
+                    <span id="cert-generate-success" class="mt-1 block text-sm font-black text-emerald-300">0</span>
+                  </div>
+                  <div class="rounded-xl border border-border-main bg-surface px-3 py-2 text-main">
+                    <span class="block text-muted uppercase tracking-wide">Başarısız</span>
+                    <span id="cert-generate-failed" class="mt-1 block text-sm font-black text-rose-300">0</span>
+                  </div>
+                  <div class="rounded-xl border border-border-main bg-surface px-3 py-2 text-main">
+                    <span class="block text-muted uppercase tracking-wide">Kalan</span>
+                    <span id="cert-generate-remaining" class="mt-1 block text-sm font-black text-amber-300">0</span>
+                  </div>
+                </div>
+                <p id="cert-generate-last-result" class="text-[11px] leading-relaxed text-muted">İşlem başladığında son durum burada görünecek.</p>
+              </div>
             </div>
 
             <div class="rounded-2xl border border-border-main bg-surface p-4 space-y-3">
@@ -667,6 +723,14 @@ import {
     }
   }
 
+  function isZeroish(value: any) {
+    const text = String(value ?? '').trim();
+    if (!text) return true;
+    const normalized = text.replace(',', '.');
+    if (!/^[-+]?\d+(\.\d+)?$/.test(normalized)) return false;
+    return Number(normalized) === 0;
+  }
+
   function toDriveFileUrl(value: string) {
     const cleanValue = value.trim();
     if (!cleanValue) return '';
@@ -823,7 +887,8 @@ import {
   let certCurrentPage = 1;
   const CERT_PAGE_SIZE = 10;
   let certLang: 'TR' | 'EN' = 'EN';
-  let certSign: 'S' | 'NS' = 'NS';
+  let certSign: 'S' | 'NS' = 'S';
+  let certGenerationInFlight = false;
   const EXPANDABLE_TEXT_LIMITS = {
     'hero-kapsam': { mobile: 170, desktop: 340 },
     'hero-scope': { mobile: 170, desktop: 360 },
@@ -912,7 +977,7 @@ import {
   }
 
   function refreshCertActionButtons() {
-    const hasSelection = selectedCertIds.size > 0;
+    const hasSelection = selectedCertIds.size > 0 && !certGenerationInFlight;
     [
       'cert-generate-selected',
       'cert-mark-passive',
@@ -921,6 +986,68 @@ import {
       const btn = document.getElementById(id) as HTMLButtonElement | null;
       if (btn) btn.disabled = !hasSelection;
     });
+  }
+
+  function setCertButtonVisualState(
+    button: HTMLButtonElement,
+    active: boolean,
+    activeTone: 'emerald' | 'indigo' = 'emerald'
+  ) {
+    const activeClasses = activeTone === 'emerald'
+      ? 'bg-emerald-500/12 text-emerald-300 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.25)]'
+      : 'bg-indigo-500/12 text-indigo-300 shadow-[inset_0_0_0_1px_rgba(99,102,241,0.28)]';
+    const inactiveClasses = 'bg-transparent text-muted hover:text-main';
+
+    button.className = active
+      ? `inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-[11px] font-black transition-colors ${activeClasses}`
+      : `inline-flex items-center justify-center rounded-xl px-3 py-2.5 text-[11px] font-black transition-colors ${inactiveClasses}`;
+    button.setAttribute('aria-pressed', String(active));
+  }
+
+  function syncCertProductionToggleUI() {
+    document.querySelectorAll<HTMLButtonElement>('[data-cert-lang]').forEach((btn) => {
+      setCertButtonVisualState(btn, btn.dataset.certLang === certLang, 'indigo');
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-cert-sign]').forEach((btn) => {
+      setCertButtonVisualState(btn, btn.dataset.certSign === certSign, 'emerald');
+    });
+  }
+
+  function updateCertGenerationProgress(
+    processed: number,
+    total: number,
+    success: number,
+    failed: number,
+    status: string,
+    lastResult?: string
+  ) {
+    const panel = document.getElementById('cert-generate-progress');
+    const statusEl = document.getElementById('cert-generate-status');
+    const countsEl = document.getElementById('cert-generate-counts');
+    const barEl = document.getElementById('cert-generate-progress-bar');
+    const successEl = document.getElementById('cert-generate-success');
+    const failedEl = document.getElementById('cert-generate-failed');
+    const remainingEl = document.getElementById('cert-generate-remaining');
+    const lastResultEl = document.getElementById('cert-generate-last-result');
+
+    if (!panel || !statusEl || !countsEl || !barEl || !successEl || !failedEl || !remainingEl || !lastResultEl) return;
+
+    panel.classList.remove('hidden');
+    statusEl.textContent = status;
+    countsEl.textContent = `${processed} / ${total}`;
+    barEl.style.width = `${total > 0 ? Math.round((processed / total) * 100) : 0}%`;
+    successEl.textContent = String(success);
+    failedEl.textContent = String(failed);
+    remainingEl.textContent = String(Math.max(total - processed, 0));
+    if (lastResult) lastResultEl.textContent = lastResult;
+  }
+
+  function resetCertGenerationProgress() {
+    const panel = document.getElementById('cert-generate-progress');
+    const barEl = document.getElementById('cert-generate-progress-bar') as HTMLDivElement | null;
+    if (panel) panel.classList.add('hidden');
+    if (barEl) barEl.style.width = '0%';
   }
 
   function syncCertCheckboxes() {
@@ -974,15 +1101,52 @@ import {
     }
   }
 
+  async function openCompanyFolder(btn: HTMLButtonElement) {
+    if (!currentCompanyNick) return;
+    const prev = btn.innerHTML;
+    btn.innerHTML = '<div class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>';
+    btn.disabled = true;
+    try {
+      const res = await api.call('getFolderId', { nickname: currentCompanyNick });
+      if (res.success && res.data) {
+        window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
+      } else {
+        showToast(res.error || 'Firma klasörü bulunamadı.', 'error');
+      }
+    } finally {
+      btn.innerHTML = prev;
+      btn.disabled = false;
+    }
+  }
+
+  function setupFolderButtons() {
+    ['btn-hero-folder', 'cert-folder-btn'].forEach(id => {
+      const btn = document.getElementById(id) as HTMLButtonElement | null;
+      if (btn && !btn.dataset.bound) {
+        btn.dataset.bound = 'true';
+        btn.addEventListener('click', () => openCompanyFolder(btn));
+      }
+    });
+  }
+
   async function generateSelectedCertificates() {
     if (selectedCertIds.size === 0 || !currentCompanyNick) return;
 
     const button = document.getElementById('cert-generate-selected') as HTMLButtonElement | null;
     const original = button?.innerHTML || '';
+    const certIds = Array.from(selectedCertIds);
+    const total = certIds.length;
+    let successCount = 0;
+    let failedCount = 0;
+
+    certGenerationInFlight = true;
     if (button) {
       button.disabled = true;
-      button.innerHTML = `<span class="inline-flex items-center gap-2">Hazırlanıyor</span>`;
+      button.innerHTML = `<span class="inline-flex items-center gap-2"><span class="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin"></span>Üretiliyor...</span>`;
     }
+    refreshCertActionButtons();
+    updateCertGenerationProgress(0, total, 0, 0, `${total} belge için üretim hazırlanıyor...`, `Dil: ${certLang} • Çıktı: ${certSign === 'S' ? 'İmzalı' : 'İmzasız'}`);
+    showToast(`${total} sertifika için üretim başlatıldı.`, 'info');
 
     try {
       const folderRes = await api.call('getFolderId', { nickname: currentCompanyNick });
@@ -992,20 +1156,65 @@ import {
       const folderId = folderRes?.data;
       if (!folderId) throw new Error('Firma klasörü bulunamadı.');
 
-      for (const certId of selectedCertIds) {
-        const payloadRes = await api.buildCertPayload(certId, certLang, certSign);
-        if (!payloadRes.success || !payloadRes.data) {
-          throw new Error(payloadRes.error || `Payload oluşturulamadı: ${certId}`);
-        }
+      for (let index = 0; index < certIds.length; index += 1) {
+        const certId = certIds[index];
+        try {
+          updateCertGenerationProgress(
+            index,
+            total,
+            successCount,
+            failedCount,
+            `${index + 1}. belge hazırlanıyor...`,
+            `Sertifika ID: ${certId}`
+          );
 
-        const genRes = await api.call('generateIso', { cert: payloadRes.data, folderId });
-        if (!genRes.success) {
-          throw new Error(genRes.error || `Belge üretilemedi: ${certId}`);
+          const payloadRes = await api.buildCertPayload(certId, certLang, certSign);
+          if (!payloadRes.success || !payloadRes.data) {
+            throw new Error(payloadRes.error || `Payload oluşturulamadı: ${certId}`);
+          }
+
+          const genRes = await api.call('generateIso', { cert: payloadRes.data, folderId });
+          if (!genRes.success) {
+            throw new Error(genRes.error || `Belge üretilemedi: ${certId}`);
+          }
+
+          successCount += 1;
+          updateCertGenerationProgress(
+            index + 1,
+            total,
+            successCount,
+            failedCount,
+            `${index + 1} / ${total} belge işlendi`,
+            `Basarili: ${certId}`
+          );
+        } catch (itemError: any) {
+          failedCount += 1;
+          const message = itemError?.message || `Belge üretilemedi: ${certId}`;
+          updateCertGenerationProgress(
+            index + 1,
+            total,
+            successCount,
+            failedCount,
+            `${index + 1} / ${total} belge işlendi`,
+            `Hata: ${message}`
+          );
+          showToast(message, 'error');
         }
       }
+
+      const finalMessage = failedCount === 0
+        ? `${successCount} / ${total} belge başarıyla üretildi.`
+        : `${successCount} başarılı, ${failedCount} başarısız, toplam ${total} belge işlendi.`;
+
+      updateCertGenerationProgress(total, total, successCount, failedCount, 'Üretim tamamlandı', finalMessage);
+      showToast(finalMessage, failedCount === 0 ? 'success' : 'info');
     } catch (error) {
       console.error('Certificate generation failed:', error);
+      const message = error instanceof Error ? error.message : 'Toplu üretim başlatılamadı.';
+      updateCertGenerationProgress(0, total, successCount, failedCount, 'Üretim başlatılamadı', message);
+      showToast(message, 'error');
     } finally {
+      certGenerationInFlight = false;
       if (button) {
         button.innerHTML = original;
       }
@@ -1037,12 +1246,7 @@ import {
       button.dataset.bound = 'true';
       button.addEventListener('click', () => {
         certLang = (button.dataset.certLang as 'TR' | 'EN') || 'EN';
-        document.querySelectorAll<HTMLButtonElement>('[data-cert-lang]').forEach((btn) => {
-          const active = btn.dataset.certLang === certLang;
-          btn.className = active
-            ? 'cert-lang-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors'
-            : 'cert-lang-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors';
-        });
+        syncCertProductionToggleUI();
       });
     });
 
@@ -1050,15 +1254,8 @@ import {
       if (button.dataset.bound === 'true') return;
       button.dataset.bound = 'true';
       button.addEventListener('click', () => {
-        certSign = (button.dataset.certSign as 'S' | 'NS') || 'NS';
-        document.querySelectorAll<HTMLButtonElement>('[data-cert-sign]').forEach((btn) => {
-          const active = btn.dataset.certSign === certSign;
-          const label = btn.dataset.certSign === 'NS' ? 'İmzasız' : 'İmzalı';
-          btn.textContent = label;
-          btn.className = active
-            ? 'cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[11px] font-bold transition-colors'
-            : 'cert-sign-btn inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-border-main bg-surface-hover text-main text-[11px] font-bold transition-colors';
-        });
+        certSign = (button.dataset.certSign as 'S' | 'NS') || 'S';
+        syncCertProductionToggleUI();
       });
     });
 
@@ -1098,6 +1295,8 @@ import {
       activeBtn.dataset.bound = 'true';
       activeBtn.addEventListener('click', () => void updateSelectedSurveillance('FALSE'));
     }
+
+    syncCertProductionToggleUI();
   }
 
   // ─── URL Param ────────────────────────────────────────────────────────────────
@@ -1215,6 +1414,9 @@ import {
     const btnEdit = document.getElementById('btn-edit') as HTMLAnchorElement | null;
     if (btnEdit) btnEdit.href = `/company/edit?id=${firmaId}`;
 
+    // Firma Klasörü butonları (hero + sertifikalar bölümü)
+    setupFolderButtons();
+
 
     // Kapsam
     renderExpandableText('hero-kapsam', kapsam);
@@ -1236,16 +1438,20 @@ import {
     setLinkedField('info-web', web, 'info-web-block', 'web');
     setField('info-vergi-d', vergiD, 'info-vergi-d-block');
     setField('info-vergi-n', vergiN, 'info-vergi-n-block');
-    setField('info-tcs', tcs, 'info-tcs-block');
+    setField('info-tcs', isZeroish(tcs) ? '' : tcs, 'info-tcs-block');
     setField('info-sector', [nace, ea].filter(Boolean).join(' / '), 'info-sector-block');
-    setField('info-facility', [alan && `${alan} m2`, dept && `${dept} departman`].filter(Boolean).join(' / '), 'info-facility-block');
+    const facility = [
+      !isZeroish(alan) && alan ? `${alan} m2` : '',
+      !isZeroish(dept) && dept ? `${dept} departman` : ''
+    ].filter(Boolean).join(' / ');
+    setField('info-facility', facility, 'info-facility-block');
     setField('info-vardiya', vardiya, 'info-vardiya-block');
 
     const workforce = [
-      ycs && `Yönetim: ${ycs}`,
-      ucs && `Üretim: ${ucs}`,
-      yzcs && `Yarı Zamanlı: ${yzcs}`,
-      tascs && `Taşeron: ${tascs}`,
+      !isZeroish(ycs) && ycs ? `Yönetim: ${ycs}` : '',
+      !isZeroish(ucs) && ucs ? `Üretim: ${ucs}` : '',
+      !isZeroish(yzcs) && yzcs ? `Yarı Zamanlı: ${yzcs}` : '',
+      !isZeroish(tascs) && tascs ? `Taşeron: ${tascs}` : '',
     ].filter(Boolean).join(' / ');
     setField('info-workforce', workforce, 'info-workforce-block');
 
@@ -1567,8 +1773,6 @@ import {
     const btnAddCert = document.getElementById('btn-add-cert') as HTMLAnchorElement | null;
     if (btnAddCert) btnAddCert.href = getCompanyCertificateHref();
 
-    const folderLink = document.getElementById('cert-folder-link') as HTMLAnchorElement | null;
-    if (folderLink) folderLink.href = '/documents/view';
 
     document.querySelectorAll<HTMLInputElement>('.cert-select-row').forEach((input) => {
       input.addEventListener('change', () => {
