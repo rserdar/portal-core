@@ -93,7 +93,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 border-b border-border-main pb-4">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">Google Sheets -> KV</p>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Google Sheets &lt;-&gt; KV</p>
           <h2 class="text-xl font-extrabold mt-1">Sheets Senkronizasyonu</h2>
           <p class="text-sm text-muted mt-2">
             Verileri Google Sheets'ten Cloudflare KV'ye çeker. Seçili kapsamları günceller.
@@ -108,7 +108,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
 
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-2">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">Cloudflare KV <-> JSON</p>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Cloudflare KV &lt;-&gt; JSON</p>
           <h2 class="text-xl font-extrabold mt-1">JSON Yedekleme / Geri Yükleme</h2>
           <p class="text-sm text-muted mt-2">
             Canlı KV verilerini .json olarak yedekle veya bir yedeği sisteme (Replace) geri yükle.
@@ -147,21 +147,21 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   import { api } from "../lib/api";
 
   const selectEl = document.getElementById("dataset-select") as HTMLSelectElement | null;
-  const syncBtn = document.getElementById("sync-master-btn");
-  const fullSyncBtn = document.getElementById("full-sync-btn");
-  const refreshBtn = document.getElementById("refresh-btn");
-  const addRowBtn = document.getElementById("addRowBtn");
-  const saveBtn = document.getElementById("save-btn");
-  const metaVersion = document.getElementById("meta-version");
-  const metaUpdated = document.getElementById("meta-updated");
-  const thead = document.getElementById("master-thead");
-  const tbody = document.getElementById("master-tbody");
-  const statusBox = document.getElementById("status-box");
-  const opsSyncBtn = document.getElementById("ops-sync-btn");
-  const exportKvBtn = document.getElementById("export-kv-btn");
+  const syncBtn = document.getElementById("sync-master-btn") as HTMLButtonElement | null;
+  const fullSyncBtn = document.getElementById("full-sync-btn") as HTMLButtonElement | null;
+  const refreshBtn = document.getElementById("refresh-btn") as HTMLButtonElement | null;
+  const addRowBtn = document.getElementById("add-row-btn") as HTMLButtonElement | null;
+  const saveBtn = document.getElementById("save-btn") as HTMLButtonElement | null;
+  const metaVersion = document.getElementById("meta-version") as HTMLElement | null;
+  const metaUpdated = document.getElementById("meta-updated") as HTMLElement | null;
+  const thead = document.getElementById("master-thead") as HTMLElement | null;
+  const tbody = document.getElementById("master-tbody") as HTMLElement | null;
+  const statusBox = document.getElementById("status-box") as HTMLElement | null;
+  const opsSyncBtn = document.getElementById("ops-sync-btn") as HTMLButtonElement | null;
+  const exportKvBtn = document.getElementById("export-kv-btn") as HTMLButtonElement | null;
   const importFileInput = document.getElementById("import-file-input") as HTMLInputElement | null;
   const importKvBtn = document.getElementById("import-kv-btn") as HTMLButtonElement | null;
-  const backupStatusBox = document.getElementById("backup-status-box");
+  const backupStatusBox = document.getElementById("backup-status-box") as HTMLElement | null;
 
   let currentType: string = "standards";
   let currentVersion: string | null = null;
@@ -419,6 +419,11 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     }
     await loadDataset(currentType);
     setBackupStatus("Seçili kapsamlar başarıyla geri yüklendi (KV-Replace).", "success");
+  });
+
+  addRowBtn?.addEventListener("click", () => {
+    currentRows.push(Array(currentHeaders.length).fill(""));
+    renderTable();
   });
 
   saveBtn?.addEventListener("click", saveDataset);
