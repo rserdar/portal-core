@@ -24,13 +24,13 @@ export function showToast(message: string, type: ToastType = 'info') {
   if (!container) return;
 
   const colors = {
-    success: 'border-emerald-500/30 bg-emerald-500/15 text-emerald-50',
-    error: 'border-rose-500/30 bg-rose-500/15 text-rose-50',
-    info: 'border-indigo-500/30 bg-indigo-500/15 text-indigo-50',
+    success: 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-900/20',
+    error: 'bg-rose-600 text-white border-rose-500 shadow-rose-900/20',
+    info: 'bg-indigo-600 text-white border-indigo-500 shadow-indigo-900/20',
   } as const;
 
   const toast = document.createElement('div');
-  toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-2xl border backdrop-blur-md shadow-2xl text-sm font-bold max-w-sm translate-y-4 opacity-0 transition-all duration-300 ${colors[type]}`;
+  toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-xl border-2 shadow-xl text-sm font-semibold max-w-sm translate-y-4 opacity-0 transition-all duration-300 ${colors[type]}`;
   toast.textContent = message;
   container.appendChild(toast);
 
@@ -43,7 +43,7 @@ export function showToast(message: string, type: ToastType = 'info') {
   setTimeout(() => {
     toast.classList.add('translate-y-4', 'opacity-0');
     setTimeout(() => toast.remove(), 300);
-  }, 2600);
+  }, 5000);
 }
 
 export function setFlashToast(message: string, type: ToastType = 'info') {

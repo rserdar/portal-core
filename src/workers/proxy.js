@@ -1845,16 +1845,27 @@ export default {
             return jsonResponse({ success: false, error: "Firma ID boş olamaz." }, 400);
           }
 
-          const [existingRaw, searchRaw] = await Promise.all([
+          const cacheKeyTarget = `cache:getCompanyById:${stableStringify({ id: targetId })}`;
+          let [existingRaw, searchRaw] = await Promise.all([
             env.DB.get(`cache:company:${targetId}`),
             env.DB.get(indexKeys.companySearch),
           ]);
 
           if (!existingRaw) {
+            existingRaw = await env.DB.get(cacheKeyTarget);
+          }
+
+          if (!existingRaw) {
             return jsonResponse({ success: false, error: `Firma bulunamadı: ${targetId}` }, 404);
           }
 
-          const existing = JSON.parse(existingRaw);
+          let existing;
+          try {
+            existing = JSON.parse(existingRaw);
+          } catch (e) {
+            return jsonResponse({ success: false, error: "Bozuk firma formatı." }, 500);
+          }
+          
           const currentEtag = String(existing.__etag || createEtag(existing));
           const expectedEtag = String(params?.expectedEtag || "").trim();
           if (expectedEtag && expectedEtag !== currentEtag) {
