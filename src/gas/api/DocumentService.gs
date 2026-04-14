@@ -191,6 +191,8 @@ const DocumentService = {
       const isim = certificate.nickname || certificate.nick;
       const id = certificate.id || certificate.firmaNo || certificate.fno;
       const standard = certificate.standard || certificate.standart;
+      const other = certificate.other || certificate.otherStandard || "";
+      const aStandart = certificate.aStandart || certificate.not || "";
       const tempId = certificate.theme || certificate.tema || certificate.tempId;
       const lang = certificate.lang || "TR";
       const logo = certificate.logo || "";
@@ -203,9 +205,10 @@ const DocumentService = {
       const folderId = DriveService.getCompanyFolderId(isim);
       const docTemp = DriveApp.getFileById(tempId);
       const folder = DriveApp.getFolderById(folderId);
+      const standardDisplay = standard === "Diğer" ? (other || standard) : standard;
       const copyName = lang === "EN"
-        ? `${isim} - Draft ${standard} (M${id})`
-        : `${isim} - Draft ${standard} ${lang} (M${id})`;
+        ? `${isim} - Draft ${standardDisplay} (M${id})`
+        : `${isim} - Draft ${standardDisplay} ${lang} (M${id})`;
 
       const copy = docTemp.makeCopy(copyName, folder);
       const doc = DocumentApp.openById(copy.getId());
@@ -224,6 +227,8 @@ const DocumentService = {
         "{{GozT}}": "xxx",
         "{{DenT}}": "xxx",
         "{{ilkT}}": "xxx",
+        "{{Standart}}": standard === "Diğer" ? (other || "") : "",
+        "{{aStandart}}": standard === "Diğer" ? (aStandart || "") : "",
         "{{Sign}}": "",
         "{{QrKod}}": ""
       };
@@ -248,19 +253,28 @@ const DocumentService = {
         }
       }
 
-      // Legacy ile uyumlu draft arkaplan görseli
-      const bgImage = DriveApp.getFileById(this._cfg("DRAFT_BG_ID")).getBlob();
-      const searchText = lang === "EN" ? "This is to certify that" : "Bu Sertifika";
-      const marker = body.findText(searchText);
-      if (marker) {
-        const el = marker.getElement();
-        el.getParent().asParagraph().addPositionedImage(bgImage)
-          .setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT)
-          .setLeftOffset(20)
-          .setTopOffset(30)
-          .setWidth(600)
-          .setHeight(600);
+      // Legacy ile uyumlu draft arkaplan görselini Header'a ekleyerek "Metnin Arkasında" kalmasını sağlıyoruz
+      const bgImageId = this._cfg("DRAFT_BG_ID");
+      const bgImage = DriveApp.getFileById(bgImageId).getBlob();
+      
+      let header = doc.getHeader();
+      if (!header) {
+        header = doc.addHeader();
       }
+      
+      // Header'a gizli bir paragraf ekleyerek resmi ona tutturuyoruz
+      const p = header.appendParagraph("");
+      
+      // A4 = ~595 x 842 pt
+      // 550x550 resim için => left = (595 - 550)/2 = ~22, top = (842 - 550)/2 = ~146
+      // Header offsetini (~36pt) hesaba katarak topOffset'i ayarlıyoruz
+      p.addPositionedImage(bgImage)
+        .setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT) // Header içinde overlay fakat Body'nin arkasında
+        .setWidth(550)
+        .setHeight(550)
+        .setLeftOffset(22)
+        .setTopOffset(100);
+
 
       doc.saveAndClose();
       return { success: true, id: copy.getId(), url: copy.getUrl() };
