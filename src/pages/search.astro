@@ -234,90 +234,85 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     const pageIndicator = document.getElementById('page-indicator');
     if (pageIndicator) pageIndicator.textContent = `${currentPage} / ${totalPages}`;
 
+    let desktopHtml = '';
+    let mobileHtml = '';
+
     paginatedItems.forEach((c) => {
       const safeId = c.id || '';
       const encodedId = encodeURIComponent(safeId);
       const initials = getInitials(c.nickname);
 
-      // ── Desktop satırı ──
-      const tr = document.createElement('tr');
-      tr.className = 'hover:bg-surface-hover transition-colors group/row';
-      tr.innerHTML = `
-        <td class="px-4 py-3 text-center">
-          <span class="text-[11px] font-mono font-bold text-muted">${safeId || '-'}</span>
-        </td>
-        <td class="px-5 py-3 overflow-hidden">
-          <a href="/company?id=${encodedId}" class="flex items-center gap-3 min-w-0 group/link">
-            <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 group-hover/link:bg-indigo-500/20 transition-colors">
-              <span class="text-[10px] font-black text-indigo-400 uppercase">${initials}</span>
+      // Desktop
+      desktopHtml += `
+        <tr class="hover:bg-surface-hover transition-colors group/row">
+          <td class="px-4 py-3 text-center">
+            <span class="text-[11px] font-mono font-bold text-muted">${safeId || '-'}</span>
+          </td>
+          <td class="px-5 py-3 overflow-hidden">
+            <a href="/company?id=${encodedId}" class="flex items-center gap-3 min-w-0 group/link">
+              <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 group-hover/link:bg-indigo-500/20 transition-colors">
+                <span class="text-[10px] font-black text-indigo-400 uppercase">${initials}</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="font-bold text-sm text-main group-hover/link:text-primary transition-colors truncate uppercase tracking-tight leading-tight">${escHtml(c.nickname || '-')}</div>
+                <div class="text-[11px] text-muted truncate mt-0.5 leading-tight">${escHtml(c.unvan || '-')}</div>
+              </div>
+            </a>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <span class="inline-block text-[11px] font-bold text-muted bg-surface-hover border border-border-main px-2 py-0.5 rounded-md uppercase tracking-wide truncate max-w-full">${escHtml(c.city || '-')}</span>
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex items-center justify-center gap-1.5">
+              <button class="folder-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all" data-nickname="${escHtml(c.nickname)}" title="Drive Klasörü">
+                ${folderSvg}
+              </button>
+              <button class="eye-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-white hover:border-primary transition-all" data-id="${safeId}" data-preview-target="search-preview-${safeId}" aria-expanded="false" title="Hızlı Önizleme">
+                ${eyeSvg}
+              </button>
+              <button class="delete-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all" data-id="${safeId}" title="Sil">
+                ${trashSvg}
+              </button>
             </div>
-            <div class="min-w-0 flex-1">
-              <div class="font-bold text-sm text-main group-hover/link:text-primary transition-colors truncate uppercase tracking-tight leading-tight">${c.nickname || '-'}</div>
-              <div class="text-[11px] text-muted truncate mt-0.5 leading-tight">${c.unvan || '-'}</div>
+          </td>
+        </tr>
+        <tr id="search-preview-${safeId}" class="hidden border-b border-border-main">
+          <td colspan="4"></td>
+        </tr>
+      `;
+
+      // Mobile
+      mobileHtml += `
+        <div class="flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors">
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+            <span class="text-xs font-black text-indigo-400 uppercase">${initials}</span>
+          </div>
+          <a href="/company?id=${encodedId}" class="flex-1 min-w-0 block">
+            <div class="font-bold text-sm text-main uppercase tracking-tight truncate">${escHtml(c.nickname || '-')}</div>
+            <div class="text-[11px] text-muted truncate mt-0.5">${escHtml(c.unvan || '-')}</div>
+            <div class="flex items-center gap-1.5 mt-1">
+              ${c.city && c.city !== '-' ? `<span class="text-[10px] font-bold text-muted uppercase">${escHtml(c.city)}</span><span class="text-muted text-[10px]">·</span>` : ''}
+              <span class="text-[10px] font-mono text-muted/70">M${safeId}</span>
             </div>
           </a>
-        </td>
-        <td class="px-4 py-3 text-center">
-          <span class="inline-block text-[11px] font-bold text-muted bg-surface-hover border border-border-main px-2 py-0.5 rounded-md uppercase tracking-wide truncate max-w-full">${c.city || '-'}</span>
-        </td>
-        <td class="px-4 py-3">
-          <div class="flex items-center justify-center gap-1.5">
-            <button class="folder-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all" data-nickname="${c.nickname}" title="Drive Klasörü">
-              ${folderSvg}
+          <div class="flex items-center gap-2 shrink-0">
+            <button class="folder-btn w-11 h-11 flex items-center justify-center rounded-xl border border-border-main bg-surface-hover text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 active:scale-95 transition-all touch-manipulation" data-nickname="${escHtml(c.nickname)}" title="Drive Klasörü">
+              ${folderSvgLg}
             </button>
-            <button class="eye-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-white hover:border-primary transition-all" data-id="${safeId}" data-preview-target="search-preview-${safeId}" aria-expanded="false" title="Hızlı Önizleme">
-              ${eyeSvg}
+            <button class="eye-btn w-11 h-11 flex items-center justify-center rounded-xl border border-primary/30 bg-primary/8 text-primary hover:bg-primary hover:text-white active:scale-95 transition-all touch-manipulation" data-id="${safeId}" data-preview-target="search-preview-mob-${safeId}" aria-expanded="false" title="Hızlı Önizleme">
+              ${eyeSvgLg}
             </button>
-            <button class="delete-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all" data-id="${safeId}" title="Sil">
-              ${trashSvg}
+            <button class="delete-btn w-11 h-11 flex items-center justify-center rounded-xl border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white active:scale-95 transition-all touch-manipulation" data-id="${safeId}" title="Sil">
+              ${trashSvgLg}
             </button>
           </div>
-        </td>
-      `;
-      resultsBody.appendChild(tr);
-
-      // ── Desktop detay satırı (inline önizleme) ──
-      const trDetail = document.createElement('tr');
-      trDetail.id = `search-preview-${safeId}`;
-      trDetail.className = 'hidden border-b border-border-main';
-      trDetail.innerHTML = `<td colspan="4"></td>`;
-      resultsBody.appendChild(trDetail);
-
-      // ── Mobil kart ──
-      const card = document.createElement('div');
-      card.className = 'flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors';
-      card.innerHTML = `
-        <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-          <span class="text-xs font-black text-indigo-400 uppercase">${initials}</span>
         </div>
-        <a href="/company?id=${encodedId}" class="flex-1 min-w-0 block">
-          <div class="font-bold text-sm text-main uppercase tracking-tight truncate">${c.nickname || '-'}</div>
-          <div class="text-[11px] text-muted truncate mt-0.5">${c.unvan || '-'}</div>
-          <div class="flex items-center gap-1.5 mt-1">
-            ${c.city && c.city !== '-' ? `<span class="text-[10px] font-bold text-muted uppercase">${c.city}</span><span class="text-muted text-[10px]">·</span>` : ''}
-            <span class="text-[10px] font-mono text-muted/70">M${safeId}</span>
-          </div>
-        </a>
-        <div class="flex items-center gap-2 shrink-0">
-          <button class="folder-btn w-11 h-11 flex items-center justify-center rounded-xl border border-border-main bg-surface-hover text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 active:scale-95 transition-all touch-manipulation" data-nickname="${c.nickname}" title="Drive Klasörü">
-            ${folderSvgLg}
-          </button>
-          <button class="eye-btn w-11 h-11 flex items-center justify-center rounded-xl border border-primary/30 bg-primary/8 text-primary hover:bg-primary hover:text-white active:scale-95 transition-all touch-manipulation" data-id="${safeId}" data-preview-target="search-preview-mob-${safeId}" aria-expanded="false" title="Hızlı Önizleme">
-            ${eyeSvgLg}
-          </button>
-          <button class="delete-btn w-11 h-11 flex items-center justify-center rounded-xl border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white active:scale-95 transition-all touch-manipulation" data-id="${safeId}" title="Sil">
-            ${trashSvgLg}
-          </button>
-        </div>
+        <div id="search-preview-mob-${safeId}" class="hidden border-b border-border-main"></div>
       `;
-      resultsMobile.appendChild(card);
-
-      // ── Mobil detay paneli (inline önizleme) ──
-      const cardDetail = document.createElement('div');
-      cardDetail.id = `search-preview-mob-${safeId}`;
-      cardDetail.className = 'hidden border-b border-border-main';
-      resultsMobile.appendChild(cardDetail);
     });
+
+    resultsBody.innerHTML = desktopHtml;
+    resultsMobile.innerHTML = mobileHtml;
 
     attachEvents();
   }

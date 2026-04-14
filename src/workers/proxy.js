@@ -163,6 +163,55 @@ export default {
         a2EventId: r[32] ?? "",
       };
     };
+    const mapLegacyCompanyRow = (row) => {
+      const r = Array.isArray(row) ? row : [];
+      return {
+        "Firma No": String(r[0] ?? "").trim(),
+        "Firma Adı": String(r[1] ?? "").trim(),
+        Unvan: String(r[2] ?? "").trim(),
+        Adres: String(r[3] ?? "").trim(),
+        "İl": String(r[4] ?? "").trim(),
+        "Ülke": String(r[5] ?? "").trim(),
+        "Yazışma Adresi": String(r[6] ?? "").trim(),
+        "Vergi Dairesi": String(r[7] ?? "").trim(),
+        "Vergi Numarası": String(r[8] ?? "").trim(),
+        Telefon: String(r[9] ?? "").trim(),
+        Faks: String(r[10] ?? "").trim(),
+        "İnternet": String(r[11] ?? "").trim(),
+        Mail: String(r[12] ?? "").trim(),
+        "Yetkili Adı": String(r[13] ?? "").trim(),
+        "Yetkili Ünvanı": String(r[14] ?? "").trim(),
+        KYT: String(r[15] ?? "").trim(),
+        "İrtibat Kişisi": String(r[16] ?? "").trim(),
+        "İrtibat Ünvanı": String(r[17] ?? "").trim(),
+        "İrtibat Tel": String(r[18] ?? "").trim(),
+        "İrtibat Mail": String(r[19] ?? "").trim(),
+        "Türkçe Kapsam": String(r[20] ?? "").trim(),
+        "İngilizce Kapsam": String(r[21] ?? "").trim(),
+        "Yapılan İş": String(r[22] ?? "").trim(),
+        "Toplam Çalışan Sayısı": String(r[23] ?? "0").trim(),
+        "Yönetim Çalışan Sayısı": String(r[24] ?? "0").trim(),
+        "Üretim Çalışan Sayısı": String(r[25] ?? "0").trim(),
+        "Aynı İş Çalışan Sayısı": String(r[26] ?? "0").trim(),
+        "Yarı Zamanlı Çalışan Sayısı": String(r[27] ?? "0").trim(),
+        "Taşeron Çalışan Sayısı": String(r[28] ?? "0").trim(),
+        Alan: String(r[29] ?? "").trim(),
+        Departman: String(r[30] ?? "").trim(),
+        Vardiya: String(r[31] ?? "1").trim(),
+        "Firma Logosu": String(r[32] ?? "").trim(),
+        "Kaşe İmza": String(r[33] ?? "").trim(),
+        "Danışman": String(r[34] ?? "").trim(),
+        "Doküman": String(r[35] ?? "").trim(),
+        "Teknik Dosya": String(r[36] ?? "").trim(),
+        "Teknik Dosya Kapsamı": String(r[37] ?? "").trim(),
+        "Firma Sınıfı": String(r[38] ?? "").trim(),
+        "Firma Not": String(r[39] ?? "").trim(),
+        EA: String(r[40] ?? "").trim(),
+        NACE: String(r[41] ?? "").trim(),
+        "Medikal Sektör": String(r[42] ?? "").trim(),
+        "Gıda Sektörü": String(r[43] ?? "").trim(),
+      };
+    };
     const hasUsableAuditDates = (audits) => Array.isArray(audits) && audits.some((audit) =>
       audit && typeof audit === "object" && String(audit.a1Basla || audit.a1Bitis || audit.a2Basla || audit.a2Bitis || "").trim()
     );
@@ -329,6 +378,7 @@ export default {
         "Cert Link": String(r[23] ?? "").trim(),
       };
     };
+    };
     const normalizeCertificateSource = (source) => Array.isArray(source) ? mapLegacyCertificateRow(source) : source;
     const createCanonicalCertificate = (source, options = {}) => {
       const normalizedSource = normalizeCertificateSource(source);
@@ -359,78 +409,34 @@ export default {
       const logo = pick(["logo", "Logo"]);
       const kod = pick(["kod", "Kod", "NACE", "nace"]);
 
-      return {
-        ...(input || {}),
+      const canonical = {
+        // ...(input || {}), // [DÜZELTME] Veri tekrarını önlemek için ham input spread'i kaldırıldı
         ...(id ? { ID: id, id, certId: id } : {}),
-        "Firma Adı": nick,
-        Nickname: nick,
-        nick,
-        isim: nick,
-        "Firma No": firmaNo,
-        firmaNo,
-        firmano: firmaNo,
-        Standart: standart,
-        standart,
-        "Denetim Tipi": denetim,
-        denetim,
-        denetimTipi: denetim,
-        "Sertifika No": sno,
-        sno,
-        sNo: sno,
-        "Sertifika Tarihi": gst,
-        gst,
-        sTarihi: gst,
-        "Gözetim Tarihi": goz,
-        "Sertifika Gözetim Tarihi": goz,
-        goz,
-        sGozetimT: goz,
-        "Tescil Tarihi": stt,
-        "Sertifika Tescil Tarihi": stt,
-        "Son Tetkik Tarihi": stt,
-        stt,
-        sTT: stt,
-        "Sertifika Geçerlilik Tarihi": sgt,
-        sgt,
-        sGT: sgt,
-        Kapsam: kapsam,
-        kapsam,
-        Scope: scope,
-        scope,
-        Akreditasyon: akreditasyon,
-        akreditasyon,
-        akrn: akreditasyon,
-        Akredite: akredite,
-        akredite,
-        "Danışman": dan,
-        Danisman: dan,
-        dan,
-        danisman: dan,
-        "Other Standard": other,
-        Other: other,
-        other,
-        Durum: durum,
-        durum,
-        Not: not,
-        not,
-        "Gözetim Conf.": gozetimConf,
-        gozetimConfirmed: gozetimConf,
-        gozetimConf,
-        gozetim: gozetimConf,
-        "Calendar ID": calendar,
-        calendar,
-        eventId: calendar,
-        "QR Code": qr,
-        qr,
-        "Cert Link": certLink,
-        certLink,
-        certiLink: certLink,
-        Logo: logo,
-        logo,
-        Kod: kod,
-        kod,
-        NACE: kod,
-        nace: kod,
+        "Firma Adı": nick, Nickname: nick, nick, isim: nick,
+        "Firma No": firmaNo, firmaNo, firmano: firmaNo,
+        Standart: standart, standart,
+        "Denetim Tipi": denetim, denetim, denetimTipi: denetim,
+        "Sertifika No": sno, sno, sNo: sno,
+        "Sertifika Tarihi": gst, gst, sTarihi: gst,
+        "Gözetim Tarihi": goz, "Sertifika Gözetim Tarihi": goz, goz, sGozetimT: goz,
+        "Tescil Tarihi": stt, "Sertifika Tescil Tarihi": stt, "Son Tetkik Tarihi": stt, stt, sTT: stt,
+        "Sertifika Geçerlilik Tarihi": sgt, sgt, sGT: sgt,
+        Kapsam: kapsam, kapsam,
+        Scope: scope, scope,
+        Akreditasyon: akreditasyon, akreditasyon, akrn: akreditasyon,
+        Akredite: akredite, akredite,
+        "Danışman": dan, Danisman: dan, dan, danisman: dan,
+        "Other Standard": other, Other: other, other,
+        Durum: durum, durum,
+        Not: not, not,
+        "Gözetim Conf.": gozetimConf, gozetimConfirmed: gozetimConf, gozetimConf, gozetim: gozetimConf,
+        "Calendar ID": calendar, calendar, eventId: calendar,
+        "QR Code": qr, qr,
+        "Cert Link": certLink, certLink, certiLink: certLink,
+        Logo: logo, logo,
+        Kod: kod, kod, NACE: kod, nace: kod,
       };
+      return canonical;
     };
     const stripMeta = (value) => {
       if (!value || typeof value !== "object" || Array.isArray(value)) return value;
@@ -442,8 +448,10 @@ export default {
     const pickRowValue = (record, aliases, fallback = "") => pickObjectValue(record, aliases, fallback);
     const pickCompanyValue = (record, aliases, fallback = "") => pickObjectValue(record, aliases, fallback);
     const getCompanyId = (record) => pickCompanyValue(record, ["Firma No", "FirmaNo", "firmaNo", "id", "ID"]);
+    const normalizeCompanySource = (source) => Array.isArray(source) ? mapLegacyCompanyRow(source) : source;
     const createCanonicalCompany = (source, options = {}) => {
-      const input = source && typeof source === "object" ? source : {};
+      const normalizedSource = normalizeCompanySource(source);
+      const input = normalizedSource && typeof normalizedSource === "object" ? normalizedSource : {};
       const pick = getPicker(input);
       const id = String(options.id ?? getCompanyId(input) ?? "").trim();
       const nick = pick(["Firma Adı", "FirmaAdi", "nickname", "nick", "Nick"]);
@@ -490,7 +498,7 @@ export default {
       const gida = pick(["Gıda Sektörü", "Gida Sektoru", "gida"]);
 
       const canonical = {
-        ...(input || {}),
+        // ...(input || {}), // [DÜZELTME] Veri tekrarını önlemek için ham input spread'i kaldırıldı
         ...(id ? { "Firma No": id, FirmaNo: id, firmaNo: id, id, ID: id } : {}),
         "Firma Adı": nick, FirmaAdi: nick, nickname: nick, Nick: nick, nick,
         Unvan: unvan, unvan,
@@ -1567,13 +1575,29 @@ export default {
               const proformas = Array.isArray(d.proformas) ? d.proformas : [];
               const consultants = Array.isArray(d.consultants) ? d.consultants : [];
               const standards = Array.isArray(d.standards) ? d.standards : [];
-              const canonicalCompanies = companies.map((company) => createCanonicalCompany(company)).filter((company) => getCompanyId(company));
-              const canonicalCertificates = [
-                ...certificates,
-                ...certificateRows,
-              ]
-                .map((certificate) => createCanonicalCertificate(certificate))
-                .filter((certificate) => getCertificateId(certificate));
+              const mappedCompanies = companies.map(c => Array.isArray(c) ? mapLegacyCompanyRow(c) : c);
+              const mappedCertificates = [
+                ...(certificates || []),
+                ...(certificateRows || [])
+              ].map(c => Array.isArray(c) ? mapLegacyCertificateRow(c) : c);
+
+              const canonicalCompanies = mappedCompanies.map((company) => createCanonicalCompany(company)).filter((company) => getCompanyId(company));
+              const canonicalCertificates = mappedCertificates.map(c => createCanonicalCertificate(c)).filter((certificate) => getCertificateId(certificate));
+              
+              // [GÜVENLİK BARİYERİ] Eğer gelen veri sayısı mevcut veriye göre çok düşükse (örn: < %20), 
+              // bu muhtemelen bir hata göstergesidir. İşlemi durdurup sormak gerekir.
+              const currentSearchIndexRaw = await env.DB.get(indexKeys.companySearch);
+              const currentSearchIndex = currentSearchIndexRaw ? JSON.parse(currentSearchIndexRaw) : {};
+              const currentCount = Object.keys(currentSearchIndex).length;
+              
+              if (currentCount > 50 && canonicalCompanies.length < (currentCount * 0.2)) {
+                return new Response(JSON.stringify({ 
+                  success: false, 
+                  error: "MASS_DELETION_PROTECTION", 
+                  message: `Kritik veri kaybı tespiti! Mevcut: ${currentCount}, Gelen: ${canonicalCompanies.length}. İşlem iptal edildi.` 
+                }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              }
+
               const certById = buildCertificatesById(canonicalCertificates);
               const dedupedCertificates = Object.values(certById);
               const certsByFirmaId = buildCertificatesByFirmaId(dedupedCertificates);
