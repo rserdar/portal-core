@@ -340,7 +340,7 @@ const quickActions = [
     const consultantCounts = new Map<string, number>();
 
     certificates.forEach((certificate) => {
-      const consultant = pickValue(certificate, ['Danışman', 'Danisman', 'dan'], 'Atanmamış');
+      const consultant = pickValue(certificate, ['danisman', 'Danışman', 'Danisman', 'dan'], 'Atanmamış');
       const normalized = consultant || 'Atanmamış';
       consultantCounts.set(normalized, (consultantCounts.get(normalized) || 0) + 1);
     });
@@ -579,7 +579,8 @@ const quickActions = [
 
   $companies.subscribe(val => {
     if (statCompanies) countUp(statCompanies, val.length);
-    renderActivity(val as any[]);
+    const firms = val as any[];
+    renderActivity(firms);
   });
 
   $certificates.subscribe(val => {
@@ -591,14 +592,23 @@ const quickActions = [
       today.setHours(0, 0, 0, 0);
 
       const activeCount = val.filter(c => {
-        const gst = parseTrDate(pickValue(c, ['gst', 'GST', 'Sertifika Tarihi', 'Belge Tarihi', 'sTarihi']));
-        const goz = parseTrDate(pickValue(c, ['goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
-        const gozetimConf = pickValue(c, ['Gözetim Conf.', 'Gözetim', 'gozetimConfirmed'], 'FALSE').toUpperCase();
+        const durum = pickValue(c, ['durum', 'Durum', 'Status']).toUpperCase();
+        if (durum === 'AKTİF') return true;
+        if (durum && durum !== 'AKTİF') return false;
 
-        if (!gst || !goz) return false;
-        if (gozetimConf !== 'FALSE') return false;
+        // Fallback: Check expiry date if available
+        const sGT = parseTrDate(pickValue(c, ['gecerlilikTarihi', 'sGT', 'SGT', 'Sertifika Geçerlilik Tarihi']));
+        if (sGT && today <= sGT) return true;
 
-        return today >= gst && today <= goz;
+        // Last Fallback: Surveillance date check (legacy)
+        const gst = parseTrDate(pickValue(c, ['sertifikaTarihi', 'gst', 'GST', 'Sertifika Tarihi', 'Belge Tarihi', 'sTarihi']));
+        const goz = parseTrDate(pickValue(c, ['gozetimTarihi', 'goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
+        const gozetimConf = String(pickValue(c, ['gozetimConfirmed', 'Gözetim Conf.', 'gozetim'], 'FALSE')).toUpperCase();
+
+        if (gst && goz && gozetimConf === 'FALSE') {
+          return today >= gst && today <= goz;
+        }
+        return false;
       }).length;
 
       countUp(statCertificates, activeCount);
@@ -609,8 +619,8 @@ const quickActions = [
       const currentYear = now.getFullYear();
 
       const pendingCount = val.filter(c => {
-        const goz = parseTrDate(pickValue(c, ['goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
-        const gozetimConf = pickValue(c, ['Gözetim Conf.', 'Gözetim', 'gozetimConfirmed'], 'FALSE').toUpperCase();
+        const goz = parseTrDate(pickValue(c, ['gozetimTarihi', 'goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
+        const gozetimConf = pickValue(c, ['gozetimConfirmed', 'Gözetim Conf.', 'Gözetim'], 'FALSE').toUpperCase();
 
         if (!goz) return false;
         if (gozetimConf !== 'FALSE') return false;

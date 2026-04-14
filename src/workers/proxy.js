@@ -567,6 +567,8 @@ export default {
         gozetimTarihi: String(pickObjectValue(canonical, ["Gözetim Tarihi", "goz", "sGozetimT", "Sertifika Gözetim Tarihi"], "")),
         gozetimConfirmed: String(pickObjectValue(canonical, ["Gözetim Conf.", "gozetimConfirmed", "gozetimConf", "gozetim"], "")),
         danisman: String(pickObjectValue(canonical, ["Danışman", "Danisman", "dan", "danisman"], "")),
+        durum: String(pickObjectValue(canonical, ["Durum", "durum", "Status"], "")),
+        gecerlilikTarihi: String(pickObjectValue(canonical, ["Sertifika Geçerlilik Tarihi", "sGT", "SGT", "gecerlilikTarihi"], "")),
       };
     };
     const createCanonicalTestRow = (source, options = {}) => {

@@ -350,15 +350,24 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
   }
 
   function isActiveCertificate(cert, today) {
-    const gst = parseTrDate(pickValue(cert, ['gst', 'GST', 'Sertifika Tarihi', 'Belge Tarihi', 'sTarihi']));
-    const goz = parseTrDate(pickValue(cert, ['goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
-    const gozetimConf = pickValue(cert, ['Gözetim Conf.', 'Gözetim', 'gozetimConfirmed'], 'FALSE').toUpperCase();
+    const durum = pickValue(cert, ['durum', 'Durum', 'Status']).toUpperCase();
+    if (durum === 'AKTİF') return true;
+    if (durum && durum !== 'AKTİF') return false;
+
+    // Fallback: Expiry
+    const sGT = parseTrDate(pickValue(cert, ['gecerlilikTarihi', 'sGT', 'SGT', 'Sertifika Geçerlilik Tarihi']));
+    if (sGT && today <= sGT) return true;
+
+    // Legacy Fallback
+    const gst = parseTrDate(pickValue(cert, ['sertifikaTarihi', 'gst', 'GST', 'Sertifika Tarihi', 'Belge Tarihi', 'sTarihi']));
+    const goz = parseTrDate(pickValue(cert, ['gozetimTarihi', 'goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
+    const gozetimConf = String(pickValue(cert, ['gozetimConfirmed', 'Gözetim Conf.', 'Gözetim'], 'FALSE')).toUpperCase();
     return Boolean(gst && goz && gozetimConf === 'FALSE' && today >= gst && today <= goz);
   }
 
   function isPendingThisMonth(cert, month, year) {
-    const goz = parseTrDate(pickValue(cert, ['goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
-    const gozetimConf = pickValue(cert, ['Gözetim Conf.', 'Gözetim', 'gozetimConfirmed'], 'FALSE').toUpperCase();
+    const goz = parseTrDate(pickValue(cert, ['gozetimTarihi', 'goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
+    const gozetimConf = String(pickValue(cert, ['gozetimConfirmed', 'Gözetim Conf.', 'Gözetim'], 'FALSE')).toUpperCase();
     return Boolean(goz && gozetimConf === 'FALSE' && goz.getMonth() === month && goz.getFullYear() === year);
   }
 
@@ -536,7 +545,7 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
       entry.pendingThisMonth = cityCerts.filter((cert) => isPendingThisMonth(cert, currentMonth, currentYear)).length;
       entry.consultants = [...new Set(
         cityCerts
-          .map((cert) => pickValue(cert, ['Danışman', 'Danisman', 'dan', 'danisman']))
+          .map((cert) => pickValue(cert, ['danisman', 'Danışman', 'Danisman', 'dan', 'danisman']))
           .filter(Boolean)
       )];
     });

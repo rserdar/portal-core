@@ -146,7 +146,18 @@ import {
           </div>
           <h3 class="text-sm font-black uppercase tracking-widest text-main">İletişim</h3>
         </div>
-        <div class="space-y-3">
+
+        <!-- Skeleton -->
+        <div id="contact-skeleton" class="animate-pulse space-y-4">
+          {[1,2,3,4,5,6].map(() => (
+            <div class="flex items-center gap-3">
+              <div class="w-16 h-2.5 bg-surface-hover rounded shrink-0"></div>
+              <div class="flex-1 h-3 bg-surface-hover rounded"></div>
+            </div>
+          ))}
+        </div>
+
+        <div id="contact-content" class="space-y-3 hidden">
           <div class="flex items-start gap-3" id="info-telefon-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-telefon" title="Kopyala">
               <Phone size={12} class="shrink-0" />
@@ -200,7 +211,18 @@ import {
           </div>
           <h3 class="text-sm font-black uppercase tracking-widest text-main">Yetkililer & İrtibat</h3>
         </div>
-        <div class="space-y-3">
+
+        <!-- Skeleton -->
+        <div id="people-skeleton" class="animate-pulse space-y-4">
+          {[1,2,3,4,5,6,7].map(() => (
+            <div class="flex items-center gap-3">
+              <div class="w-16 h-2.5 bg-surface-hover rounded shrink-0"></div>
+              <div class="flex-1 h-3 bg-surface-hover rounded"></div>
+            </div>
+          ))}
+        </div>
+
+        <div id="people-content" class="space-y-3 hidden">
           <div class="flex items-start gap-3" id="info-kyt-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-kyt" title="Kopyala">
               <BadgeCheck size={12} class="shrink-0" />
@@ -261,7 +283,18 @@ import {
           </div>
           <h3 class="text-sm font-black uppercase tracking-widest text-main">Operasyon & Profil</h3>
         </div>
-        <div class="space-y-3">
+
+        <!-- Skeleton -->
+        <div id="ops-skeleton" class="animate-pulse space-y-4">
+          {[1,2,3,4,5,6,7,8].map(() => (
+            <div class="flex items-center gap-3">
+              <div class="w-16 h-2.5 bg-surface-hover rounded shrink-0"></div>
+              <div class="flex-1 h-3 bg-surface-hover rounded"></div>
+            </div>
+          ))}
+        </div>
+
+        <div id="ops-content" class="space-y-3 hidden">
           <div class="flex items-start gap-3" id="info-sector-block">
             <button class="copy-btn flex items-center gap-2 text-muted hover:text-primary transition-colors shrink-0 mt-0.5" data-copy="info-sector" title="Kopyala">
               <Briefcase size={12} class="shrink-0" />
@@ -353,13 +386,16 @@ import {
         </a>
       </div>
 
-      <div id="cert-skeleton" class="p-7 animate-pulse space-y-3">
-        {[1,2,3].map(() => (
-          <div class="flex gap-4">
-            <div class="h-3 bg-surface-hover rounded flex-1"></div>
-            <div class="h-3 bg-surface-hover rounded w-20"></div>
-            <div class="h-3 bg-surface-hover rounded w-24"></div>
-            <div class="h-3 bg-surface-hover rounded w-16"></div>
+      <div id="cert-skeleton" class="p-4 sm:p-7 animate-pulse space-y-4">
+        {[1, 2, 3, 4, 5].map(() => (
+          <div class="flex items-center gap-4 py-2 border-b border-border-main/20">
+            <div class="h-8 w-8 rounded-lg bg-surface-hover shrink-0"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-3 bg-surface-hover rounded w-3/4"></div>
+              <div class="h-2 bg-surface-hover rounded w-1/2 opacity-50"></div>
+            </div>
+            <div class="h-3 bg-surface-hover rounded w-20 hidden sm:block"></div>
+            <div class="h-6 w-16 rounded-md bg-surface-hover shrink-0"></div>
           </div>
         ))}
       </div>
@@ -552,13 +588,16 @@ import {
         </a>
       </div>
 
-      <div id="test-skeleton" class="p-7 animate-pulse space-y-3">
-        {[1,2,3].map(() => (
-          <div class="flex gap-4">
-            <div class="h-3 bg-surface-hover rounded w-24"></div>
-            <div class="h-3 bg-surface-hover rounded flex-1"></div>
-            <div class="h-3 bg-surface-hover rounded w-20"></div>
-            <div class="h-3 bg-surface-hover rounded w-16"></div>
+      <div id="test-skeleton" class="p-4 sm:p-7 animate-pulse space-y-4">
+        {[1, 2, 3, 4].map(() => (
+          <div class="flex items-center gap-4 py-2 border-b border-border-main/20">
+            <div class="h-8 w-8 rounded-lg bg-surface-hover shrink-0"></div>
+            <div class="flex-1 space-y-2">
+              <div class="h-3 bg-surface-hover rounded w-2/3"></div>
+              <div class="h-2 bg-surface-hover rounded w-1/3 opacity-50"></div>
+            </div>
+            <div class="h-3 bg-surface-hover rounded w-24 hidden md:block"></div>
+            <div class="h-8 w-8 rounded-lg bg-surface-hover shrink-0"></div>
           </div>
         ))}
       </div>
@@ -623,8 +662,8 @@ import {
 </DashboardLayout>
 
 <script>
+  import { $companies, $certificates } from '../../lib/store';
   import { api } from '../../lib/api';
-  import { $certificates } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
   import { consumeFlashToast, showToast } from '../../lib/toast';
 
@@ -1540,6 +1579,12 @@ import {
     // Show hero
     document.getElementById('hero-skeleton')?.classList.add('hidden');
     document.getElementById('hero-content')?.classList.remove('hidden');
+
+    // Show card contents & hide skeletons
+    ['contact', 'people', 'ops'].forEach(card => {
+      document.getElementById(`${card}-skeleton`)?.classList.add('hidden');
+      document.getElementById(`${card}-content`)?.classList.remove('hidden');
+    });
   }
 
   // ─── Load Certificates ────────────────────────────────────────────────────────
@@ -1622,23 +1667,23 @@ import {
         certLink     = String(c[23] || '').trim();
       } else {
         id           = getCertificateRecordId(c);
-        standart     = g(c, 'Standart', 'standart');
+        standart     = g(c, 'standart', 'Standart');
         otherStandart= g(c, 'Other Standard', 'Other', 'other', 'Diğer', 'diger', 'Diger', 'diğer', 'Diğer Standart', 'digerStandart');
-        sertNo       = g(c, 'Sertifika No', 'sertNo', 'SertifikaNo');
-        belgeTarihi  = g(c, 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi');
-        gozT         = g(c, 'Gözetim Tarihi', 'Sertifika Gözetim Tarihi', 'goz', 'GOZ', 'sGozetimT', 'GözetimTarihi');
-        akreditasyon = g(c, 'Akreditasyon', 'akrn', 'akreditasyon');
-        akredite     = g(c, 'Akredite', 'akredite');
-        danisman     = g(c, 'Danışman', 'Danisman', 'dan', 'danisman');
-        durum        = g(c, 'Durum', 'durum');
-        note         = g(c, 'Not', 'not');
-        denetim      = g(c, 'Denetim Tipi', 'denetim');
-        kapsam       = g(c, 'Kapsam', 'kapsam');
-        scope        = g(c, 'Scope', 'scope');
-        eventId      = g(c, 'Calendar ID', 'eventId');
-        qr           = g(c, 'QR Code', 'qr');
-        certLink     = g(c, 'Cert Link', 'certLink');
-        gozetimConf  = isTruthyFlag(g(c, 'Gözetim Conf.', 'gozetimConfirmed', 'gozetimConf', 'gozetim'));
+        sertNo       = g(c, 'sertifikaNo', 'Sertifika No', 'sertNo', 'SertifikaNo');
+        belgeTarihi  = g(c, 'sertifikaTarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi');
+        gozT         = g(c, 'gozetimTarihi', 'Gözetim Tarihi', 'Sertifika Gözetim Tarihi', 'goz', 'GOZ', 'sGozetimT', 'GözetimTarihi');
+        akreditasyon = g(c, 'akreditasyon', 'Akreditasyon', 'akrn');
+        akredite     = g(c, 'akredite', 'Akredite');
+        danisman     = g(c, 'danisman', 'Danışman', 'Danisman', 'dan');
+        durum        = g(c, 'durum', 'Durum');
+        note         = g(c, 'not', 'Not');
+        denetim      = g(c, 'denetimTipi', 'Denetim Tipi', 'denetim');
+        kapsam       = g(c, 'kapsam', 'Kapsam');
+        scope        = g(c, 'scope', 'Scope');
+        eventId      = g(c, 'eventId', 'Calendar ID');
+        qr           = g(c, 'qr', 'QR Code');
+        certLink     = g(c, 'certLink', 'Cert Link');
+        gozetimConf  = isTruthyFlag(g(c, 'gozetimConfirmed', 'Gözetim Conf.', 'gozetimConf', 'gozetim'));
       }
 
       const sLow = standart.toLowerCase();
@@ -1964,6 +2009,21 @@ import {
   }
 
   // ─── Certificates from Store ──────────────────────────────────────────────────
+  
+  async function loadCertificates() {
+    // Show certificate skeleton
+    document.getElementById('cert-skeleton')?.classList.remove('hidden');
+    document.getElementById('cert-list-wrapper')?.classList.add('hidden');
+    document.getElementById('cert-empty')?.classList.add('hidden');
+
+    try {
+      const res = await api.call('getCertificatesByFirmaId', { firmaId });
+      renderCerts(res?.data || []);
+    } catch (e) {
+      console.error('[Certificates] Load failed:', e);
+      renderCerts([]);
+    }
+  }
 
   function loadCertsFromStore(certs: readonly any[]) {
     const filtered = (certs as any[]).filter(c => {
@@ -1984,22 +2044,9 @@ import {
     });
 
     SyncManager.init().then(() => {
-      // Once store is ready, filter certs
-      const certs = $certificates.get();
-      if (certs.length > 0) {
-        loadCertsFromStore(certs);
-      } else {
-        // Fallback: fetch from API
-        api.call('getCertificatesByFirmaId', { firmaId }).then(res => {
-          renderCerts(res?.data || []);
-        });
-      }
+      // Background sync is handled by manager, we don't need to block here
     });
 
-    $certificates.subscribe(certs => {
-      if (certs.length > 0) loadCertsFromStore(certs);
-    });
-
-    Promise.all([loadCompany(), loadTests()]);
+    Promise.all([loadCompany(), loadTests(), loadCertificates()]);
   }
 </script>
