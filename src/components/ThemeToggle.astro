@@ -41,7 +41,7 @@ const borderClass = direction === 'up' ? "border-b-[3px] rounded-t-xl" : "border
   </div>
 </div>
 
-<script lang="ts">
+<script>
   function applyTheme(theme: string) {
     const effectiveTheme = theme || 'dark';
     const isDark = effectiveTheme === 'dark' || (effectiveTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
