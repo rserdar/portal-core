@@ -288,18 +288,30 @@ export const api = {
   },
 
   // 🏁 Sistem Yönetimi
-  async bulkSync() { return this.call("bulkSync"); },
+  async bulkSync(scope?: string[]) { 
+    return this.call("bulkSync", scope ? { scope } : {}); 
+  },
   async bulkSyncMaster() { return this.call("bulkSyncMaster"); },
-  async pullFromSheetsToKv() {
-    const core = await this.bulkSync();
+  async pullFromSheetsToKv(scope?: string[]) {
+    const core = await this.bulkSync(scope);
     if (!core.success) return core;
-    const master = await this.bulkSyncMaster();
-    if (!master.success) return master;
-    return { success: true, data: { core: core.data, master: master.data }, error: null };
+    // Eğer master kapsamda varsa veya scope belirtilmemişse master da çekilmeli
+    if (!scope || scope.includes("master")) {
+      const master = await this.bulkSyncMaster();
+      if (!master.success) return master;
+      return { success: true, data: { core: core.data, master: master.data }, error: null };
+    }
+    return core;
   },
   async exportBackup() { return this.call("exportBackup"); },
+  async exportKvData(scope: string[]) {
+    return this.call("exportKvData", { scope });
+  },
   async importBackup(payload: any, options: any = { replace: true }) {
     return this.call("importBackup", { payload, options });
+  },
+  async importKvData(exportData: any, scope: string[]) {
+    return this.call("importKvData", { exportData, scope });
   },
   async importBackupPreflight(payload: any) {
     return this.call("importBackup", { payload, options: { replace: true } });

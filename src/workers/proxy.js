@@ -74,7 +74,10 @@ export default {
       proformasByFirmaId: "cache:index:proformasByFirmaId",
       proformasById: "cache:index:proformasById",
       proformaNextId: "cache:meta:proformaNextId",
-      standardsById: "cache:index:standardsById"
+      standardsById: "cache:index:standardsById",
+      // [YEDEKLEME İÇİN] Tüm verileri içeren "Full" anahtarlar
+      fullCompanies: "cache:full:companies",
+      fullCertificates: "cache:full:certificates"
     };
     const CACHE_TTL = 86400 * 7;
 
@@ -1544,6 +1547,9 @@ export default {
           }
 
           try {
+            const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
+            const hasScope = (s) => scope.includes(s);
+
             const syncRes = await fetch(env.GAS_API_URL, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1564,49 +1570,225 @@ export default {
             
             if (fullData.success) {
               const d = fullData.data;
+              const stats = {};
+              const writes = [];
+              const purges = [];
 
-              const companies = Array.isArray(d.companies) ? d.companies : [];
-              const certificates = Array.isArray(d.certificates) ? d.certificates : [];
-              const certificateRows = Array.isArray(d.certificateRows) ? d.certificateRows : [];
-              const tests = Array.isArray(d.tests) ? d.tests : [];
-              const audits = Array.isArray(d.audits) ? d.audits : [];
-              const auditObjects = Array.isArray(d.auditObjects) ? d.auditObjects : [];
-              const proformas = Array.isArray(d.proformas) ? d.proformas : [];
-              const consultants = Array.isArray(d.consultants) ? d.consultants : [];
-              const standards = Array.isArray(d.standards) ? d.standards : [];
-              const mappedCompanies = companies.map(c => Array.isArray(c) ? mapLegacyCompanyRow(c) : c);
-              const mappedCertificates = [
-                ...(certificates || []),
-                ...(certificateRows || [])
-              ].map(c => Array.isArray(c) ? mapLegacyCertificateRow(c) : c);
+              // --- 🏗️ COMPANIES ---
+              if (hasScope("companies")) {
+                const companies = Array.isArray(d.companies) ? d.companies : [];
+                const mappedCompanies = companies.map(c => Array.isArray(c) ? mapLegacyCompanyRow(c) : c);
+                const canonicalCompanies = mappedCompanies.map((company) => createCanonicalCompany(company)).filter((company) => getCompanyId(company));
+                
+                // Güvenlik Bariyeri (Sadece şirketler güncelleniyorsa)
+                const currentSearchRaw = await env.DB.get(indexKeys.companySearch);
+                const currentSearch = currentSearchRaw ? JSON.parse(currentSearchRaw) : {};
+                const currentCount = Object.keys(currentSearch).length;
+                if (currentCount > 50 && canonicalCompanies.length < (currentCount * 0.2)) {
+                  return jsonResponse({ success: false, error: "MASS_DELETION_PROTECTION", message: "Kritik firma veri kaybı tespiti! İşlem iptal edildi." }, 400);
+                }
 
-              const canonicalCompanies = mappedCompanies.map((company) => createCanonicalCompany(company)).filter((company) => getCompanyId(company));
-              const canonicalCertificates = mappedCertificates.map(c => createCanonicalCertificate(c)).filter((certificate) => getCertificateId(certificate));
-              
-              // [GÜVENLİK BARİYERİ] Eğer gelen veri sayısı mevcut veriye göre çok düşükse (örn: < %20), 
-              // bu muhtemelen bir hata göstergesidir. İşlemi durdurup sormak gerekir.
-              const currentSearchIndexRaw = await env.DB.get(indexKeys.companySearch);
-              const currentSearchIndex = currentSearchIndexRaw ? JSON.parse(currentSearchIndexRaw) : {};
-              const currentCount = Object.keys(currentSearchIndex).length;
-              
-              if (currentCount > 50 && canonicalCompanies.length < (currentCount * 0.2)) {
-                return new Response(JSON.stringify({ 
-                  success: false, 
-                  error: "MASS_DELETION_PROTECTION", 
-                  message: `Kritik veri kaybı tespiti! Mevcut: ${currentCount}, Gelen: ${canonicalCompanies.length}. İşlem iptal edildi.` 
-                }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                const companySearchIndex = {};
+                for (const company of canonicalCompanies) {
+                  const cid = getCompanyId(company);
+                  if (cid) companySearchIndex[cid] = createSearchEntry(company);
+                }
+                const companyNextId = canonicalCompanies.reduce((highest, company) => {
+                  const parsed = parseInt(getCompanyId(company), 10);
+                  return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
+                }, 1);
+
+                writes.push(env.DB.put(indexKeys.companySearch, JSON.stringify(companySearchIndex), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(`cache:getCompanies:{}`, JSON.stringify(Object.values(companySearchIndex)), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(canonicalCompanies), { expirationTtl: CACHE_TTL }));
+
+                canonicalCompanies.forEach(company => {
+                  const cid = getCompanyId(company);
+                  if (cid) writes.push(env.DB.put(`cache:company:${cid}`, JSON.stringify(company), { expirationTtl: CACHE_TTL }));
+                });
+
+                const companyEntityKeys = new Set(canonicalCompanies.map(c => `cache:company:${getCompanyId(c)}`));
+                purges.push(purgeCachePrefix("cache:getCompanyById:"));
+                purges.push(purgeStaleKvKeys("cache:company:", companyEntityKeys));
+                stats.companies = canonicalCompanies.length;
               }
 
-              const certById = buildCertificatesById(canonicalCertificates);
-              const dedupedCertificates = Object.values(certById);
-              const certsByFirmaId = buildCertificatesByFirmaId(dedupedCertificates);
-              const certificateSummaryIndex = {};
-              for (const certificate of dedupedCertificates) {
-                const certId = getCertificateId(certificate);
-                if (certId) certificateSummaryIndex[String(certId)] = createCertificateSummary(certificate);
+              // --- 🎖️ CERTIFICATES ---
+              if (hasScope("certificates")) {
+                const certificates = Array.isArray(d.certificates) ? d.certificates : [];
+                const certificateRows = Array.isArray(d.certificateRows) ? d.certificateRows : [];
+                const mappedCertificates = [...certificates, ...certificateRows].map(c => Array.isArray(c) ? mapLegacyCertificateRow(c) : c);
+                const canonicalCertificates = mappedCertificates.map(c => createCanonicalCertificate(c)).filter(c => getCertificateId(c));
+                
+                const certById = buildCertificatesById(canonicalCertificates);
+                const dedupedCertificates = Object.values(certById);
+                const certsByFirmaId = buildCertificatesByFirmaId(dedupedCertificates);
+                const certificateSummaryIndex = {};
+                for (const cert of dedupedCertificates) {
+                  const certId = getCertificateId(cert);
+                  if (certId) certificateSummaryIndex[String(certId)] = createCertificateSummary(cert);
+                }
+
+                const certNextId = dedupedCertificates.reduce((highest, cert) => {
+                  const parsed = parseInt(getCertificateId(cert), 10);
+                  return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
+                }, 1);
+                const sorted = [...dedupedCertificates].sort((a,b) => (parseInt(getCertificateId(b),10)||0) - (parseInt(getCertificateId(a),10)||0));
+                const recentIds = sorted.slice(0, 50).map(c => getCertificateId(c));
+                const recentObjects = sorted.slice(0, 25);
+
+                writes.push(env.DB.put(indexKeys.certificateSummary, JSON.stringify(certificateSummaryIndex), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(indexKeys.certificateNextId, String(certNextId), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(`cache:getCertificateSummaries:{}`, JSON.stringify(sortCertificatesByIdDesc(Object.values(certificateSummaryIndex))), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(`cache:getCertificates:{}`, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(`cache:getRecentCertificates:${stableStringify({ limit: 25 })}`, JSON.stringify(recentObjects), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(indexKeys.fullCertificates, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }));
+
+                dedupedCertificates.forEach(cert => {
+                  const id = getCertificateId(cert);
+                  if (id) writes.push(env.DB.put(`cache:getCertificateById:${stableStringify({ id: String(id) })}`, JSON.stringify(cert), { expirationTtl: CACHE_TTL }));
+                });
+                Object.entries(certsByFirmaId).forEach(([fId, list]) => {
+                  writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
+                });
+
+                const certEntityKeys = new Set(dedupedCertificates.map(c => `cache:getCertificateById:${stableStringify({ id: String(getCertificateId(c)) })}`));
+                const certFirmaKeys = new Set(Object.keys(certsByFirmaId).map(fId => `cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`));
+                purges.push(purgeCachePrefix("cache:getRecentCertificates:"));
+                purges.push(purgeStaleKvKeys("cache:getCertificateById:", certEntityKeys));
+                purges.push(purgeStaleKvKeys("cache:getCertificatesByFirmaId:", certFirmaKeys));
+                stats.certs = dedupedCertificates.length;
               }
 
-              // Granüler search index: { id: {id, nick, unvan, city} } — ~160KB, getCompanies bunu döner
+              // --- 🧪 TESTS & AUDITS & PROFORMAS ---
+              if (hasScope("tests")) {
+                const tests = Array.isArray(d.tests) ? d.tests : [];
+                const testsByFirmaId = {};
+                for (const row of tests) {
+                  if (!Array.isArray(row)) continue;
+                  const fNo = String(row[2] || "");
+                  if (fNo) {
+                    if (!testsByFirmaId[fNo]) testsByFirmaId[fNo] = [];
+                    testsByFirmaId[fNo].push(row);
+                  }
+                }
+                writes.push(env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(testsByFirmaId), { expirationTtl: CACHE_TTL }));
+                stats.tests = tests.length;
+              }
+
+              if (hasScope("audits")) {
+                const audits = Array.isArray(d.audits) ? d.audits : [];
+                const auditObjects = Array.isArray(d.auditObjects) ? d.auditObjects : [];
+                const auditsByFirmaId = {};
+                for (const row of audits) {
+                  if (!Array.isArray(row)) continue;
+                  const fNo = String(row[2] || "");
+                  if (fNo) {
+                    if (!auditsByFirmaId[fNo]) auditsByFirmaId[fNo] = [];
+                    auditsByFirmaId[fNo].push(row);
+                  }
+                }
+                writes.push(env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(auditsByFirmaId), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(`cache:getAudits:{}`, JSON.stringify(auditObjects), { expirationTtl: CACHE_TTL }));
+                stats.audits = audits.length;
+              }
+
+              if (hasScope("proformas")) {
+                const proformas = Array.isArray(d.proformas) ? d.proformas : [];
+                const proformasByFirmaId = {};
+                const proformasById = {};
+                for (const row of proformas) {
+                  if (!Array.isArray(row)) continue;
+                  const pId = String(row[0] || "");
+                  const fNo = String(row[2] || "");
+                  if (pId) proformasById[pId] = row;
+                  if (fNo) {
+                    if (!proformasByFirmaId[fNo]) proformasByFirmaId[fNo] = [];
+                    proformasByFirmaId[fNo].push(row);
+                  }
+                }
+                writes.push(env.DB.put(indexKeys.proformasByFirmaId, JSON.stringify(proformasByFirmaId), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(indexKeys.proformasById, JSON.stringify(proformasById), { expirationTtl: CACHE_TTL }));
+                stats.proformas = proformas.length;
+              }
+
+              if (hasScope("master")) {
+                const standards = Array.isArray(d.standards) ? d.standards : [];
+                const consultants = Array.isArray(d.consultants) ? d.consultants : [];
+                const standardsById = {};
+                for (const std of standards) {
+                  const sId = std?.ID || std?.id;
+                  if (sId) standardsById[String(sId)] = std;
+                }
+                writes.push(env.DB.put(indexKeys.standardsById, JSON.stringify(standardsById), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(`cache:getConsultants:{}`, JSON.stringify(consultants), { expirationTtl: CACHE_TTL }));
+                stats.master_consultants = consultants.length;
+                stats.master_standards = standards.length;
+              }
+
+              // 🚀 WRITE IN BATCHES
+              for (let i = 0; i < writes.length; i += 50) {
+                await Promise.all(writes.slice(i, i + 50));
+              }
+              if (purges.length) ctx.waitUntil(Promise.all(purges));
+
+              return jsonResponse({ success: true, message: "Senkronizasyon başarılı!", stats, scope });
+            } else {
+              return jsonResponse(fullData);
+            }
+          } catch (error) {
+            return jsonResponse({ success: false, error: "Worker -> GAS Bağlantı Hatası: " + error.message });
+          }
+        }
+
+        // 3.2 📦 KV -> JSON YEDEKLE (Export KV Data)
+        if (action === "exportKvData") {
+          try {
+            const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
+            const exportData = {
+              version: "1.0",
+              timestamp: new Date().toISOString(),
+              scope,
+              data: {}
+            };
+
+            const fetchPromises = [];
+            if (scope.includes("companies")) fetchPromises.push(env.DB.get(indexKeys.fullCompanies).then(v => exportData.data.companies = v ? JSON.parse(v) : []));
+            if (scope.includes("certificates")) fetchPromises.push(env.DB.get(indexKeys.fullCertificates).then(v => exportData.data.certificates = v ? JSON.parse(v) : []));
+            if (scope.includes("tests")) fetchPromises.push(env.DB.get(indexKeys.testsByFirmaId).then(v => exportData.data.testsByFirmaId = v ? JSON.parse(v) : {}));
+            if (scope.includes("audits")) fetchPromises.push(env.DB.get(indexKeys.auditsByFirmaId).then(v => exportData.data.auditsByFirmaId = v ? JSON.parse(v) : {}));
+            if (scope.includes("proformas")) {
+              fetchPromises.push(env.DB.get(indexKeys.proformasByFirmaId).then(v => exportData.data.proformasByFirmaId = v ? JSON.parse(v) : {}));
+              fetchPromises.push(env.DB.get(indexKeys.proformasById).then(v => exportData.data.proformasById = v ? JSON.parse(v) : {}));
+            }
+            if (scope.includes("master")) {
+              fetchPromises.push(env.DB.get(indexKeys.standardsById).then(v => exportData.data.standardsById = v ? JSON.parse(v) : {}));
+              fetchPromises.push(env.DB.get(`cache:getConsultants:{}`).then(v => exportData.data.consultants = v ? JSON.parse(v) : []));
+            }
+
+            await Promise.all(fetchPromises);
+            return jsonResponse({ success: true, exportData });
+          } catch (error) {
+            return jsonResponse({ success: false, error: "KV Export Hatası: " + error.message });
+          }
+        }
+
+        // 3.3 📥 JSON -> KV GERİ YÜKLE (Import KV Data - REPLACE)
+        if (action === "importKvData") {
+          try {
+            const payload = params?.exportData?.data || params?.payload?.data || params?.payload;
+            const scope = Array.isArray(params?.scope) ? params.scope : [];
+            if (!payload || !scope.length) {
+              return jsonResponse({ success: false, error: "Geçersiz yedek verisi veya kapsam." }, 400);
+            }
+
+            const writes = [];
+            const purges = [];
+
+            if (scope.includes("companies") && Array.isArray(payload.companies)) {
+              const canonicalCompanies = payload.companies;
               const companySearchIndex = {};
               for (const company of canonicalCompanies) {
                 const cid = getCompanyId(company);
@@ -1617,154 +1799,68 @@ export default {
                 return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
               }, 1);
 
-              const testsByFirmaId = {};
-              for (const row of tests) {
-                if (!Array.isArray(row)) continue;
-                const firmaNo = row[2];
-                const key = String(firmaNo ?? "");
-                if (!key) continue;
-                if (!testsByFirmaId[key]) testsByFirmaId[key] = [];
-                testsByFirmaId[key].push(row);
-              }
-
-              const auditsByFirmaId = {};
-              for (const row of audits) {
-                if (!Array.isArray(row)) continue;
-                const firmaNo = row[2];
-                const key = String(firmaNo ?? "");
-                if (!key) continue;
-                if (!auditsByFirmaId[key]) auditsByFirmaId[key] = [];
-                auditsByFirmaId[key].push(row);
-              }
-
-              const proformasByFirmaId = {};
-              const proformasById = {};
-              for (const row of proformas) {
-                if (!Array.isArray(row)) continue;
-                const proformaId = row[0];
-                const firmaNo = row[2];
-                const idKey = String(proformaId ?? "");
-                const firmaKey = String(firmaNo ?? "");
-                if (idKey) proformasById[idKey] = row;
-                if (!firmaKey) continue;
-                if (!proformasByFirmaId[firmaKey]) proformasByFirmaId[firmaKey] = [];
-                proformasByFirmaId[firmaKey].push(row);
-              }
-
-              const standardsById = {};
-              for (const standard of standards) {
-                if (!standard || typeof standard !== "object") continue;
-                const standardId = standard["ID"] ?? standard.id ?? standard["Standart ID"] ?? standard["Standart No"];
-                if (standardId === undefined || standardId === null) continue;
-                standardsById[String(standardId)] = standard;
-              }
-
-              // Granüler firma key'leri: her firma kendi 1KB'lık cache:company:{id} key'ine
-              const companyKeyWrites = canonicalCompanies.map((company) => {
-                const cid = getCompanyId(company);
-                return cid
-                  ? env.DB.put(`cache:company:${cid}`, JSON.stringify(company), { expirationTtl: CACHE_TTL })
-                  : Promise.resolve();
+              writes.push(env.DB.put(indexKeys.companySearch, JSON.stringify(companySearchIndex), { expirationTtl: CACHE_TTL }));
+              writes.push(env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }));
+              writes.push(env.DB.put(`cache:getCompanies:{}`, JSON.stringify(Object.values(companySearchIndex)), { expirationTtl: CACHE_TTL }));
+              writes.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(canonicalCompanies), { expirationTtl: CACHE_TTL }));
+              canonicalCompanies.forEach(c => {
+                const cid = getCompanyId(c);
+                if (cid) writes.push(env.DB.put(`cache:company:${cid}`, JSON.stringify(c), { expirationTtl: CACHE_TTL }));
               });
+              purges.push(purgeCachePrefix("cache:getCompanyById:"));
+              purges.push(purgeStaleKvKeys("cache:company:", new Set(canonicalCompanies.map(c => `cache:company:${getCompanyId(c)}`))));
+            }
 
-              // Granüler sertifika key'leri: her sertifika kendi cache:getCertificateById:{id} key'ine
-              const certKeyWrites = dedupedCertificates.map((cert) => {
+            if (scope.includes("certificates") && Array.isArray(payload.certificates)) {
+              const dedupedCertificates = payload.certificates;
+              const certsByFirmaId = buildCertificatesByFirmaId(dedupedCertificates);
+              const certificateSummaryIndex = {};
+              for (const cert of dedupedCertificates) {
                 const certId = getCertificateId(cert);
-                return certId
-                  ? env.DB.put(`cache:getCertificateById:${stableStringify({ id: String(certId) })}`, JSON.stringify(cert), { expirationTtl: CACHE_TTL })
-                  : Promise.resolve();
-              });
-
-              // Granüler per-firma sertifika listeleri: her firma için cache:getCertificatesByFirmaId:{firmaId}
-              const certsByFirmaIdWrites = Object.entries(certsByFirmaId).map(([firmaKey, certs]) =>
-                env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: firmaKey })}`, JSON.stringify(certs), { expirationTtl: CACHE_TTL })
-              );
-
-              // Sertifika sayacı ve recent index
+                if (certId) certificateSummaryIndex[String(certId)] = createCertificateSummary(cert);
+              }
               const certNextId = dedupedCertificates.reduce((highest, cert) => {
                 const parsed = parseInt(getCertificateId(cert), 10);
                 return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
               }, 1);
-              const recentCertsSorted = [...dedupedCertificates].sort((a, b) => {
-                const aId = parseInt(getCertificateId(a), 10);
-                const bId = parseInt(getCertificateId(b), 10);
-                return (isNaN(bId) ? 0 : bId) - (isNaN(aId) ? 0 : aId);
+              const sorted = [...dedupedCertificates].sort((a,b) => (parseInt(getCertificateId(b),10)||0) - (parseInt(getCertificateId(a),10)||0));
+              const recentIds = sorted.slice(0, 50).map(c => getCertificateId(c));
+
+              writes.push(env.DB.put(indexKeys.certificateSummary, JSON.stringify(certificateSummaryIndex), { expirationTtl: CACHE_TTL }));
+              writes.push(env.DB.put(indexKeys.certificateNextId, String(certNextId), { expirationTtl: CACHE_TTL }));
+              writes.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
+              writes.push(env.DB.put(`cache:getCertificates:{}`, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }));
+              writes.push(env.DB.put(indexKeys.fullCertificates, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }));
+              dedupedCertificates.forEach(cert => {
+                const id = getCertificateId(cert);
+                if (id) writes.push(env.DB.put(`cache:getCertificateById:${stableStringify({ id: String(id) })}`, JSON.stringify(cert), { expirationTtl: CACHE_TTL }));
               });
-              const recentCertIds = recentCertsSorted.slice(0, 50).map((c) => getCertificateId(c));
-              const recentCertObjects = recentCertsSorted.slice(0, 25);
-              const companyEntityKeys = new Set(
-                canonicalCompanies
-                  .map((company) => getCompanyId(company))
-                  .filter(Boolean)
-                  .map((id) => `cache:company:${id}`)
-              );
-              const certEntityKeys = new Set(
-                dedupedCertificates
-                  .map((certificate) => getCertificateId(certificate))
-                  .filter(Boolean)
-                  .map((id) => `cache:getCertificateById:${stableStringify({ id: String(id) })}`)
-              );
-              const certFirmaKeys = new Set(
-                Object.keys(certsByFirmaId).map((firmaId) => `cache:getCertificatesByFirmaId:${stableStringify({ firmaId })}`)
-              );
-
-              // Ana metadata + aggregate key'ler (küçük set, tek seferde)
-              await Promise.all([
-                env.DB.put(`cache:getCompanies:{}`, JSON.stringify(Object.values(companySearchIndex)), { expirationTtl: CACHE_TTL }),
-                env.DB.put(indexKeys.companySearch, JSON.stringify(companySearchIndex), { expirationTtl: CACHE_TTL }),
-                env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }),
-                env.DB.put(`cache:getCertificateSummaries:{}`, JSON.stringify(sortCertificatesByIdDesc(Object.values(certificateSummaryIndex))), { expirationTtl: CACHE_TTL }),
-                env.DB.put(indexKeys.certificateSummary, JSON.stringify(certificateSummaryIndex), { expirationTtl: CACHE_TTL }),
-                env.DB.put(`cache:getCertificates:{}`, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }),
-                env.DB.put(indexKeys.certificateNextId, String(certNextId), { expirationTtl: CACHE_TTL }),
-                env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentCertIds), { expirationTtl: CACHE_TTL }),
-                env.DB.put(`cache:getRecentCertificates:${stableStringify({ limit: 25 })}`, JSON.stringify(recentCertObjects), { expirationTtl: CACHE_TTL }),
-                env.DB.put(`cache:getAudits:{}`, JSON.stringify(auditObjects), { expirationTtl: CACHE_TTL }),
-                env.DB.put(`cache:getConsultants:{}`, JSON.stringify(consultants), { expirationTtl: CACHE_TTL }),
-                env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(testsByFirmaId), { expirationTtl: CACHE_TTL }),
-                env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(auditsByFirmaId), { expirationTtl: CACHE_TTL }),
-                env.DB.put(indexKeys.proformasByFirmaId, JSON.stringify(proformasByFirmaId), { expirationTtl: CACHE_TTL }),
-                env.DB.put(indexKeys.proformasById, JSON.stringify(proformasById), { expirationTtl: CACHE_TTL }),
-                env.DB.put(indexKeys.standardsById, JSON.stringify(standardsById), { expirationTtl: CACHE_TTL }),
-                ...companyKeyWrites,
-              ]);
-
-              // Granüler cert key'leri: timeout riskini azaltmak için 500'lük batch'ler halinde
-              for (let i = 0; i < certKeyWrites.length; i += 500) {
-                await Promise.all(certKeyWrites.slice(i, i + 500));
-              }
-              for (let i = 0; i < certsByFirmaIdWrites.length; i += 500) {
-                await Promise.all(certsByFirmaIdWrites.slice(i, i + 500));
-              }
-
-              // Stale per-request cache'leri temizle (granüler entity key'ler zaten taze yazıldı)
-              ctx.waitUntil(Promise.all([
-                purgeCachePrefix("cache:getCompanyById:"),
-                purgeCachePrefix("cache:getRecentCertificates:"), // limit varyantlarını temizle
-                purgeStaleKvKeys("cache:company:", companyEntityKeys),
-                purgeStaleKvKeys("cache:getCertificateById:", certEntityKeys),
-                purgeStaleKvKeys("cache:getCertificatesByFirmaId:", certFirmaKeys),
-              ]));
-
-              return jsonResponse({
-                success: true, 
-                message: "Senkronizasyon başarılı!", 
-                stats: {
-                  companies: canonicalCompanies.length,
-                  certs: dedupedCertificates.length,
-                  certFirmas: certsByFirmaIdWrites.length,
-                  tests: tests.length,
-                  audits: audits.length,
-                  proformas: proformas.length,
-                  consultants: consultants.length,
-                  standards: standards.length
-                }
+              Object.entries(certsByFirmaId).forEach(([fId, list]) => {
+                writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
               });
-            } else {
-              return jsonResponse(fullData);
+              purges.push(purgeCachePrefix("cache:getRecentCertificates:"));
+              purges.push(purgeStaleKvKeys("cache:getCertificateById:", new Set(dedupedCertificates.map(c => `cache:getCertificateById:${stableStringify({ id: String(getCertificateId(c)) })}`))));
             }
+
+            if (scope.includes("tests") && payload.testsByFirmaId) writes.push(env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(payload.testsByFirmaId), { expirationTtl: CACHE_TTL }));
+            if (scope.includes("audits") && payload.auditsByFirmaId) writes.push(env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(payload.auditsByFirmaId), { expirationTtl: CACHE_TTL }));
+            if (scope.includes("proformas")) {
+              if (payload.proformasByFirmaId) writes.push(env.DB.put(indexKeys.proformasByFirmaId, JSON.stringify(payload.proformasByFirmaId), { expirationTtl: CACHE_TTL }));
+              if (payload.proformasById) writes.push(env.DB.put(indexKeys.proformasById, JSON.stringify(payload.proformasById), { expirationTtl: CACHE_TTL }));
+            }
+            if (scope.includes("master")) {
+              if (payload.standardsById) writes.push(env.DB.put(indexKeys.standardsById, JSON.stringify(payload.standardsById), { expirationTtl: CACHE_TTL }));
+              if (payload.consultants) writes.push(env.DB.put(`cache:getConsultants:{}`, JSON.stringify(payload.consultants), { expirationTtl: CACHE_TTL }));
+            }
+
+            for (let i = 0; i < writes.length; i += 50) {
+              await Promise.all(writes.slice(i, i + 50));
+            }
+            if (purges.length) ctx.waitUntil(Promise.all(purges));
+
+            return jsonResponse({ success: true, message: "Yedek başarıyla geri yüklendi (Replace).", scope });
           } catch (error) {
-            return jsonResponse({ success: false, error: "Worker -> GAS Bağlantı Hatası: " + error.message });
+            return jsonResponse({ success: false, error: "KV Import Hatası: " + error.message });
           }
         }
 

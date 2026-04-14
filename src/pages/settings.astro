@@ -66,40 +66,84 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">Backup / Restore</p>
-          <h2 class="text-xl font-extrabold mt-1">Operasyonel Sync ve Yedek</h2>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Aksiyon Kapsamı</p>
+          <h2 class="text-xl font-extrabold mt-1">İşlem Kapsamı Seçimi</h2>
           <p class="text-sm text-muted mt-2">
-            Buradaki işlemler ayrıdır. KV senkronu, Sheets'ten hydration ve backup import/export birbirinin yerine geçmez.
+            Aşağıdaki işlemlerden hangilerinin yapılacağını buradan seçebilirsin.
+          </p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {["companies", "certificates", "audits", "tests", "proformas", "master"].map((scope) => (
+          <label class="flex items-center gap-2 p-3 rounded-xl bg-surface-hover border border-border-main cursor-pointer hover:border-indigo-500 transition-colors">
+            <input type="checkbox" name="sync-scope" value={scope} checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+            <span class="text-sm font-medium capitalize">
+              {scope === "companies" ? "Firmalar" : 
+               scope === "certificates" ? "Sertifikalar" : 
+               scope === "audits" ? "Denetimler" : 
+               scope === "tests" ? "Testler" : 
+               scope === "proformas" ? "Proformalar" : 
+               "Master Veri"}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+
+    <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 border-b border-border-main pb-4">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Google Sheets -> KV</p>
+          <h2 class="text-xl font-extrabold mt-1">Sheets Senkronizasyonu</h2>
+          <p class="text-sm text-muted mt-2">
+            Verileri Google Sheets'ten Cloudflare KV'ye çeker. Seçili kapsamları günceller.
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button id="ops-sync-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold">
-            Sheets'ten Operasyonel Veriyi Çek
-          </button>
-          <button id="export-backup-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold">
-            Dışa Aktar
+          <button id="ops-sync-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/20 active:scale-95 transition-all">
+            Seçili Verileri Sheets'ten Çek
           </button>
         </div>
       </div>
 
-      <div id="backup-status-box" class="hidden rounded-xl px-3 py-2 text-sm"></div>
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-2">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Cloudflare KV <-> JSON</p>
+          <h2 class="text-xl font-extrabold mt-1">JSON Yedekleme / Geri Yükleme</h2>
+          <p class="text-sm text-muted mt-2">
+            Canlı KV verilerini .json olarak yedekle veya bir yedeği sisteme (Replace) geri yükle.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="export-kv-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-600/20 active:scale-95 transition-all">
+            Seçili Verileri .json Olarak Yedekle
+          </button>
+        </div>
+      </div>
+
+      <div id="backup-status-box" class="hidden rounded-xl px-4 py-3 text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-300"></div>
 
       <div class="rounded-xl border border-border-main bg-surface-hover p-4 space-y-3">
         <div class="flex flex-col md:flex-row md:items-center gap-3">
-          <input id="import-file-input" type="file" accept=".json,application/json" class="block w-full text-sm text-muted file:mr-4 file:rounded-lg file:border-0 file:bg-surface file:px-3 file:py-2 file:text-sm file:font-bold file:text-main" />
-          <button id="import-backup-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed" disabled>
-            İçeri Aktar
+          <input id="import-file-input" type="file" accept=".json,application/json" class="block w-full text-sm text-muted file:mr-4 file:rounded-lg file:border-0 file:bg-surface file:px-3 file:py-2 file:text-sm file:font-bold file:text-main cursor-pointer" />
+          <button id="import-kv-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-rose-600/20 active:scale-95 transition-all whitespace-nowrap" disabled>
+            Yedeği İçeri Aktar (Replace)
           </button>
         </div>
-        <p class="text-xs text-muted">
-          İçeri aktarma, Google Sheets içeriğini seçtiğin JSON yedeği ile değiştirir. Bu işlem iki aşamalı onay ister.
-        </p>
+        <div class="flex items-start gap-2 text-xs text-amber-400/80 bg-amber-500/5 p-2 rounded-lg border border-amber-500/20">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          <p>
+            <b>DİKKAT:</b> İçeri aktarma işlemi, seçtiğiniz kapsamdaki mevcut KV verilerini tamamen <u>siler</u> ve yedektekilerle değiştirir. Diğer kapsamlar korunur.
+          </p>
+        </div>
       </div>
     </div>
   </section>
 </DashboardLayout>
 
-<script>
+<script lang="ts">
   import { api } from "../lib/api";
 
   const selectEl = document.getElementById("dataset-select");
@@ -114,9 +158,9 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   const tbody = document.getElementById("master-tbody");
   const statusBox = document.getElementById("status-box");
   const opsSyncBtn = document.getElementById("ops-sync-btn");
-  const exportBackupBtn = document.getElementById("export-backup-btn");
+  const exportKvBtn = document.getElementById("export-kv-btn");
   const importFileInput = document.getElementById("import-file-input");
-  const importBackupBtn = document.getElementById("import-backup-btn");
+  const importKvBtn = document.getElementById("import-kv-btn");
   const backupStatusBox = document.getElementById("backup-status-box");
 
   let currentType = "standards";
@@ -124,6 +168,11 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   let currentHeaders = [];
   let currentRows = [];
   let selectedBackupPayload = null;
+
+  function getSelectedScopes() {
+    const checkboxes = document.querySelectorAll('input[name="sync-scope"]:checked');
+    return Array.from(checkboxes).map(el => (el as HTMLInputElement).value);
+  }
 
   function setStatus(message, type = "info") {
     if (!statusBox) return;
@@ -137,10 +186,11 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   function setBackupStatus(message, type = "info") {
     if (!backupStatusBox) return;
     backupStatusBox.textContent = message;
-    backupStatusBox.classList.remove("hidden", "bg-red-500/15", "text-red-200", "bg-emerald-500/15", "text-emerald-200", "bg-cyan-500/15", "text-cyan-100");
-    if (type === "error") backupStatusBox.classList.add("bg-red-500/15", "text-red-200");
-    else if (type === "success") backupStatusBox.classList.add("bg-emerald-500/15", "text-emerald-200");
-    else backupStatusBox.classList.add("bg-cyan-500/15", "text-cyan-100");
+    backupStatusBox.classList.remove("hidden", "bg-red-500/15", "text-red-400", "border-red-500/30", "bg-emerald-500/10", "text-emerald-400", "border-emerald-500/30", "bg-indigo-500/10", "text-indigo-400", "border-indigo-500/30");
+    backupStatusBox.classList.add("border");
+    if (type === "error") backupStatusBox.classList.add("bg-red-500/15", "text-red-400", "border-red-500/30");
+    else if (type === "success") backupStatusBox.classList.add("bg-emerald-500/10", "text-emerald-400", "border-emerald-500/30");
+    else backupStatusBox.classList.add("bg-indigo-500/10", "text-indigo-400", "border-indigo-500/30");
   }
 
   function downloadJson(filename, payload) {
@@ -181,7 +231,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
         input.value = row[colIndex] ?? "";
         input.className = "w-full bg-surface-hover border border-border-main rounded-lg px-2 py-1 text-xs";
         input.addEventListener("input", (e) => {
-          currentRows[rowIndex][colIndex] = e.target.value;
+          currentRows[rowIndex][colIndex] = (e.target as HTMLInputElement).value;
         });
         td.appendChild(input);
         tr.appendChild(td);
@@ -258,7 +308,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   }
 
   selectEl?.addEventListener("change", (e) => {
-    loadDataset(e.target.value);
+    loadDataset((e.target as HTMLSelectElement).value);
   });
 
   refreshBtn?.addEventListener("click", () => loadDataset(currentType));
@@ -293,39 +343,45 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   });
 
   opsSyncBtn?.addEventListener("click", async () => {
-    setBackupStatus("Sheets -> KV operasyonel hydration başlatıldı...");
-    const [coreRes, masterRes] = await Promise.all([
-      api.bulkSync(),
-      api.bulkSyncMaster(),
-    ]);
-    if (!coreRes.success) {
-      setBackupStatus(`Operasyonel sync başarısız: ${coreRes.error || "Bilinmeyen hata"}`, "error");
+    const scope = getSelectedScopes();
+    if (!scope.length) {
+      setBackupStatus("Lütfen en az bir kapsam seçin.", "error");
       return;
     }
-    if (!masterRes.success) {
-      setBackupStatus(`Master sync başarısız: ${masterRes.error || "Bilinmeyen hata"}`, "error");
+
+    setBackupStatus(`Sheets -> KV [${scope.join(", ")}] senkronizasyonu başlatıldı...`);
+    const res = await api.pullFromSheetsToKv(scope);
+    
+    if (!res.success) {
+      setBackupStatus(`Senkronizasyon başarısız: ${res.error || "Bilinmeyen hata"}`, "error");
       return;
     }
     await loadDataset(currentType);
-    setBackupStatus("Sheets -> KV hydration tamamlandı.", "success");
+    setBackupStatus(`Senkronizasyon tamamlandı (${scope.join(", ")}).`, "success");
   });
 
-  exportBackupBtn?.addEventListener("click", async () => {
-    setBackupStatus("Yedek paketi hazırlanıyor...");
-    const res = await api.exportBackup();
-    if (!res.success || !res.data) {
+  exportKvBtn?.addEventListener("click", async () => {
+    const scope = getSelectedScopes();
+    if (!scope.length) {
+      setBackupStatus("Lütfen yedeklemek istediğiniz kapsamları seçin.", "error");
+      return;
+    }
+
+    setBackupStatus(`[${scope.join(", ")}] kapsamı için KV yedek paketi hazırlanıyor...`);
+    const res = await api.exportKvData(scope);
+    if (!res.success || !res.exportData) {
       setBackupStatus(`Dışa aktarma başarısız: ${res.error || "Bilinmeyen hata"}`, "error");
       return;
     }
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    downloadJson(`medicert-backup-${stamp}.json`, res.data);
-    setBackupStatus("Yedek dosyası indirildi.", "success");
+    downloadJson(`mc-kv-backup-${stamp}.json`, res.exportData);
+    setBackupStatus(`KV yedeği indirildi (${scope.length} kategori).`, "success");
   });
 
   importFileInput?.addEventListener("change", async (event) => {
-    const file = event.target.files?.[0];
+    const file = (event.target as HTMLInputElement).files?.[0];
     selectedBackupPayload = null;
-    if (importBackupBtn) importBackupBtn.disabled = true;
+    if (importKvBtn) (importKvBtn as HTMLButtonElement).disabled = true;
     if (!file) {
       setBackupStatus("İçeri aktarma için bir JSON dosyası seçin.");
       return;
@@ -333,48 +389,36 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     try {
       const text = await file.text();
       selectedBackupPayload = JSON.parse(text);
-      if (importBackupBtn) importBackupBtn.disabled = false;
-      setBackupStatus(`Yedek dosyası hazır: ${file.name}`, "success");
+      if (importKvBtn) (importKvBtn as HTMLButtonElement).disabled = false;
+      setBackupStatus(`Yedek dosyası hazır: ${file.name}. "Geri Yükle" butonuna basarak işlemi başlatabilirsin.`, "success");
     } catch (error) {
       setBackupStatus("Seçilen dosya geçerli bir JSON yedeği değil.", "error");
     }
   });
 
-  importBackupBtn?.addEventListener("click", async () => {
+  importKvBtn?.addEventListener("click", async () => {
+    const scope = getSelectedScopes();
     if (!selectedBackupPayload) {
       setBackupStatus("Önce geçerli bir backup JSON dosyası seçin.", "error");
       return;
     }
-
-    setBackupStatus("İçeri aktarma ön kontrolü yapılıyor...");
-    const preflight = await api.importBackupPreflight(selectedBackupPayload);
-    if (!preflight.success && !preflight.requiresConfirmation) {
-      setBackupStatus(`İçeri aktarma ön kontrolü başarısız: ${preflight.error || "Bilinmeyen hata"}`, "error");
+    if (!scope.length) {
+      setBackupStatus("Lütfen geri yüklemek istediğiniz kapsamları (Seçim Paneli) belirleyin.", "error");
       return;
     }
 
-    const confirmation = preflight.confirmation;
-    if (!confirmation?.token) {
-      setBackupStatus("Onay tokenı alınamadı. İşlem durduruldu.", "error");
+    if (!confirm(`DİKKAT! Seçilen kapsamlardaki (${scope.join(", ")}) MEVCUT KV verileri tamamen SİLİNECEK ve yedektekilerle değiştirilecektir. Devam etmek istiyor musun?`)) {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Bu işlem Google Sheets içeriğini seçtiğiniz yedek ile değiştirir. Devam etmek istediğinize emin misiniz?"
-    );
-    if (!confirmed) {
-      setBackupStatus("İçeri aktarma iptal edildi.");
+    setBackupStatus(`[${scope.join(", ")}] kapsamı geri yükleniyor (Replace)...`);
+    const res = await api.importKvData(selectedBackupPayload, scope);
+    if (!res.success) {
+      setBackupStatus(`Geri yükleme başarısız: ${res.error || "Bilinmeyen hata"}`, "error");
       return;
     }
-
-    setBackupStatus("Google Sheets'e geri yükleme yapılıyor...");
-    const result = await api.importBackupConfirmed(selectedBackupPayload, confirmation.token);
-    if (!result.success) {
-      setBackupStatus(`İçeri aktarma başarısız: ${result.error || "Bilinmeyen hata"}`, "error");
-      return;
-    }
-
-    setBackupStatus("İçeri aktarma tamamlandı. KV tarafını güncellemek için operasyonel sync çalıştırmanız önerilir.", "success");
+    await loadDataset(currentType);
+    setBackupStatus("Seçili kapsamlar başarıyla geri yüklendi (KV-Replace).", "success");
   });
 
   addRowBtn?.addEventListener("click", () => {
