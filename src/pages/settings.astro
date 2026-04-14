@@ -62,6 +62,40 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
         </button>
       </div>
     </div>
+
+    <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Backup / Restore</p>
+          <h2 class="text-xl font-extrabold mt-1">Operasyonel Sync ve Yedek</h2>
+          <p class="text-sm text-muted mt-2">
+            Buradaki işlemler ayrıdır. KV senkronu, Sheets'ten hydration ve backup import/export birbirinin yerine geçmez.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="ops-sync-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold">
+            Sheets'ten Operasyonel Veriyi Çek
+          </button>
+          <button id="export-backup-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold">
+            Dışa Aktar
+          </button>
+        </div>
+      </div>
+
+      <div id="backup-status-box" class="hidden rounded-xl px-3 py-2 text-sm"></div>
+
+      <div class="rounded-xl border border-border-main bg-surface-hover p-4 space-y-3">
+        <div class="flex flex-col md:flex-row md:items-center gap-3">
+          <input id="import-file-input" type="file" accept=".json,application/json" class="block w-full text-sm text-muted file:mr-4 file:rounded-lg file:border-0 file:bg-surface file:px-3 file:py-2 file:text-sm file:font-bold file:text-main" />
+          <button id="import-backup-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed" disabled>
+            İçeri Aktar
+          </button>
+        </div>
+        <p class="text-xs text-muted">
+          İçeri aktarma, Google Sheets içeriğini seçtiğin JSON yedeği ile değiştirir. Bu işlem iki aşamalı onay ister.
+        </p>
+      </div>
+    </div>
   </section>
 </DashboardLayout>
 
@@ -79,11 +113,17 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   const thead = document.getElementById("master-thead");
   const tbody = document.getElementById("master-tbody");
   const statusBox = document.getElementById("status-box");
+  const opsSyncBtn = document.getElementById("ops-sync-btn");
+  const exportBackupBtn = document.getElementById("export-backup-btn");
+  const importFileInput = document.getElementById("import-file-input");
+  const importBackupBtn = document.getElementById("import-backup-btn");
+  const backupStatusBox = document.getElementById("backup-status-box");
 
   let currentType = "standards";
   let currentVersion = null;
   let currentHeaders = [];
   let currentRows = [];
+  let selectedBackupPayload = null;
 
   function setStatus(message, type = "info") {
     if (!statusBox) return;
@@ -92,6 +132,27 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     if (type === "error") statusBox.classList.add("bg-red-500/15", "text-red-200");
     else if (type === "success") statusBox.classList.add("bg-emerald-500/15", "text-emerald-200");
     else statusBox.classList.add("bg-cyan-500/15", "text-cyan-100");
+  }
+
+  function setBackupStatus(message, type = "info") {
+    if (!backupStatusBox) return;
+    backupStatusBox.textContent = message;
+    backupStatusBox.classList.remove("hidden", "bg-red-500/15", "text-red-200", "bg-emerald-500/15", "text-emerald-200", "bg-cyan-500/15", "text-cyan-100");
+    if (type === "error") backupStatusBox.classList.add("bg-red-500/15", "text-red-200");
+    else if (type === "success") backupStatusBox.classList.add("bg-emerald-500/15", "text-emerald-200");
+    else backupStatusBox.classList.add("bg-cyan-500/15", "text-cyan-100");
+  }
+
+  function downloadJson(filename, payload) {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
   function escapeHtml(value) {
@@ -229,6 +290,91 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
 
     await loadDataset(currentType);
     setStatus("Sheets -> KV tam senkron tamamlandı.", "success");
+  });
+
+  opsSyncBtn?.addEventListener("click", async () => {
+    setBackupStatus("Sheets -> KV operasyonel hydration başlatıldı...");
+    const [coreRes, masterRes] = await Promise.all([
+      api.bulkSync(),
+      api.bulkSyncMaster(),
+    ]);
+    if (!coreRes.success) {
+      setBackupStatus(`Operasyonel sync başarısız: ${coreRes.error || "Bilinmeyen hata"}`, "error");
+      return;
+    }
+    if (!masterRes.success) {
+      setBackupStatus(`Master sync başarısız: ${masterRes.error || "Bilinmeyen hata"}`, "error");
+      return;
+    }
+    await loadDataset(currentType);
+    setBackupStatus("Sheets -> KV hydration tamamlandı.", "success");
+  });
+
+  exportBackupBtn?.addEventListener("click", async () => {
+    setBackupStatus("Yedek paketi hazırlanıyor...");
+    const res = await api.exportBackup();
+    if (!res.success || !res.data) {
+      setBackupStatus(`Dışa aktarma başarısız: ${res.error || "Bilinmeyen hata"}`, "error");
+      return;
+    }
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    downloadJson(`medicert-backup-${stamp}.json`, res.data);
+    setBackupStatus("Yedek dosyası indirildi.", "success");
+  });
+
+  importFileInput?.addEventListener("change", async (event) => {
+    const file = event.target.files?.[0];
+    selectedBackupPayload = null;
+    if (importBackupBtn) importBackupBtn.disabled = true;
+    if (!file) {
+      setBackupStatus("İçeri aktarma için bir JSON dosyası seçin.");
+      return;
+    }
+    try {
+      const text = await file.text();
+      selectedBackupPayload = JSON.parse(text);
+      if (importBackupBtn) importBackupBtn.disabled = false;
+      setBackupStatus(`Yedek dosyası hazır: ${file.name}`, "success");
+    } catch (error) {
+      setBackupStatus("Seçilen dosya geçerli bir JSON yedeği değil.", "error");
+    }
+  });
+
+  importBackupBtn?.addEventListener("click", async () => {
+    if (!selectedBackupPayload) {
+      setBackupStatus("Önce geçerli bir backup JSON dosyası seçin.", "error");
+      return;
+    }
+
+    setBackupStatus("İçeri aktarma ön kontrolü yapılıyor...");
+    const preflight = await api.importBackupPreflight(selectedBackupPayload);
+    if (!preflight.success && !preflight.requiresConfirmation) {
+      setBackupStatus(`İçeri aktarma ön kontrolü başarısız: ${preflight.error || "Bilinmeyen hata"}`, "error");
+      return;
+    }
+
+    const confirmation = preflight.confirmation;
+    if (!confirmation?.token) {
+      setBackupStatus("Onay tokenı alınamadı. İşlem durduruldu.", "error");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Bu işlem Google Sheets içeriğini seçtiğiniz yedek ile değiştirir. Devam etmek istediğinize emin misiniz?"
+    );
+    if (!confirmed) {
+      setBackupStatus("İçeri aktarma iptal edildi.");
+      return;
+    }
+
+    setBackupStatus("Google Sheets'e geri yükleme yapılıyor...");
+    const result = await api.importBackupConfirmed(selectedBackupPayload, confirmation.token);
+    if (!result.success) {
+      setBackupStatus(`İçeri aktarma başarısız: ${result.error || "Bilinmeyen hata"}`, "error");
+      return;
+    }
+
+    setBackupStatus("İçeri aktarma tamamlandı. KV tarafını güncellemek için operasyonel sync çalıştırmanız önerilir.", "success");
   });
 
   addRowBtn?.addEventListener("click", () => {

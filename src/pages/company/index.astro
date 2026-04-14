@@ -1341,14 +1341,29 @@ import {
   // ─── Load Company ─────────────────────────────────────────────────────────────
 
   async function loadCompany() {
+    // ⚡ ZERO-LATENCY: Önce yerel store'dan veriyi al ve anında göster
+    const localCompanies = $companies.get();
+    const localCompany = localCompanies.find(c => String(c.id) === String(firmaId) || String(c.FirmaNo) === String(firmaId));
+    
+    if (localCompany) {
+      console.log('[Profile] Rendering from local store (Zero-Latency)');
+      renderCompany(localCompany);
+    }
+
     const res = await api.call('getCompanyById', { id: firmaId });
     const c = res?.data;
     if (!c) {
-      document.getElementById('hero-skeleton')!.innerHTML = '<p class="text-sm text-rose-400 font-bold">Firma bulunamadı (ID: ' + firmaId + ')</p>';
+      if (!localCompany) {
+        document.getElementById('hero-skeleton')!.innerHTML = '<p class="text-sm text-rose-400 font-bold">Firma bulunamadı (ID: ' + firmaId + ')</p>';
+      }
       return;
     }
+    
+    // API'den gelen taze veriyle güncelle
+    renderCompany(c);
+  }
 
-    // Normalize key lookup
+  function renderCompany(c: any) {
     const nick    = g(c, 'Firma Adı', 'Nick', 'nick', 'FirmaAdi');
     const unvan   = g(c, 'Unvan', 'unvan');
     const il      = g(c, 'İl', 'Il', 'Şehir', 'Sehir', 'il', 'sehir');

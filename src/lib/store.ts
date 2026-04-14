@@ -10,7 +10,7 @@ import { atom } from 'nanostores';
 // Firma Listesi (Sync Data: ID, Nickname, Unvan, City)
 export const $companies = atom<any[]>([]);
 
-// Sertifika Listesi
+// Sertifika Summary Listesi
 export const $certificates = atom<any[]>([]);
 
 // Senkronizasyon Durumu

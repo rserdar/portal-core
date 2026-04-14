@@ -4,65 +4,96 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
 <OperationPageShell
   pageKey="draft"
-  title="Draft Olustur"
-  description="Standart, dil ve kapsam tercihleriyle sertifika draft olusturma akisini izole eder; mobilde adimlar daha rahat yonetilir."
+  title="Taslak Oluştur"
+  description="Standart, dil ve kapsam tercihlerini belirleyerek sertifika taslağı oluşturur. Firma bilgileri otomatik yüklenir."
 >
   <div class="space-y-6">
+    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
+
     <section class="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6">
+
+      <!-- Sol: Taslak Ayarları -->
       <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
-        <h2 class="text-sm font-black uppercase tracking-widest text-main">Draft Ayarlari</h2>
+        <h2 class="text-sm font-black uppercase tracking-widest text-main">Taslak Ayarları</h2>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="space-y-2">
             <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Standart</label>
-            <select id="draft-standard" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main">
-              <option>Seciniz...</option>
+            <select id="draft-standard" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500">
+              <option value="">Seçiniz...</option>
             </select>
           </div>
           <div class="space-y-2">
             <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Dil</label>
             <div class="flex gap-3">
-              <label class="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main">
-                <input type="radio" name="draft-lang" value="TR" checked />
-                TR
-              </label>
-              <label class="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main">
-                <input type="radio" name="draft-lang" value="EN" />
+              <label class="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main cursor-pointer hover:bg-surface transition-colors">
+                <input type="radio" name="draft-lang" value="EN" checked class="accent-indigo-500" />
                 EN
+              </label>
+              <label class="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main cursor-pointer hover:bg-surface transition-colors">
+                <input type="radio" name="draft-lang" value="TR" class="accent-indigo-500" />
+                TR
               </label>
             </div>
           </div>
         </div>
-        <div class="space-y-2">
-          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Kapsam</label>
-          <textarea id="draft-kapsam" rows={8} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px]"></textarea>
+
+        <!-- Diğer Standart Alanları — sadece "Diğer" seçilince görünür -->
+        <div id="draft-other-wrap" class="hidden grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Standart</label>
+            <input id="draft-other-full" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Örn. ISO 9001:2015" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Standart Açıklaması</label>
+            <input id="draft-other-desc" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Örn. Quality Management System" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Türkçe Kapsam</label>
+            <textarea id="draft-kapsam" rows={8} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
+          </div>
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">İngilizce Kapsam (Scope)</label>
+            <textarea id="draft-scope" rows={8} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
+          </div>
         </div>
       </div>
 
+      <!-- Sağ: Önizleme Özeti -->
       <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
-        <h2 class="text-sm font-black uppercase tracking-widest text-main">Onizleme Ozeti</h2>
+        <h2 class="text-sm font-black uppercase tracking-widest text-main">Önizleme Özeti</h2>
+
         <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-3 text-sm">
           <div>
-            <p class="text-[10px] font-bold uppercase tracking-widest text-muted">Firma</p>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">Firma</p>
             <p id="draft-preview-firma" class="font-semibold text-main">—</p>
           </div>
           <div>
-            <p class="text-[10px] font-bold uppercase tracking-widest text-muted">Yetkili</p>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">Adres</p>
             <p id="draft-preview-yetkili" class="font-semibold text-main">—</p>
           </div>
           <div>
-            <p class="text-[10px] font-bold uppercase tracking-widest text-muted">Iletisim</p>
-            <p id="draft-preview-mail" class="font-semibold text-main">—</p>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">Standart / Dil</p>
+            <p id="draft-preview-standard" class="font-semibold text-main">—</p>
           </div>
         </div>
+
         <div class="rounded-2xl border border-dashed border-border-main p-4 text-sm leading-relaxed text-muted">
-          Bu ekran ikinci adimda `generateDraftCertificate` veya yeni bridge action ile dogrudan belge uretimine baglanacak.
+          Standart, dil ve kapsam verileri Google Docs taslak şablonuna doğrudan basılır. "Diğer" seçimi yapıldığında iki özel placeholder alanı da ayrıca kullanılır.
         </div>
       </div>
     </section>
 
     <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
-      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-muted cursor-not-allowed">Payload Onizle (Yakinda)</button>
-      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl bg-indigo-600/60 px-5 py-3 text-sm font-black text-white cursor-not-allowed">Draft Uret (Yakinda)</button>
+      <button id="draft-preview-button" type="button" class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-main hover:bg-surface-hover transition-colors">
+        Önizlemeyi Güncelle
+      </button>
+      <button id="draft-generate-button" type="button" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+        Taslak Oluştur
+      </button>
     </div>
   </div>
 </OperationPageShell>
@@ -71,11 +102,29 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
+  import { showToast } from '../../lib/toast';
   import { loadCompanyOperationContext } from '../../features/operations/context';
+  import { normalizeLegacyIsoRows, type LegacyIsoOption } from '../../features/operations/certificate-form';
   import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
 
   const params = new URLSearchParams(location.search);
   let activeFirmaId = params.get('firmaId') || params.get('id') || '';
+  let companyContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
+  let standards: LegacyIsoOption[] = [];
+
+  const els = {
+    standard: document.getElementById('draft-standard') as HTMLSelectElement | null,
+    otherWrap: document.getElementById('draft-other-wrap'),
+    otherFull: document.getElementById('draft-other-full') as HTMLInputElement | null,
+    otherDesc: document.getElementById('draft-other-desc') as HTMLInputElement | null,
+    kapsam: document.getElementById('draft-kapsam') as HTMLTextAreaElement | null,
+    scope: document.getElementById('draft-scope') as HTMLTextAreaElement | null,
+    previewFirma: document.getElementById('draft-preview-firma'),
+    previewYetkili: document.getElementById('draft-preview-yetkili'),
+    previewStandard: document.getElementById('draft-preview-standard'),
+    previewButton: document.getElementById('draft-preview-button') as HTMLButtonElement | null,
+    generateButton: document.getElementById('draft-generate-button') as HTMLButtonElement | null,
+  };
 
   function getCompanyValue(company: any, ...keys: string[]) {
     if (!company || typeof company !== 'object') return '';
@@ -106,7 +155,214 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     return `${nick} (${companyId})`;
   }
 
-  function renderPickerState(message = 'Bir firma seçip draft akışına devam edebilirsin.', isError = false) {
+  function pickObjectValue(record: Record<string, any>, aliases: string[]) {
+    for (const key of aliases) {
+      const value = record?.[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        return String(value).trim();
+      }
+    }
+    const normalizeKey = (value: any) => String(value || '')
+      .trim()
+      .toLocaleLowerCase('tr-TR')
+      .replace(/[ıİ]/g, 'i')
+      .replace(/[ğĞ]/g, 'g')
+      .replace(/[üÜ]/g, 'u')
+      .replace(/[şŞ]/g, 's')
+      .replace(/[öÖ]/g, 'o')
+      .replace(/[çÇ]/g, 'c')
+      .replace(/[^a-z0-9]/g, '');
+    const normalizedAliases = aliases.map((alias) => normalizeKey(alias));
+    for (const [rawKey, rawValue] of Object.entries(record || {})) {
+      if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') continue;
+      if (normalizedAliases.includes(normalizeKey(rawKey))) return String(rawValue).trim();
+    }
+    return '';
+  }
+
+  function shouldShowOtherStandard(value: string) {
+    const normalized = String(value || '')
+      .trim()
+      .toLocaleUpperCase('tr-TR')
+      .replace(/[İI]/g, 'I')
+      .replace(/[Ğ]/g, 'G')
+      .replace(/[Ü]/g, 'U')
+      .replace(/[Ş]/g, 'S')
+      .replace(/[Ö]/g, 'O')
+      .replace(/[Ç]/g, 'C');
+    return normalized === 'DIGER';
+  }
+
+  function getSelectedLang() {
+    const selectedLang = document.querySelector<HTMLInputElement>('input[name="draft-lang"]:checked');
+    return selectedLang?.value === 'EN' ? 'EN' : 'TR';
+  }
+
+  function syncOtherStandardFields() {
+    const text = els.standard?.selectedOptions[0]?.textContent?.trim() || '';
+    const visible = shouldShowOtherStandard(text);
+    if (els.otherWrap) {
+      if (visible) {
+        els.otherWrap.classList.remove('hidden');
+        els.otherWrap.classList.add('grid');
+      } else {
+        els.otherWrap.classList.add('hidden');
+        els.otherWrap.classList.remove('grid');
+        if (els.otherFull) els.otherFull.value = '';
+        if (els.otherDesc) els.otherDesc.value = '';
+      }
+    }
+  }
+
+  function renderStandards() {
+    if (!els.standard) return;
+    els.standard.innerHTML = '<option value="">Seçiniz...</option>';
+    standards.forEach((item) => {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = item.id;
+      option.dataset.fullName = item.fullName;
+      els.standard?.appendChild(option);
+    });
+  }
+
+  async function loadStandards() {
+    const res = await api.getMasterData('standards');
+    const rows = res?.data?.dataset?.rows || [];
+    standards = normalizeLegacyIsoRows(rows);
+    if (standards.length === 0) {
+      standards = [
+        { id: '9001', prefix: 'ISO', fullName: 'ISO 9001:2015' },
+        { id: '14001', prefix: 'ISO', fullName: 'ISO 14001:2015' },
+        { id: '45001', prefix: 'ISO', fullName: 'ISO 45001:2018' },
+        { id: 'Diğer', prefix: 'ISO', fullName: 'Others' },
+      ];
+    }
+    renderStandards();
+  }
+
+  function buildDraftPayloadPreview() {
+    if (!companyContext || !els.standard) return null;
+    const selectedOption = els.standard.selectedOptions[0];
+    const standardId = selectedOption?.value?.trim() || '';
+    const standardLabel = selectedOption?.textContent?.trim() || '';
+    const lang = getSelectedLang();
+    const kapsam = els.kapsam?.value.trim() || '';
+    const scope = els.scope?.value.trim() || '';
+    const isOther = shouldShowOtherStandard(standardLabel);
+    const other = els.otherFull?.value.trim() || '';
+    const aStandart = els.otherDesc?.value.trim() || '';
+
+    return {
+      standardId,
+      standardLabel,
+      lang,
+      kapsam,
+      scope,
+      isOther,
+      other,
+      aStandart,
+      nickname: companyContext.nick || '',
+      firmaId: companyContext.firmaId || '',
+    };
+  }
+
+  function hydratePreview() {
+    if (!companyContext) return;
+    if (els.previewFirma) els.previewFirma.textContent = companyContext.unvan || companyContext.nick || '—';
+    if (els.previewYetkili) {
+      els.previewYetkili.textContent = [companyContext.adres, [companyContext.sehir, companyContext.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
+    }
+    const payload = buildDraftPayloadPreview();
+    if (els.previewStandard) {
+      if (!payload?.standardLabel) {
+        els.previewStandard.textContent = '—';
+      } else if (payload.isOther) {
+        const fullValue = payload.other || '{{Standart}}';
+        const descValue = payload.aStandart || '{{aStandart}}';
+        els.previewStandard.textContent = `${fullValue} / ${descValue} / ${payload.lang}`;
+      } else {
+        els.previewStandard.textContent = `${payload.standardLabel} / ${payload.lang}`;
+      }
+    }
+  }
+
+  async function generateDraft() {
+    if (!companyContext || !els.standard || !els.generateButton) return;
+    const payload = buildDraftPayloadPreview();
+    if (!payload?.standardId || !payload.standardLabel) {
+      showToast('Lütfen bir standart seçin.', 'error');
+      return;
+    }
+    if (!payload.kapsam || !payload.scope) {
+      showToast('Türkçe kapsam ve İngilizce scope alanlarını doldurun.', 'error');
+      return;
+    }
+    if (payload.isOther && (!payload.other || !payload.aStandart)) {
+      showToast('Diğer standart için iki özel alanı da doldurun.', 'error');
+      return;
+    }
+
+    const standardRes = await api.getStandardById(payload.standardId);
+    if (!standardRes.success || !standardRes.data) {
+      showToast(`Standart bilgileri alınamadı: ${standardRes.error || 'Bilinmeyen hata'}`, 'error');
+      return;
+    }
+
+    const standardInfo = standardRes.data as Record<string, any>;
+    const tempId = payload.lang === 'EN'
+      ? pickObjectValue(standardInfo, ['Themeid', 'ThemeID', 'themeid', 'EN Tema', 'İngilizce Tema ID'])
+      : pickObjectValue(standardInfo, ['Temaid', 'TemaID', 'temaid', 'TR Tema', 'Türkçe Tema ID']);
+
+    if (!tempId) {
+      showToast('Seçilen standart için tema ID bulunamadı.', 'error');
+      return;
+    }
+
+    els.generateButton.disabled = true;
+    const originalText = els.generateButton.textContent || 'Taslak Oluştur';
+    els.generateButton.textContent = 'Oluşturuluyor...';
+
+    const certificate = {
+      nickname: companyContext.nick,
+      nick: companyContext.nick,
+      id: companyContext.firmaId,
+      firmaNo: companyContext.firmaId,
+      standard: payload.standardLabel,
+      standart: payload.standardLabel,
+      other: payload.other,
+      aStandart: payload.aStandart,
+      not: payload.aStandart,
+      unvan: companyContext.unvan,
+      adres: companyContext.adres,
+      sehir: companyContext.sehir,
+      il: companyContext.sehir,
+      ulke: companyContext.ulke,
+      yazisma: (companyContext as any).yazismaAdresi,
+      sube: (companyContext as any).yazismaAdresi,
+      scope: payload.scope,
+      kapsam: payload.kapsam,
+      theme: tempId,
+      tema: tempId,
+      lang: payload.lang,
+      logo: companyContext.logo,
+    };
+
+    const res = await api.generateDraftCertificate(certificate);
+    els.generateButton.disabled = false;
+    els.generateButton.textContent = originalText;
+
+    if (!res.success) {
+      showToast(`Taslak oluşturulamadı: ${res.error || 'Bilinmeyen hata'}`, 'error');
+      return;
+    }
+
+    const url = String((res.data as any)?.url || '');
+    showToast('Taslak sertifika Google Docs\'ta oluşturuldu.', 'success');
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  function renderPickerState(message = 'Bir firma seçip taslak akışına devam edebilirsin.', isError = false) {
     const errorBox = document.getElementById('op-error');
     if (!errorBox) return;
     errorBox.innerHTML = `
@@ -119,11 +375,11 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
         <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
           <div class="space-y-2">
             <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Seçimi</label>
-            <input id="draft-company-search" list="draft-company-list" type="text" placeholder="Firma ara..." class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main" />
+            <input id="draft-company-search" list="draft-company-list" type="text" placeholder="Firma ara..." class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
             <datalist id="draft-company-list"></datalist>
           </div>
-          <button id="draft-company-continue" type="button" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-colors">
-            Draft ile Devam Et
+          <button id="draft-company-continue" type="button" class="w-full md:w-auto inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-colors">
+            Taslak ile Devam Et
           </button>
         </div>
         <p id="draft-company-status" class="text-xs font-semibold ${isError ? 'text-rose-400' : 'text-muted'}">${message}</p>
@@ -171,7 +427,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     document.getElementById('draft-company-search')?.addEventListener('input', () => {
       const status = document.getElementById('draft-company-status');
       const selected = resolveCompanyFromInput();
-      if (status) status.textContent = selected ? 'Firma seçildi. Devam edebilirsin.' : 'Listeden geçerli bir firma seç.';
+      if (status) status.textContent = selected ? 'Firma seçildi. Devam edebilirsiniz.' : 'Listeden geçerli bir firma seçin.';
     });
 
     document.getElementById('draft-company-continue')?.addEventListener('click', async () => {
@@ -179,7 +435,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
       const selected = resolveCompanyFromInput();
       const selectedId = selected ? getCompanyId(selected) : '';
       if (!selectedId) {
-        if (status) status.textContent = 'Devam etmek için listeden geçerli bir firma seç.';
+        if (status) status.textContent = 'Devam etmek için listeden geçerli bir firma seçin.';
         return;
       }
       activeFirmaId = selectedId;
@@ -197,9 +453,10 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     if (!context) {
       document.getElementById('op-skeleton')?.classList.add('hidden');
       document.getElementById('op-error')?.classList.remove('hidden');
-      renderPickerState('Firma bilgileri yüklenemedi. Lütfen başka bir firma seçip tekrar dene.', true);
+      renderPickerState('Firma bilgileri yüklenemedi. Lütfen başka bir firma seçip tekrar deneyin.', true);
       return;
     }
+    companyContext = context;
 
     (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${activeFirmaId}`);
     document.querySelectorAll<HTMLAnchorElement>('[data-op-link]').forEach((link) => {
@@ -210,32 +467,33 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
     document.getElementById('op-company-id')!.textContent = `M${context.firmaId}`;
     document.getElementById('op-company-nick')!.textContent = context.nick || 'Firma';
-    document.getElementById('op-company-dan')!.textContent = context.danisman || 'Danisman atanamamis';
+    document.getElementById('op-company-dan')!.textContent = context.danisman || 'Danışman atanmamış';
     document.getElementById('op-company-unvan')!.textContent = context.unvan || context.nick || `Firma #${context.firmaId}`;
     document.getElementById('op-company-address')!.textContent = [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
-    document.getElementById('op-company-kapsam')!.textContent = context.scope || context.kapsam || 'Kapsam bulunamadi.';
-    document.getElementById('op-company-stats')!.textContent = `${context.certificates.length} sertifika kaydi icinden standart secimi baglanacak.`;
+    document.getElementById('op-company-kapsam')!.textContent = context.scope || context.kapsam || 'Kapsam bulunamadı.';
+    document.getElementById('op-company-stats')!.textContent = `${context.certificates.length} sertifika kaydından standart seçimi yapılacak.`;
 
-    const select = document.getElementById('draft-standard') as HTMLSelectElement | null;
-    if (select) {
-      const standards = new Set<string>();
-      context.certificates.forEach((item: any) => {
-        const value = Array.isArray(item) ? String(item[3] || '').trim() : String(item?.Standart || item?.standart || '').trim();
-        if (value) standards.add(value);
-      });
-      if (standards.size === 0) standards.add('Genel Draft');
-      Array.from(standards).forEach((value) => {
-        const option = document.createElement('option');
-        option.value = value;
-        option.textContent = value;
-        select.appendChild(option);
-      });
-    }
-
-    (document.getElementById('draft-kapsam') as HTMLTextAreaElement | null)!.value = context.scope || context.kapsam;
-    document.getElementById('draft-preview-firma')!.textContent = context.unvan || context.nick;
-    document.getElementById('draft-preview-yetkili')!.textContent = [context.yetkiliAdi, context.yetkiliUnvani].filter(Boolean).join(' / ') || '—';
-    document.getElementById('draft-preview-mail')!.textContent = context.mail || context.irtibatMail || '—';
+    await loadStandards();
+    if (els.kapsam) els.kapsam.value = context.kapsam || '';
+    if (els.scope) els.scope.value = context.scope || '';
+    els.standard?.addEventListener('change', () => {
+      syncOtherStandardFields();
+      hydratePreview();
+    });
+    document.querySelectorAll<HTMLInputElement>('input[name="draft-lang"]').forEach((input) => {
+      input.addEventListener('change', hydratePreview);
+    });
+    els.kapsam?.addEventListener('input', hydratePreview);
+    els.scope?.addEventListener('input', hydratePreview);
+    els.otherFull?.addEventListener('input', hydratePreview);
+    els.otherDesc?.addEventListener('input', hydratePreview);
+    els.previewButton?.addEventListener('click', () => {
+      hydratePreview();
+      showToast('Önizleme özeti güncellendi.', 'info');
+    });
+    els.generateButton?.addEventListener('click', () => void generateDraft());
+    syncOtherStandardFields();
+    hydratePreview();
 
     document.getElementById('op-skeleton')?.classList.add('hidden');
     document.getElementById('op-error')?.classList.add('hidden');
@@ -244,4 +502,3 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
   void boot();
 </script>
-

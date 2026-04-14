@@ -180,7 +180,7 @@ const quickActions = [
           Pro Tip
         </h3>
         <p class="text-xs text-muted relative z-10 leading-relaxed font-medium">
-          KV Cache altyapısı devrede. "SİSTEMİ SENKRONİZE ET" ile tüm Google Sheets verisini CF Edge noktalarına saniyeler içinde taşıyabilirsiniz.
+          KV Cache altyapısı devrede. Bu buton sadece mevcut KV verisini tarayıcıyla eşitler. Sheets'ten veri çekme ve backup işlemleri Ayarlar ekranından ayrı yönetilir.
         </p>
       </div>
 
@@ -217,7 +217,7 @@ const quickActions = [
         <button id="btn-bulk-sync" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-2xl shadow-[0_4px_20px_rgba(79,70,229,0.3)] hover:shadow-[0_8px_25px_rgba(79,70,229,0.5)] transition-all flex items-center justify-center gap-3 group relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed">
           <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
           <RefreshCw size={16} id="sync-icon" class="group-hover:rotate-180 transition-transform duration-700" />
-          <span id="sync-label">SİSTEMİ SENKRONİZE ET (KV)</span>
+          <span id="sync-label">SİSTEMİ SENKRONİZE ET (KV'DEN)</span>
         </button>
 
         <div class="flex items-center justify-center gap-2 pt-2 grayscale opacity-50">
@@ -540,9 +540,9 @@ const quickActions = [
 
     list.innerHTML = recent.map(c => {
       const firmaNo  = c['Firma No']  || c['id']   || '—';
-      const nick     = c['Nick']      || c['nick']  || '—';
+      const nick     = c['Nickname']  || c['nickname'] || c['Nick'] || c['nick'] || '—';
       const unvan    = c['Unvan']     || c['unvan'] || '—';
-      const il       = c['İl']        || c['il']    || '';
+      const il       = c['city']      || c['City'] || c['İl'] || c['il'] || '';
 
       return `
         <a href="/company?id=${firmaNo}" class="flex items-center justify-between py-4 border-b border-border-main last:border-0 hover:bg-surface-hover rounded-2xl px-4 transition-all cursor-pointer group">
@@ -653,26 +653,13 @@ const quickActions = [
         if (syncLabel) syncLabel.textContent = 'AKTARILIYOR...';
         if (syncIcon)  syncIcon.classList.add('animate-spin');
 
-        const res = await api.bulkSync();
-
-        if (res.success) {
-          const companies = res.stats?.companies;
-          const certs = res.stats?.certRows ?? res.stats?.certs;
-          showToast(
-            companies !== undefined || certs !== undefined
-              ? `Senkronizasyon tamamlandı: ${companies ?? 0} firma, ${certs ?? 0} sertifika CF Edge'e aktarıldı.`
-              : 'Senkronizasyon tamamlandı.',
-            'success'
-          );
-          await SyncManager.checkAndSync();
-        } else {
-          showToast(`Senkronizasyon başarısız: ${res.error || 'Bağlantı kesildi.'}`, 'error');
-        }
+        await SyncManager.checkAndSync();
+        showToast('Mevcut KV verisi tarayıcıyla yeniden eşitlendi.', 'success');
       } catch (err: any) {
         showToast(`Beklenmeyen hata: ${err?.message || err}`, 'error');
       } finally {
         btnSync.disabled = false;
-        if (syncLabel) syncLabel.textContent = 'SİSTEMİ SENKRONİZE ET (KV)';
+        if (syncLabel) syncLabel.textContent = "SİSTEMİ SENKRONİZE ET (KV'DEN)";
         if (syncIcon)  syncIcon.classList.remove('animate-spin');
       }
     });
@@ -683,4 +670,3 @@ const quickActions = [
   SyncManager.init();
   checkStatus();
 </script>
-

@@ -101,6 +101,7 @@ export const api = {
     const dedupeableActions = new Set([
       "getCompanies",
       "getCompanyById",
+      "getCertificateSummaries",
       "getCertificates",
       "getCertificateById",
       "getCertificatesByFirmaId",
@@ -180,6 +181,7 @@ export const api = {
   async getCompanies() { return this.call("getCompanies"); },
   async getCompanyById(id: string | number) { return this.call("getCompanyById", { id }); },
   async updateCompany(id: string | number, companyInfo: any) { return this.call("updateCompany", { id, companyInfo }); },
+  async getCertificateSummaries() { return this.call("getCertificateSummaries"); },
   async getCertificates() { return this.call("getCertificates"); },
   async getCertificateById(id: string | number) { return this.call("getCertificateById", { id }); },
   async addCertificate(certInfo: any) { return this.call("addCertificate", { certInfo }); },

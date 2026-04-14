@@ -533,15 +533,21 @@ const DocumentService = {
 
       const blob = DriveApp.getFileById(fileId).getBlob();
       const element = range.getElement();
-      const parent = element.getParent();
+      const parentParagraph = element.getParent().asParagraph();
 
-      const img = parent.asParagraph().insertInlineImage(0, blob);
+      // Clear the placeholder text
       element.asText().setText("");
 
-      const w = img.getWidth();
-      const h = img.getHeight();
-      img.setHeight(height);
-      img.setWidth((height * w) / h);
+      // Add as PositionedImage (Above Text)
+      const posImg = parentParagraph.addPositionedImage(blob)
+        .setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT);
+      
+      const w = posImg.getWidth(); // Capture original dimensions
+      const h = posImg.getHeight();
+      
+      posImg.setHeight(height);
+      posImg.setWidth(Math.round((height * w) / h));
+
     } catch (e) {
       BaseService.logError("_replaceImage", e);
       body.replaceText(placeholder, "");
@@ -588,18 +594,18 @@ const DocumentService = {
               for (let c = 0; c < row.getNumCells(); c++) {
                 const cell = row.getCell(c);
                 if (!this._containsAnyLabel(cell.getText(), labelVariants)) continue;
-                cell.clear();
-                const paragraph = cell.appendParagraph("");
-                const img = paragraph.insertInlineImage(0, blob);
-                this._fitImageToMaxWidth(img, maxWidthPx);
+                
+                // Clear placeholder but keep formatting
+                this._clearLabels(cell, labelVariants);
+                this._addFloatingImage(cell.getChild(0).asParagraph(), blob, maxWidthPx, true);
               }
             }
           } else if (type === DocumentApp.ElementType.PARAGRAPH) {
             const paragraph = element.asParagraph();
             if (!this._containsAnyLabel(paragraph.getText(), labelVariants)) continue;
-            paragraph.clear();
-            const img = paragraph.insertInlineImage(0, blob);
-            this._fitImageToMaxWidth(img, maxWidthPx);
+            
+            this._clearLabels(paragraph, labelVariants);
+            this._addFloatingImage(paragraph, blob, maxWidthPx, true);
           }
         }
       }
@@ -623,9 +629,9 @@ const DocumentService = {
         if (type === DocumentApp.ElementType.PARAGRAPH) {
           const paragraph = element.asParagraph();
           if (!this._containsAnyLabel(paragraph.getText(), labelVariants)) continue;
-          paragraph.clear();
-          const img = paragraph.insertInlineImage(0, blob);
-          this._fitImageToMaxWidth(img, maxWidthPx);
+          
+          this._clearLabels(paragraph, labelVariants);
+          this._addFloatingImage(paragraph, blob, maxWidthPx, true);
         } else if (type === DocumentApp.ElementType.TABLE) {
           const table = element.asTable();
           for (let r = 0; r < table.getNumRows(); r++) {
@@ -633,10 +639,9 @@ const DocumentService = {
             for (let c = 0; c < row.getNumCells(); c++) {
               const cell = row.getCell(c);
               if (!this._containsAnyLabel(cell.getText(), labelVariants)) continue;
-              cell.clear();
-              const paragraph = cell.appendParagraph("");
-              const img = paragraph.insertInlineImage(0, blob);
-              this._fitImageToMaxWidth(img, maxWidthPx);
+              
+              this._clearLabels(cell, labelVariants);
+              this._addFloatingImage(cell.getChild(0).asParagraph(), blob, maxWidthPx, true);
             }
           }
         }
@@ -644,6 +649,32 @@ const DocumentService = {
     } catch (e) {
       BaseService.logError("_insertLogoInBodyAndTables", e);
     }
+  },
+
+  /**
+   * Yeni yardımcı metod: Resme yüzer (Positioned) özellik kazandırır ve ortalar.
+   */
+  _addFloatingImage: function(paragraph, blob, width, isCentered) {
+    try {
+      const posImg = paragraph.addPositionedImage(blob)
+        .setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT)
+        .setWidth(width);
+      
+      const ratio = width / posImg.getWidth();
+      posImg.setHeight(posImg.getHeight() * ratio);
+
+      if (isCentered) {
+        const pageWidth = 595; // A4 Standard
+        const leftOffset = (pageWidth - width) / 2 - 72; // 72 is typical margin fallback
+        posImg.setLeftOffset(Math.max(0, leftOffset));
+      }
+    } catch (e) {
+      BaseService.logError("_addFloatingImage", e);
+    }
+  },
+
+  _clearLabels: function(container, labels) {
+    labels.forEach(label => container.replaceText(label, ""));
   },
 
   _containsAnyLabel: function(text, labels) {
@@ -664,38 +695,26 @@ const DocumentService = {
     try {
       if (!link) return;
 
-      const body = doc.getBody();
       const footer = doc.getFooter();
-      const range = body.findText("{{QrKod}}") || (footer ? footer.findText("{{QrKod}}") : null);
-      if (!range) return;
+      if (!footer) return;
 
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(link)}`;
       const blob = UrlFetchApp.fetch(qrUrl).getBlob();
 
-      const element = range.getElement();
-      const parent = element.getParent();
+      // Footer'daki ilk paragrafa sabit konumlu olarak ekle
+      // Kullanıcı talebi: x:18 y:27
+      const paragraph = footer.getChild(0).asParagraph();
+      
+      // Varsa eski QrKod yer tutucusunu temizle
+      footer.replaceText("{{QrKod}}", "");
 
-      // Placeholder tablo hücresindeyse inline yerleştir (sabit offset yok).
-      if (parent.getType() === DocumentApp.ElementType.TABLE_CELL) {
-        const cell = parent.asTableCell();
-        cell.clear();
-        const paragraph = cell.appendParagraph("");
-        const inlineImg = paragraph.insertInlineImage(0, blob);
-        inlineImg.setWidth(90).setHeight(90);
-        return;
-      }
+      paragraph.addPositionedImage(blob)
+        .setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT)
+        .setLeftOffset(590)
+        .setTopOffset(3)
+        .setWidth(90)
+        .setHeight(90);
 
-      const textEl = element.asText();
-      const start = range.getStartOffset();
-      if (start !== -1) {
-        textEl.deleteText(start, start + "{{QrKod}}".length - 1);
-      } else {
-        textEl.replaceText("{{QrKod}}", "");
-      }
-
-      const paragraph = textEl.getParent().asParagraph();
-      const inlineImg = paragraph.insertInlineImage(0, blob);
-      inlineImg.setWidth(90).setHeight(90);
     } catch (e) {
       BaseService.logError("_generateQr", e);
     }

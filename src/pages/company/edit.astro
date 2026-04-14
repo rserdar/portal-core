@@ -403,6 +403,8 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
 <script>
   import { api } from '../../lib/api';
   import { showToast } from '../../lib/toast';
+  import { DB } from '../../lib/db';
+  import { $companies } from '../../lib/store';
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -642,7 +644,16 @@ import { ArrowLeft, Save, RefreshCw } from 'lucide-astro';
     try {
       const res = await api.call('updateCompany', { id: firmaId, companyInfo, expectedEtag: companyEtag || undefined });
       if (res?.success) {
+        const updatedData = (res as any)?.data?.company || { ...companyInfo, id: firmaId };
         companyEtag = String((res as any)?.data?.etag || companyEtag || '');
+        
+        // 🔄 Yerel cache'i (Nanostore & IndexedDB) güncelle
+        const currentList = $companies.get();
+        const newList = currentList.map(c => (String(c.id) === String(firmaId) || String(c.FirmaNo) === String(firmaId)) ? { ...c, ...updatedData } : c);
+        
+        $companies.set(newList);
+        await DB.save(DB.COMPANIES, newList);
+
         showToast('✓ Firma başarıyla güncellendi.', 'success');
       } else if (res?.error === 'CONFLICT') {
         showToast('✕ Bu kayıt başka bir kullanıcı tarafından güncellendi. Lütfen sayfayı yenileyip tekrar deneyin.', 'error');

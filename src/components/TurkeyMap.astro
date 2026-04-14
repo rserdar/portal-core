@@ -325,6 +325,7 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
 
   function isTurkeyCompany(company) {
     const country = normalizeCityName(pickValue(company, ['Ülke', 'Ulke', 'ulke', 'Country']));
+    if (!country) return true;
     return country === 'TURKIYE' || country === 'TURKEY';
   }
 
@@ -517,7 +518,7 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
 
     companiesData.forEach((company) => {
       if (!isTurkeyCompany(company)) return;
-      const cityName = pickValue(company, ['İl', 'il', 'City', 'Sehir']);
+      const cityName = pickValue(company, ['city', 'City', 'İl', 'il', 'Sehir', 'Şehir', 'sehir']);
       const cityKey = canonicalCityName(cityName);
       if (!cityKey) return;
       if (!freshStats.has(cityKey)) {
@@ -526,14 +527,18 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
       const entry = freshStats.get(cityKey);
       entry.companyCount += 1;
       entry.companyIds.push(String(pickValue(company, ['Firma No', 'id'])));
-      const consultant = pickValue(company, ['Danışman', 'Danisman', 'dan']);
-      if (consultant && !entry.consultants.includes(consultant)) entry.consultants.push(consultant);
     });
 
     freshStats.forEach((entry) => {
       const companyIds = new Set(entry.companyIds);
-      entry.activeCerts = certsData.filter((cert) => companyIds.has(String(pickValue(cert, ['Firma No', 'firmaNo', 'fid']))) && isActiveCertificate(cert, today)).length;
-      entry.pendingThisMonth = certsData.filter((cert) => companyIds.has(String(pickValue(cert, ['Firma No', 'firmaNo', 'fid']))) && isPendingThisMonth(cert, currentMonth, currentYear)).length;
+      const cityCerts = certsData.filter((cert) => companyIds.has(String(pickValue(cert, ['Firma No', 'firmaNo', 'fid']))));
+      entry.activeCerts = cityCerts.filter((cert) => isActiveCertificate(cert, today)).length;
+      entry.pendingThisMonth = cityCerts.filter((cert) => isPendingThisMonth(cert, currentMonth, currentYear)).length;
+      entry.consultants = [...new Set(
+        cityCerts
+          .map((cert) => pickValue(cert, ['Danışman', 'Danisman', 'dan', 'danisman']))
+          .filter(Boolean)
+      )];
     });
 
     cityStats = freshStats;

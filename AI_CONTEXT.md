@@ -1,12 +1,14 @@
-# 🤖 Project Intelligence & Context (AI_CONTEXT.md v5.6.1)
+# 🤖 Project Intelligence & Context (AI_CONTEXT.md v5.7.1)
 
 > [!IMPORTANT]
-> **KV-Primary Architecture (v5.6.1):** Bu proje hem okuma hem yazma için **Cloudflare KV**'yi birincil veri tabanı olarak kullanır. Cloudflare Worker (`src/workers/proxy.js`) tüm veri operasyonlarını yönetir.
+> **Granular KV Architecture (v5.7.1):** Bu proje hem okuma hem yazma için **Cloudflare KV**'yi birincil veri tabanı olarak kullanır. Cloudflare Worker (`src/workers/proxy.js`) tüm veri operasyonlarını yönetir.
 > - **KV Binding:** `env.DB` (linked to Namespace ID: `8eb0dc6ffe2947729b29f0db1c84fd52`).
 > - **Strategy:** KV-primary for ALL operational reads AND writes. Google Sheets is backup / restore ONLY — operational database değildir.
 > - **Google Native Exception:** Docs, Drive, Calendar, Gmail operasyonları GAS üzerinden çalışır (KV bypass). Bu servisler hiçbir zaman KV'ye taşınamaz.
-> - **Bulk Hydration:** A "SİSTEMİ SENKRONİZE ET" button triggers a bulk export from GAS to KV and local IndexedDB.
-> - **Performance Manifesto:** `bulkSync` / `importBackup` dışındaki hiçbir write path full dataset rebuild yapamaz. Günlük write operasyonları yalnızca etkilenen KV index/key'lerini incremental günceller.
+> - **Bulk Hydration:** "SİSTEMİ SENKRONİZE ET" butonu GAS → KV → IndexedDB tam hydration'ı tetikler. Deploy sonrası **bir kez** çalıştırılması zorunludur.
+> - **Performance Manifesto:** `bulkSync` / `importBackup` dışındaki hiçbir write path full dataset rebuild yapamaz. Günlük write operasyonları yalnızca etkilenen KV key'lerini incremental günceller.
+> - **Granular Key Rule:** Firma verisi `cache:company:{id}` + `cache:index:companies:search`, sertifika verisi `cache:getCertificateById:{stableKey}` + `cache:getCertificatesByFirmaId:{stableKey}` + `cache:index:certificates:recent` üzerinden yönetilir. Monolitik `cache:index:companiesById`, `cache:index:certificateById`, `cache:index:certificatesByFirmaId` key'leri **kaldırılmıştır** — bu isimleri kullanan hiçbir kod yazılmamalıdır.
+> - **Refactor Status:** `addCompany`, `updateCompany`, `bulkSync`, `getCompanies`, `getCompanyById`, `addCertificate`, `updateCertificate`, `updateCertificateField`, `updateGozetim`, `updateSurveillance` granüler mimariye geçirilmiştir. `saveProformaState`, `saveAuditState` ve türev dead code'lar temizlenmiştir.
 > - **New Hard Rule:** Doküman üretimi için gereken operasyonel payload'lar Google Sheets'ten okunamaz; Worker bunları KV indexlerinden kurar ve GAS'e hazır veri gönderir.
 > - **Operational Status:** `buildCertPayload` ve `buildTestPayload` operasyonel path'te Worker/KV tarafından üretilir; GAS tarafındaki sheet-backed helper'lar yalnızca legacy/fallback referansıdır.
 
@@ -50,8 +52,8 @@
 - **No operational Sheet reads:** Firma/sertifika/test/denetim/proforma/standart verisini doküman üretmek, listelemek, tek kayıt bulmak veya işlem yapmak için Sheets'ten okumak yasaktır.
 - **Allowed Sheet usage only:** `bulkSync`, `bulkSyncMaster`, `exportBackup`, `importBackup`, ve gerçekten şablon/master veri kaynağı olarak korunması gereken nadir Google-native senaryolar.
 - **Incremental write zorunluluğu:** `add/update` operasyonları tek kayıt değişimi için tüm dataset'i `JSON.parse`/`JSON.stringify` yapamaz.
-- **Index-first tasarım:** Liste cache'leri disposable kabul edilir; kalıcı doğruluk `cache:index:*` ve küçük `cache:meta:*NextId` anahtarlarında korunur.
-- **Aggregate cache politikası:** `cache:getCompanies:{}`, `cache:getCertificates:{}`, `cache:getAudits:{}`, `cache:getConsultants:{}` gibi toplu cache'ler write anında yeniden üretilmez; invalidate edilir ve gerekirse indexten rebuild edilir.
+- **Granular-first tasarım:** Her firma `cache:company:{id}` (tam kayıt, ~1KB) ve `cache:index:companies:search` (hafif 6-alan index) üzerinden yönetilir. Her sertifika `cache:getCertificateById:{stableKey}` (tam kayıt), `cache:getCertificatesByFirmaId:{stableKey}` (firma sertifika listesi) ve `cache:index:certificates:recent` (son ID listesi) üzerinden yönetilir. Monolitik "hepsini tek JSON'a koy" yaklaşımı kesinlikle yasaktır — 10MB KV limiti ve write-amplification riski taşır.
+- **Aggregate cache politikası:** `cache:getCompanies:{}`, `cache:getCertificates:{}`, `cache:getAudits:{}`, `cache:getConsultants:{}` gibi toplu cache'ler write anında yeniden üretilmez; invalidate edilir ve gerekirse indexten rebuild edilir. `cache:getCompanies:{}` şu an **lightweight search array** döner (id, nickname, unvan, city, kapsam, scope); tam firma detayı her zaman `cache:company:{id}`'den alınır.
 - **bulkSync istisnası:** Full dataset rebuild yalnızca `bulkSync`, `bulkSyncMaster`, `importBackup` gibi açıkça toplu veri senaryolarında serbesttir.
 - **KV/GAS kota ekonomisi:** Bir write path tek kayıt için gereksiz KV `get/list/put/delete` zinciri kuramaz; GAS'a ancak Google-native side-effect veya açık backup/sync ihtiyacı varsa gidilir.
 - **CORS disiplini:** Worker yalnızca allowlist origin'leri kabul eder. `Origin` header'ı olan ama allowlist dışında kalan browser istekleri 403 ile reddedilir. `OPTIONS` cevapları ile `POST` cevapları aynı policy'yi taşır.
@@ -105,16 +107,16 @@ Browser → CF Worker → KV hit? → Dön (0ms)
 | Action | KV Cache Key Formatı | Notlar |
 | :--- | :--- | :--- |
 | `getCompanies` | `cache:getCompanies:{}` | bulkSync ile hydrate edilir |
-| `getCompanyById` | `cache:getCompanyById:{"id":"X"}` | index: `cache:index:companiesById` |
+| `getCompanyById` | `cache:getCompanyById:{"id":"X"}` | fallback: `cache:company:{id}` (granular) |
 | `getCertificates` | `cache:getCertificates:{}` | bulkSync ile hydrate edilir |
-| `getCertificatesByFirmaId` | `cache:getCertificatesByFirmaId:{"firmaId":"X"}` | index: `cache:index:certificatesByFirmaId` |
+| `getCertificatesByFirmaId` | `cache:getCertificatesByFirmaId:{"firmaId":"X"}` | granüler firma sertifika listesi |
 | `getTestsByFirmaId` | `cache:getTestsByFirmaId:{"firmaId":"X"}` | index: `cache:index:testsByFirmaId` |
 | `getAuditsByFirmaId` | `cache:getAuditsByFirmaId:{"firmaId":"X"}` | index: `cache:index:auditsByFirmaId` |
 | `getFolderId` | `cache:getFolderId:{"nickname":"X"}` | Drive klasör ID'si değişmez |
 | `getRecentFiles` | `cache:getRecentFiles:{"nickname":"X",...}` | Kısa TTL düşünülebilir |
 | `getConsultants` | `cache:getConsultants:{}` | ✅ Aktif |
 | `getStandardById` | `cache:getStandardById:{"id":"X"}` | ✅ Aktif |
-| `getRecentCertificates` | `cache:getRecentCertificates:{"limit":25}` | ✅ Aktif |
+| `getRecentCertificates` | `cache:getRecentCertificates:{"limit":25}` | source of truth: `cache:index:certificates:recent` + per-cert key'ler |
 | `getProformaByFirmaId` | `cache:getProformaByFirmaId:{"firmaId":"X"}` | ✅ Aktif |
 | `getProformaById` | `cache:getProformaById:{"id":"X"}` | ✅ Aktif |
 | `getMasterData` | `cache:getMasterData:{"type":"X"}` | ✅ Aktif (`standards/auditors/consultants/testdocs/sysdocs`) |
@@ -151,12 +153,12 @@ Browser → CF Worker → KV'ye yaz (primary) → Başarılı?
 
 | Action | Yazma Hedefi | Etkilenen KV Key(ler) |
 | :--- | :--- | :--- |
-| `addCompany` | **KV-primary** | `cache:index:companiesById`, `cache:meta:companyNextId`, `cache:getCompanyById:{"id":"X"}` güncellenir; aggregate cache invalidate edilir |
-| `updateCompany` | **KV-primary** | `cache:index:companiesById`, `cache:getCompanyById:{"id":"X"}` güncellenir; aggregate cache invalidate edilir |
-| `addCertificate` | **KV-primary** | `cache:index:certificateById`, `cache:index:certificatesByFirmaId`, `cache:meta:certificateNextId`, ilgili firma cache'i güncellenir; aggregate cache invalidate edilir |
-| `updateCertificate` | **KV-primary** | Aynı sertifika indexleri + ilgili firma cache'i güncellenir; aggregate cache invalidate edilir |
-| `updateCertificateField` | **KV-primary** | İlgili sertifika indexleri + ilgili firma cache'i güncellenir; aggregate cache invalidate edilir |
-| `updateSurveillance` | **KV-primary** + Calendar GAS side-effect | Yalnızca etkilenen sertifika indexleri / firma cache'leri güncellenir; full rebuild yapılmaz |
+| `addCompany` | **KV-primary** | `cache:company:{newId}` yazılır, `cache:index:companies:search` güncellenir, `cache:meta:companyNextId` artırılır; aggregate cache invalidate edilir |
+| `updateCompany` | **KV-primary** | `cache:company:{id}` (1KB) güncellenir, `cache:index:companies:search` içindeki ilgili entry güncellenir; aggregate cache invalidate edilir |
+| `addCertificate` | **KV-primary** | `cache:getCertificateById:{stableKey}` yazılır, `cache:getCertificatesByFirmaId:{firmaId}` append edilir, `cache:meta:certificateNextId` artırılır; aggregate cache invalidate edilir |
+| `updateCertificate` | **KV-primary** | `cache:getCertificateById:{stableKey}` güncellenir, yalnızca etkilenen eski/yeni firma listeleri patch edilir; aggregate cache invalidate edilir |
+| `updateCertificateField` | **KV-primary** | `cache:getCertificateById:{stableKey}` güncellenir, yalnızca etkilenen firma listesi patch edilir; aggregate cache invalidate edilir |
+| `updateSurveillance` | **KV-primary** + Calendar GAS side-effect | Etkilenen sertifikalar ve firma listeleri paralel yüklenir, in-place güncellenir; full rebuild yapılmaz |
 | `addTest` | **KV-primary** | `cache:index:testsByFirmaId`, `cache:meta:testNextId`, `cache:getTestsByFirmaId:{"firmaId":"X"}` güncellenir |
 | `scheduleAudit` | **KV-primary** + Calendar GAS side-effect | `cache:index:auditsByFirmaId`, `cache:meta:auditNextId`, `cache:getAuditsByFirmaId:{"firmaId":"X"}` güncellenir; aggregate audit cache invalidate edilir |
 | `addProforma` | **KV-primary** | `cache:index:proformasById`, `cache:index:proformasByFirmaId`, `cache:meta:proformaNextId`, ilgili firma cache'i güncellenir |
@@ -181,6 +183,72 @@ Bu operasyonlar için KV cache uygulanamaz ve uygulanmamalıdır. Worker doğrud
 Yeni bir READ action eklendiğinde, eğer verisi `SyncService.getFullExport()` tarafından döndürülen yapıya dahil edilebiliyorsa (Sheets'ten bulk okunabilir), `bulkSync` sırasında da o verinin KV'ye yazılması sağlanmalıdır. Bu, cold-start (hiç cache olmayan) durumunda ilk yüklenişin de hızlı olmasını garanti eder.
 
 Şu an `getFullExport` şunları döner: `companies`, `certificates`, `certificateRows`, `tests`, `audits`, `proformas`, `consultants`, `standards`, `syncWarnings`, `lastUpdate`.
+
+---
+
+## 🗝️ KV Key Kataloğu (v5.7.0 — Canonical)
+
+> [!CAUTION]
+> Bu katalog proxy.js'teki gerçek key şemasıdır. Yeni kod yazarken, mevcut kodu okurken veya KV'ye manuel müdahale ederken bu listeyi referans al. Katalogda olmayan monolitik key'ler (`cache:index:companiesById`, `cache:index:certificateById`, `cache:index:certificatesByFirmaId`) **kaldırılmıştır** — bu isimleri asla kullanma.
+
+### Firma (Company) Key'leri
+
+| KV Key | Boyut | İçerik | Kim yazar |
+| :--- | :--- | :--- | :--- |
+| `cache:company:{id}` | ~1KB/firma | Tam canonical firma objesi (tüm alanlar) | `addCompany`, `updateCompany`, `bulkSync` |
+| `cache:index:companies:search` | ~160KB toplam | `{id: {id, nickname, unvan, city, kapsam, scope}}` map — yalnızca 6 alan | `addCompany`, `updateCompany`, `bulkSync` |
+| `cache:meta:companyNextId` | <20B | Son atanan firma ID'sinin bir fazlası (string) | `addCompany`, `bulkSync` |
+| `cache:getCompanies:{}` | ~160KB | Lightweight company array (search alanları) — aggregate/list cache | `bulkSync`; yazma sırasında **invalidate** edilir |
+| `cache:getCompanyById:{stableKey}` | ~1KB | Tek firma cached lookup — aggregate cache | `getCompanyById` miss fallback yazar; yazma sırasında invalidate edilir |
+
+> **`getCompanies` neden lightweight döner?** Firma listesi (1600+ kayıt) tam alanlarla ~10MB'a yaklaşır — KV single-key 10MB limitini zorlar ve her browser sync'inde ağır download yaratır. List görünümü ve arama için yalnızca 6 alan yeterlidir; detay sayfaları `getCompanyById` ile `cache:company:{id}`'den tam kaydı alır.
+
+### Sertifika (Certificate) Key'leri
+
+| KV Key | Boyut | İçerik | Kim yazar |
+| :--- | :--- | :--- | :--- |
+| `cache:getCertificateById:{stableKey}` | ~1KB/sert. | Tam canonical sertifika objesi | `addCertificate`, `updateCertificate`, `updateCertificateField`, `updateGozetim`, `updateSurveillance`, `bulkSync` |
+| `cache:getCertificatesByFirmaId:{stableKey}` | ~10KB/firma | Firma'ya ait tüm sertifikaların canonical array'i | `addCertificate`, `updateCertificate`, `updateCertificateField`, `updateGozetim`, `updateSurveillance`, `bulkSync` |
+| `cache:meta:certificateNextId` | <20B | Son atanan sertifika ID'sinin bir fazlası (string) | `addCertificate`, `bulkSync` |
+| `cache:index:certificates:recent` | küçük array | Son sertifika ID'leri desc sırada tutulur; `getRecentCertificates` bundan rebuild edilir | `bulkSync`, sertifika write path'leri |
+| `cache:getCertificates:{}` | değişken | Tüm sertifikalar aggregate list cache | `bulkSync`; yazma sırasında **invalidate** edilir |
+
+> **`stableKey` formatı:** `stableStringify({id})` → örnek: `{"id":"1234"}`. Bu fonksiyon alan sıralamasını deterministik yapar; aynı parametreler her zaman aynı key'i üretir.
+
+### Diğer Aktif Key'ler
+
+| KV Key | İçerik |
+| :--- | :--- |
+| `cache:getTestsByFirmaId:{stableKey}` | Firma test listesi |
+| `cache:meta:testNextId` | Test ID sayacı |
+| `cache:getAuditsByFirmaId:{stableKey}` | Firma denetim listesi |
+| `cache:meta:auditNextId` | Denetim ID sayacı |
+| `cache:getProformaByFirmaId:{stableKey}` | Firma proforma listesi |
+| `cache:getProformaById:{stableKey}` | Tekil proforma |
+| `cache:meta:proformaNextId` | Proforma ID sayacı |
+| `cache:getMasterData:{stableKey}` | standards/auditors/consultants/testdocs/sysdocs |
+| `cache:getStandardById:{stableKey}` | Tekil standart |
+| `cache:getConsultants:{}` | Danışman listesi |
+| `cache:getRecentCertificates:{stableKey}` | `certificate:recent` indexinden rebuild edilen son sertifikalar listesi |
+| `cache:getFolderId:{stableKey}` | Drive klasör ID cache'i |
+| `cache:getRecentFiles:{stableKey}` | Drive son dosyalar cache'i |
+
+### Kaldırılmış (Deprecated) Key'ler — Asla Kullanılmamalı
+
+| Eski KV Key | Neden kaldırıldı | Yerine |
+| :--- | :--- | :--- |
+| `cache:index:companiesById` | ~10MB monolith — KV limitini zorluyor, her write'ta full rebuild gerekiyordu | `cache:company:{id}` + `cache:index:companies:search` |
+| `cache:index:certificateById` | ~2-3MB monolith | `cache:getCertificateById:{stableKey}` |
+| `cache:index:certificatesByFirmaId` | ~2-3MB monolith | `cache:getCertificatesByFirmaId:{stableKey}` |
+
+> Bu key'ler `bulkSync` çalıştırılmadan önce KV'de hâlâ bulunabilir — yeni Worker kodu bunları okumaz, yeni değer yazmaz. TTL dolunca otomatik expire olurlar.
+
+### Refactor Notları
+
+- `cache:index:companiesById` kaldırıldı; company read/write path'i artık `cache:company:{id}` + `cache:index:companies:search` üzerinden ilerler.
+- `cache:index:certificateById` kaldırıldı; sertifika read/write path'i artık per-certificate key üzerinden ilerler.
+- `updateSurveillance` çoklu sertifika güncellemesini paralel `get` / paralel `put` modeliyle yapar; bu davranış performans için korunmalıdır.
+- `saveProformaState`, `saveAuditState` ve benzeri full-state helper'lar dead code olarak temizlenmiştir; tekrar eklenmemelidir.
 
 ---
 

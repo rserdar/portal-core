@@ -10,7 +10,7 @@ import { get, set, del, keys } from 'idb-keyval';
 export const DB = {
   // Veri Setleri (Keys)
   COMPANIES: 'portal_companies',
-  CERTIFICATES: 'portal_certificates',
+  CERTIFICATES: 'portal_certificates', // dashboard/search için hafif sertifika summary listesi
   LAST_SYNC: 'portal_last_sync_time',
 
   /**

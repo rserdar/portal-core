@@ -53,7 +53,7 @@ export const SyncManager = {
         const fetchCore = async () => {
           return Promise.all([
             api.call<any[]>('getCompanies'),
-            api.call<any[]>('getCertificates')
+            api.call<any[]>('getCertificateSummaries')
           ]);
         };
 
@@ -126,7 +126,7 @@ export const SyncManager = {
         await DB.clearAll();
         const [compRes, certRes] = await Promise.all([
           api.call<any[]>('getCompanies'),
-          api.call<any[]>('getCertificates')
+          api.call<any[]>('getCertificateSummaries')
         ]);
         if (!compRes.success || !certRes.success) {
           throw new Error(compRes.error || certRes.error || 'KV yeniden okuma başarısız');
