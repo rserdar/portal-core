@@ -1280,11 +1280,26 @@ export default {
             const idKey = String(idParam);
 
             // getCompanyById: granüler cache:company:{id} direkt lookup (dev index yok)
+            // getCompanyById: granüler cache:company:{id} direkt lookup + fullCompanies fallback
             if (action === "getCompanyById") {
               const companyRaw = await env.DB.get(`cache:company:${idKey}`);
               if (companyRaw !== null) {
                 ctx.waitUntil(env.DB.put(cacheKey, companyRaw, { expirationTtl: CACHE_TTL }));
                 return jsonResponseWithRawData(companyRaw, { fromCache: true, indexed: true });
+              }
+              // [FALLBACK] Full listeye bak
+              const fullRaw = await env.DB.get(indexKeys.fullCompanies);
+              if (fullRaw) {
+                const fullList = JSON.parse(fullRaw);
+                const found = fullList.find(c => String(getCompanyId(c)) === idKey);
+                if (found) {
+                  const foundStr = JSON.stringify(found);
+                  ctx.waitUntil(Promise.all([
+                    env.DB.put(cacheKey, foundStr, { expirationTtl: CACHE_TTL }),
+                    env.DB.put(`cache:company:${idKey}`, foundStr, { expirationTtl: CACHE_TTL })
+                  ]));
+                  return jsonResponseWithRawData(foundStr, { fromCache: true, rebuiltFromFull: true });
+                }
               }
             }
 
@@ -1309,6 +1324,46 @@ export default {
             } else if (action === "getStandardById") {
               indexCacheKey = indexKeys.standardsById;
               emptyValue = null;
+            } else if (action === "getCertificateById") {
+              const certKey = `cache:getCertificateById:${stableStringify({ id: idKey })}`;
+              const certRaw = await env.DB.get(certKey);
+              if (certRaw) {
+                ctx.waitUntil(env.DB.put(cacheKey, certRaw, { expirationTtl: CACHE_TTL }));
+                return jsonResponseWithRawData(certRaw, { fromCache: true, indexed: true });
+              }
+              // [FALLBACK] Full listeye bak
+              const fullCertRaw = await env.DB.get(indexKeys.fullCertificates);
+              if (fullCertRaw) {
+                const fullCerts = JSON.parse(fullCertRaw);
+                const foundCert = fullCerts.find(c => String(getCertificateId(c)) === idKey);
+                if (foundCert) {
+                  const foundCertStr = JSON.stringify(foundCert);
+                  ctx.waitUntil(Promise.all([
+                    env.DB.put(cacheKey, foundCertStr, { expirationTtl: CACHE_TTL }),
+                    env.DB.put(certKey, foundCertStr, { expirationTtl: CACHE_TTL })
+                  ]));
+                  return jsonResponseWithRawData(foundCertStr, { fromCache: true, rebuiltFromFull: true });
+                }
+              }
+            } else if (action === "getCertificatesByFirmaId") {
+              const resKey = `cache:getCertificatesByFirmaId:${stableStringify({ firmaId: idKey })}`;
+              const resRaw = await env.DB.get(resKey);
+              if (resRaw) {
+                ctx.waitUntil(env.DB.put(cacheKey, resRaw, { expirationTtl: CACHE_TTL }));
+                return jsonResponseWithRawData(resRaw, { fromCache: true, indexed: true });
+              }
+              // [FALLBACK] Full listeye bak ve firmaId'ye göre filtrele
+              const fullCertRaw = await env.DB.get(indexKeys.fullCertificates);
+              if (fullCertRaw) {
+                const fullCerts = JSON.parse(fullCertRaw);
+                const filtered = fullCerts.filter(c => String(getCertificateFirmaId(c)) === idKey);
+                const filteredStr = JSON.stringify(filtered);
+                ctx.waitUntil(Promise.all([
+                  env.DB.put(cacheKey, filteredStr, { expirationTtl: CACHE_TTL }),
+                  env.DB.put(resKey, filteredStr, { expirationTtl: CACHE_TTL })
+                ]));
+                return jsonResponseWithRawData(filteredStr, { fromCache: true, rebuiltFromFull: true });
+              }
             }
 
             if (indexCacheKey) {
@@ -1602,12 +1657,8 @@ export default {
                 writes.push(env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }));
                 writes.push(env.DB.put(`cache:getCompanies:{}`, JSON.stringify(Object.values(companySearchIndex)), { expirationTtl: CACHE_TTL }));
                 writes.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(canonicalCompanies), { expirationTtl: CACHE_TTL }));
-
-                canonicalCompanies.forEach(company => {
-                  const cid = getCompanyId(company);
-                  if (cid) writes.push(env.DB.put(`cache:company:${cid}`, JSON.stringify(company), { expirationTtl: CACHE_TTL }));
-                });
-
+                
+                // [LIMIT REHAB] Tekil yazma döngüsü kaldırıldı (Read-through fallback kullanılacak)
                 const companyEntityKeys = new Set(canonicalCompanies.map(c => `cache:company:${getCompanyId(c)}`));
                 purges.push(purgeCachePrefix("cache:getCompanyById:"));
                 purges.push(purgeStaleKvKeys("cache:company:", companyEntityKeys));
@@ -1646,19 +1697,12 @@ export default {
                 writes.push(env.DB.put(`cache:getRecentCertificates:${stableStringify({ limit: 25 })}`, JSON.stringify(recentObjects), { expirationTtl: CACHE_TTL }));
                 writes.push(env.DB.put(indexKeys.fullCertificates, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }));
 
-                dedupedCertificates.forEach(cert => {
-                  const id = getCertificateId(cert);
-                  if (id) writes.push(env.DB.put(`cache:getCertificateById:${stableStringify({ id: String(id) })}`, JSON.stringify(cert), { expirationTtl: CACHE_TTL }));
-                });
-                Object.entries(certsByFirmaId).forEach(([fId, list]) => {
-                  writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
-                });
-
+                // [LIMIT REHAB] Tekil yazma döngüleri kaldırıldı (Read-through fallback kullanılacak)
                 const certEntityKeys = new Set(dedupedCertificates.map(c => `cache:getCertificateById:${stableStringify({ id: String(getCertificateId(c)) })}`));
                 const certFirmaKeys = new Set(Object.keys(certsByFirmaId).map(fId => `cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`));
                 purges.push(purgeCachePrefix("cache:getRecentCertificates:"));
-                purges.push(purgeStaleKvKeys("cache:getCertificateById:", certEntityKeys));
-                purges.push(purgeStaleKvKeys("cache:getCertificatesByFirmaId:", certFirmaKeys));
+                // purges.push(purgeStaleKvKeys("cache:getCertificateById:", certEntityKeys)); // [DÜZELTME] Opsiyonel: Stale temizliği sub-request harcar, şimdilik devre dışı
+                // purges.push(purgeStaleKvKeys("cache:getCertificatesByFirmaId:", certFirmaKeys)); // [DÜZELTME] Opsiyonel
                 stats.certs = dedupedCertificates.length;
               }
 
@@ -1803,10 +1847,7 @@ export default {
               writes.push(env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(`cache:getCompanies:{}`, JSON.stringify(Object.values(companySearchIndex)), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(canonicalCompanies), { expirationTtl: CACHE_TTL }));
-              canonicalCompanies.forEach(c => {
-                const cid = getCompanyId(c);
-                if (cid) writes.push(env.DB.put(`cache:company:${cid}`, JSON.stringify(c), { expirationTtl: CACHE_TTL }));
-              });
+              // [LIMIT REHAB] Tekil yazma kaldırıldı
               purges.push(purgeCachePrefix("cache:getCompanyById:"));
               purges.push(purgeStaleKvKeys("cache:company:", new Set(canonicalCompanies.map(c => `cache:company:${getCompanyId(c)}`))));
             }
@@ -1831,15 +1872,9 @@ export default {
               writes.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(`cache:getCertificates:{}`, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(indexKeys.fullCertificates, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }));
-              dedupedCertificates.forEach(cert => {
-                const id = getCertificateId(cert);
-                if (id) writes.push(env.DB.put(`cache:getCertificateById:${stableStringify({ id: String(id) })}`, JSON.stringify(cert), { expirationTtl: CACHE_TTL }));
-              });
-              Object.entries(certsByFirmaId).forEach(([fId, list]) => {
-                writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
-              });
+              // [LIMIT REHAB] Tekil yazma kaldırıldı
               purges.push(purgeCachePrefix("cache:getRecentCertificates:"));
-              purges.push(purgeStaleKvKeys("cache:getCertificateById:", new Set(dedupedCertificates.map(c => `cache:getCertificateById:${stableStringify({ id: String(getCertificateId(c)) })}`))));
+              // purges.push(purgeStaleKvKeys("cache:getCertificateById:", new Set(dedupedCertificates.map(c => `cache:getCertificateById:${stableStringify({ id: String(getCertificateId(c)) })}`)))); // [DÜZELTME] Opsiyonel
             }
 
             if (scope.includes("tests") && payload.testsByFirmaId) writes.push(env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(payload.testsByFirmaId), { expirationTtl: CACHE_TTL }));
