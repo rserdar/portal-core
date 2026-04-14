@@ -267,13 +267,14 @@ const DocumentService = {
       
       // A4 = ~595 x 842 pt
       // 550x550 resim için => left = (595 - 550)/2 = ~22, top = (842 - 550)/2 = ~146
-      // Header offsetini (~36pt) hesaba katarak topOffset'i ayarlıyoruz
+      // Header offsetini (~36pt) hesaba katarak topOffset'i ayarlıyoruz. 
+      // Sola kayma durumunu önlemek için leftOffset'i eski body marginine uygun (yaklaşık +75) ayarladık.
       p.addPositionedImage(bgImage)
         .setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT) // Header içinde overlay fakat Body'nin arkasında
-        .setWidth(550)
-        .setHeight(550)
-        .setLeftOffset(22)
-        .setTopOffset(100);
+        .setWidth(600)
+        .setHeight(600)
+        .setLeftOffset(65)
+        .setTopOffset(80);
 
 
       doc.saveAndClose();
