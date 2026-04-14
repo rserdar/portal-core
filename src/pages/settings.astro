@@ -8,14 +8,14 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
           <p class="text-xs uppercase tracking-[0.2em] text-muted">Master Data</p>
-          <h1 class="text-2xl font-extrabold mt-1">Kemik Veri Yönetimi</h1>
+          <h1 class="text-2xl font-extrabold mt-1">Kemik Veri Yonetimi</h1>
           <p class="text-sm text-muted mt-2">
-            Standarts, Auditors, Consultants, TestDoc ve SysDoc verilerini buradan yönetebilirsin.
+            Standarts, Auditors, Consultants, TestDoc ve SysDoc verilerini buradan yonetebilirsin.
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
           <button id="full-sync-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold">
-            Sheets'ten Tümünü Çek
+            Sheets'ten Tumunu Cek
           </button>
           <button id="sync-master-btn" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold">
             Sheets'ten Senkronla
@@ -55,7 +55,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
 
       <div class="flex flex-wrap gap-2">
         <button id="add-row-btn" class="px-4 py-2 rounded-xl bg-surface-hover border border-border-main text-sm font-bold">
-          Satır Ekle
+          Satir Ekle
         </button>
         <button id="save-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold">
           Kaydet
@@ -66,10 +66,10 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">Aksiyon Kapsamı</p>
-          <h2 class="text-xl font-extrabold mt-1">İşlem Kapsamı Seçimi</h2>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Aksiyon Kapsami</p>
+          <h2 class="text-xl font-extrabold mt-1">Islem Kapsami Secimi</h2>
           <p class="text-sm text-muted mt-2">
-            Aşağıdaki işlemlerden hangilerinin yapılacağını buradan seçebilirsin.
+            Asagidaki islemlerden hangilerinin yapilacagini buradan secebilirsin.
           </p>
         </div>
       </div>
@@ -96,12 +96,12 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
           <p class="text-xs uppercase tracking-[0.2em] text-muted">Google Sheets &lt;-&gt; KV</p>
           <h2 class="text-xl font-extrabold mt-1">Sheets Senkronizasyonu</h2>
           <p class="text-sm text-muted mt-2">
-            Verileri Google Sheets'ten Cloudflare KV'ye çeker. Seçili kapsamları günceller.
+            Verileri Google Sheets'ten Cloudflare KV'ye ceker. Secili kapsamlari gunceller.
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
           <button id="ops-sync-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/20 active:scale-95 transition-all">
-            Seçili Verileri Sheets'ten Çek
+            Secili Verileri Sheets'ten Cek
           </button>
         </div>
       </div>
@@ -109,14 +109,14 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-2">
         <div>
           <p class="text-xs uppercase tracking-[0.2em] text-muted">Cloudflare KV &lt;-&gt; JSON</p>
-          <h2 class="text-xl font-extrabold mt-1">JSON Yedekleme / Geri Yükleme</h2>
+          <h2 class="text-xl font-extrabold mt-1">JSON Yedekleme / Geri Yukleme</h2>
           <p class="text-sm text-muted mt-2">
-            Canlı KV verilerini .json olarak yedekle veya bir yedeği sisteme (Replace) geri yükle.
+            Canli KV verilerini .json olarak yedekle veya bir yedegi sisteme (Replace) geri yukle.
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
           <button id="export-kv-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-600/20 active:scale-95 transition-all">
-            Seçili Verileri .json Olarak Yedekle
+            Secili Verileri .json Olarak Yedekle
           </button>
         </div>
       </div>
@@ -135,7 +135,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
           </svg>
           <p>
-            <b>DİKKAT:</b> İçeri aktarma işlemi, seçtiğiniz kapsamdaki mevcut KV verilerini tamamen <u>siler</u> ve yedektekilerle değiştirir. Diğer kapsamlar korunur.
+            <b>DIKKAT:</b> Iceri aktarma islemi, sectiginiz kapsamdaki mevcut KV verilerini tamamen <u>siler</u> ve yedektekilerle degistirir. Diger kapsamlar korunur.
           </p>
         </div>
       </div>
@@ -254,21 +254,21 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
 
   async function loadDataset(type: string) {
     currentType = type;
-    setStatus("Veri yükleniyor...");
+    setStatus("Veri yukleniyor...");
 
     let res = await api.getMasterData(type);
     if (!res.success && (res.needsHydration || res.error === "KV_PRIMARY_MISS")) {
-      setStatus("KV boş. Master data hydration başlatılıyor...");
+      setStatus("KV bos. Master data hydration baslatiliyor...");
       const syncRes = await api.bulkSyncMaster();
       if (!syncRes.success) {
-        setStatus(`Master sync başarısız: ${syncRes.error || "Bilinmeyen hata"}`, "error");
+        setStatus("Master sync basarisiz: " + (syncRes.error || "Bilinmeyen hata"), "error");
         return;
       }
       res = await api.getMasterData(type);
     }
 
     if (!res.success || !res.data || !res.data.dataset) {
-      setStatus(`Veri alınamadı: ${res.error || "Geçersiz yanıt"}`, "error");
+      setStatus("Veri alinamadi: " + (res.error || "Gecersiz yanit"), "error");
       return;
     }
 
@@ -279,10 +279,10 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     currentRows = Array.isArray(ds.rows) ? ds.rows.map((r: any) => Array.isArray(r) ? [...r] : []) : [];
 
     if (metaVersion) metaVersion.textContent = `v${currentVersion || "-"}`;
-    if (metaUpdated) metaUpdated.textContent = payload.updatedAt ? `Güncelleme: ${new Date(payload.updatedAt).toLocaleString("tr-TR")}` : "Güncelleme: -";
+    if (metaUpdated) metaUpdated.textContent = payload.updatedAt ? "Guncelleme: " + new Date(payload.updatedAt).toLocaleString("tr-TR") : "Guncelleme: -";
 
     renderTable();
-    setStatus(`${ds.sheetName || type} yüklendi (${currentRows.length} satır).`, "success");
+    setStatus((ds.sheetName || type) + " yuklendi (" + currentRows.length + " satir).", "success");
   }
 
   async function saveDataset() {
@@ -291,11 +291,11 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     const res = await api.updateMasterData(currentType, { rows: currentRows }, currentVersion || undefined);
     if (!res.success) {
       if (res.error === "MASTER_VERSION_CONFLICT") {
-        setStatus("Version conflict: Veri başka bir oturumda değişmiş. Yenileyip tekrar dene.", "error");
+        setStatus("Version conflict: Veri baska bir oturumda degismis. Yenileyip tekrar dene.", "error");
       } else if (res.error === "MASTER_EMPTY_REPLACE_BLOCKED") {
-        setStatus("Boş dataset ile tüm tabloyu silme işlemi güvenlik nedeniyle engellendi.", "error");
+        setStatus("Bos dataset ile tum tabloyu silme islemi guvenlik nedeniyle engellendi.", "error");
       } else {
-        setStatus(`Kayıt hatası: ${res.error || "Bilinmeyen hata"}`, "error");
+        setStatus("Kayit hatasi: " + (res.error || "Bilinmeyen hata"), "error");
       }
       return;
     }
@@ -303,7 +303,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     const data = res.data || {};
     currentVersion = data.version || currentVersion;
     if (metaVersion) metaVersion.textContent = `v${currentVersion || "-"}`;
-    if (metaUpdated) metaUpdated.textContent = data.updatedAt ? `Güncelleme: ${new Date(data.updatedAt).toLocaleString("tr-TR")}` : "Güncelleme: -";
+    if (metaUpdated) metaUpdated.textContent = data.updatedAt ? "Guncelleme: " + new Date(data.updatedAt).toLocaleString("tr-TR") : "Guncelleme: -";
     setStatus("Kaydedildi.", "success");
   }
 
@@ -314,68 +314,68 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   refreshBtn?.addEventListener("click", () => loadDataset(currentType));
 
   syncBtn?.addEventListener("click", async () => {
-    setStatus("Sheets -> KV master sync başlatıldı...");
+    setStatus("Sheets -> KV master sync baslatildi...");
     const res = await api.bulkSyncMaster();
     if (!res.success) {
-      setStatus(`Master sync başarısız: ${res.error || "Bilinmeyen hata"}`, "error");
+      setStatus("Master sync basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
       return;
     }
     await loadDataset(currentType);
-    setStatus("Master sync tamamlandı.", "success");
+    setStatus("Master sync tamamlandi.", "success");
   });
 
   fullSyncBtn?.addEventListener("click", async () => {
-    setStatus("Sheets -> KV tam senkron başlatıldı...");
+    setStatus("Sheets -> KV tam senkron baslatildi...");
     const coreRes = await api.bulkSync();
     if (!coreRes.success) {
-      setStatus(`Core sync başarısız: ${coreRes.error || "Bilinmeyen hata"}`, "error");
+      setStatus("Core sync basarisiz: " + (coreRes.error || "Bilinmeyen hata"), "error");
       return;
     }
 
     const masterRes = await api.bulkSyncMaster();
     if (!masterRes.success) {
-      setStatus(`Master sync başarısız: ${masterRes.error || "Bilinmeyen hata"}`, "error");
+      setStatus("Master sync basarisiz: " + (masterRes.error || "Bilinmeyen hata"), "error");
       return;
     }
 
     await loadDataset(currentType);
-    setStatus("Sheets -> KV tam senkron tamamlandı.", "success");
+    setStatus("Sheets -> KV tam senkron tamamlandi.", "success");
   });
 
   opsSyncBtn?.addEventListener("click", async () => {
     const scope = getSelectedScopes();
     if (!scope.length) {
-      setBackupStatus("Lütfen en az bir kapsam seçin.", "error");
+      setBackupStatus("Lutfen en az bir kapsam secin.", "error");
       return;
     }
 
-    setBackupStatus(`Sheets -> KV [${scope.join(", ")}] senkronizasyonu başlatıldı...`);
+    setBackupStatus("Sheets -> KV [" + scope.join(", ") + "] senkronizasyonu baslatildi...");
     const res = await api.pullFromSheetsToKv(scope);
     
     if (!res.success) {
-      setBackupStatus(`Senkronizasyon başarısız: ${res.error || "Bilinmeyen hata"}`, "error");
+      setBackupStatus("Senkronizasyon basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
       return;
     }
     await loadDataset(currentType);
-    setBackupStatus(`Senkronizasyon tamamlandı (${scope.join(", ")}).`, "success");
+    setBackupStatus("Senkronizasyon tamamlandi (" + scope.join(", ") + ").", "success");
   });
 
   exportKvBtn?.addEventListener("click", async () => {
     const scope = getSelectedScopes();
     if (!scope.length) {
-      setBackupStatus("Lütfen yedeklemek istediğiniz kapsamları seçin.", "error");
+      setBackupStatus("Lutfen yedeklemek istediginiz kapsamlari secin.", "error");
       return;
     }
 
-    setBackupStatus(`[${scope.join(", ")}] kapsamı için KV yedek paketi hazırlanıyor...`);
+    setBackupStatus("[" + scope.join(", ") + "] kapsami icin KV yedek paketi hazirlaniyor...");
     const res = await api.exportKvData(scope);
     if (!res.success || !res.exportData) {
-      setBackupStatus(`Dışa aktarma başarısız: ${res.error || "Bilinmeyen hata"}`, "error");
+      setBackupStatus("Disa aktarma basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
       return;
     }
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    downloadJson(`mc-kv-backup-${stamp}.json`, res.exportData);
-    setBackupStatus(`KV yedeği indirildi (${scope.length} kategori).`, "success");
+    downloadJson("mc-kv-backup-" + stamp + ".json", res.exportData);
+    setBackupStatus("KV yedegi indirildi (" + scope.length + " kategori).", "success");
   });
 
   importFileInput?.addEventListener("change", async (event: Event) => {
@@ -383,42 +383,42 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     selectedBackupPayload = null;
     if (importKvBtn) importKvBtn.disabled = true;
     if (!file) {
-      setBackupStatus("İçeri aktarma için bir JSON dosyası seçin.");
+      setBackupStatus("Iceri aktarma icin bir JSON dosyasi secin.");
       return;
     }
     try {
       const text = await file.text();
       selectedBackupPayload = JSON.parse(text);
       if (importKvBtn) importKvBtn.disabled = false;
-      setBackupStatus(`Yedek dosyası hazır: ${file.name}. "Geri Yükle" butonuna basarak işlemi başlatabilirsin.`, "success");
+      setBackupStatus("Yedek dosyasi hazir: " + file.name + ". 'Geri Yukle' butonuna basarak islemi baslatabilirsin.", "success");
     } catch (error) {
-      setBackupStatus("Seçilen dosya geçerli bir JSON yedeği değil.", "error");
+      setBackupStatus("Secilen dosya gecerli bir JSON yedegi degil.", "error");
     }
   });
 
   importKvBtn?.addEventListener("click", async () => {
     const scope = getSelectedScopes();
     if (!selectedBackupPayload) {
-      setBackupStatus("Önce geçerli bir backup JSON dosyası seçin.", "error");
+      setBackupStatus("Once gecerli bir backup JSON dosyasi secin.", "error");
       return;
     }
     if (!scope.length) {
-      setBackupStatus("Lütfen geri yüklemek istediğiniz kapsamları (Seçim Paneli) belirleyin.", "error");
+      setBackupStatus("Lutfen geri yuklemek istediginiz kapsamlari (Secim Paneli) belirleyin.", "error");
       return;
     }
 
-    if (!confirm(`DİKKAT! Seçilen kapsamlardaki (${scope.join(", ")}) MEVCUT KV verileri tamamen SİLİNECEK ve yedektekilerle değiştirilecektir. Devam etmek istiyor musun?`)) {
+    if (!confirm("DIKKAT! Secilen kapsamlardaki (" + scope.join(", ") + ") MEVCUT KV verileri tamamen SILINECEK ve yedektekilerle degistirilecektir. Devam etmek istiyor musun?")) {
       return;
     }
 
-    setBackupStatus(`[${scope.join(", ")}] kapsamı geri yükleniyor (Replace)...`);
+    setBackupStatus("[" + scope.join(", ") + "] kapsami geri yukleniyor (Replace)...");
     const res = await api.importKvData(selectedBackupPayload, scope);
     if (!res.success) {
-      setBackupStatus(`Geri yükleme başarısız: ${res.error || "Bilinmeyen hata"}`, "error");
+      setBackupStatus("Geri yukleme basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
       return;
     }
     await loadDataset(currentType);
-    setBackupStatus("Seçili kapsamlar başarıyla geri yüklendi (KV-Replace).", "success");
+    setBackupStatus("Secili kapsamlar basariyla geri yuklendi (KV-Replace).", "success");
   });
 
   addRowBtn?.addEventListener("click", () => {
