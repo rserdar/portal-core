@@ -146,11 +146,11 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
 <script lang="ts">
   import { api } from "../lib/api";
 
-  const selectEl = document.getElementById("dataset-select");
+  const selectEl = document.getElementById("dataset-select") as HTMLSelectElement | null;
   const syncBtn = document.getElementById("sync-master-btn");
   const fullSyncBtn = document.getElementById("full-sync-btn");
   const refreshBtn = document.getElementById("refresh-btn");
-  const addRowBtn = document.getElementById("add-row-btn");
+  const addRowBtn = document.getElementById("addRowBtn");
   const saveBtn = document.getElementById("save-btn");
   const metaVersion = document.getElementById("meta-version");
   const metaUpdated = document.getElementById("meta-updated");
@@ -159,22 +159,22 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   const statusBox = document.getElementById("status-box");
   const opsSyncBtn = document.getElementById("ops-sync-btn");
   const exportKvBtn = document.getElementById("export-kv-btn");
-  const importFileInput = document.getElementById("import-file-input");
-  const importKvBtn = document.getElementById("import-kv-btn");
+  const importFileInput = document.getElementById("import-file-input") as HTMLInputElement | null;
+  const importKvBtn = document.getElementById("import-kv-btn") as HTMLButtonElement | null;
   const backupStatusBox = document.getElementById("backup-status-box");
 
-  let currentType = "standards";
-  let currentVersion = null;
-  let currentHeaders = [];
-  let currentRows = [];
-  let selectedBackupPayload = null;
+  let currentType: string = "standards";
+  let currentVersion: string | null = null;
+  let currentHeaders: string[] = [];
+  let currentRows: any[][] = [];
+  let selectedBackupPayload: any = null;
 
-  function getSelectedScopes() {
+  function getSelectedScopes(): string[] {
     const checkboxes = document.querySelectorAll('input[name="sync-scope"]:checked');
     return Array.from(checkboxes).map(el => (el as HTMLInputElement).value);
   }
 
-  function setStatus(message, type = "info") {
+  function setStatus(message: string, type: "info" | "error" | "success" = "info") {
     if (!statusBox) return;
     statusBox.textContent = message;
     statusBox.classList.remove("hidden", "bg-red-500/15", "text-red-200", "bg-emerald-500/15", "text-emerald-200", "bg-cyan-500/15", "text-cyan-100");
@@ -183,7 +183,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     else statusBox.classList.add("bg-cyan-500/15", "text-cyan-100");
   }
 
-  function setBackupStatus(message, type = "info") {
+  function setBackupStatus(message: string, type: "info" | "error" | "success" = "info") {
     if (!backupStatusBox) return;
     backupStatusBox.textContent = message;
     backupStatusBox.classList.remove("hidden", "bg-red-500/15", "text-red-400", "border-red-500/30", "bg-emerald-500/10", "text-emerald-400", "border-emerald-500/30", "bg-indigo-500/10", "text-indigo-400", "border-indigo-500/30");
@@ -193,7 +193,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     else backupStatusBox.classList.add("bg-indigo-500/10", "text-indigo-400", "border-indigo-500/30");
   }
 
-  function downloadJson(filename, payload) {
+  function downloadJson(filename: string, payload: any) {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -205,7 +205,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     URL.revokeObjectURL(url);
   }
 
-  function escapeHtml(value) {
+  function escapeHtml(value: any): string {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
@@ -230,7 +230,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
         input.type = "text";
         input.value = row[colIndex] ?? "";
         input.className = "w-full bg-surface-hover border border-border-main rounded-lg px-2 py-1 text-xs";
-        input.addEventListener("input", (e) => {
+        input.addEventListener("input", (e: Event) => {
           currentRows[rowIndex][colIndex] = (e.target as HTMLInputElement).value;
         });
         td.appendChild(input);
@@ -252,7 +252,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     });
   }
 
-  async function loadDataset(type) {
+  async function loadDataset(type: string) {
     currentType = type;
     setStatus("Veri yükleniyor...");
 
@@ -276,7 +276,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     const ds = payload.dataset;
     currentVersion = payload.version ?? null;
     currentHeaders = Array.isArray(ds.headers) ? ds.headers : [];
-    currentRows = Array.isArray(ds.rows) ? ds.rows.map((r) => Array.isArray(r) ? [...r] : []) : [];
+    currentRows = Array.isArray(ds.rows) ? ds.rows.map((r: any) => Array.isArray(r) ? [...r] : []) : [];
 
     if (metaVersion) metaVersion.textContent = `v${currentVersion || "-"}`;
     if (metaUpdated) metaUpdated.textContent = payload.updatedAt ? `Güncelleme: ${new Date(payload.updatedAt).toLocaleString("tr-TR")}` : "Güncelleme: -";
@@ -307,7 +307,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     setStatus("Kaydedildi.", "success");
   }
 
-  selectEl?.addEventListener("change", (e) => {
+  selectEl?.addEventListener("change", (e: Event) => {
     loadDataset((e.target as HTMLSelectElement).value);
   });
 
@@ -378,10 +378,10 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     setBackupStatus(`KV yedeği indirildi (${scope.length} kategori).`, "success");
   });
 
-  importFileInput?.addEventListener("change", async (event) => {
+  importFileInput?.addEventListener("change", async (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0];
     selectedBackupPayload = null;
-    if (importKvBtn) (importKvBtn as HTMLButtonElement).disabled = true;
+    if (importKvBtn) importKvBtn.disabled = true;
     if (!file) {
       setBackupStatus("İçeri aktarma için bir JSON dosyası seçin.");
       return;
@@ -389,7 +389,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     try {
       const text = await file.text();
       selectedBackupPayload = JSON.parse(text);
-      if (importKvBtn) (importKvBtn as HTMLButtonElement).disabled = false;
+      if (importKvBtn) importKvBtn.disabled = false;
       setBackupStatus(`Yedek dosyası hazır: ${file.name}. "Geri Yükle" butonuna basarak işlemi başlatabilirsin.`, "success");
     } catch (error) {
       setBackupStatus("Seçilen dosya geçerli bir JSON yedeği değil.", "error");
@@ -419,11 +419,6 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     }
     await loadDataset(currentType);
     setBackupStatus("Seçili kapsamlar başarıyla geri yüklendi (KV-Replace).", "success");
-  });
-
-  addRowBtn?.addEventListener("click", () => {
-    currentRows.push(Array(currentHeaders.length).fill(""));
-    renderTable();
   });
 
   saveBtn?.addEventListener("click", saveDataset);

@@ -273,7 +273,7 @@ const quickActions = [
   import { api } from '../lib/api';
   import { showToast } from '../lib/toast';
 
-  // ─── CountUp Animation ───────────────────────────��──────────────────────────��
+  // --- CountUp Animation ---
 
   function countUp(el: HTMLElement, target: number) {
     if (target === 0) { el.textContent = '0'; return; }
@@ -354,13 +354,7 @@ const quickActions = [
       return;
     }
 
-    const palette = [
-      '#22c55e',
-      '#06b6d4',
-      '#6366f1',
-      '#f59e0b',
-      '#f472b6',
-    ];
+    const palette = ['#22c55e', '#06b6d4', '#6366f1', '#f59e0b', '#f472b6'];
 
     const topEntries = sorted.slice(0, 4);
     const remainingCount = sorted.slice(4).reduce((sum, [, count]) => sum + count, 0);
@@ -483,7 +477,7 @@ const quickActions = [
     `).join('');
   }
 
-  // ─── Status Check ────────────────────────────��───────────────────────────────
+  // --- Status Check ---
 
   async function checkStatus() {
     const kvEl  = document.getElementById('status-kv');
@@ -499,33 +493,30 @@ const quickActions = [
     try {
       const res = await api.call('syncCheck');
       if (res.success) {
-        // Worker responded + GAS returned data → both online
         if (kvEl)  kvEl.innerHTML  = onlineHTML;
         if (gasEl) gasEl.innerHTML = onlineHTML;
       } else {
-        // Worker reached but GAS returned error
         if (kvEl)  kvEl.innerHTML  = onlineHTML;
         if (gasEl) gasEl.innerHTML = offlineHTML;
       }
     } catch {
-      // Network/Worker unreachable
       if (kvEl)  kvEl.innerHTML  = offlineHTML;
       if (gasEl) gasEl.innerHTML = offlineHTML;
     }
   }
 
-  // ─── Activity Feed ─────────────────────────────────��─────────────────────────
+  // --- Activity Feed ---
 
   function renderActivity(companies: any[]) {
-    const skeleton = document.getElementById('activity-skeleton');
-    const list     = document.getElementById('activity-list');
-    const empty    = document.getElementById('activity-empty');
+    const list     = document.getElementById('activity-list') as HTMLElement | null;
+    const skeleton = document.getElementById('activity-skeleton') as HTMLElement | null;
+    const empty    = document.getElementById('activity-empty') as HTMLElement | null;
 
     if (!list || !skeleton || !empty) return;
 
     skeleton.classList.add('hidden');
 
-    const recent = (companies as any[]).slice().reverse().slice(0, 5);
+    const recent = (companies || []).slice().reverse().slice(0, 5);
 
     if (recent.length === 0) {
       list.classList.add('hidden');
@@ -560,7 +551,7 @@ const quickActions = [
     }).join('');
   }
 
-  // ─── Reactive Store Subscriptions ────────────────────────────────��───────────
+  // --- Reactive Store Subscriptions ---
 
   const statCompanies    = document.getElementById('stat-companies');
   const statCertificates = document.getElementById('stat-certificates');
@@ -591,23 +582,12 @@ const quickActions = [
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const activeCount = val.filter(c => {
+      const activeCount = (val as any[]).filter(c => {
         const durum = pickValue(c, ['durum', 'Durum', 'Status']).toUpperCase();
         if (durum === 'AKTİF') return true;
         if (durum && durum !== 'AKTİF') return false;
-
-        // Fallback: Check expiry date if available
         const sGT = parseTrDate(pickValue(c, ['gecerlilikTarihi', 'sGT', 'SGT', 'Sertifika Geçerlilik Tarihi']));
         if (sGT && today <= sGT) return true;
-
-        // Last Fallback: Surveillance date check (legacy)
-        const gst = parseTrDate(pickValue(c, ['sertifikaTarihi', 'gst', 'GST', 'Sertifika Tarihi', 'Belge Tarihi', 'sTarihi']));
-        const goz = parseTrDate(pickValue(c, ['gozetimTarihi', 'goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
-        const gozetimConf = String(pickValue(c, ['gozetimConfirmed', 'Gözetim Conf.', 'gozetim'], 'FALSE')).toUpperCase();
-
-        if (gst && goz && gozetimConf === 'FALSE') {
-          return today >= gst && today <= goz;
-        }
         return false;
       }).length;
 
@@ -618,13 +598,11 @@ const quickActions = [
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
-      const pendingCount = val.filter(c => {
+      const pendingCount = (val as any[]).filter(c => {
         const goz = parseTrDate(pickValue(c, ['gozetimTarihi', 'goz', 'GOZ', 'Sertifika Gözetim Tarihi', 'Gözetim Tarihi', 'sGozetimT']));
         const gozetimConf = pickValue(c, ['gozetimConfirmed', 'Gözetim Conf.', 'Gözetim'], 'FALSE').toUpperCase();
-
         if (!goz) return false;
         if (gozetimConf !== 'FALSE') return false;
-
         return goz.getMonth() === currentMonth && goz.getFullYear() === currentYear;
       }).length;
 
@@ -650,7 +628,7 @@ const quickActions = [
     }
   });
 
-  // ─── Sync Button ─────────────────────────────────────────────────────────────
+  // --- Sync Button ---
 
   const btnSync   = document.getElementById('btn-bulk-sync') as HTMLButtonElement | null;
   const syncLabel = document.getElementById('sync-label');
@@ -668,14 +646,14 @@ const quickActions = [
       } catch (err: any) {
         showToast(`Beklenmeyen hata: ${err?.message || err}`, 'error');
       } finally {
-        btnSync.disabled = false;
+        if (btnSync) btnSync.disabled = false;
         if (syncLabel) syncLabel.textContent = "SİSTEMİ SENKRONİZE ET (KV'DEN)";
         if (syncIcon)  syncIcon.classList.remove('animate-spin');
       }
     });
   }
 
-  // ─── Boot ──────────────────────────────────────────────────────��─────────────
+  // --- Boot ---
 
   SyncManager.init();
   checkStatus();
