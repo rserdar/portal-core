@@ -378,7 +378,6 @@ export default {
         "Cert Link": String(r[23] ?? "").trim(),
       };
     };
-    };
     const normalizeCertificateSource = (source) => Array.isArray(source) ? mapLegacyCertificateRow(source) : source;
     const createCanonicalCertificate = (source, options = {}) => {
       const normalizedSource = normalizeCertificateSource(source);
