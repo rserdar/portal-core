@@ -210,6 +210,24 @@ export const api = {
   async getTestsByFirmaId(firmaId: string | number) { 
     return this.call("getTestsByFirmaId", { firmaId }); 
   },
+  async getProformaByFirmaId(firmaId: string | number) {
+    return this.call("getProformaByFirmaId", { firmaId });
+  },
+  async getProformaById(id: string | number) {
+    return this.call("getProformaById", { id });
+  },
+  async addProforma(proInfo: any) {
+    return this.call("addProforma", { proInfo });
+  },
+  async updateProforma(id: string | number, proInfo: any) {
+    return this.call("updateProforma", { id, proInfo });
+  },
+  async deleteProforma(id: string | number) {
+    return this.call("deleteProforma", { id });
+  },
+  async generateProforma(id: string | number) {
+    return this.call("generateProforma", { id });
+  },
 
   // 🌍 Çeviri (ISO Kapsam)
   async translate(text: string, toEn: boolean = true) {

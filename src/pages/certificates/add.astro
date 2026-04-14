@@ -1,6 +1,6 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
-import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
+import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
 ---
 
 <DashboardLayout title="Sertifika Ekle">
@@ -163,6 +163,7 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
               <div class="flex flex-wrap gap-2">
                 <a id="cert-add-audit-link" href="#" class="inline-flex items-center gap-2 rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors">Denetim Ekle</a>
                 <button id="cert-fill-from-company" type="button" class="inline-flex items-center gap-2 rounded-2xl border border-border-main bg-surface px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface-hover transition-colors">Bilgileri Getir</button>
+                <button id="cert-open-recent" type="button" class="inline-flex items-center gap-2 rounded-2xl border border-sky-500/20 bg-sky-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-sky-300 hover:bg-sky-500/15 transition-colors">Son 25 Sertifika</button>
               </div>
             </div>
           </div>
@@ -341,6 +342,38 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
       </div>
     </section>
   </div>
+
+  <!-- Son 25 Sertifika Modal — backdrop ve panel doğrudan fixed/viewport-relative -->
+  <div id="cert-recent-modal" class="hidden">
+    <div class="fixed inset-0 z-[90] bg-slate-950/70 backdrop-blur-sm"></div>
+    <button id="cert-recent-backdrop" type="button" class="fixed inset-0 z-[90] cursor-default" aria-label="Kapat" tabindex="-1"></button>
+    <aside id="cert-recent-panel" class="fixed z-[91] inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 top-1/2 -translate-y-1/2 w-auto sm:w-full sm:max-w-5xl h-[85dvh] max-h-[720px] rounded-3xl border border-border-main bg-surface shadow-2xl overflow-hidden opacity-0 scale-95 transition-all duration-200 ease-out will-change-transform">
+      <div class="flex h-full flex-col">
+        <div class="flex items-center justify-between gap-3 border-b border-border-main px-5 py-4 sm:px-6 shrink-0">
+          <div class="min-w-0 space-y-0.5">
+            <p class="text-[10px] font-black uppercase tracking-[0.24em] text-sky-400">Referans</p>
+            <h2 class="text-sm sm:text-base font-extrabold tracking-tight text-main truncate">Son Çıkan 25 Sertifika</h2>
+            <p id="cert-recent-summary" class="text-xs font-semibold text-muted truncate">Yükleniyor...</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button id="cert-recent-refresh" type="button" class="inline-flex items-center gap-1.5 rounded-2xl border border-border-main bg-surface-hover px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface transition-colors" aria-label="Yenile">
+              <RotateCw size={12} />
+              <span class="hidden sm:inline">Yenile</span>
+            </button>
+            <button id="cert-recent-close" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" aria-label="Kapat">
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+        <div class="min-h-0 flex-1 overflow-y-auto">
+          <div id="cert-recent-empty" class="m-5 sm:m-6 rounded-2xl border border-dashed border-border-main px-4 py-5 text-sm font-semibold text-muted">
+            Son sertifikalar yükleniyor...
+          </div>
+          <div id="cert-recent-list" class="hidden overflow-x-auto px-5 sm:px-6 pb-5 sm:pb-6"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
 </DashboardLayout>
 
 <script>
@@ -393,6 +426,14 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     consultantList: document.getElementById('consultant-list'),
     submit: document.getElementById('cert-submit') as HTMLButtonElement | null,
     submitLabel: document.getElementById('cert-submit-label'),
+    openRecent: document.getElementById('cert-open-recent') as HTMLButtonElement | null,
+    recentModal: document.getElementById('cert-recent-modal'),
+    recentBackdrop: document.getElementById('cert-recent-backdrop') as HTMLButtonElement | null,
+    recentClose: document.getElementById('cert-recent-close') as HTMLButtonElement | null,
+    recentRefresh: document.getElementById('cert-recent-refresh') as HTMLButtonElement | null,
+    recentSummary: document.getElementById('cert-recent-summary'),
+    recentEmpty: document.getElementById('cert-recent-empty'),
+    recentList: document.getElementById('cert-recent-list'),
     denetim: document.getElementById('cert-denetim') as HTMLSelectElement | null,
     kod: document.getElementById('cert-kod') as HTMLInputElement | null,
     akreditasyon: document.getElementById('cert-akreditasyon') as HTMLInputElement | null,
@@ -409,6 +450,7 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
   let activeFirmaId = initialFirmaId;
   let selectedCompany: any = null;
   let formBindingsReady = false;
+  let recentCertificates: Record<string, any>[] = [];
 
   function isEditMode() {
     return Boolean(editId);
@@ -577,9 +619,27 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     if (els.isoFull) els.isoFull.value = fullName;
     if (els.suggested) els.suggested.value = buildSuggestedCertPrefix(prefix, activeFirmaId);
 
-    const shouldShowOther = ['DİĞER', 'DIGER', 'OTHER', 'CE'].includes(standardText.toUpperCase());
-    els.otherWrap?.classList.toggle('hidden', !shouldShowOther);
-    if (!shouldShowOther && els.otherInput) els.otherInput.value = '';
+    syncOtherStandardVisibility(standardText);
+  }
+
+  function shouldShowOtherStandard(standardText: string) {
+    const normalized = String(standardText || '')
+      .trim()
+      .toLocaleUpperCase('tr-TR')
+      .replace(/[İI]/g, 'I')
+      .replace(/[Ğ]/g, 'G')
+      .replace(/[Ü]/g, 'U')
+      .replace(/[Ş]/g, 'S')
+      .replace(/[Ö]/g, 'O')
+      .replace(/[Ç]/g, 'C');
+    return normalized === 'DIGER' || normalized === 'CE';
+  }
+
+  function syncOtherStandardVisibility(standardText: string, options: { clearOnHide?: boolean } = {}) {
+    const { clearOnHide = true } = options;
+    const visible = shouldShowOtherStandard(standardText);
+    els.otherWrap?.classList.toggle('hidden', !visible);
+    if (!visible && clearOnHide && els.otherInput) els.otherInput.value = '';
   }
 
   async function loadStandards() {
@@ -734,6 +794,104 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     return value;
   }
 
+  function escapeHtml(value: unknown) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function renderRecentCertificates() {
+    if (!els.recentSummary || !els.recentEmpty || !els.recentList) return;
+    els.recentSummary.textContent = `${recentCertificates.length} kayıt referans için hazır.`;
+
+    if (!recentCertificates.length) {
+      els.recentList.classList.add('hidden');
+      els.recentList.innerHTML = '';
+      els.recentEmpty.classList.remove('hidden');
+      els.recentEmpty.textContent = 'Son sertifika kaydı bulunamadı.';
+      return;
+    }
+
+    els.recentEmpty.classList.add('hidden');
+    els.recentList.classList.remove('hidden');
+
+    const cols = 'grid grid-cols-[100px_80px_1.5fr_1.5fr_1fr]';
+
+    const header = `
+      <div class="${cols} gap-px bg-border-main text-[10px] font-black uppercase tracking-widest text-muted">
+        <div class="bg-surface-hover px-3 py-2.5 whitespace-nowrap">Tarih</div>
+        <div class="bg-surface-hover px-3 py-2.5 whitespace-nowrap">Standart</div>
+        <div class="bg-surface-hover px-3 py-2.5 whitespace-nowrap">Sertifika No</div>
+        <div class="bg-surface-hover px-3 py-2.5 whitespace-nowrap">Firma</div>
+        <div class="bg-surface-hover px-3 py-2.5 whitespace-nowrap">Denetim Tipi</div>
+      </div>
+    `;
+
+    const rows = recentCertificates.map((record) => `
+      <div class="${cols} gap-px border-t border-border-main bg-border-main">
+        <div class="bg-surface px-3 py-2.5 text-xs font-semibold text-main whitespace-nowrap">${escapeHtml(normalizeObjectValue(record, ['Sertifika Tarihi', 'gst', 'GST', 'sTarihi']) || '—')}</div>
+        <div class="bg-surface px-3 py-2.5 text-xs font-semibold text-main whitespace-nowrap">${escapeHtml(normalizeObjectValue(record, ['Standart', 'standart', 'standard']) || '—')}</div>
+        <div class="bg-surface px-3 py-2.5 text-xs font-mono text-main">${escapeHtml(normalizeObjectValue(record, ['Sertifika No', 'sNo', 'SNo', 'sno']) || '—')}</div>
+        <div class="bg-surface px-3 py-2.5 text-xs text-main">${escapeHtml(normalizeObjectValue(record, ['Firma Adı', 'Nickname', 'nick', 'isim']) || '—')}</div>
+        <div class="bg-surface px-3 py-2.5 text-xs text-main whitespace-nowrap">${escapeHtml(normalizeObjectValue(record, ['Denetim Tipi', 'denetim', 'Denetim', 'denetimTipi']) || '—')}</div>
+      </div>
+    `).join('');
+
+    els.recentList.innerHTML = `<div class="min-w-[540px] overflow-hidden rounded-2xl border border-border-main">${header}${rows}</div>`;
+  }
+
+  async function loadRecentCertificates() {
+    if (els.recentSummary) els.recentSummary.textContent = 'Son sertifikalar yukleniyor...';
+    if (els.recentEmpty) {
+      els.recentEmpty.classList.remove('hidden');
+      els.recentEmpty.textContent = 'Son sertifikalar yukleniyor...';
+    }
+    if (els.recentList) {
+      els.recentList.classList.add('hidden');
+      els.recentList.innerHTML = '';
+    }
+
+    const res = await api.getRecentCertificates(25);
+    if (!res.success) {
+      recentCertificates = [];
+      if (els.recentSummary) els.recentSummary.textContent = 'Liste yuklenemedi.';
+      if (els.recentEmpty) {
+        els.recentEmpty.classList.remove('hidden');
+        els.recentEmpty.textContent = res.error || 'Son sertifikalar getirilemedi.';
+      }
+      return;
+    }
+
+    recentCertificates = (Array.isArray(res.data) ? res.data : [])
+      .map((item) => normalizeCertificateRecord(item))
+      .filter(Boolean) as Record<string, any>[];
+    renderRecentCertificates();
+  }
+
+  function openRecentCertificatesModal() {
+    const panel = document.getElementById('cert-recent-panel');
+    els.recentModal?.classList.remove('hidden');
+    // Allow browser to paint before triggering transition
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      panel?.classList.remove('opacity-0', 'scale-95');
+      panel?.classList.add('opacity-100', 'scale-100');
+    }));
+    document.body.classList.add('overflow-hidden');
+  }
+
+  function closeRecentCertificatesModal() {
+    const panel = document.getElementById('cert-recent-panel');
+    panel?.classList.remove('opacity-100', 'scale-100');
+    panel?.classList.add('opacity-0', 'scale-95');
+    setTimeout(() => {
+      els.recentModal?.classList.add('hidden');
+    }, 200);
+    document.body.classList.remove('overflow-hidden');
+  }
+
   function normalizeDenetimValue(value: string) {
     const trimmed = String(value || '').trim();
     if (trimmed === '1. Gozetim' || trimmed === '2. Gozetim') {
@@ -804,21 +962,30 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     const otherValue = normalizeObjectValue(cert, ['Other Standard', 'Other', 'other', 'Diğer', 'diger', 'Diger', 'diğer', 'Diğer Standart', 'digerStandart', 'other']);
 
     if (els.standSelect) {
-      const option = Array.from(els.standSelect.options).find((item) => item.textContent?.trim() === standardValue);
+      let effectiveStandardValue = standardValue;
+      if (!effectiveStandardValue && otherValue) {
+        effectiveStandardValue = 'Diğer';
+      }
+
+      let option = Array.from(els.standSelect.options).find((item) => item.textContent?.trim() === effectiveStandardValue);
+      if (!option && otherValue) {
+        option = Array.from(els.standSelect.options).find((item) => shouldShowOtherStandard(item.textContent?.trim() || ''));
+      }
       if (option) els.standSelect.value = option.value;
-      else if (standardValue) {
+      else if (effectiveStandardValue) {
         const custom = document.createElement('option');
-        custom.value = standardValue;
-        custom.textContent = standardValue;
-        custom.dataset.prefix = standardValue;
-        custom.dataset.fullName = standardValue;
+        custom.value = effectiveStandardValue;
+        custom.textContent = effectiveStandardValue;
+        custom.dataset.prefix = effectiveStandardValue;
+        custom.dataset.fullName = effectiveStandardValue;
         els.standSelect.appendChild(custom);
-        els.standSelect.value = standardValue;
+        els.standSelect.value = effectiveStandardValue;
       }
       updateStandardMeta();
     }
 
     if (els.otherInput) els.otherInput.value = otherValue;
+    syncOtherStandardVisibility(els.standSelect?.selectedOptions[0]?.textContent?.trim() || standardValue, { clearOnHide: false });
     if (els.isoFull && !els.isoFull.value) els.isoFull.value = standardValue;
     if (els.denetim) els.denetim.value = normalizeDenetimValue(
       normalizeObjectValue(cert, ['Denetim Tipi', 'denetim', 'Denetim', 'denetimTipi']),
@@ -867,6 +1034,18 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
     });
 
     document.getElementById('cert-fill-from-company')?.addEventListener('click', fillFromCompanyContext);
+    els.openRecent?.addEventListener('click', () => {
+      openRecentCertificatesModal();
+      if (!recentCertificates.length) void loadRecentCertificates();
+    });
+    els.recentBackdrop?.addEventListener('click', closeRecentCertificatesModal);
+    els.recentClose?.addEventListener('click', closeRecentCertificatesModal);
+    els.recentRefresh?.addEventListener('click', () => void loadRecentCertificates());
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !els.recentModal?.classList.contains('hidden')) {
+        closeRecentCertificatesModal();
+      }
+    });
 
     document.getElementById('cert-apply-suggested')?.addEventListener('click', () => {
       if (!els.sno || !els.suggested) return;
@@ -967,7 +1146,7 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
         setFlashToast(successMessage, 'success');
         showToast(successMessage, 'success');
         setTimeout(() => {
-          window.location.href = `/company?id=${encodeURIComponent(companyContext.firmaId)}`;
+          window.location.href = companyContext ? `/company?id=${encodeURIComponent(companyContext.firmaId)}` : '/certificates';
         }, 800);
         return;
       }
@@ -1026,6 +1205,7 @@ import { ArrowLeft, FilePlus2, X } from 'lucide-astro';
         loadCompanyOperationContext(activeFirmaId),
         loadStandards(),
         loadConsultants(),
+        loadRecentCertificates(),
       ]);
 
       companyContext = ctx;

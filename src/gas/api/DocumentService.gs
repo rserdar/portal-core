@@ -12,6 +12,7 @@ const DocumentService = {
     APP_FORM_MEDICERT: "1CYQgtEtpIeQMAZHtw6JmiR2shcBHM1L9wqX-MzyyzLw",
     APP_FORM_INSPECT:  "1-s53ijssKJw9d5rtpm2BmRJOxkXbfWGCx2IjsBT_xdw",
     CONTRACT_TEMP:     "1bNlf4GOZFsDTzmYJrhTbmVrfZ17P4U_i8im5Vte2gM8",
+    PROFORMA_TEMP:     "1mgAgm0T52UwFpeE1VDgCNWgVi7_tOmn60f5lCQUsRcU",
     DEMO_IMAGE:        "1KPC13vmsRzBt522EQOwNcyIDgMlWZeZd"
   },
   _cfg: function(key) {
@@ -306,6 +307,53 @@ const DocumentService = {
       return { success: true, id: copy.getId(), url: copy.getUrl() };
     } catch (e) {
       BaseService.logError("generateContract", e);
+      return { success: false, error: e.message };
+    }
+  },
+
+  /**
+   * Proforma dokumani uretir (legacy proformaVeri).
+   */
+  generateProforma: function(proformaInfo) {
+    try {
+      const isim = proformaInfo.nick || proformaInfo.nickname || proformaInfo.firmaAdi || "";
+      const faturaNo = proformaInfo.faturaNo || proformaInfo.id || "";
+      const firmaNo = proformaInfo.firmaNo || proformaInfo.fno || "";
+      if (!isim) throw new Error("Firma kisa adi eksik.");
+      if (!faturaNo) throw new Error("Proforma numarasi eksik.");
+      if (!firmaNo) throw new Error("Firma numarasi eksik.");
+
+      const folderId = DriveService.getCompanyFolderId(isim);
+      const docTemp = DriveApp.getFileById(this._cfg("PROFORMA_TEMP"));
+      const folder = DriveApp.getFolderById(folderId);
+      const copy = docTemp.makeCopy(`${isim} - Proforma Fatura M${faturaNo}T(${firmaNo})`, folder);
+      const doc = DocumentApp.openById(copy.getId());
+      const body = doc.getBody();
+
+      this._processReplacements(body, {
+        "{{Firma}}": proformaInfo.unvan || isim,
+        "{{Adres}}": proformaInfo.adres || "",
+        "{{il}}": proformaInfo.il || proformaInfo.sehir || "",
+        "{{Ulke}}": proformaInfo.ulke || "",
+        "{{Tel}}": proformaInfo.tel || "",
+        "{{VDairesi}}": proformaInfo.vergiD || "",
+        "{{VNo}}": proformaInfo.vergiN || "",
+        "{{Yetkili}}": proformaInfo.yetkili || proformaInfo.yetA || "",
+        "{{FaturaNo}}": String(faturaNo),
+        "{{FirmaNo}}": String(firmaNo),
+        "{{Tarih}}": proformaInfo.tarih || "",
+        "{{Konu}}": proformaInfo.konu || "",
+        "{{Kdvsiz}}": proformaInfo.kdvsiz || "",
+        "{{Lira}}": proformaInfo.birim || "TL",
+        "{{KdvOran}}": proformaInfo.kdvOran || "20",
+        "{{KDV}}": proformaInfo.kdv || "",
+        "{{Toplam}}": proformaInfo.toplam || ""
+      });
+
+      doc.saveAndClose();
+      return { success: true, id: copy.getId(), url: copy.getUrl() };
+    } catch (e) {
+      BaseService.logError("generateProforma", e);
       return { success: false, error: e.message };
     }
   },

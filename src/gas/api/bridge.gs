@@ -149,6 +149,13 @@ function doPost(e) {
         if (!addProRes.success) result.error = addProRes.error;
         break;
 
+      case "generateProforma":
+        const proformaDocRes = DocumentService.generateProforma(params.proforma || params.data || params);
+        result.data = proformaDocRes;
+        result.success = proformaDocRes.success;
+        if (!proformaDocRes.success) result.error = proformaDocRes.error;
+        break;
+
       // --- STANDARTLAR ---
       case "getStandardById": {
         result.data = StandardService.getById(params.id);

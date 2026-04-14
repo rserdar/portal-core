@@ -2,6 +2,8 @@
 import OperationPageShell from '../../components/operations/OperationPageShell.astro';
 ---
 
+<div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
+
 <OperationPageShell
   pageKey="proforma"
   title="Proforma"
@@ -33,24 +35,29 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 class="text-sm font-black uppercase tracking-widest text-main">Kayitlar</h2>
-          <p class="text-sm text-muted">Bu alanda firmaya ait proforma kayitlari listelenecek.</p>
+          <p class="text-sm text-muted">Bu alanda firmaya ait proforma kayitlari listelenir ve yenilenir.</p>
         </div>
-        <button type="button" disabled class="rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-bold text-muted cursor-not-allowed">Yenile (Yakinda)</button>
+        <button id="proforma-refresh" type="button" class="rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-bold text-main hover:border-indigo-500/40 hover:text-indigo-300 transition-colors">Getir / Yenile</button>
       </div>
       <div class="rounded-2xl border border-dashed border-border-main p-5 text-sm text-muted" id="proforma-list-placeholder">
-        Henuz API baglantisi yapilmadi. Bu alan `getProformaByFirmaId` ile doldurulacak.
+        Kayitlar bu firma secildiginde Cloudflare KV uzerinden yuklenecek.
       </div>
+      <p id="proforma-counter" class="text-xs font-semibold text-muted">Kayitlar yuklenmedi.</p>
+      <div id="proforma-list" class="hidden overflow-hidden rounded-2xl border border-border-main"></div>
     </section>
 
     <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
-        <h2 class="text-sm font-black uppercase tracking-widest text-main">Tutarlar</h2>
+        <div class="space-y-1">
+          <h2 class="text-sm font-black uppercase tracking-widest text-main">Tutarlar</h2>
+          <p class="text-xs text-muted">Legacy akistaki gibi KDV haric, toplam veya KDV tutari degistiginde diger alanlar otomatik hesaplanir.</p>
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <input id="pro-kdv-haric" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="KDV Haric" />
-          <input id="pro-kdv-oran" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="KDV Orani" />
-          <input id="pro-kdv-tutar" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="KDV Tutari" />
-          <input id="pro-toplam" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Toplam Fiyat" />
-          <input id="pro-para" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Para Birimi" />
+          <input id="pro-kdv-haric" type="text" inputmode="decimal" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="KDV Haric" />
+          <input id="pro-kdv-oran" type="text" inputmode="decimal" value="20" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="KDV Orani" />
+          <input id="pro-kdv-tutar" type="text" inputmode="decimal" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="KDV Tutari" />
+          <input id="pro-toplam" type="text" inputmode="decimal" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Toplam Fiyat" />
+          <input id="pro-para" type="text" value="TL" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Para Birimi" />
           <input id="pro-tarih" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" />
         </div>
       </div>
@@ -62,8 +69,8 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     </section>
 
     <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
-      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-muted cursor-not-allowed">Taslak Kaydet (Yakinda)</button>
-      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl bg-indigo-600/60 px-5 py-3 text-sm font-black text-white cursor-not-allowed">Proforma Uret (Yakinda)</button>
+      <button id="proforma-clear" type="button" class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-main hover:border-amber-500/40 hover:text-amber-300 transition-colors">Formu Temizle</button>
+      <button id="proforma-save" type="button" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-indigo-600/40 transition-colors">Proforma Kaydet</button>
     </div>
   </div>
 </OperationPageShell>
@@ -72,16 +79,38 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
+  import { showToast } from '../../lib/toast';
   import { loadCompanyOperationContext } from '../../features/operations/context';
   import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
 
+  type ProformaRow = [string, string, string, string, string, string, string, string, string, string];
+
   const params = new URLSearchParams(location.search);
   let firmaId = params.get('id') || params.get('firmaId') || '';
+  let activeContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
+  let formHandlersBound = false;
+  let editingProformaId = '';
+  let currentRows: ProformaRow[] = [];
 
   const companySearch = document.getElementById('proforma-company-search') as HTMLInputElement | null;
   const companyList = document.getElementById('proforma-company-list');
   const companyContinue = document.getElementById('proforma-company-continue') as HTMLButtonElement | null;
   const selectStatus = document.getElementById('proforma-page-select-status');
+  const listBox = document.getElementById('proforma-list');
+  const listPlaceholder = document.getElementById('proforma-list-placeholder');
+  const counterEl = document.getElementById('proforma-counter');
+  const saveButton = document.getElementById('proforma-save') as HTMLButtonElement | null;
+  const clearButton = document.getElementById('proforma-clear') as HTMLButtonElement | null;
+  const refreshButton = document.getElementById('proforma-refresh') as HTMLButtonElement | null;
+  const amountInputs = {
+    kdvsiz: document.getElementById('pro-kdv-haric') as HTMLInputElement | null,
+    oran: document.getElementById('pro-kdv-oran') as HTMLInputElement | null,
+    kdv: document.getElementById('pro-kdv-tutar') as HTMLInputElement | null,
+    toplam: document.getElementById('pro-toplam') as HTMLInputElement | null,
+    birim: document.getElementById('pro-para') as HTMLInputElement | null,
+    tarih: document.getElementById('pro-tarih') as HTMLInputElement | null,
+    konu: document.getElementById('pro-konu') as HTMLTextAreaElement | null,
+  };
 
   function companyLabel(company: any) {
     const id = String(company?.['Firma No'] || company?.FirmaNo || company?.firmaNo || company?.id || company?.ID || '').trim();
@@ -97,6 +126,320 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     if (!selectStatus) return;
     selectStatus.textContent = message;
     selectStatus.className = `text-xs font-semibold ${isError ? 'text-rose-400' : 'text-muted'}`;
+  }
+
+  function parseDecimal(value: string) {
+    if (!value) return NaN;
+    return Number.parseFloat(value.replace(/\s+/g, '').replace(',', '.'));
+  }
+
+  function formatMoney(value: number, digits = 2) {
+    if (!Number.isFinite(value)) return '';
+    return value.toFixed(digits).replace(/\.00$/, '');
+  }
+
+  function normalizeDateForStorage(value: string) {
+    if (!value) return '';
+    const [year, month, day] = value.split('-');
+    if (!year || !month || !day) return value;
+    return `${day}.${month}.${year}`;
+  }
+
+  function normalizeDateForInput(value: string) {
+    const match = String(value || '').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (!match) return '';
+    return `${match[3]}-${match[2]}-${match[1]}`;
+  }
+
+  function setSaveButtonState() {
+    if (!saveButton) return;
+    saveButton.textContent = editingProformaId ? 'Proforma Guncelle' : 'Proforma Kaydet';
+  }
+
+  function fillAmountDefaults() {
+    if (amountInputs.oran && !amountInputs.oran.value.trim()) amountInputs.oran.value = '20';
+    if (amountInputs.birim && !amountInputs.birim.value.trim()) amountInputs.birim.value = 'TL';
+    if (amountInputs.tarih && !amountInputs.tarih.value) amountInputs.tarih.value = new Date().toISOString().slice(0, 10);
+  }
+
+  function clearForm() {
+    editingProformaId = '';
+    if (amountInputs.kdvsiz) amountInputs.kdvsiz.value = '';
+    if (amountInputs.kdv) amountInputs.kdv.value = '';
+    if (amountInputs.toplam) amountInputs.toplam.value = '';
+    if (amountInputs.konu) amountInputs.konu.value = '';
+    if (amountInputs.oran) amountInputs.oran.value = '20';
+    if (amountInputs.birim) amountInputs.birim.value = 'TL';
+    if (amountInputs.tarih) amountInputs.tarih.value = new Date().toISOString().slice(0, 10);
+    setSaveButtonState();
+  }
+
+  function recomputeFrom(source: 'kdvsiz' | 'toplam' | 'kdv') {
+    const oran = parseDecimal(amountInputs.oran?.value || '20');
+    const safeRate = Number.isFinite(oran) && oran >= 0 ? oran : 20;
+    const kdvsiz = parseDecimal(amountInputs.kdvsiz?.value || '');
+    const toplam = parseDecimal(amountInputs.toplam?.value || '');
+    const kdv = parseDecimal(amountInputs.kdv?.value || '');
+
+    if (!amountInputs.kdvsiz || !amountInputs.kdv || !amountInputs.toplam || !amountInputs.oran) return;
+    amountInputs.oran.value = formatMoney(safeRate, 2);
+
+    if (source === 'kdvsiz' && Number.isFinite(kdvsiz)) {
+      const nextKdv = kdvsiz * safeRate / 100;
+      amountInputs.kdvsiz.value = formatMoney(kdvsiz);
+      amountInputs.kdv.value = formatMoney(nextKdv);
+      amountInputs.toplam.value = formatMoney(kdvsiz + nextKdv);
+      return;
+    }
+
+    if (source === 'toplam' && Number.isFinite(toplam)) {
+      const nextKdvsiz = toplam * 100 / (100 + safeRate);
+      const nextKdv = nextKdvsiz * safeRate / 100;
+      amountInputs.kdvsiz.value = formatMoney(nextKdvsiz);
+      amountInputs.kdv.value = formatMoney(nextKdv);
+      amountInputs.toplam.value = formatMoney(toplam);
+      return;
+    }
+
+    if (source === 'kdv' && Number.isFinite(kdv)) {
+      const nextKdvsiz = safeRate === 0 ? kdv : (100 * kdv / safeRate);
+      amountInputs.kdvsiz.value = formatMoney(nextKdvsiz);
+      amountInputs.kdv.value = formatMoney(kdv);
+      amountInputs.toplam.value = formatMoney(nextKdvsiz + kdv);
+    }
+  }
+
+  function renderProformaList(rows: ProformaRow[]) {
+    if (!counterEl || !listBox || !listPlaceholder) return;
+    currentRows = rows;
+    counterEl.textContent = `Firmaya ait proforma sayisi: ${rows.length}`;
+
+    if (!rows.length) {
+      listBox.classList.add('hidden');
+      listBox.innerHTML = '';
+      listPlaceholder.classList.remove('hidden');
+      listPlaceholder.textContent = 'Bu firmaya ait proforma bulunamadi.';
+      return;
+    }
+
+    listPlaceholder.classList.add('hidden');
+    listBox.classList.remove('hidden');
+
+    const header = `
+      <div class="grid grid-cols-[110px_1.5fr_100px_1fr_1fr_120px_164px] gap-px bg-border-main text-[11px] font-black uppercase tracking-widest text-muted">
+        <div class="bg-surface-hover px-4 py-3">Tarih</div>
+        <div class="bg-surface-hover px-4 py-3">Konu</div>
+        <div class="bg-surface-hover px-4 py-3">KDV %</div>
+        <div class="bg-surface-hover px-4 py-3">KDV Haric</div>
+        <div class="bg-surface-hover px-4 py-3">KDV</div>
+        <div class="bg-surface-hover px-4 py-3">Toplam</div>
+        <div class="bg-surface-hover px-4 py-3">Aksiyon</div>
+      </div>
+    `;
+
+    const items = [...rows]
+      .sort((a, b) => String(b?.[8] || '').localeCompare(String(a?.[8] || '')))
+      .map((row) => {
+        const birim = row?.[7] || '';
+        const rowId = row?.[0] || '';
+        return `
+          <div class="grid grid-cols-[110px_1.5fr_100px_1fr_1fr_120px_164px] gap-px bg-border-main border-t border-border-main first:border-t-0">
+            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row?.[8] || '—'}</div>
+            <div class="bg-surface px-4 py-3 text-sm text-main leading-relaxed">${row?.[9] || '—'}</div>
+            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row?.[4] || '0'}</div>
+            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row?.[3] || '0'} ${birim}</div>
+            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row?.[5] || '0'} ${birim}</div>
+            <div class="bg-surface px-4 py-3 text-sm font-bold text-indigo-300">${row?.[6] || '0'} ${birim}</div>
+            <div class="bg-surface px-3 py-2">
+              <div class="flex items-center justify-center gap-2">
+                <button type="button" class="proforma-print inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-500/20 bg-sky-500/5 text-sky-300 hover:bg-sky-500/15 transition-colors" data-id="${rowId}" title="Yazdir">
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current" stroke-width="2"><path d="M6 9V4h12v5"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v6H6z"/><path d="M18 11h.01"/></svg>
+                </button>
+                <button type="button" class="proforma-edit inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/5 text-amber-300 hover:bg-amber-500/15 transition-colors" data-id="${rowId}" title="Duzenle">
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+                <button type="button" class="proforma-delete inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-400 hover:bg-rose-500/15 transition-colors" data-id="${rowId}" title="Sil">
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 fill-none stroke-current" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    listBox.innerHTML = `${header}${items}`;
+  }
+
+  function setListLoading(message: string) {
+    if (!listPlaceholder || !listBox || !counterEl) return;
+    listBox.classList.add('hidden');
+    listBox.innerHTML = '';
+    listPlaceholder.classList.remove('hidden');
+    listPlaceholder.textContent = message;
+    counterEl.textContent = 'Kayitlar yukleniyor...';
+  }
+
+  async function loadProformas() {
+    if (!firmaId) return;
+    setListLoading('Proforma kayitlari yukleniyor...');
+
+    const res = await api.getProformaByFirmaId(firmaId);
+    if (!res.success) {
+      if (listPlaceholder) listPlaceholder.textContent = res.error || 'Proforma listesi yuklenemedi.';
+      if (counterEl) counterEl.textContent = 'Liste yuklenemedi.';
+      showToast(res.error || 'Proforma listesi yuklenemedi.', 'error');
+      return;
+    }
+
+    renderProformaList((Array.isArray(res.data) ? res.data : []) as ProformaRow[]);
+  }
+
+  function buildProformaPayload() {
+    const kdvsiz = amountInputs.kdvsiz?.value.trim() || '';
+    const kdvOran = amountInputs.oran?.value.trim() || '20';
+    const kdv = amountInputs.kdv?.value.trim() || '';
+    const toplam = amountInputs.toplam?.value.trim() || '';
+    const birim = amountInputs.birim?.value.trim() || 'TL';
+    const tarih = normalizeDateForStorage(amountInputs.tarih?.value || '');
+    const konu = amountInputs.konu?.value.trim() || '';
+
+    if (!activeContext?.firmaId) return { error: 'Firma contexti hazir degil.' };
+    if (!kdvsiz || !toplam || !tarih || !konu) return { error: 'KDV haric, toplam, tarih ve konu alanlarini doldur.' };
+
+    return {
+      proInfo: {
+        nick: activeContext.nick || activeContext.unvan || 'Firma',
+        firmaNo: activeContext.firmaId,
+        kdvsiz,
+        kdvOran,
+        kdv,
+        toplam,
+        birim,
+        tarih,
+        konu,
+      }
+    };
+  }
+
+  async function saveProforma() {
+    const payload = buildProformaPayload();
+    if ('error' in payload) {
+      showToast(payload.error, 'error');
+      return;
+    }
+
+    if (saveButton) saveButton.disabled = true;
+    const res = editingProformaId
+      ? await api.updateProforma(editingProformaId, payload.proInfo)
+      : await api.addProforma(payload.proInfo);
+    if (saveButton) saveButton.disabled = false;
+
+    if (!res.success) {
+      showToast(res.error || 'Proforma kaydedilemedi.', 'error');
+      return;
+    }
+
+    showToast(
+      editingProformaId
+        ? `${payload.proInfo.nick} icin proforma guncellendi.`
+        : `${payload.proInfo.nick} icin proforma Cloudflare KV'ye kaydedildi.`,
+      'success'
+    );
+    clearForm();
+    await loadProformas();
+  }
+
+  function startEditProforma(id: string) {
+    const row = currentRows.find((item) => String(item?.[0] || '') === String(id));
+    if (!row) {
+      showToast('Duzenlenecek proforma bulunamadi.', 'error');
+      return;
+    }
+    editingProformaId = id;
+    if (amountInputs.kdvsiz) amountInputs.kdvsiz.value = row[3] || '';
+    if (amountInputs.oran) amountInputs.oran.value = row[4] || '20';
+    if (amountInputs.kdv) amountInputs.kdv.value = row[5] || '';
+    if (amountInputs.toplam) amountInputs.toplam.value = row[6] || '';
+    if (amountInputs.birim) amountInputs.birim.value = row[7] || 'TL';
+    if (amountInputs.tarih) amountInputs.tarih.value = normalizeDateForInput(row[8] || '') || new Date().toISOString().slice(0, 10);
+    if (amountInputs.konu) amountInputs.konu.value = row[9] || '';
+    setSaveButtonState();
+    amountInputs.konu?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  async function deleteProforma(id: string) {
+    const row = currentRows.find((item) => String(item?.[0] || '') === String(id));
+    const konu = row?.[9] || 'bu proforma';
+    const confirmed = window.confirm(`"${konu}" kaydini silmek istiyor musun?`);
+    if (!confirmed) return;
+
+    const res = await api.deleteProforma(id);
+    if (!res.success) {
+      showToast(res.error || 'Proforma silinemedi.', 'error');
+      return;
+    }
+
+    if (editingProformaId === id) clearForm();
+    showToast('Proforma kaydi silindi.', 'success');
+    await loadProformas();
+  }
+
+  async function printProforma(id: string) {
+    const row = currentRows.find((item) => String(item?.[0] || '') === String(id));
+    if (!row) {
+      showToast('Yazdirilacak proforma bulunamadi.', 'error');
+      return;
+    }
+
+    const res = await api.generateProforma(id);
+    if (!res.success) {
+      showToast(res.error || 'Proforma dokumani olusturulamadi.', 'error');
+      return;
+    }
+
+    const url = String((res.data as any)?.url || '');
+    showToast('Proforma dokumani Google Docs uzerinde olusturuldu.', 'success');
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  function bindListHandlers() {
+    listBox?.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      const printButton = target?.closest('.proforma-print') as HTMLButtonElement | null;
+      const editButton = target?.closest('.proforma-edit') as HTMLButtonElement | null;
+      const deleteButton = target?.closest('.proforma-delete') as HTMLButtonElement | null;
+      if (printButton?.dataset.id) {
+        void printProforma(printButton.dataset.id);
+        return;
+      }
+      if (editButton?.dataset.id) {
+        startEditProforma(editButton.dataset.id);
+        return;
+      }
+      if (deleteButton?.dataset.id) {
+        void deleteProforma(deleteButton.dataset.id);
+      }
+    });
+  }
+
+  function bindFormHandlers() {
+    if (formHandlersBound) return;
+    formHandlersBound = true;
+
+    bindListHandlers();
+    clearButton?.addEventListener('click', clearForm);
+    refreshButton?.addEventListener('click', () => void loadProformas());
+    saveButton?.addEventListener('click', () => void saveProforma());
+    amountInputs.kdvsiz?.addEventListener('input', () => recomputeFrom('kdvsiz'));
+    amountInputs.toplam?.addEventListener('input', () => recomputeFrom('toplam'));
+    amountInputs.kdv?.addEventListener('input', () => recomputeFrom('kdv'));
+    amountInputs.oran?.addEventListener('change', () => {
+      if (amountInputs.kdvsiz?.value.trim()) recomputeFrom('kdvsiz');
+      else if (amountInputs.toplam?.value.trim()) recomputeFrom('toplam');
+      else if (amountInputs.kdv?.value.trim()) recomputeFrom('kdv');
+    });
+    setSaveButtonState();
   }
 
   function showCompanyPicker() {
@@ -133,11 +476,10 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   }
 
   async function loadScreen() {
-    if (!firmaId) {
-      return;
-    }
+    if (!firmaId) return;
 
     const context = await loadCompanyOperationContext(firmaId);
+    activeContext = context;
     if (!context) {
       document.getElementById('op-skeleton')?.classList.add('hidden');
       document.getElementById('op-error')?.classList.remove('hidden');
@@ -159,14 +501,14 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     document.getElementById('op-company-kapsam')!.textContent = context.scope || context.kapsam || 'Kapsam bulunamadi.';
     document.getElementById('op-company-stats')!.textContent = `${context.certificates.length} sertifika, ${context.tests.length} test kaydi uzerinden fiyatlandirma baglanabilir.`;
 
-    const placeholder = document.getElementById('proforma-list-placeholder');
-    if (placeholder) {
-      placeholder.textContent = `Bu firma icin ${context.certificates.length} sertifika ve ${context.tests.length} test kaydi bulundu. Proforma listesi ikinci adimda API'den yüklenecek.`;
-    }
+    fillAmountDefaults();
+    bindFormHandlers();
+    setListLoading(`Bu firma icin ${context.certificates.length} sertifika ve ${context.tests.length} test kaydi bulundu. Proforma listesi KV uzerinden yukleniyor.`);
 
     document.getElementById('op-select')?.classList.add('hidden');
     document.getElementById('op-skeleton')?.classList.add('hidden');
     document.getElementById('op-shell')?.classList.remove('hidden');
+    await loadProformas();
   }
 
   async function prepareCompanyPicker() {

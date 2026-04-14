@@ -725,12 +725,12 @@ export default {
       return [
         id,
         pick(["nick", "nickname", "firmaAdi"]),
-        pick(["firmaNo", "fno"]),
-        pick(["kdvsiz"], "0"),
-        pick(["kdvOran"], "20"),
-        pick(["kdv"], "0"),
+        pick(["firmaNo", "firmano", "fno"]),
+        pick(["kdvsiz", "haric"], "0"),
+        pick(["kdvOran", "oran"], "20"),
+        pick(["kdv", "tutar"], "0"),
         pick(["toplam"], "0"),
-        pick(["birim", "lira"], "TL"),
+        pick(["birim", "paraBirimi", "lira"], "TL"),
         pick(["tarih"]),
         pick(["konu"]),
       ];
@@ -1162,6 +1162,47 @@ export default {
         ulke: pickObjectValue(company, ["Ülke", "Ulke", "ulke"]),
       };
     };
+    const buildProformaPayloadFromKv = async (id) => {
+      const proformaState = await loadProformaIndexes();
+      if (!proformaState) {
+        throw new Error("PROFORMA_KV_EMPTY: Proforma KV verisi boş. Önce senkronizasyon yapın.");
+      }
+
+      const proformaRow = proformaState.proformasById?.[String(id)] || null;
+      if (!proformaRow) throw new Error(`Proforma KV indexinde '${id}' bulunamadı.`);
+
+      const firmaId = getProformaFirmaId(proformaRow);
+      if (!firmaId) throw new Error("Proforma kaydında firma no boş.");
+
+      const companyState = await loadCompanyIndexes();
+      if (!companyState) {
+        throw new Error("COMPANY_KV_EMPTY: Firma KV verisi boş. Önce senkronizasyon yapın.");
+      }
+      const company = companyState.companiesById[String(firmaId)] || null;
+      if (!company) throw new Error(`Firma KV indexinde '${firmaId}' bulunamadı.`);
+
+      return {
+        id: String(proformaRow[0] ?? ""),
+        faturaNo: String(proformaRow[0] ?? ""),
+        nick: String(proformaRow[1] ?? ""),
+        firmaNo: String(firmaId),
+        kdvsiz: String(proformaRow[3] ?? ""),
+        kdvOran: String(proformaRow[4] ?? "20"),
+        kdv: String(proformaRow[5] ?? ""),
+        toplam: String(proformaRow[6] ?? ""),
+        birim: String(proformaRow[7] ?? "TL"),
+        tarih: String(proformaRow[8] ?? ""),
+        konu: String(proformaRow[9] ?? ""),
+        unvan: pickObjectValue(company, ["Unvan", "unvan", "Firma Adı", "FirmaAdi"]),
+        adres: pickObjectValue(company, ["Adres", "adres"]),
+        il: pickObjectValue(company, ["İl", "Il", "Şehir", "Sehir", "sehir", "il"]),
+        ulke: pickObjectValue(company, ["Ülke", "Ulke", "ulke"]),
+        tel: pickObjectValue(company, ["Telefon", "Tel", "tel"]),
+        vergiD: pickObjectValue(company, ["Vergi Dairesi", "VergiDairesi", "vergiD"]),
+        vergiN: pickObjectValue(company, ["Vergi Numarası", "VergiNumarasi", "vergiN"]),
+        yetkili: pickObjectValue(company, ["Yetkili Adı", "YetkiliAdi", "yetA"]),
+      };
+    };
 
     const allowedOriginPatterns = [
       /^https:\/\/portal\.medicert\.com\.tr$/,
@@ -1274,6 +1315,7 @@ export default {
           "uploadFile",
           "doUpload",
           "generateIso",
+          "generateProforma",
           "generateAppForm",
           "generateDraftCertificate",
           "draftBas",
@@ -1448,6 +1490,37 @@ export default {
               success: false,
               data: null,
               error: `Test payload üretilemedi (${params?.id ?? ""}): ${error.message}`
+            });
+          }
+        }
+
+        if (action === "generateProforma") {
+          if (!env.DB) {
+            return jsonResponse({ success: false, error: "Cloudflare KV Bağı (DB) bulunamadı!" }, 500);
+          }
+          try {
+            const payload = await buildProformaPayloadFromKv(params?.id);
+            const gasRes = await fetch(env.GAS_API_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "generateProforma",
+                apiKey: env.API_KEY || "mc-portal-3.0_8a2d7f9e4c1b5a6c3d2e1f0b9a8c7d6e",
+                params: { proforma: payload }
+              }),
+            });
+            const result = await gasRes.json().catch(() => null);
+            if (!gasRes.ok || !result) {
+              return jsonResponse({
+                success: false,
+                error: result?.error || `GAS_HTTP_${gasRes.status}`
+              }, gasRes.status || 502);
+            }
+            return jsonResponse(result, result.success ? 200 : 500);
+          } catch (error) {
+            return jsonResponse({
+              success: false,
+              error: `Proforma payload üretilemedi (${params?.id ?? ""}): ${error.message}`
             });
           }
         }
@@ -1932,10 +2005,102 @@ export default {
           return jsonResponse({ success: true, data: { id: targetId, row: updated }, kvPrimaryWrite: true, sheetsWrite: false });
         }
 
-        if (env.DB && ["addProforma", "addProInfo"].includes(action)) {
+        if (env.DB && ["addProforma", "addProInfo", "updateProforma", "deleteProforma"].includes(action)) {
           const state = await loadProformaIndexes();
           if (!state) {
             return jsonResponse({ success: false, error: "PROFORMA_KV_EMPTY", message: "Proforma KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
+          }
+
+          if (action === "deleteProforma") {
+            const targetId = String(params?.id || "").trim();
+            if (!targetId) {
+              return jsonResponse({ success: false, error: "Proforma ID boş olamaz." }, 400);
+            }
+
+            const existing = state.proformasById?.[targetId] || null;
+            if (!existing) {
+              return jsonResponse({ success: false, error: `Proforma bulunamadı: ${targetId}` }, 404);
+            }
+
+            const firmaId = getProformaFirmaId(existing);
+            const nextState = {
+              proformasById: { ...state.proformasById },
+              proformasByFirmaId: { ...state.proformasByFirmaId },
+              nextId: state.nextId,
+            };
+            delete nextState.proformasById[targetId];
+            if (firmaId) {
+              nextState.proformasByFirmaId[firmaId] = (nextState.proformasByFirmaId[firmaId] || [])
+                .filter((row) => getProformaId(row) !== targetId);
+            }
+            await saveProformaIndexes(nextState);
+            await Promise.all([
+              env.DB.delete(`cache:getProformaById:${stableStringify({ id: targetId })}`),
+              firmaId
+                ? env.DB.put(`cache:getProformaByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(nextState.proformasByFirmaId[firmaId] || []), { expirationTtl: CACHE_TTL })
+                : Promise.resolve(),
+            ]);
+            return jsonResponse({ success: true, data: { id: targetId }, kvPrimaryWrite: true, sheetsWrite: false });
+          }
+
+          if (action === "updateProforma") {
+            const targetId = String(params?.id || "").trim();
+            if (!targetId) {
+              return jsonResponse({ success: false, error: "Proforma ID boş olamaz." }, 400);
+            }
+
+            const existing = state.proformasById?.[targetId] || null;
+            if (!existing) {
+              return jsonResponse({ success: false, error: `Proforma bulunamadı: ${targetId}` }, 404);
+            }
+
+            const updated = createCanonicalProformaRow({
+              id: targetId,
+              nick: existing[1] ?? "",
+              firmaNo: existing[2] ?? "",
+              kdvsiz: existing[3] ?? "0",
+              kdvOran: existing[4] ?? "20",
+              kdv: existing[5] ?? "0",
+              toplam: existing[6] ?? "0",
+              birim: existing[7] ?? "TL",
+              tarih: existing[8] ?? "",
+              konu: existing[9] ?? "",
+              ...(params?.proInfo || {})
+            }, { id: targetId });
+
+            const prevFirmaId = getProformaFirmaId(existing);
+            const nextFirmaId = getProformaFirmaId(updated);
+            const nextState = {
+              proformasById: { ...state.proformasById, [targetId]: updated },
+              proformasByFirmaId: { ...state.proformasByFirmaId },
+              nextId: state.nextId,
+            };
+
+            if (prevFirmaId) {
+              nextState.proformasByFirmaId[prevFirmaId] = (nextState.proformasByFirmaId[prevFirmaId] || [])
+                .map((row) => getProformaId(row) === targetId ? updated : row);
+              if (nextFirmaId && nextFirmaId !== prevFirmaId) {
+                nextState.proformasByFirmaId[prevFirmaId] = (nextState.proformasByFirmaId[prevFirmaId] || [])
+                  .filter((row) => getProformaId(row) !== targetId);
+              }
+            }
+            if (nextFirmaId && nextFirmaId !== prevFirmaId) {
+              nextState.proformasByFirmaId[nextFirmaId] = [...(nextState.proformasByFirmaId[nextFirmaId] || []), updated];
+            } else if (nextFirmaId && !prevFirmaId) {
+              nextState.proformasByFirmaId[nextFirmaId] = [...(nextState.proformasByFirmaId[nextFirmaId] || []), updated];
+            }
+
+            await saveProformaIndexes(nextState);
+            await Promise.all([
+              env.DB.put(`cache:getProformaById:${stableStringify({ id: targetId })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL }),
+              prevFirmaId
+                ? env.DB.put(`cache:getProformaByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`, JSON.stringify(nextState.proformasByFirmaId[prevFirmaId] || []), { expirationTtl: CACHE_TTL })
+                : Promise.resolve(),
+              nextFirmaId && nextFirmaId !== prevFirmaId
+                ? env.DB.put(`cache:getProformaByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(nextState.proformasByFirmaId[nextFirmaId] || []), { expirationTtl: CACHE_TTL })
+                : Promise.resolve(),
+            ]);
+            return jsonResponse({ success: true, data: { id: targetId, row: updated }, kvPrimaryWrite: true, sheetsWrite: false });
           }
 
           const newId = String(state.nextId);
