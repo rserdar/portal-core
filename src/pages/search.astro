@@ -106,11 +106,31 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
   consumeFlashToast();
 
-  $companies.subscribe(data => {
-    if (data && data.length > 0) {
-      if (loader) loader.classList.add('hidden');
+  function refreshSearchView() {
+    const data = $companies.get() || [];
+    const syncState = $syncStatus.get();
+    const hasData = Array.isArray(data) && data.length > 0;
+    const emptyState = document.getElementById('empty-state');
+
+    if (hasData) {
+      loader?.classList.add('hidden');
       renderResults(data, currentTerm);
+      return;
     }
+
+    if (syncState === 'syncing') {
+      loader?.classList.remove('hidden');
+      emptyState?.classList.add('hidden');
+      emptyState?.classList.remove('flex');
+      return;
+    }
+
+    loader?.classList.add('hidden');
+    renderResults([], currentTerm);
+  }
+
+  $companies.subscribe(() => {
+    refreshSearchView();
   });
 
   $syncStatus.subscribe(status => {
@@ -125,6 +145,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]';
       if (textEl) textEl.textContent = 'HAZIR';
     }
+    refreshSearchView();
   });
 
   function normalize(str: any): string {
@@ -534,7 +555,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     currentTerm = initialQuery;
   }
 
+  refreshSearchView();
   SyncManager.init().then(() => {
-    if (initialQuery) renderResults($companies.get(), currentTerm);
+    refreshSearchView();
   });
 </script>
