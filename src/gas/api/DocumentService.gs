@@ -274,7 +274,7 @@ const DocumentService = {
         .setWidth(600)
         .setHeight(600)
         .setLeftOffset(65)
-        .setTopOffset(80);
+        .setTopOffset(110);
 
 
       doc.saveAndClose();
