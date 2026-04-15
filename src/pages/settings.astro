@@ -169,6 +169,8 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   import { api } from "../lib/api";
   import { toast } from "../lib/toast";
   import { SyncManager } from "../lib/sync";
+  import { $dashboardStats } from "../lib/store";
+  import { DB } from "../lib/db";
 
   const selectEl = document.getElementById("dataset-select") as HTMLSelectElement | null;
   const syncBtn = document.getElementById("sync-master-btn") as HTMLButtonElement | null;
@@ -415,6 +417,11 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
         if (!res.success) {
           setBackupStatus("Rebuild basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
           return;
+        }
+        // KV güncellendi — store + IndexedDB'yi direkt güncelle (checkAndSync'in guard'ına takılmadan)
+        if (res.data) {
+          $dashboardStats.set(res.data);
+          await DB.save(DB.DASHBOARD_STATS, res.data);
         }
         const stats = res.data?.stats;
         setBackupStatus(

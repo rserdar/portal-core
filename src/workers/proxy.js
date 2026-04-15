@@ -369,7 +369,7 @@ export default {
     };
     const rebuildCertificatesFromEntityKeys = async () => {
       if (!env.DB) return null;
-      
+
       // Try rebuilding from full index first (Fast & Reliable)
       const fullRaw = await env.DB.get(indexKeys.fullCertificates);
       if (fullRaw) {
@@ -697,7 +697,7 @@ export default {
         const charts = { consultants: {}, yearly: {}, cityDensity: {}, cities: {} };
         const uniqueCompanies = new Set();
         const companyToCity = new Map();
-        
+
         companies.forEach(c => {
           if (c.id) {
             const city = String(c.city || c.City || c.Il || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I").replace(/Ğ/g, "G").replace(/Ü/g, "U").replace(/Ş/g, "S").replace(/Ö/g, "O").replace(/Ç/g, "C");
@@ -738,40 +738,40 @@ export default {
           if (yearMatch) charts.yearly[yearMatch[1]] = (charts.yearly[yearMatch[1]] || 0) + 1;
 
           const city = String(c.city || companyToCity.get(String(c.firmaNo)) || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I").replace(/Ğ/g, "G").replace(/Ü/g, "U").replace(/Ş/g, "S").replace(/Ö/g, "O").replace(/Ç/g, "C");
-          
+
           if (!cityMap.has(city)) {
             cityMap.set(city, { activeCerts: 0, pendingSurveillance: 0, consultants: new Set(), totalCompanies: new Set(), nicknames: [] });
           }
           const entry = cityMap.get(city);
           if (isActive) entry.activeCerts++;
           if (isPending) entry.pendingSurveillance++;
-        if (dan !== "Atanmamış") entry.consultants.add(dan);
-        if (c.firmaNo) entry.totalCompanies.add(String(c.firmaNo));
-        if (entry.nicknames.length < 15) entry.nicknames.push(c.nickname || "İsimsiz Firma");
+          if (dan !== "Atanmamış") entry.consultants.add(dan);
+          if (c.firmaNo) entry.totalCompanies.add(String(c.firmaNo));
+          if (entry.nicknames.length < 15) entry.nicknames.push(c.nickname || "İsimsiz Firma");
 
-        charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
-      });
+          charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
+        });
 
-      stats.totalCompanies = uniqueCompanies.size;
+        stats.totalCompanies = uniqueCompanies.size;
 
-      cityMap.forEach((entry, city) => {
-        charts.cities[city] = {
-          companyCount: entry.totalCompanies.size,
-          activeCerts: entry.activeCerts,
-          pendingSurveillance: entry.pendingSurveillance,
-          consultants: Array.from(entry.consultants).slice(0, 5),
-          details: entry.nicknames
-        };
-      });
+        cityMap.forEach((entry, city) => {
+          charts.cities[city] = {
+            companyCount: entry.totalCompanies.size,
+            activeCerts: entry.activeCerts,
+            pendingSurveillance: entry.pendingSurveillance,
+            consultants: Array.from(entry.consultants).slice(0, 5),
+            details: entry.nicknames
+          };
+        });
 
-      const payload = { stats, charts };
-      await env.DB.put(indexKeys.dashboardStats, JSON.stringify(payload), { expirationTtl: CACHE_TTL });
-      return payload;
-    } catch (err) {
-      console.error("rebuildDashboardStats Hatası:", err);
-      return null;
-    }
-  };
+        const payload = { stats, charts };
+        await env.DB.put(indexKeys.dashboardStats, JSON.stringify(payload), { expirationTtl: CACHE_TTL });
+        return payload;
+      } catch (err) {
+        console.error("rebuildDashboardStats Hatası:", err);
+        return null;
+      }
+    };
     const createCanonicalTestRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
       const pick = getPicker(input, options.explicit || null);
@@ -1429,10 +1429,10 @@ export default {
             // Fallback: If index is missing but full data exists
             const fullRaw = await env.DB.get(indexKeys.fullCompanies);
             if (fullRaw) {
-               const full = JSON.parse(fullRaw);
-               const data = full.map(createSearchEntry);
-               ctx.waitUntil(env.DB.put(indexKeys.companySearch, JSON.stringify(data.reduce((acc, c) => ({...acc, [c.id]: c}), {})), { expirationTtl: CACHE_TTL }));
-               return jsonResponse({ success: true, data, fallback: true });
+              const full = JSON.parse(fullRaw);
+              const data = full.map(createSearchEntry);
+              ctx.waitUntil(env.DB.put(indexKeys.companySearch, JSON.stringify(data.reduce((acc, c) => ({ ...acc, [c.id]: c }), {})), { expirationTtl: CACHE_TTL }));
+              return jsonResponse({ success: true, data, fallback: true });
             }
             return jsonResponse({ success: true, data: [], message: "No data found in KV" });
           }
@@ -1781,15 +1781,15 @@ export default {
         if (action === "prepareBatchFolders") {
           const dataset = await getMasterDataset("sysdocs");
           if (!dataset || !dataset.rows) return jsonResponse({ success: false, error: "SysDoc KV verisi boş" });
-          
+
           const setName = params?.data?.setName;
           const nick = params?.data?.nick;
 
           const rows = dataset.rows.filter(row => String(row[0]) === String(setName) && Boolean(row[5]));
           if (rows.length === 0) return jsonResponse({ success: false, error: `"${setName}" setine ait geçerli şablon bulunamadı.` });
-          
+
           const uniqueSubFolders = [...new Set(rows.map(row => row[2]))];
-          
+
           // Google Drive'da klasörleri oluşturmak için GAS'a side-effect isteği at
           const gasRes = await fetch(env.GAS_API_URL, {
             method: "POST",
@@ -1804,7 +1804,7 @@ export default {
           if (!gasRes.ok || !payload || !payload.success) {
             return jsonResponse({ success: false, error: payload?.error || "Klasör oluşturma hatası" });
           }
-          
+
           return jsonResponse({ success: true, rows, folderMap: payload.data });
         }
 
@@ -1931,13 +1931,13 @@ export default {
             try {
               fullData = JSON.parse(text);
             } catch (e) {
-              return new Response(JSON.stringify({ 
-                success: false, 
+              return new Response(JSON.stringify({
+                success: false,
                 error: "GAS tarafından geçersiz veri döndü. (HTML Hata Sayfası olabilir)",
-                details: text.substring(0, 200) 
+                details: text.substring(0, 200)
               }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
             }
-            
+
             if (fullData.success) {
               const d = fullData.data;
               const stats = {};
@@ -1950,7 +1950,7 @@ export default {
                 const companies = Array.isArray(d.companies) ? d.companies : [];
                 const mappedCompanies = companies.map(c => Array.isArray(c) ? mapLegacyCompanyRow(c) : c);
                 canonicalCompanies = mappedCompanies.map((company) => createCanonicalCompany(company)).filter((company) => getCompanyId(company));
-                
+
                 // Güvenlik Bariyeri (Sadece şirketler güncelleniyorsa)
                 const currentSearchRaw = await env.DB.get(indexKeys.companySearch);
                 const currentSearch = currentSearchRaw ? JSON.parse(currentSearchRaw) : {};
@@ -1961,7 +1961,7 @@ export default {
                 }
 
                 if (canonicalCompanies.length === 0 && currentCount === 0) {
-                   return jsonResponse({ success: false, error: "EMPTY_SYNC_DATA", message: "GAS üzerinden hiç firma verisi gelmedi. Lütfen verilerin GAS (Sheets) tarafında mevcut olduğundan emin olun." }, 400);
+                  return jsonResponse({ success: false, error: "EMPTY_SYNC_DATA", message: "GAS üzerinden hiç firma verisi gelmedi. Lütfen verilerin GAS (Sheets) tarafında mevcut olduğundan emin olun." }, 400);
                 }
 
                 const companySearchIndex = {};
@@ -1978,7 +1978,7 @@ export default {
                 writes.push(env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }));
                 writes.push(env.DB.put(`cache:getCompanies:{}`, JSON.stringify(Object.values(companySearchIndex)), { expirationTtl: CACHE_TTL }));
                 writes.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(canonicalCompanies), { expirationTtl: CACHE_TTL }));
-                
+
                 // [LIMIT REHAB] Tekil yazma döngüsü kaldırıldı (Read-through fallback kullanılacak)
                 const companyEntityKeys = new Set(canonicalCompanies.map(c => `cache:company:${getCompanyId(c)}`));
                 purges.push(purgeCachePrefix("cache:getCompanyById:"));
@@ -1991,23 +1991,23 @@ export default {
                 const certificates = Array.isArray(d.certificates) ? d.certificates : (Array.isArray(d.certs) ? d.certs : []);
                 const certificateRows = Array.isArray(d.certificateRows) ? d.certificateRows : (Array.isArray(d.certRows) ? d.certRows : []);
                 const rawCombined = [...certificates, ...certificateRows];
-                
+
                 const mappedCertificates = rawCombined.map(c => Array.isArray(c) ? mapLegacyCertificateRow(c) : c);
                 const canonicalCertificates = mappedCertificates.map(c => createCanonicalCertificate(c)).filter(c => getCertificateId(c));
-                
+
                 const certById = buildCertificatesById(canonicalCertificates);
                 const dedupedCertificates = Object.values(certById);
                 const certsByFirmaId = buildCertificatesByFirmaId(dedupedCertificates);
-                
+
                 const certificateSummaryIndex = {};
 
                 for (const cert of dedupedCertificates) {
                   const certId = getCertificateId(cert);
                   const fNo = getCertificateFirmaId(cert);
-                  
+
                   if (certId) {
-                      const summary = createCertificateSummary(cert);
-                      certificateSummaryIndex[String(certId)] = summary;
+                    const summary = createCertificateSummary(cert);
+                    certificateSummaryIndex[String(certId)] = summary;
                   }
                 }
 
@@ -2015,7 +2015,7 @@ export default {
                   const parsed = parseInt(getCertificateId(cert), 10);
                   return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
                 }, 1);
-                const sorted = [...dedupedCertificates].sort((a,b) => (parseInt(getCertificateId(b),10)||0) - (parseInt(getCertificateId(a),10)||0));
+                const sorted = [...dedupedCertificates].sort((a, b) => (parseInt(getCertificateId(b), 10) || 0) - (parseInt(getCertificateId(a), 10) || 0));
                 const recentIds = sorted.slice(0, 50).map(c => getCertificateId(c));
                 const recentObjects = sorted.slice(0, 25);
 
@@ -2177,7 +2177,7 @@ export default {
                 baseCompanyCount = Object.keys(JSON.parse(currentSearchRaw)).length;
               }
             }
-            
+
             if (scope.includes("companies") && companies.length > 0) {
               const canonicalCompanies = companies;
               const companySearchIndex = {};
@@ -2201,7 +2201,7 @@ export default {
             if (scope.includes("certificates") && currentCerts.length > 0) {
               const dedupedCertificates = currentCerts;
               const certificateSummaryIndex = {};
-              
+
               for (const cert of dedupedCertificates) {
                 const certId = getCertificateId(cert);
                 if (certId) {
@@ -2213,7 +2213,7 @@ export default {
                 const parsed = parseInt(getCertificateId(cert), 10);
                 return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
               }, 1);
-              const sorted = [...dedupedCertificates].sort((a,b) => (parseInt(getCertificateId(b),10)||0) - (parseInt(getCertificateId(a),10)||0));
+              const sorted = [...dedupedCertificates].sort((a, b) => (parseInt(getCertificateId(b), 10) || 0) - (parseInt(getCertificateId(a), 10) || 0));
               const recentIds = sorted.slice(0, 50).map(c => getCertificateId(c));
 
               writes.push(env.DB.put(indexKeys.certificateSummary, JSON.stringify(certificateSummaryIndex), { expirationTtl: CACHE_TTL }));
@@ -2255,7 +2255,7 @@ export default {
               await Promise.all(writes.slice(i, i + 50));
             }
             if (purges.length) ctx.waitUntil(Promise.all(purges));
- 
+
             // 🔥 Dashboard istatistiklerini arka planda tazele
             ctx.waitUntil(rebuildDashboardStats());
 
@@ -2269,6 +2269,12 @@ export default {
           try {
             const statsRes = await rebuildDashboardStats();
             if (!statsRes) return jsonResponse({ success: false, error: "Stats Rebuild Failed" });
+            // Phase-1 cache'leri invalidate et — bir sonraki çağrı doğrudan index'ten okusun
+            ctx.waitUntil(Promise.all([
+              env.DB.delete("cache:getCertificateSummaries:{}"),
+              env.DB.delete("cache:getCompanies:{}"),
+              env.DB.delete("cache:getDashboardSummary:{}"),
+            ]));
             return jsonResponse({ success: true, data: statsRes, stats: statsRes.stats, charts: statsRes.charts });
           } catch (error) {
             return jsonResponse({ success: false, error: "rebuildStats Hatasi: " + error.message });
@@ -2286,11 +2292,11 @@ export default {
               env.DB.get("cache:getCertificateSummaries:{}"),
             ]);
 
-            const fullList    = fullRaw     ? JSON.parse(fullRaw)     : [];
-            const summaryObj  = summaryRaw  ? JSON.parse(summaryRaw)  : {};
-            const companyObj  = companyRaw  ? JSON.parse(companyRaw)  : {};
-            const statsObj    = statsRaw    ? JSON.parse(statsRaw)    : null;
-            const summLst     = summariesRaw? JSON.parse(summariesRaw): [];
+            const fullList = fullRaw ? JSON.parse(fullRaw) : [];
+            const summaryObj = summaryRaw ? JSON.parse(summaryRaw) : {};
+            const companyObj = companyRaw ? JSON.parse(companyRaw) : {};
+            const statsObj = statsRaw ? JSON.parse(statsRaw) : null;
+            const summLst = summariesRaw ? JSON.parse(summariesRaw) : [];
 
             // Bireysel cert key sayısı (eski mimari)
             const individualKeys = await listKvKeys("cache:getCertificateById:");
@@ -2306,12 +2312,12 @@ export default {
             return jsonResponse({
               success: true,
               diagnostic: {
-                fullCertificates:      { exists: !!fullRaw,     count: fullList?.length, sizeKB: fullRaw ? Math.round(fullRaw.length / 1024) : 0 },
-                certificateSummary:    { exists: !!summaryRaw,  count: Object.keys(summaryObj).length, sizeKB: summaryRaw ? Math.round(summaryRaw.length / 1024) : 0 },
-                getCertificateSummaries:{ exists: !!summariesRaw,count: summLst?.length, sizeKB: summariesRaw ? Math.round(summariesRaw.length / 1024) : 0 },
-                companySearch:         { exists: !!companyRaw,  count: Object.keys(companyObj).length, sizeKB: companyRaw ? Math.round(companyRaw.length / 1024) : 0 },
-                dashboardStats:        { exists: !!statsRaw,    totalCertificates: statsObj?.stats?.totalCertificates ?? 0, lastSync: statsObj?.stats?.lastSync },
-                individualCertKeys:    { count: individualKeys.length, sample: individualKeys.slice(0, 3) },
+                fullCertificates: { exists: !!fullRaw, count: fullList?.length, sizeKB: fullRaw ? Math.round(fullRaw.length / 1024) : 0 },
+                certificateSummary: { exists: !!summaryRaw, count: Object.keys(summaryObj).length, sizeKB: summaryRaw ? Math.round(summaryRaw.length / 1024) : 0 },
+                getCertificateSummaries: { exists: !!summariesRaw, count: summLst?.length, sizeKB: summariesRaw ? Math.round(summariesRaw.length / 1024) : 0 },
+                companySearch: { exists: !!companyRaw, count: Object.keys(companyObj).length, sizeKB: companyRaw ? Math.round(companyRaw.length / 1024) : 0 },
+                dashboardStats: { exists: !!statsRaw, totalCertificates: statsObj?.stats?.totalCertificates ?? 0, lastSync: statsObj?.stats?.lastSync },
+                individualCertKeys: { count: individualKeys.length, sample: individualKeys.slice(0, 3) },
                 samples: samples
               }
             });
@@ -2380,9 +2386,9 @@ export default {
             // 🔥 Dashboard istatistiklerini de SENKRON tazele
             const finalStats = await rebuildDashboardStats();
 
-            return jsonResponse({ 
-              success: true, 
-              message: `Derin onarim tamamlandi! ${summaryList.length} sertifika işlendi.`, 
+            return jsonResponse({
+              success: true,
+              message: `Derin onarim tamamlandi! ${summaryList.length} sertifika işlendi.`,
               stats: {
                 totalFound: rawCount,
                 processed: summaryList.length,
@@ -2519,7 +2525,7 @@ export default {
           } catch (e) {
             return jsonResponse({ success: false, error: "Bozuk firma formatı." }, 500);
           }
-          
+
           const currentEtag = String(existing.__etag || createEtag(existing));
           const expectedEtag = String(params?.expectedEtag || "").trim();
           if (expectedEtag && expectedEtag !== currentEtag) {

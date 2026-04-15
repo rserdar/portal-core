@@ -461,6 +461,7 @@ const quickActions = [
 
 <script>
     import { $companies, $certificates, $dashboardStats, $lastSyncTime } from "../lib/store";
+    import { DB } from "../lib/db";
     import { SyncManager } from "../lib/sync";
     import { api } from "../lib/api";
     import { toast } from "../lib/toast";
@@ -758,6 +759,12 @@ const quickActions = [
           if (syncLabel) syncLabel.textContent = "AKTARILIYOR...";
           if (syncIcon) syncIcon.classList.add("animate-spin");
 
+          // KV stats'ı tazele, direkt store + IndexedDB'yi güncelle
+          const rebuildRes = await api.call("rebuildStats");
+          if (rebuildRes.success && rebuildRes.data) {
+            $dashboardStats.set(rebuildRes.data);
+            await DB.save(DB.DASHBOARD_STATS, rebuildRes.data);
+          }
           await SyncManager.checkAndSync();
           toast.success("Mevcut KV verisi tarayıcıyla yeniden eşitlendi.");
         } catch (err: any) {
