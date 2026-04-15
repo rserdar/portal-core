@@ -11,7 +11,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <DashboardLayout title="Yeni Firma Ekle">
   <div class="max-w-5xl mx-auto pb-20">
-    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
     <form id="add-company-form" class="space-y-8" autocomplete="off">
       
       <!-- section: Genel Bilgiler -->
@@ -321,10 +320,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 
 <script>
-  import { api } from '../../lib/api';
-  import { DB } from '../../lib/db';
-  import { SyncManager } from '../../lib/sync';
-  import { showToast, setFlashToast } from '../../lib/toast';
+  import { toast } from '../../lib/toast';
 
   // Global helpers
   declare global {
@@ -334,30 +330,45 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     }
   }
 
-  const form = document.getElementById('add-company-form') as HTMLFormElement;
-  const unvanInput = document.getElementById('unvan-input') as HTMLInputElement;
-  const nicknameInput = document.getElementById('nickname-input') as HTMLInputElement;
-  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
-  const submitIcon = document.getElementById('submit-icon');
-  const loadingIcon = document.getElementById('loading-icon');
+  let cleanupFns: Array<() => void> = [];
 
-  // 🤖 Otomatik Kısa Ad (Nickname) Üretimi
-  if (unvanInput && nicknameInput) {
-    unvanInput.addEventListener('input', (e) => {
-      const target = e.target as HTMLInputElement;
-      const val = target.value;
-      if (val.length > 0) {
-        const parts = val.replace(/[.,;:!?(){}[\]'"-]/g, "").replace(/\s+/g, " ").trim().split(" ");
-        const nick = parts.slice(0, 3).map(p => {
-          if (p.length > 1) {
-            return p.charAt(0).toLocaleUpperCase('tr-TR') + p.substring(1).toLocaleLowerCase('tr-TR');
-          }
-          return p.toLocaleUpperCase('tr-TR');
-        }).join(" ");
-        nicknameInput.value = nick;
-      }
-    });
+  function registerCleanup(fn: () => void) {
+    cleanupFns.push(fn);
   }
+
+  function runCleanups() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
+  }
+
+  function initPage() {
+    runCleanups();
+
+    const form = document.getElementById('add-company-form') as HTMLFormElement;
+    const unvanInput = document.getElementById('unvan-input') as HTMLInputElement;
+    const nicknameInput = document.getElementById('nickname-input') as HTMLInputElement;
+    const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+    const submitIcon = document.getElementById('submit-icon');
+    const loadingIcon = document.getElementById('loading-icon');
+
+    // 🤖 Otomatik Kısa Ad (Nickname) Üretimi
+    if (unvanInput && nicknameInput) {
+      const handleUnvanInput = (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const val = target.value;
+        if (val.length > 0) {
+          const parts = val.replace(/[.,;:!?(){}[\]'"-]/g, "").replace(/\s+/g, " ").trim().split(" ");
+          const nick = parts.slice(0, 3).map(p => {
+            if (p.length > 1) {
+              return p.charAt(0).toLocaleUpperCase('tr-TR') + p.substring(1).toLocaleLowerCase('tr-TR');
+            }
+            return p.toLocaleUpperCase('tr-TR');
+          }).join(" ");
+          nicknameInput.value = nick;
+        }
+      };
+      unvanInput.addEventListener('input', handleUnvanInput);
+    }
 
   // 📝 Case Conversion
   window.convertCase = (fieldName, lang) => {
@@ -380,7 +391,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       if (response.success) {
         targetInput.value = response.data;
       } else {
-        showToast(`Çeviri hatası oluştu: ${response.error}`, 'error');
+        toast.error(`Çeviri hatası oluştu: ${response.error}`);
       }
       targetInput.placeholder = "";
     }
@@ -400,61 +411,69 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     }
   }
 
-  // 💾 Kaydetme İşlemi
-  if (form) {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const formData = new FormData(form);
-      const companyInfo = Object.fromEntries(formData.entries());
-      companyInfo.dokuman = formData.has('dokuman') ? 'TRUE' : 'FALSE';
-      companyInfo.teknik = formData.has('teknik') ? 'TRUE' : 'FALSE';
-      
-      // Loading state
-      if (submitBtn) submitBtn.disabled = true;
-      if (submitIcon) submitIcon.classList.add('hidden');
-      if (loadingIcon) loadingIcon.classList.remove('hidden');
+    // 💾 Kaydetme İşlemi
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const companyInfo = Object.fromEntries(formData.entries());
+        companyInfo.dokuman = formData.has('dokuman') ? 'TRUE' : 'FALSE';
+        companyInfo.teknik = formData.has('teknik') ? 'TRUE' : 'FALSE';
+        
+        // Loading state
+        if (submitBtn) submitBtn.disabled = true;
+        if (submitIcon) submitIcon.classList.add('hidden');
+        if (loadingIcon) loadingIcon.classList.remove('hidden');
 
-      const response = await api.call('addCompany', { companyInfo });
-      
-      if (response.success) {
-        const createdId = String((response as any)?.data?.id || (response as any)?.id || '').trim();
-        const createdCompany = (response as any)?.data?.company;
+        const response = await api.call('addCompany', { companyInfo });
+        
+        if (response.success) {
+          const createdId = String((response as any)?.data?.id || (response as any)?.id || '').trim();
+          const createdCompany = (response as any)?.data?.company;
 
-        if (createdCompany && createdId) {
-          try {
-            const companies = (await DB.get<any[]>(DB.COMPANIES)) || [];
-            const nextCompanies = companies.filter((item) => {
-              const itemId = String(item?.id || item?.ID || item?.['Firma No'] || item?.firmaNo || '').trim();
-              return itemId !== createdId;
-            });
-            nextCompanies.push(createdCompany);
-            await DB.save(DB.COMPANIES, nextCompanies);
-          } catch (cacheError) {
-            console.warn('Company cache update skipped:', cacheError);
+          if (createdCompany && createdId) {
+            try {
+              const companies = (await DB.get<any[]>(DB.COMPANIES)) || [];
+              const nextCompanies = companies.filter((item) => {
+                const itemId = String(item?.id || item?.ID || item?.['Firma No'] || item?.firmaNo || '').trim();
+                return itemId !== createdId;
+              });
+              nextCompanies.push(createdCompany);
+              await DB.save(DB.COMPANIES, nextCompanies);
+            } catch (cacheError) {
+              console.warn('Company cache update skipped:', cacheError);
+            }
           }
+
+          // 🔄 Yerel veriyi arka planda da tazele
+          await SyncManager.checkAndSync();
+
+          const successMessage = 'Firma başarıyla eklendi.';
+          toast.flash(successMessage, 'success');
+          toast.success(`${successMessage} Firma profiline yönlendiriliyorsunuz.`);
+
+          const targetUrl = createdId ? `/company?id=${encodeURIComponent(createdId)}` : '/search';
+          window.setTimeout(() => {
+            window.location.href = targetUrl;
+          }, 700);
+        } else {
+          toast.error(`Hata: ${response.error}`);
+          if (submitBtn) submitBtn.disabled = false;
+          if (submitIcon) submitIcon.classList.remove('hidden');
+          if (loadingIcon) loadingIcon.classList.add('hidden');
         }
+      });
+    }
 
-        // 🔄 Yerel veriyi arka planda da tazele
-        await SyncManager.checkAndSync();
-
-        const successMessage = 'Firma başarıyla eklendi.';
-        setFlashToast(successMessage, 'success');
-        showToast(`${successMessage} Firma profiline yönlendiriliyorsunuz.`, 'success');
-
-        const targetUrl = createdId ? `/company?id=${encodeURIComponent(createdId)}` : '/search';
-        window.setTimeout(() => {
-          window.location.href = targetUrl;
-        }, 700);
-      } else {
-        showToast(`Hata: ${response.error}`, 'error');
-        if (submitBtn) submitBtn.disabled = false;
-        if (submitIcon) submitIcon.classList.remove('hidden');
-        if (loadingIcon) loadingIcon.classList.add('hidden');
-      }
-    });
+    // Başlat
+    loadConsultants();
   }
 
-  // Başlat
-  loadConsultants();
+  // Initial load
+  initPage();
+  // Transition support
+  document.addEventListener('astro:page-load', initPage);
+  // Cleanup away
+  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>

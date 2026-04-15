@@ -21,8 +21,6 @@ import {
 
   <!-- Back + skeleton header -->
   <div class="max-w-6xl mx-auto pb-20 space-y-6">
-    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
-
     <!-- Navigation -->
     <div class="flex items-center gap-3">
       <a href="/search" class="flex items-center gap-2 text-xs font-bold text-muted hover:text-primary transition-colors group">
@@ -30,7 +28,7 @@ import {
         Firma Listesi
       </a>
       <span class="text-border-main">/</span>
-      <span class="text-xs font-bold text-muted" id="breadcrumb-nick">Yükleniyor...</span>
+      <span class="text-xs font-bold text-muted" id="breadcrumb-nick">Firma Yükleniyor...</span>
     </div>
 
     <!-- Hero Card -->
@@ -665,7 +663,7 @@ import {
   import { $companies, $certificates } from '../../lib/store';
   import { api } from '../../lib/api';
   import { SyncManager } from '../../lib/sync';
-  import { consumeFlashToast, showToast } from '../../lib/toast';
+  import { toast } from '../../lib/toast';
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -818,6 +816,12 @@ import {
   function toggleCardVisibility(cardId: string, blockIds: string[]) {
     const card = document.getElementById(cardId);
     if (!card) return;
+
+    // 🛡️ PROTECTION: Never hide these core cards once they are shown
+    if (['contact-card', 'people-card', 'ops-card'].includes(cardId)) {
+      card.classList.remove('hidden');
+      return;
+    }
 
     const hasVisibleBlock = blockIds.some((blockId) => {
       const block = document.getElementById(blockId);
@@ -1133,8 +1137,17 @@ import {
     if (button) button.disabled = true;
 
     try {
-      await api.call('updateSurveillance', { ids: Array.from(selectedCertIds), status });
+      const res = await api.call('updateSurveillance', { ids: Array.from(selectedCertIds), status, firmaId });
+      if (!res?.success) {
+        toast.error(res?.error || res?.message || 'Gözetim durumu güncellenemedi.');
+        return;
+      }
+      const count = res.data?.updatedCount ?? selectedCertIds.size;
+      const label = status === 'TRUE' ? 'Gözetimde' : 'Aktif';
+      toast.success(`${count} sertifika "${label}" olarak işaretlendi.`);
       await refreshCertificates();
+    } catch (err: any) {
+      toast.error(err?.message || 'Beklenmedik bir hata oluştu.');
     } finally {
       refreshCertActionButtons();
     }
@@ -1150,7 +1163,7 @@ import {
       if (res.success && res.data) {
         window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
       } else {
-        showToast(res.error || 'Firma klasörü bulunamadı.', 'error');
+        toast.error(res.error || 'Firma klasörü bulunamadı.');
       }
     } finally {
       btn.innerHTML = prev;
@@ -1185,7 +1198,7 @@ import {
     }
     refreshCertActionButtons();
     updateCertGenerationProgress(0, total, 0, 0, `${total} belge için üretim hazırlanıyor...`, `Dil: ${certLang} • Çıktı: ${certSign === 'S' ? 'İmzalı' : 'İmzasız'}`);
-    showToast(`${total} sertifika için üretim başlatıldı.`, 'info');
+    toast.info(`${total} sertifika için üretim başlatıldı.`);
 
     try {
       const folderRes = await api.call('getFolderId', { nickname: currentCompanyNick });
@@ -1237,7 +1250,7 @@ import {
             `${index + 1} / ${total} belge işlendi`,
             `Hata: ${message}`
           );
-          showToast(message, 'error');
+          toast.error(message);
         }
       }
 
@@ -1246,12 +1259,12 @@ import {
         : `${successCount} başarılı, ${failedCount} başarısız, toplam ${total} belge işlendi.`;
 
       updateCertGenerationProgress(total, total, successCount, failedCount, 'Üretim tamamlandı', finalMessage);
-      showToast(finalMessage, failedCount === 0 ? 'success' : 'info');
+      toast[failedCount === 0 ? 'success' : 'info'](finalMessage);
     } catch (error) {
       console.error('Certificate generation failed:', error);
       const message = error instanceof Error ? error.message : 'Toplu üretim başlatılamadı.';
       updateCertGenerationProgress(0, total, successCount, failedCount, 'Üretim başlatılamadı', message);
-      showToast(message, 'error');
+      toast.error(message);
     } finally {
       certGenerationInFlight = false;
       if (button) {
@@ -1262,150 +1275,225 @@ import {
   }
 
   function setupCertificateActionBar() {
+    const addSafeEv = (id: string, ev: string, fn: any) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener(ev, fn);
+        registerCleanup(() => el.removeEventListener(ev, fn));
+      }
+    };
+
     const toggle = document.getElementById('cert-actions-toggle') as HTMLButtonElement | null;
     const panel = document.getElementById('cert-actions-panel');
     const chevron = document.getElementById('cert-actions-chevron');
 
-    if (toggle && panel && chevron && toggle.dataset.bound !== 'true') {
-      toggle.dataset.bound = 'true';
-      toggle.addEventListener('click', () => {
+    if (toggle && panel && chevron) {
+      const toggleFn = () => {
         panel.classList.toggle('hidden');
         chevron.classList.toggle('rotate-180');
-      });
+      };
+      toggle.addEventListener('click', toggleFn);
+      registerCleanup(() => toggle.removeEventListener('click', toggleFn));
     }
 
     document.querySelectorAll<HTMLButtonElement>('[data-cert-select]').forEach((button) => {
-      if (button.dataset.bound === 'true') return;
-      button.dataset.bound = 'true';
-      button.addEventListener('click', () => applyCertPreset(button.dataset.certSelect || 'none'));
+      const fn = () => applyCertPreset(button.dataset.certSelect || 'none');
+      button.addEventListener('click', fn);
+      registerCleanup(() => button.removeEventListener('click', fn));
     });
 
     document.querySelectorAll<HTMLButtonElement>('[data-cert-lang]').forEach((button) => {
-      if (button.dataset.bound === 'true') return;
-      button.dataset.bound = 'true';
-      button.addEventListener('click', () => {
+      const fn = () => {
         certLang = (button.dataset.certLang as 'TR' | 'EN') || 'EN';
         syncCertProductionToggleUI();
-      });
+      };
+      button.addEventListener('click', fn);
+      registerCleanup(() => button.removeEventListener('click', fn));
     });
 
     document.querySelectorAll<HTMLButtonElement>('[data-cert-sign]').forEach((button) => {
-      if (button.dataset.bound === 'true') return;
-      button.dataset.bound = 'true';
-      button.addEventListener('click', () => {
+      const fn = () => {
         certSign = (button.dataset.certSign as 'S' | 'NS') || 'S';
         syncCertProductionToggleUI();
-      });
+      };
+      button.addEventListener('click', fn);
+      registerCleanup(() => button.removeEventListener('click', fn));
     });
 
-    const refreshBtn = document.getElementById('cert-refresh') as HTMLButtonElement | null;
-    if (refreshBtn && refreshBtn.dataset.bound !== 'true') {
-      refreshBtn.dataset.bound = 'true';
-      refreshBtn.addEventListener('click', () => void refreshCertificates());
-    }
-
+    addSafeEv('cert-refresh', 'click', () => void refreshCertificates());
+    
     const selectAll = document.getElementById('cert-select-all') as HTMLInputElement | null;
-    if (selectAll && selectAll.dataset.bound !== 'true') {
-      selectAll.dataset.bound = 'true';
-      selectAll.addEventListener('change', () => {
+    if (selectAll) {
+      const fn = () => {
         if (selectAll.checked) {
           currentCertRows.forEach((row) => selectedCertIds.add(row.id));
         } else {
           selectedCertIds.clear();
         }
         syncCertCheckboxes();
-      });
+      };
+      selectAll.addEventListener('change', fn);
+      registerCleanup(() => selectAll.removeEventListener('change', fn));
     }
 
-    const genBtn = document.getElementById('cert-generate-selected') as HTMLButtonElement | null;
-    if (genBtn && genBtn.dataset.bound !== 'true') {
-      genBtn.dataset.bound = 'true';
-      genBtn.addEventListener('click', () => void generateSelectedCertificates());
-    }
-
-    const passiveBtn = document.getElementById('cert-mark-passive') as HTMLButtonElement | null;
-    if (passiveBtn && passiveBtn.dataset.bound !== 'true') {
-      passiveBtn.dataset.bound = 'true';
-      passiveBtn.addEventListener('click', () => void updateSelectedSurveillance('TRUE'));
-    }
-
-    const activeBtn = document.getElementById('cert-mark-active') as HTMLButtonElement | null;
-    if (activeBtn && activeBtn.dataset.bound !== 'true') {
-      activeBtn.dataset.bound = 'true';
-      activeBtn.addEventListener('click', () => void updateSelectedSurveillance('FALSE'));
-    }
+    addSafeEv('cert-generate-selected', 'click', () => void generateSelectedCertificates());
+    addSafeEv('cert-mark-passive', 'click', () => void updateSelectedSurveillance('TRUE'));
+    addSafeEv('cert-mark-active', 'click', () => void updateSelectedSurveillance('FALSE'));
 
     syncCertProductionToggleUI();
   }
 
   // ─── URL Param ────────────────────────────────────────────────────────────────
 
+  // ─── URL Param ────────────────────────────────────────────────────────────────
+
   const params = new URLSearchParams(location.search);
   const firmaId = params.get('id') || params.get('firmaId') || '';
 
-  consumeFlashToast();
-
-  if (!firmaId) {
-    document.getElementById('hero-skeleton')!.innerHTML = '<p class="text-sm text-rose-400 font-bold">Geçersiz firma ID.</p>';
-  }
 
   function buildCompanyOperationLink(baseHref: string) {
     if (!baseHref || !firmaId) return baseHref;
-
     const [pathname, rawQuery = ''] = baseHref.split('?');
     const searchParams = new URLSearchParams(rawQuery);
-
     searchParams.set('id', firmaId);
-
-    // Denetim planlama sayfasi hem `id` hem `firmaId` kabul ediyor.
-    if (pathname === '/audits/add') {
-      searchParams.set('firmaId', firmaId);
-    }
-
+    if (pathname === '/audits/add') searchParams.set('firmaId', firmaId);
     const query = searchParams.toString();
     return query ? `${pathname}?${query}` : pathname;
   }
 
-  document.querySelectorAll<HTMLAnchorElement>('[data-company-op-link]').forEach((link) => {
-    const baseHref = link.dataset.companyOpLink || '';
-    if (!baseHref || !firmaId) return;
-    link.href = buildCompanyOperationLink(baseHref);
-  });
+  function setupOperationLinks() {
+    document.querySelectorAll<HTMLAnchorElement>('[data-company-op-link]').forEach((link) => {
+      const baseHref = link.dataset.companyOpLink || '';
+      if (!baseHref || !firmaId) return;
+      link.href = buildCompanyOperationLink(baseHref);
+    });
 
-  const initialAddCertLink = document.getElementById('btn-add-cert') as HTMLAnchorElement | null;
-  if (initialAddCertLink) initialAddCertLink.href = getCompanyCertificateHref();
-  const initialAddTestLink = document.getElementById('btn-add-test') as HTMLAnchorElement | null;
-  if (initialAddTestLink) initialAddTestLink.href = getCompanyTestHref();
+    const initialAddCertLink = document.getElementById('btn-add-cert') as HTMLAnchorElement | null;
+    if (initialAddCertLink) initialAddCertLink.href = getCompanyCertificateHref();
+    const initialAddTestLink = document.getElementById('btn-add-test') as HTMLAnchorElement | null;
+    if (initialAddTestLink) initialAddTestLink.href = getCompanyTestHref();
+  }
+
+  // ─── Load Company ─────────────────────────────────────────────────────────────
+
+  // ─── Visibility Management ───────────────────────────────────────────────────
+
+  const hydratedSections = (window as any).hydratedSections = (window as any).hydratedSections || new Set<string>();
+  let hasFullData = false;
+  let cleanupTasks: Array<() => void> = [];
+
+  function registerCleanup(fn: () => void) {
+    cleanupTasks.push(fn);
+  }
+
+  function runCleanups() {
+    console.log(`[Profile] Cleaning up ${cleanupTasks.length} tasks...`);
+    cleanupTasks.forEach(fn => { try { fn(); } catch(e) { console.error('Cleanup error:', e); } });
+    cleanupTasks = [];
+  }
+
+  async function revealSection(sectionId: string, retryCount = 0) {
+    const find = (id: string) => Array.from(document.querySelectorAll(`#${id}`)) as HTMLElement[];
+    const skeletons = find(`${sectionId}-skeleton`);
+    const contents  = find(`${sectionId}-content`);
+    const cards     = find(`${sectionId}-card`);
+
+    // If components not in DOM yet, retry a few times (Astro/SPA transition sync)
+    if (skeletons.length === 0 && contents.length === 0 && retryCount < 15) {
+      setTimeout(() => revealSection(sectionId, retryCount + 1), 100);
+      return;
+    }
+
+    skeletons.forEach(s => {
+      s.classList.add('hidden');
+      s.style.setProperty('display', 'none', 'important');
+    });
+    
+    contents.forEach(c => {
+      c.classList.remove('hidden');
+      c.style.removeProperty('display');
+    });
+
+    cards.forEach(c => {
+      c.classList.remove('hidden');
+      c.style.removeProperty('display');
+    });
+
+    if (sectionId === 'test') {
+      find('test-list-wrapper').forEach(w => w.classList.remove('hidden'));
+    }
+    if (sectionId === 'cert') {
+      find('cert-list-wrapper').forEach(w => w.classList.remove('hidden'));
+    }
+    
+    if (!hydratedSections.has(sectionId)) {
+      hydratedSections.add(sectionId);
+    }
+  }
+
+  function hideAllSkeletons() {
+    ['hero', 'contact', 'people', 'ops', 'test', 'cert'].forEach(s => revealSection(s));
+  }
 
   // ─── Load Company ─────────────────────────────────────────────────────────────
 
   async function loadCompany() {
-    // ⚡ ZERO-LATENCY: Önce yerel store'dan veriyi al ve anında göster
-    const localCompanies = $companies.get();
+    try {
+      // ⚡ ZERO-LATENCY: Render immediately if data exists in store
+      loadCompanyFromStore();
+
+      const res = await api.call('getCompanyById', { id: firmaId });
+      const c = res?.data;
+      
+      if (!c) {
+        console.warn(`[Profile] Company not found (ID: ${firmaId})`);
+        // If not found in API and not rendered from store yet, show error
+        if (!hydratedSections.has('hero')) {
+          const skeleton = document.getElementById('hero-skeleton');
+          if (skeleton) skeleton.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-10 text-center">
+              <div class="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-2xl flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              </div>
+              <p class="text-sm text-main font-bold">Firma Bulunamadı</p>
+              <p class="text-xs text-muted mt-1">ID: ${firmaId} için sunucuda kayıt bulunmuyor.</p>
+              <a href="/search" class="mt-6 text-[11px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300">Firma Listesine Dön</a>
+            </div>
+          `;
+          hideAllSkeletons();
+        }
+        return;
+      }
+      
+      renderCompany(c);
+    } catch (e) {
+      console.error('[Profile] loadCompany failed:', e);
+      hideAllSkeletons();
+    }
+  }
+
+  function loadCompanyFromStore() {
+    if (hasFullData) return; // Never overwrite full data with partial store data
+
+    const localCompanies = $companies.get() || [];
     const localCompany = localCompanies.find(c => String(c.id) === String(firmaId) || String(c.FirmaNo) === String(firmaId));
-    
     if (localCompany) {
-      console.log('[Profile] Rendering from local store (Zero-Latency)');
       renderCompany(localCompany);
     }
-
-    const res = await api.call('getCompanyById', { id: firmaId });
-    const c = res?.data;
-    if (!c) {
-      if (!localCompany) {
-        document.getElementById('hero-skeleton')!.innerHTML = '<p class="text-sm text-rose-400 font-bold">Firma bulunamadı (ID: ' + firmaId + ')</p>';
-      }
-      return;
-    }
-    
-    // API'den gelen taze veriyle güncelle
-    renderCompany(c);
   }
 
   function renderCompany(c: any) {
-    const nick    = g(c, 'Firma Adı', 'Nick', 'nick', 'FirmaAdi');
-    const unvan   = g(c, 'Unvan', 'unvan');
-    const il      = g(c, 'İl', 'Il', 'Şehir', 'Sehir', 'il', 'sehir');
+    if (!c || (Array.isArray(c) && c.length === 0)) return;
+
+    // Check if this is "Full Data" (contains contact fields) or just search metadata
+    const isFull = !!(g(c, 'Telefon', 'Tel') || g(c, 'Mail', 'E-Posta') || g(c, 'Vergi Dairesi'));
+    if (isFull) hasFullData = true;
+
+    console.log(`[Profile] Rendering data (isFull: ${isFull})`);
+
+    const nick    = g(c, 'nickname', 'Firma Adı', 'Nick', 'nick', 'FirmaAdi');
+    const unvan   = g(c, 'unvan', 'Unvan');
+    const il      = g(c, 'city', 'sehir', 'İl', 'Il', 'Şehir', 'Sehir', 'il');
     const ulke    = g(c, 'Ülke', 'Ulke', 'ulke');
     const adres   = g(c, 'Adres', 'adres');
     const yazisma = g(c, 'Yazışma Adresi', 'YazismaAdresi', 'yazisma', 'Şube Adresi');
@@ -1576,14 +1664,25 @@ import {
     setEl('info-yapis', yapis);
     if (!yapis) { document.getElementById('yapis-row')?.classList.add('hidden'); }
 
-    // Show hero
-    document.getElementById('hero-skeleton')?.classList.add('hidden');
-    document.getElementById('hero-content')?.classList.remove('hidden');
+    // Reveal sections
+    revealSection('hero');
+    ['contact', 'people', 'ops'].forEach(s => revealSection(s));
 
-    // Show card contents & hide skeletons
-    ['contact', 'people', 'ops'].forEach(card => {
-      document.getElementById(`${card}-skeleton`)?.classList.add('hidden');
-      document.getElementById(`${card}-content`)?.classList.remove('hidden');
+    // Re-verify visibility with a micro-task to ensure DOM is ready
+    requestAnimationFrame(() => {
+      toggleCardVisibility('ops-card', [
+        'info-tcs-block', 'info-sector-block', 'info-facility-block',
+        'info-vardiya-block', 'info-workforce-block', 'info-dan-block',
+        'info-logo-block', 'info-kase-block', 'info-not-block'
+      ]);
+      toggleCardVisibility('contact-card', [
+        'info-telefon-block', 'info-faks-block', 'info-mail-block',
+        'info-web-block', 'info-vergi-d-block', 'info-vergi-n-block'
+      ]);
+      toggleCardVisibility('people-card', [
+        'info-kyt-block', 'info-yetkili-block', 'info-yetkili-unvan-block',
+        'info-irtibat-block', 'info-irtibat-unvan-block', 'info-irtibat-tel-block', 'info-irtibat-mail-block'
+      ]);
     });
   }
 
@@ -1856,7 +1955,6 @@ import {
       });
     });
 
-    setupCertificateActionBar();
     syncCertCheckboxes();
   }
 
@@ -1915,112 +2013,135 @@ import {
   }
 
   async function loadTests() {
-    const res = await api.call('getTestsByFirmaId', { firmaId });
     const skeleton = document.getElementById('test-skeleton');
     const wrapper  = document.getElementById('test-list-wrapper');
-    const empty    = document.getElementById('test-empty');
     const tbody    = document.getElementById('test-tbody');
-    const count    = document.getElementById('test-count');
 
-    skeleton?.classList.add('hidden');
-
-    const tests: any[] = res?.data || [];
-
-    if (!tests.length) {
-      empty?.classList.remove('hidden');
-      return;
+    // Only show skeleton if table is empty
+    if (!tbody || !tbody.innerHTML.trim()) {
+      skeleton?.classList.remove('hidden');
+      wrapper?.classList.add('hidden');
     }
 
-    if (count) count.textContent = String(tests.length);
+    try {
+      const res = await api.call('getTestsByFirmaId', { firmaId });
+      const empty    = document.getElementById('test-empty');
+      const count    = document.getElementById('test-count');
 
-    const isRaw = Array.isArray(tests[0]);
+      skeleton?.classList.add('hidden');
 
-    const rows = tests.map((t, rowIdx) => {
-      let testAdi, urun, marka, raporTarihi;
-      if (isRaw) {
-        testAdi     = t[3]  || '';
-        marka       = t[4]  || '';
-        urun        = t[5]  || '';
-        raporTarihi = t[13] || '';
-      } else {
-        testAdi     = g(t, 'Test Adı', 'testAdi');
-        marka       = g(t, 'Marka', 'marka');
-        urun        = g(t, 'Ürün', 'urun');
-        raporTarihi = g(t, 'Rapor Tarihi', 'raporTarihi');
+      const tests: any[] = res?.data || [];
+
+      if (!tests.length) {
+        empty?.classList.remove('hidden');
+        return;
       }
 
-      const testId = String(isRaw ? (t[0] || rowIdx) : (g(t, 'ID', 'id') || rowIdx));
-      const zebraClass = rowIdx % 2 !== 0 ? 'bg-surface-hover' : '';
+      if (count) count.textContent = String(tests.length);
 
-      return `<tr class="border-b border-border-main hover:bg-primary/5 transition-colors ${zebraClass}">
-        <td class="px-3 py-3 text-center align-middle">
-          <input type="checkbox" class="test-select-row h-4 w-4 rounded border-border-main bg-surface-hover text-violet-500 focus:ring-violet-500/40" value="${testId}">
-        </td>
-        <td class="px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${raporTarihi || '—'}</td>
-        <td class="px-4 py-3 font-bold text-main text-xs align-middle">${escHtml(testAdi || '—')}</td>
-        <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(marka || '—')}</td>
-        <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(urun || '—')}</td>
-        <td class="px-4 py-3 text-center align-middle">
-          <div class="inline-flex items-center gap-1.5">
-            <button type="button" class="test-print-row inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" data-id="${testId}" title="Test Raporunu Yazdır">
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect width="12" height="8" x="6" y="14"></rect></svg>
-            </button>
-            <button type="button" class="test-delete-row inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-400 hover:bg-rose-500/15 transition-colors" data-id="${testId}" title="Testi Sil">
-              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
-            </button>
-          </div>
-        </td>
-      </tr>`;
-    }).join('');
+      const isRaw = Array.isArray(tests[0]);
 
-    if (tbody) tbody.innerHTML = rows;
-    wrapper?.classList.remove('hidden');
-
-    document.querySelectorAll<HTMLInputElement>('.test-select-row').forEach(input => {
-      input.addEventListener('change', () => updateTestSelectAll());
-    });
-
-    document.getElementById('test-select-all')?.addEventListener('change', (e) => {
-      const checked = (e.target as HTMLInputElement).checked;
-      document.querySelectorAll<HTMLInputElement>('.test-select-row').forEach(cb => { cb.checked = checked; });
-    });
-
-    document.querySelectorAll<HTMLButtonElement>('.test-print-row').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.id || '';
-        if (id) window.location.href = `/documents/add?firmaId=${firmaId}&testId=${id}`;
-      });
-    });
-
-    document.querySelectorAll<HTMLButtonElement>('.test-delete-row').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id || '';
-        if (!id || !confirm('Bu test kaydını silmek istediğinizden emin misiniz?')) return;
-        btn.disabled = true;
-        const res = await api.call('deleteTest', { id });
-        if (res?.success) {
-          await loadTests();
+      const rows = tests.map((t, rowIdx) => {
+        let testAdi, urun, marka, raporTarihi;
+        if (isRaw) {
+          testAdi     = t[3]  || '';
+          marka       = t[4]  || '';
+          urun        = t[5]  || '';
+          raporTarihi = t[13] || '';
         } else {
-          showToast('Silme işlemi başarısız.', 'error');
-          btn.disabled = false;
+          testAdi     = g(t, 'Test Adı', 'testAdi');
+          marka       = g(t, 'Marka', 'marka');
+          urun        = g(t, 'Ürün', 'urun');
+          raporTarihi = g(t, 'Rapor Tarihi', 'raporTarihi');
         }
+
+        const testId = String(isRaw ? (t[0] || rowIdx) : (g(t, 'ID', 'id') || rowIdx));
+        const zebraClass = rowIdx % 2 !== 0 ? 'bg-surface-hover' : '';
+
+        return `<tr class="border-b border-border-main hover:bg-primary/5 transition-colors ${zebraClass}">
+          <td class="px-3 py-3 text-center align-middle">
+            <input type="checkbox" class="test-select-row h-4 w-4 rounded border-border-main bg-surface-hover text-violet-500 focus:ring-violet-500/40" value="${testId}">
+          </td>
+          <td class="px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${raporTarihi || '—'}</td>
+          <td class="px-4 py-3 font-bold text-main text-xs align-middle">${escHtml(testAdi || '—')}</td>
+          <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(marka || '—')}</td>
+          <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(urun || '—')}</td>
+          <td class="px-4 py-3 text-center align-middle">
+            <div class="inline-flex items-center gap-1.5">
+              <button type="button" class="test-print-row inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" data-id="${testId}" title="Test Raporunu Yazdır">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect width="12" height="8" x="6" y="14"></rect></svg>
+              </button>
+              <button type="button" class="test-delete-row inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-400 hover:bg-rose-500/15 transition-colors" data-id="${testId}" title="Testi Sil">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+              </button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+
+      if (tbody) tbody.innerHTML = rows;
+      skeleton?.classList.add('hidden');
+      wrapper?.classList.remove('hidden');
+      revealSection('test');
+
+      document.querySelectorAll<HTMLInputElement>('.test-select-row').forEach(input => {
+        input.addEventListener('change', () => updateTestSelectAll());
       });
-    });
+
+      document.getElementById('test-select-all')?.addEventListener('change', (e) => {
+        const checked = (e.target as HTMLInputElement).checked;
+        document.querySelectorAll<HTMLInputElement>('.test-select-row').forEach(cb => { cb.checked = checked; });
+      });
+
+      document.querySelectorAll<HTMLButtonElement>('.test-print-row').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id || '';
+          if (id) window.location.href = `/documents/add?firmaId=${firmaId}&testId=${id}`;
+        });
+      });
+
+      document.querySelectorAll<HTMLButtonElement>('.test-delete-row').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id || '';
+          if (!id || !confirm('Bu test kaydını silmek istediğinizden emin misiniz?')) return;
+          btn.disabled = true;
+          const res = await api.call('deleteTest', { id });
+          if (res?.success) {
+            await loadTests();
+          } else {
+            toast.error('Silme işlemi başarısız.');
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (e) {
+      console.error('[Tests] loadTests failed:', e);
+      document.getElementById('test-skeleton')?.classList.add('hidden');
+      document.getElementById('test-list-wrapper')?.classList.remove('hidden');
+      document.getElementById('test-empty')?.classList.remove('hidden');
+    }
   }
 
   // ─── Certificates from Store ──────────────────────────────────────────────────
   
   async function loadCertificates() {
-    // Show certificate skeleton
-    document.getElementById('cert-skeleton')?.classList.remove('hidden');
-    document.getElementById('cert-list-wrapper')?.classList.add('hidden');
-    document.getElementById('cert-empty')?.classList.add('hidden');
+    const skeleton = document.getElementById('cert-skeleton');
+    const wrapper  = document.getElementById('cert-list-wrapper');
+    const tbody    = document.getElementById('cert-tbody');
+
+    // Only show skeleton if list is empty
+    if (!tbody || !tbody.innerHTML.trim()) {
+      skeleton?.classList.remove('hidden');
+      wrapper?.classList.add('hidden');
+    }
 
     try {
       const res = await api.call('getCertificatesByFirmaId', { firmaId });
       renderCerts(res?.data || []);
+      revealSection('cert');
     } catch (e) {
       console.error('[Certificates] Load failed:', e);
+      revealSection('cert');
       renderCerts([]);
     }
   }
@@ -2036,17 +2157,57 @@ import {
   // ─── Boot ─────────────────────────────────────────────────────────────────────
 
   if (firmaId) {
-    setupCopyButtons();
-    let resizeTimer = 0;
-    window.addEventListener('resize', () => {
-      window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(() => refreshExpandableTexts(), 120);
-    });
+    function initPage() {
+      // 1. Run previous cleanups if any
+      runCleanups();
 
-    SyncManager.init().then(() => {
-      // Background sync is handled by manager, we don't need to block here
-    });
+      setupOperationLinks();
+      setupCopyButtons();
+      setupCertificateActionBar();
+      
+      const onResize = () => refreshExpandableTexts();
+      const resizeHandler = () => {
+        let resizeTimer = 0;
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(onResize, 120);
+      };
+      window.addEventListener('resize', resizeHandler);
+      registerCleanup(() => window.removeEventListener('resize', resizeHandler));
 
-    Promise.all([loadCompany(), loadTests(), loadCertificates()]);
+      // Auto-update when companies store changes
+      const unsubCompanies = $companies.subscribe(() => loadCompanyFromStore());
+      registerCleanup(unsubCompanies);
+
+      // Timeout Guard: Reveal page no matter what after 3.5s
+      const guardTimer = setTimeout(() => {
+        if (!hydratedSections.has('hero')) {
+          console.warn('[Profile] Timeout guard triggered. Force unhiding page.');
+          hideAllSkeletons();
+        }
+      }, 3500);
+      registerCleanup(() => clearTimeout(guardTimer));
+
+      console.log('[Profile] Booting initial sequences...');
+      SyncManager.init().then(() => {
+        console.log('[Profile] Sync ready, refreshing store data...');
+        loadCompanyFromStore();
+      }).catch(e => {
+        console.warn('[Profile] Sync failed but continuing:', e);
+      });
+
+      console.log('[Profile] Loading data components...');
+      loadCompany();
+      loadTests();
+      loadCertificates();
+      console.log('[Profile] Boot sequence fired.');
+    }
+
+    // Standard load
+    initPage();
+    // Astro ViewTransitions support
+    document.addEventListener('astro:page-load', initPage);
+
+    // Global cleanup on navigate away
+    document.addEventListener('astro:before-preparation', runCleanups, { once: true });
   }
 </script>

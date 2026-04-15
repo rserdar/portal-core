@@ -1,69 +1,93 @@
-const TOAST_CONTAINER_ID = 'toast-container';
-const FLASH_TOAST_KEY = 'portal_flash_toast';
+export interface ToastOptions {
+  duration?: number;
+}
 
-export type ToastType = 'success' | 'error' | 'info';
+type ToastType = 'success' | 'error' | 'info' | 'warning';
 
-export function ensureToastContainer(): HTMLElement | null {
-  let container = document.getElementById(TOAST_CONTAINER_ID);
-  if (container) {
-    if (container.parentElement !== document.body) {
-      document.body.appendChild(container);
+const CONFIG: Record<ToastType, { bar: string; icon: string; text: string }> = {
+  success: {
+    bar: 'bg-emerald-500',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400 shrink-0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+    text: 'text-emerald-400',
+  },
+  error: {
+    bar: 'bg-rose-500',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-rose-400 shrink-0"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+    text: 'text-rose-400',
+  },
+  warning: {
+    bar: 'bg-amber-500',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400 shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    text: 'text-amber-400',
+  },
+  info: {
+    bar: 'bg-indigo-500',
+    icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400 shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+    text: 'text-indigo-400',
+  },
+};
+
+class ToastManager {
+  private container: HTMLElement | null = null;
+
+  private getContainer(): HTMLElement {
+    if (this.container) return this.container;
+    this.container = document.getElementById('toast-container');
+    if (!this.container) {
+      this.container = document.createElement('div');
+      this.container.id = 'toast-container';
+      this.container.className = 'fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none';
+      document.body.appendChild(this.container);
     }
-    return container;
+    return this.container;
   }
 
-  container = document.createElement('div');
-  container.id = TOAST_CONTAINER_ID;
-  container.className = 'fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm';
-  document.body.appendChild(container);
-  return container;
-}
+  show(message: string, type: ToastType = 'info', options: ToastOptions = {}) {
+    const container = this.getContainer();
+    const duration = options.duration ?? 4000;
+    const cfg = CONFIG[type];
 
-export function showToast(message: string, type: ToastType = 'info') {
-  const container = ensureToastContainer();
-  if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = [
+      'pointer-events-auto flex items-start gap-3 min-w-[280px] max-w-sm w-max',
+      'bg-zinc-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden',
+      'animate-in slide-in-from-right-5 fade-in duration-200',
+    ].join(' ');
 
-  const colors = {
-    success: 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-900/20',
-    error: 'bg-rose-600 text-white border-rose-500 shadow-rose-900/20',
-    info: 'bg-indigo-600 text-white border-indigo-500 shadow-indigo-900/20',
-  } as const;
+    toast.innerHTML = `
+      <div class="w-1 self-stretch shrink-0 ${cfg.bar} rounded-l-xl -ml-[1px]"></div>
+      <div class="flex items-start gap-2.5 py-3 pr-3 flex-1 min-w-0">
+        ${cfg.icon}
+        <p class="text-[13px] font-medium text-white/90 leading-snug break-words flex-1">${escapeHtml(message)}</p>
+        <button class="shrink-0 text-white/30 hover:text-white/70 transition-colors mt-0.5" aria-label="Kapat">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+    `;
 
-  const toast = document.createElement('div');
-  toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-xl border-2 shadow-xl text-sm font-semibold max-w-sm translate-y-4 opacity-0 transition-all duration-300 ${colors[type]}`;
-  toast.textContent = message;
-  container.appendChild(toast);
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      toast.classList.remove('translate-y-4', 'opacity-0');
-    });
-  });
-
-  setTimeout(() => {
-    toast.classList.add('translate-y-4', 'opacity-0');
-    setTimeout(() => toast.remove(), 300);
-  }, 5000);
-}
-
-export function setFlashToast(message: string, type: ToastType = 'info') {
-  try {
-    sessionStorage.setItem(FLASH_TOAST_KEY, JSON.stringify({ message, type }));
-  } catch {
-    // Ignore storage failures; regular toasts still work in-page.
+    toast.querySelector('button')?.addEventListener('click', () => this.dismiss(toast));
+    container.appendChild(toast);
+    setTimeout(() => this.dismiss(toast), duration);
   }
+
+  private dismiss(toast: HTMLElement) {
+    if (!toast.isConnected) return;
+    toast.classList.add('animate-out', 'fade-out', 'slide-out-to-right-5');
+    toast.addEventListener('animationend', () => toast.remove(), { once: true });
+  }
+
+  success(m: string, o?: ToastOptions) { this.show(m, 'success', o); }
+  error(m: string, o?: ToastOptions) { this.show(m, 'error', o); }
+  info(m: string, o?: ToastOptions) { this.show(m, 'info', o); }
+  warning(m: string, o?: ToastOptions) { this.show(m, 'warning', o); }
 }
 
-export function consumeFlashToast() {
-  try {
-    const raw = sessionStorage.getItem(FLASH_TOAST_KEY);
-    if (!raw) return;
-    sessionStorage.removeItem(FLASH_TOAST_KEY);
-    const parsed = JSON.parse(raw) as { message?: string; type?: ToastType };
-    if (parsed?.message) {
-      showToast(parsed.message, parsed.type || 'info');
-    }
-  } catch {
-    sessionStorage.removeItem(FLASH_TOAST_KEY);
-  }
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+export const toast = new ToastManager();
+
+if (typeof window !== 'undefined') {
+  (window as any).toast = toast;
 }

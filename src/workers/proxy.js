@@ -80,7 +80,7 @@ export default {
       // [YEDEKLEME İÇİN] Tüm verileri içeren "Full" anahtarlar
       fullCompanies: "cache:full:companies",
     };
-    const CACHE_TTL = 86400 * 7;
+    const CACHE_TTL = 86400 * 365; // 1 year (Primary Data Persistence)
 
     const purgeCachePrefix = async (prefix) => {
       let cursor = undefined;
@@ -250,12 +250,22 @@ export default {
       return res;
     };
 
-    const getPicker = (record) => {
+    const getPicker = (record, explicitValues = null) => {
       const src = record && typeof record === "object" ? record : {};
       let normalizedMap = null;
 
       return (aliases, fallback = "") => {
-        // Fast path: exact key match
+        // Explicit override: allows empty strings (user intentionally cleared a field)
+        if (explicitValues) {
+          for (const alias of aliases) {
+            if (Object.prototype.hasOwnProperty.call(explicitValues, alias)) {
+              const v = explicitValues[alias];
+              return (v !== undefined && v !== null) ? String(v).trim() : fallback;
+            }
+          }
+        }
+
+        // Fast path: exact key match (skip empty — not an explicit override)
         for (const alias of aliases) {
           const val = src[alias];
           if (val !== undefined && val !== null && String(val).trim() !== "") return String(val).trim();
@@ -296,8 +306,8 @@ export default {
       }
       return fallback;
     };
-    const getCertificateId = (record) => pickObjectValue(record, ["ID", "id", "certId"]);
-    const getCertificateFirmaId = (record) => pickObjectValue(record, ["Firma No", "firmaNo", "firmano", "fno"]);
+    const getCertificateId = (record) => Array.isArray(record) ? String(record[0] ?? "").trim() : pickObjectValue(record, ["ID", "id", "certId", "CertNo"]);
+    const getCertificateFirmaId = (record) => Array.isArray(record) ? String(record[2] ?? "").trim() : pickObjectValue(record, ["Firma No", "firmaNo", "firmano", "fno"]);
     const buildCertificatesByFirmaId = (certificates) => {
       const grouped = {};
       for (const certificate of Array.isArray(certificates) ? certificates : []) {
@@ -382,11 +392,39 @@ export default {
         "Cert Link": String(r[23] ?? "").trim(),
       };
     };
+    const unmapCertificateToRow = (c) => {
+      const row = new Array(24).fill("");
+      row[0] = String(c.ID ?? c.id ?? "");
+      row[1] = String(c["Firma Adı"] ?? c.Nickname ?? c.nick ?? "");
+      row[2] = String(c["Firma No"] ?? c.firmaNo ?? c.firmano ?? "");
+      row[3] = String(c.Standart ?? c.standart ?? "");
+      row[4] = String(c["Denetim Tipi"] ?? c.denetim ?? "");
+      row[5] = String(c["Sertifika No"] ?? c.sno ?? c.sNo ?? "");
+      row[6] = String(c["Sertifika Tarihi"] ?? c.gst ?? c.sTarihi ?? "");
+      row[7] = String(c["Gözetim Tarihi"] ?? c.goz ?? c.sGozetimT ?? "");
+      row[8] = String(c["Tescil Tarihi"] ?? c.stt ?? c.sTT ?? "");
+      row[9] = String(c["Sertifika Geçerlilik Tarihi"] ?? c.sgt ?? c.sGT ?? "");
+      row[10] = String(c.Kapsam ?? c.kapsam ?? "");
+      row[11] = String(c.Scope ?? c.scope ?? "");
+      row[12] = String(c.Logo ?? c.logo ?? "");
+      row[13] = String(c.Kod ?? c.kod ?? c.NACE ?? "");
+      row[14] = String(c.Akreditasyon ?? c.akreditasyon ?? c.akrn ?? "");
+      row[15] = String(c.Akredite ?? c.akredite ?? "");
+      row[16] = String(c["Danışman"] ?? c.dan ?? c.danisman ?? "");
+      row[17] = String(c.Durum ?? c.durum ?? "");
+      row[18] = String(c.Not ?? c.not ?? "");
+      row[19] = String(c["Gözetim Conf."] ?? c.gozetimConfirmed ?? c.gozetimConf ?? "");
+      row[20] = String(c["Other Standard"] ?? c.other ?? "");
+      row[21] = String(c["Calendar ID"] ?? c.eventId ?? c.calendar ?? "");
+      row[22] = String(c["QR Code"] ?? c.qr ?? "");
+      row[23] = String(c["Cert Link"] ?? c.certLink ?? c.certiLink ?? "");
+      return row;
+    };
     const normalizeCertificateSource = (source) => Array.isArray(source) ? mapLegacyCertificateRow(source) : source;
     const createCanonicalCertificate = (source, options = {}) => {
       const normalizedSource = normalizeCertificateSource(source);
       const input = normalizedSource && typeof normalizedSource === "object" ? normalizedSource : {};
-      const pick = getPicker(input);
+      const pick = getPicker(input, options.explicit || null);
       const id = String(options.id ?? getCertificateId(input) ?? "").trim();
       const nick = pick(["nick", "nickname", "Nickname", "Firma Adı", "isim"]);
       const firmaNo = pick(["firmano", "firmaNo", "Firma No", "fno"]);
@@ -455,50 +493,51 @@ export default {
     const createCanonicalCompany = (source, options = {}) => {
       const normalizedSource = normalizeCompanySource(source);
       const input = normalizedSource && typeof normalizedSource === "object" ? normalizedSource : {};
-      const pick = getPicker(input);
+      const pick = getPicker(input, options.explicit || null);
       const id = String(options.id ?? getCompanyId(input) ?? "").trim();
-      const nick = pick(["Firma Adı", "FirmaAdi", "nickname", "nick", "Nick"]);
-      const unvan = pick(["Unvan", "unvan"]);
-      const adres = pick(["Adres", "adres"]);
-      const sehir = pick(["İl", "Il", "Şehir", "Sehir", "sehir", "il"]);
-      const ulke = pick(["Ülke", "Ulke", "ulke"], "TÜRKİYE");
-      const yazisma = pick(["Yazışma Adresi", "YazismaAdresi", "yazisma", "Şube Adresi"]);
-      const vergiD = pick(["Vergi Dairesi", "VergiDairesi", "vergiD"]);
-      const vergiN = pick(["Vergi Numarası", "VergiNumarasi", "vergiN"]);
-      const tel = pick(["Telefon", "Tel", "tel"]);
-      const faks = pick(["Faks", "faks"]);
-      const www = pick(["İnternet", "Internet", "Web", "www", "web"]);
-      const mail = pick(["Mail", "mail", "E-Posta"]);
-      const yetA = pick(["Yetkili Adı", "YetkiliAdi", "yetA"]);
-      const yetU = pick(["Yetkili Ünvanı", "Yetkili Unvani", "YetkiliUnvani", "yetU"]);
-      const kyt = pick(["KYT", "Kalite Yönetim Temsilcisi", "kyt"]);
-      const irtA = pick(["İrtibat Kişisi", "IrtibatKisi", "irtA"]);
-      const irtU = pick(["İrtibat Ünvanı", "IrtibatUnvani", "irtU"]);
-      const irtN = pick(["İrtibat Tel", "IrtibatKisiNumarasi", "irtN"]);
-      const irtM = pick(["İrtibat Mail", "IrtibatKisisMail", "irtM"]);
-      const kapsam = pick(["Türkçe Kapsam", "Sertifika Kapsamı (TR)", "Kapsam", "kapsam"]);
-      const scope = pick(["İngilizce Kapsam", "Sertifika Kapsamı (EN)", "Scope", "scope"]);
-      const yapis = pick(["Yapılan İş", "YapilanIs", "yapis"]);
-      const tcs = pick(["Toplam Çalışan Sayısı", "TCS", "tcs"], "0");
-      const ycs = pick(["Yönetim Çalışan Sayısı", "YCS", "ycs"], "0");
-      const ucs = pick(["Üretim Çalışan Sayısı", "UCS", "ucs"], "0");
-      const yzcs = pick(["Yarı Zamanlı Çalışan Sayısı", "YZCS", "yzcs"], "0");
-      const tascs = pick(["Taşeron Çalışan Sayısı", "TASCS", "tascs"], "0");
-      const alan = pick(["Alan", "alan"]);
-      const dept = pick(["Departman", "departman", "dept"]);
-      const vardiya = pick(["Vardiya", "vardiya"], "1");
-      const logo = pick(["Firma Logosu", "LogoKaşe", "LogoKase", "logoK", "logo", "kase"]);
-      const kase = pick(["Kaşe İmza", "Kase Imza", "Kaşe&İmza", "kase"]);
-      const dan = pick(["Danışman", "Danisman", "dan", "danisman"]);
-      const ea = pick(["EA", "ea"]);
-      const nace = pick(["NACE", "nace"]);
-      const not = pick(["Firma Not", "Not", "not"]);
-      const sinif = pick(["Firma Sınıfı", "Firma Sinifi", "sinif"]);
-      const dokuman = pick(["Doküman", "Dokuman", "dokuman"]);
-      const teknik = pick(["Teknik Dosya", "teknik"]);
-      const tkapsam = pick(["Teknik Dosya Kapsamı", "Teknik Dosya Kaspamı", "tkapsam"]);
-      const medikal = pick(["Medikal Sektör", "medikal"]);
-      const gida = pick(["Gıda Sektörü", "Gida Sektoru", "gida"]);
+      const nick = pick(["nickname", "nick", "Nick", "FirmaAdi", "Firma Adı"]);
+      const unvan = pick(["unvan", "Unvan"]);
+      const adres = pick(["adres", "Adres"]);
+      const sehir = pick(["sehir", "il", "İl", "Il", "Şehir", "Sehir"]);
+      const ulke = pick(["ulke", "Ülke", "Ulke"], "TÜRKİYE");
+      const yazisma = pick(["yazisma", "YazismaAdresi", "Yazışma Adresi", "Şube Adresi"]);
+      const vergiD = pick(["vergiD", "VergiDairesi", "Vergi Dairesi"]);
+      const vergiN = pick(["vergiN", "VergiNumarasi", "Vergi Numarası"]);
+      const tel = pick(["tel", "Tel", "Telefon"]);
+      const faks = pick(["faks", "Faks"]);
+      const www = pick(["www", "web", "İnternet", "Internet", "Web"]);
+      const mail = pick(["mail", "Mail", "E-Posta"]);
+      const yetA = pick(["yetA", "YetkiliAdi", "Yetkili Adı"]);
+      const yetU = pick(["yetU", "YetkiliUnvani", "Yetkili Ünvanı", "Yetkili Unvani"]);
+      const kyt = pick(["kyt", "KYT", "Kalite Yönetim Temsilcisi"]);
+      const irtA = pick(["irtA", "IrtibatKisi", "İrtibat Kişisi"]);
+      const irtU = pick(["irtU", "IrtibatUnvani", "İrtibat Ünvanı"]);
+      const irtN = pick(["irtN", "IrtibatKisiNumarasi", "İrtibat Tel"]);
+      const irtM = pick(["irtM", "IrtibatKisisMail", "İrtibat Mail"]);
+      const kapsam = pick(["kapsam", "Kapsam", "Sertifika Kapsamı (TR)", "Türkçe Kapsam"]);
+      const scope = pick(["scope", "Scope", "Sertifika Kapsamı (EN)", "İngilizce Kapsam"]);
+      const yapis = pick(["yapis", "YapilanIs", "Yapılan İş"]);
+      const tcs = pick(["tcs", "TCS", "Toplam Çalışan Sayısı"], "0");
+      const ycs = pick(["ycs", "YCS", "Yönetim Çalışan Sayısı"], "0");
+      const ucs = pick(["ucs", "UCS", "Üretim Çalışan Sayısı"], "0");
+      const yzcs = pick(["yzcs", "YZCS", "Yarı Zamanlı Çalışan Sayısı"], "0");
+      const tascs = pick(["tascs", "TASCS", "Taşeron Çalışan Sayısı"], "0");
+      const acs = pick(["acs", "ACS", "Aynı İşte Çalışan Sayısı"], "0");
+      const alan = pick(["alan", "Alan"]);
+      const dept = pick(["departman", "dept", "Departman"]);
+      const vardiya = pick(["vardiya", "Vardiya"], "1");
+      const logo = pick(["logo", "logoK", "Firma Logosu", "LogoKaşe", "LogoKase"]);
+      const kase = pick(["kase", "Kaşe İmza", "Kase Imza", "Kaşe&İmza"]);
+      const dan = pick(["dan", "danisman", "Danisman", "Danışman"]);
+      const ea = pick(["ea", "EA"]);
+      const nace = pick(["nace", "NACE"]);
+      const not = pick(["not", "Not", "Firma Not"]);
+      const sinif = pick(["sinif", "Firma Sınıfı", "Firma Sinifi"]);
+      const dokuman = pick(["dokuman", "Dokuman", "Doküman"]);
+      const teknik = pick(["teknik", "Teknik Dosya"]);
+      const tkapsam = pick(["tkapsam", "Teknik Dosya Kapsamı", "Teknik Dosya Kaspamı"]);
+      const medikal = pick(["medikal", "Medikal Sektör"]);
+      const gida = pick(["gida", "Gıda Sektörü", "Gida Sektoru"]);
 
       const canonical = {
         // ...(input || {}), // [DÜZELTME] Veri tekrarını önlemek için ham input spread'i kaldırıldı
@@ -530,6 +569,7 @@ export default {
         "Üretim Çalışan Sayısı": ucs, UCS: ucs, ucs,
         "Yarı Zamanlı Çalışan Sayısı": yzcs, YZCS: yzcs, yzcs,
         "Taşeron Çalışan Sayısı": tascs, TASCS: tascs, tascs,
+        "Aynı İşte Çalışan Sayısı": acs, ACS: acs, acs,
         Alan: alan, alan,
         Departman: dept, departman: dept, dept,
         Vardiya: vardiya, vardiya,
@@ -585,7 +625,7 @@ export default {
     };
     const createCanonicalTestRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
-      const pick = getPicker(input);
+      const pick = getPicker(input, options.explicit || null);
       const id = String(options.id ?? pick(["ID", "id"]) ?? "").trim();
       return [
         id,
@@ -958,7 +998,22 @@ export default {
       return matchedRow ? rowToObject(headers, matchedRow) : null;
     };
     const buildCertificatePayloadFromKv = async (id, lang, select) => {
-      const certRaw = await env.DB.get(`cache:getCertificateById:${stableStringify({ id: String(id) })}`);
+      const certKey = `cache:getCertificateById:${stableStringify({ id: String(id) })}`;
+      let certRaw = await env.DB.get(certKey);
+
+      // Fallback: bireysel key yoksa fullCertificates index'inden bul (bulkSync sonrası mevcuttur)
+      if (!certRaw) {
+        const fullRaw = await env.DB.get(indexKeys.fullCertificates);
+        if (fullRaw) {
+          const fullList = JSON.parse(fullRaw);
+          const found = fullList.find((c) => String(getCertificateId(c)) === String(id));
+          if (found) {
+            certRaw = JSON.stringify(found);
+            ctx.waitUntil(env.DB.put(certKey, certRaw, { expirationTtl: CACHE_TTL }));
+          }
+        }
+      }
+
       if (!certRaw) throw new Error(`CERTIFICATE_KV_EMPTY: Sertifika '${id}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
       const certObj = JSON.parse(certRaw);
 
@@ -1149,6 +1204,7 @@ export default {
         const kvReadThroughActions = new Set([
           "getFolderId",
           "getRecentFiles",
+          "getCompanyById",   // KV miss olursa GAS'a fallback et (edit/profile sayfası KV boşken çalışabilsin)
         ]);
         const gasWriteActions = [
           "editCell",
@@ -1217,6 +1273,15 @@ export default {
               ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(data), { expirationTtl: CACHE_TTL }));
               return jsonResponse({ success: true, data, fromCache: true, rebuiltFromIndex: true });
             }
+            // Fallback: If index is missing but full data exists
+            const fullRaw = await env.DB.get(indexKeys.fullCompanies);
+            if (fullRaw) {
+               const full = JSON.parse(fullRaw);
+               const data = full.map(createSearchEntry);
+               ctx.waitUntil(env.DB.put(indexKeys.companySearch, JSON.stringify(data.reduce((acc, c) => ({...acc, [c.id]: c}), {})), { expirationTtl: CACHE_TTL }));
+               return jsonResponse({ success: true, data, fallback: true });
+            }
+            return jsonResponse({ success: true, data: [], message: "No data found in KV" });
           }
 
           if (action === "getCertificateSummaries") {
@@ -1264,19 +1329,20 @@ export default {
           }
 
           if (action === "getCertificates") {
-            const rebuilt = await rebuildCertificatesFromEntityKeys();
-            if (rebuilt && rebuilt.length) {
-              ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(rebuilt), { expirationTtl: CACHE_TTL }));
-              return jsonResponse({ success: true, data: rebuilt, fromCache: true, rebuiltFromEntities: true });
-            }
-
-            // bulkSync tarafından yazılan tam sertifika listesini fallback olarak kullan
+            // Önce bulkSync'in yazdığı tam listeyi kontrol et (her zaman yetkili ve eksiksizdir)
             const fullRaw = await env.DB.get(indexKeys.fullCertificates);
             if (fullRaw) {
               const fullCerts = JSON.parse(fullRaw);
               const data = sortCertificatesByIdDesc(fullCerts);
               ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(data), { expirationTtl: CACHE_TTL }));
               return jsonResponse({ success: true, data, fromCache: true, rebuiltFromFull: true });
+            }
+
+            // Fallback: bireysel entity key'lerinden yeniden oluştur (eksik olabilir, son çare)
+            const rebuilt = await rebuildCertificatesFromEntityKeys();
+            if (rebuilt && rebuilt.length) {
+              ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(rebuilt), { expirationTtl: CACHE_TTL }));
+              return jsonResponse({ success: true, data: rebuilt, fromCache: true, rebuiltFromEntities: true });
             }
           }
 
@@ -1822,7 +1888,12 @@ export default {
                 const currentSearch = currentSearchRaw ? JSON.parse(currentSearchRaw) : {};
                 const currentCount = Object.keys(currentSearch).length;
                 if (currentCount > 50 && canonicalCompanies.length < (currentCount * 0.2)) {
+                  console.error(`[Sync] MASS_DELETION_PROTECTION triggered: currentCount=${currentCount}, incoming=${canonicalCompanies.length}`);
                   return jsonResponse({ success: false, error: "MASS_DELETION_PROTECTION", message: "Kritik firma veri kaybı tespiti! İşlem iptal edildi." }, 400);
+                }
+
+                if (canonicalCompanies.length === 0 && currentCount === 0) {
+                   return jsonResponse({ success: false, error: "EMPTY_SYNC_DATA", message: "GAS üzerinden hiç firma verisi gelmedi. Lütfen verilerin GAS (Sheets) tarafında mevcut olduğundan emin olun." }, 400);
                 }
 
                 const companySearchIndex = {};
@@ -2097,9 +2168,23 @@ export default {
 
             const writes = [];
             const purges = [];
+            const stats = {};
 
-            if (scope.includes("companies") && Array.isArray(payload.companies)) {
-              const canonicalCompanies = payload.companies;
+            // Helper to build Stats (Shared logic from bulkSync)
+            const companies = scope.includes("companies") ? (Array.isArray(payload.companies) ? payload.companies : []) : [];
+            const currentCerts = scope.includes("certificates") ? (Array.isArray(payload.certificates) ? payload.certificates : []) : [];
+
+            // Preserve existing company count if companies are not being imported
+            let baseCompanyCount = companies.length;
+            if (!scope.includes("companies")) {
+              const currentSearchRaw = await env.DB.get(indexKeys.companySearch);
+              if (currentSearchRaw) {
+                baseCompanyCount = Object.keys(JSON.parse(currentSearchRaw)).length;
+              }
+            }
+            
+            if (scope.includes("companies") && companies.length > 0) {
+              const canonicalCompanies = companies;
               const companySearchIndex = {};
               for (const company of canonicalCompanies) {
                 const cid = getCompanyId(company);
@@ -2114,19 +2199,53 @@ export default {
               writes.push(env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(`cache:getCompanies:{}`, JSON.stringify(Object.values(companySearchIndex)), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(canonicalCompanies), { expirationTtl: CACHE_TTL }));
-              // [LIMIT REHAB] Tekil yazma kaldırıldı
               purges.push(purgeCachePrefix("cache:getCompanyById:"));
-              purges.push(purgeStaleKvKeys("cache:company:", new Set(canonicalCompanies.map(c => `cache:company:${getCompanyId(c)}`))));
+              stats.companies = canonicalCompanies.length;
             }
 
-            if (scope.includes("certificates") && Array.isArray(payload.certificates)) {
-              const dedupedCertificates = payload.certificates;
-              const certsByFirmaId = buildCertificatesByFirmaId(dedupedCertificates);
+            if (scope.includes("certificates") && currentCerts.length > 0) {
+              const dedupedCertificates = currentCerts;
               const certificateSummaryIndex = {};
+              
+              // --- Rebuild Dashboard Stats based on imported data ---
+              const dashboardStats = {
+                 stats: { activeCertificates: 0, pendingSurveillance: 0, totalCompanies: baseCompanyCount },
+                 charts: { consultants: {}, yearly: {}, cityDensity: {}, cities: {} }
+              };
+              
+              const now = new Date();
+              const currentMonth = now.getMonth();
+              const currentYear = now.getFullYear();
+
               for (const cert of dedupedCertificates) {
                 const certId = getCertificateId(cert);
-                if (certId) certificateSummaryIndex[String(certId)] = createCertificateSummary(cert);
+                if (certId) {
+                  const summary = createCertificateSummary(cert);
+                  certificateSummaryIndex[String(certId)] = summary;
+                  
+                  // Stats rebuild
+                  const status = String(summary.durum).toUpperCase().replace(/\u0130/g, "I");
+                  if (status === "AKTIF") dashboardStats.stats.activeCertificates++;
+                  
+                  // Surveillance
+                  const gozStr = summary.gozetimTarihi.trim();
+                  const gozConf = summary.gozetimConfirmed.toUpperCase();
+                  const matchGoz = gozStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+                  if (matchGoz && gozConf === "FALSE") {
+                      const m = parseInt(matchGoz[2], 10) - 1;
+                      const y = parseInt(matchGoz[3], 10);
+                      if (m === currentMonth && y === currentYear) dashboardStats.stats.pendingSurveillance++;
+                  }
+                  
+                  // Consultants & Years
+                  const dan = summary.danisman.trim() || "Atanmamış";
+                  dashboardStats.charts.consultants[dan] = (dashboardStats.charts.consultants[dan] || 0) + 1;
+                  const dateStr = summary.sertifikaTarihi.trim();
+                  const yearMatch = dateStr.match(/\.(\d{4})$/);
+                  if (yearMatch) dashboardStats.charts.yearly[yearMatch[1]] = (dashboardStats.charts.yearly[yearMatch[1]] || 0) + 1;
+                }
               }
+
               const certNextId = dedupedCertificates.reduce((highest, cert) => {
                 const parsed = parseInt(getCertificateId(cert), 10);
                 return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
@@ -2135,32 +2254,47 @@ export default {
               const recentIds = sorted.slice(0, 50).map(c => getCertificateId(c));
 
               writes.push(env.DB.put(indexKeys.certificateSummary, JSON.stringify(certificateSummaryIndex), { expirationTtl: CACHE_TTL }));
+              writes.push(env.DB.put(indexKeys.dashboardStats, JSON.stringify(dashboardStats), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(indexKeys.certificateNextId, String(certNextId), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
+              writes.push(env.DB.put(`cache:getCertificateSummaries:{}`, JSON.stringify(sortCertificatesByIdDesc(Object.values(certificateSummaryIndex))), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(`cache:getCertificates:{}`, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(indexKeys.fullCertificates, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }));
-              // [LIMIT REHAB] Tekil yazma kaldırıldı
               purges.push(purgeCachePrefix("cache:getRecentCertificates:"));
-              // purges.push(purgeStaleKvKeys("cache:getCertificateById:", new Set(dedupedCertificates.map(c => `cache:getCertificateById:${stableStringify({ id: String(getCertificateId(c)) })}`)))); // [DÜZELTME] Opsiyonel
+              purges.push(purgeCachePrefix("cache:getCertificateSummaries:"));
+              purges.push(purgeCachePrefix("cache:getCertificateById:"));
+              purges.push(purgeCachePrefix("cache:getCertificatesByFirmaId:"));
+              stats.certs = dedupedCertificates.length;
             }
 
-            if (scope.includes("tests") && payload.testsByFirmaId) writes.push(env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(payload.testsByFirmaId), { expirationTtl: CACHE_TTL }));
-            if (scope.includes("audits") && payload.auditsByFirmaId) writes.push(env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(payload.auditsByFirmaId), { expirationTtl: CACHE_TTL }));
+            if (scope.includes("tests") && payload.testsByFirmaId) {
+              writes.push(env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(payload.testsByFirmaId), { expirationTtl: CACHE_TTL }));
+              stats.tests = Object.keys(payload.testsByFirmaId).length;
+            }
+            if (scope.includes("audits") && payload.auditsByFirmaId) {
+              writes.push(env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(payload.auditsByFirmaId), { expirationTtl: CACHE_TTL }));
+              stats.audits = Object.keys(payload.auditsByFirmaId).length;
+            }
             if (scope.includes("proformas")) {
               if (payload.proformasByFirmaId) writes.push(env.DB.put(indexKeys.proformasByFirmaId, JSON.stringify(payload.proformasByFirmaId), { expirationTtl: CACHE_TTL }));
               if (payload.proformasById) writes.push(env.DB.put(indexKeys.proformasById, JSON.stringify(payload.proformasById), { expirationTtl: CACHE_TTL }));
+              stats.proformas = Object.keys(payload.proformasById || {}).length;
             }
             if (scope.includes("master")) {
               if (payload.standardsById) writes.push(env.DB.put(indexKeys.standardsById, JSON.stringify(payload.standardsById), { expirationTtl: CACHE_TTL }));
               if (payload.consultants) writes.push(env.DB.put(`cache:getConsultants:{}`, JSON.stringify(payload.consultants), { expirationTtl: CACHE_TTL }));
+              stats.master = true;
             }
+
+            // Global Version Update (Force client sync)
+            writes.push(env.DB.put("sys:kvVersion", String(Date.now()), { expirationTtl: CACHE_TTL }));
 
             for (let i = 0; i < writes.length; i += 50) {
               await Promise.all(writes.slice(i, i + 50));
             }
             if (purges.length) ctx.waitUntil(Promise.all(purges));
 
-            return jsonResponse({ success: true, message: "Yedek başarıyla geri yüklendi (Replace).", scope });
+            return jsonResponse({ success: true, message: "Yedek başarıyla geri yüklendi (İndeksler tazelendi).", scope, stats });
           } catch (error) {
             return jsonResponse({ success: false, error: "KV Import Hatası: " + error.message });
           }
@@ -2247,13 +2381,14 @@ export default {
             const searchRaw = await env.DB.get(indexKeys.companySearch);
             const searchIndex = searchRaw ? JSON.parse(searchRaw) : {};
             searchIndex[newId] = createSearchEntry(created);
+            const updatedCompaniesList = Object.values(searchIndex);
 
             await Promise.all([
               env.DB.put(`cache:company:${newId}`, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
               env.DB.put(indexKeys.companyNextId, nextId, { expirationTtl: CACHE_TTL }),
               env.DB.put(indexKeys.companySearch, JSON.stringify(searchIndex), { expirationTtl: CACHE_TTL }),
               env.DB.put(`cache:getCompanyById:${stableStringify({ id: newId })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
-              env.DB.delete("cache:getCompanies:{}"),
+              env.DB.put("cache:getCompanies:{}", JSON.stringify(updatedCompaniesList), { expirationTtl: CACHE_TTL }),
               env.DB.delete("cache:getConsultants:{}"),
             ]);
 
@@ -2293,15 +2428,16 @@ export default {
             return jsonResponse({ success: false, error: "CONFLICT", currentEtag }, 409);
           }
 
-          const updated = createCanonicalCompany({ ...existing, ...(params?.companyInfo || {}) }, { id: targetId });
+          const updated = createCanonicalCompany(existing, { id: targetId, explicit: params?.companyInfo || {} });
           const searchIndex = searchRaw ? JSON.parse(searchRaw) : {};
           searchIndex[targetId] = createSearchEntry(updated);
+          const updatedCompaniesList = Object.values(searchIndex);
 
           await Promise.all([
             env.DB.put(`cache:company:${targetId}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL }),
             env.DB.put(indexKeys.companySearch, JSON.stringify(searchIndex), { expirationTtl: CACHE_TTL }),
             env.DB.put(`cache:getCompanyById:${stableStringify({ id: targetId })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL }),
-            env.DB.delete("cache:getCompanies:{}"),
+            env.DB.put("cache:getCompanies:{}", JSON.stringify(updatedCompaniesList), { expirationTtl: CACHE_TTL }),
             env.DB.delete("cache:getConsultants:{}"),
           ]);
 
@@ -2349,33 +2485,7 @@ export default {
           if (!current) {
             return jsonResponse({ success: false, error: `Test bulunamadı: ${targetId}` }, 404);
           }
-          const updated = createCanonicalTestRow({
-            id: targetId,
-            firmaAdi: current[1] ?? "",
-            fname: current[1] ?? "",
-            firmaNo: current[2] ?? "",
-            fno: current[2] ?? "",
-            testAdi: current[3] ?? "",
-            marka: current[4] ?? "",
-            urun: current[5] ?? "",
-            urunKodu: current[6] ?? "",
-            urunNo: current[7] ?? "",
-            lot: current[8] ?? "",
-            urunKabul: current[9] ?? "",
-            kabulSaat: current[10] ?? "",
-            testBaslangic: current[11] ?? "",
-            testBitis: current[12] ?? "",
-            raporTarihi: current[13] ?? "",
-            raporNo: current[14] ?? "",
-            numuneSayisi: current[15] ?? "",
-            numuneUT: current[16] ?? "",
-            numuneSKT: current[17] ?? "",
-            urunBilgi: current[18] ?? "",
-            gorsel1: current[19] ?? "",
-            gorsel2: current[20] ?? "",
-            detay: current[21] ?? "",
-            ...(params?.testInfo || {})
-          }, { id: targetId });
+          const updated = createCanonicalTestRow(current, { id: targetId, explicit: params?.testInfo || {} });
           const writes = [];
           const nextFirmaId = getTestFirmaId(updated);
           if (prevFirmaId) {
@@ -2630,16 +2740,16 @@ export default {
 
           let updated = existing;
           if (action === "updateCertificate") {
-            updated = createCanonicalCertificate({ ...existing, ...(params?.certInfo || {}) }, { id: targetId });
+            updated = createCanonicalCertificate(existing, { id: targetId, explicit: params?.certInfo || {} });
           } else if (action === "updateCertificateField") {
             const field = String(params?.field || "").trim();
             if (!field) {
               return jsonResponse({ success: false, error: "Alan adı boş olamaz." }, 400);
             }
-            updated = createCanonicalCertificate({ ...existing, [field]: params?.value }, { id: targetId });
+            updated = createCanonicalCertificate(existing, { id: targetId, explicit: { [field]: params?.value } });
           } else if (action === "updateGozetim") {
             const status = params?.status === true || String(params?.status || "").toUpperCase() === "TRUE" ? "TRUE" : "FALSE";
-            updated = createCanonicalCertificate({ ...existing, "Gözetim Conf.": status, gozetimConfirmed: status }, { id: targetId });
+            updated = createCanonicalCertificate(existing, { id: targetId, explicit: { "Gözetim Conf.": status, gozetimConfirmed: status } });
           }
 
           const previousFirmaId = getCertificateFirmaId(existing);
@@ -2687,67 +2797,97 @@ export default {
           }
 
           const status = params?.status === true || String(params?.status || "").toUpperCase() === "TRUE" ? "TRUE" : "FALSE";
-
-          // Tüm etkilenen sertifikaları paralel yükle
-          const certRaws = await Promise.all(
-            ids.map((id) => env.DB.get(`cache:getCertificateById:${stableStringify({ id })}`))
-          );
-
-          // Güncelle ve firmaId'ye göre grupla
-          const updatedById = {};
-          const byFirmaId = {};
-          ids.forEach((id, i) => {
-            if (!certRaws[i]) return;
-            const existing = JSON.parse(certRaws[i]);
-            const updated = createCanonicalCertificate({ ...existing, "Gözetim Conf.": status, gozetimConfirmed: status }, { id });
-            updatedById[id] = updated;
-            const firmaId = getCertificateFirmaId(updated);
-            if (!firmaId) return;
-            if (!byFirmaId[firmaId]) byFirmaId[firmaId] = [];
-            byFirmaId[firmaId].push(updated);
-          });
-
-          const touchedFirmaIds = Object.keys(byFirmaId);
-          if (!touchedFirmaIds.length && !Object.keys(updatedById).length) {
-            return jsonResponse({ success: false, error: "CERTIFICATE_KV_EMPTY", message: "Sertifikalar KV'de bulunamadı. Önce senkronizasyon yapın." });
+          const hintFirmaId = params?.firmaId ? String(params.firmaId).trim() : null;
+          if (!hintFirmaId) {
+            return jsonResponse({ success: false, error: "firmaId parametresi eksik." }, 400);
           }
 
-          // Etkilenen firma listelerini paralel yükle
-          const firmaRaws = await Promise.all(
-            touchedFirmaIds.map((firmaId) => env.DB.get(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId })}`))
-          );
+          const idSet = new Set(ids);
+          const firmaListKey = `cache:getCertificatesByFirmaId:${stableStringify({ firmaId: hintFirmaId })}`;
+          const firmaListRaw = await env.DB.get(firmaListKey);
+
+          if (!firmaListRaw) {
+            return jsonResponse({ success: false, error: "CERTIFICATE_KV_EMPTY", message: `Firma ${hintFirmaId} sertifika listesi KV'de bulunamadı. Sayfayı yenileyin veya senkronizasyon yapın.` });
+          }
+
+          const firmaList = JSON.parse(firmaListRaw);
+          const updatedById = {};
+
+          // In-place güncelleme: her cert'i tara, eşleşen ID'lerde surveillance field'ını değiştir
+          const updatedList = firmaList.map((c) => {
+            const certId = String(getCertificateId(c));
+            if (!idSet.has(certId)) return c;
+
+            if (Array.isArray(c)) {
+              // Raw array format: index 19 = Gözetim Conf.
+              const row = [...c];
+              row[19] = status;
+              updatedById[certId] = row;
+              return row;
+            } else {
+              // Canonical object format
+              const updated = {
+                ...c,
+                "Gözetim Conf.": status,
+                gozetimConfirmed: status,
+                gozetimConf: status,
+                gozetim: status,
+              };
+              updatedById[certId] = updated;
+              return updated;
+            }
+          });
+
+          const updatedCount = Object.keys(updatedById).length;
+          if (updatedCount === 0) {
+            return jsonResponse({ success: false, error: "Seçili sertifikalar firma listesinde bulunamadı." });
+          }
 
           const writes = [
+            env.DB.put(firmaListKey, JSON.stringify(updatedList), { expirationTtl: CACHE_TTL }),
             env.DB.delete("cache:getCertificates:{}"),
             env.DB.delete("cache:getCertificateSummaries:{}"),
           ];
 
-          // Her cert key'ini güncelle
+          // Bireysel cert key'lerini de güncelle (varsa üzerine yaz, yoksa oluştur)
           Object.entries(updatedById).forEach(([id, cert]) => {
-            writes.push(env.DB.put(`cache:getCertificateById:${stableStringify({ id })}`, JSON.stringify(cert), { expirationTtl: CACHE_TTL }));
+            const canonical = Array.isArray(cert)
+              ? createCanonicalCertificate(cert)
+              : createCanonicalCertificate(cert, { id, explicit: { "Gözetim Conf.": status, gozetimConfirmed: status } });
+            writes.push(env.DB.put(`cache:getCertificateById:${stableStringify({ id })}`, JSON.stringify(canonical), { expirationTtl: CACHE_TTL }));
           });
 
+          // Summary index güncelle
           writes.push((async () => {
             const summaryRaw = await env.DB.get(indexKeys.certificateSummary);
             const summaryIndex = summaryRaw ? JSON.parse(summaryRaw) : {};
             Object.entries(updatedById).forEach(([id, cert]) => {
-              summaryIndex[id] = createCertificateSummary(cert);
+              const canonical = Array.isArray(cert) ? createCanonicalCertificate(cert) : cert;
+              summaryIndex[id] = createCertificateSummary(canonical);
             });
             return env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIndex), { expirationTtl: CACHE_TTL });
           })());
 
-          // Her firma listesini güncelle (sadece değişen sertifikaları in-place değiştir)
-          touchedFirmaIds.forEach((firmaId, i) => {
-            let list = Array.isArray(firmaRaws[i] ? JSON.parse(firmaRaws[i]) : null) ? JSON.parse(firmaRaws[i]) : [];
-            const changedIds = new Set(byFirmaId[firmaId].map((c) => getCertificateId(c)));
-            const changedMap = Object.fromEntries(byFirmaId[firmaId].map((c) => [getCertificateId(c), c]));
-            list = list.map((c) => changedIds.has(getCertificateId(c)) ? changedMap[getCertificateId(c)] : c);
-            writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
-          });
+          // fullCertificates index'ini de in-place güncelle (getCertificates için yetkili kaynak)
+          writes.push((async () => {
+            const fullRaw = await env.DB.get(indexKeys.fullCertificates);
+            if (!fullRaw) return;
+            const fullList = JSON.parse(fullRaw);
+            const updatedFull = fullList.map((c) => {
+              const certId = String(getCertificateId(c));
+              if (!updatedById[certId]) return c;
+              const updated = updatedById[certId];
+              if (Array.isArray(c) && Array.isArray(updated)) return updated;
+              if (!Array.isArray(c) && !Array.isArray(updated)) return updated;
+              // Format mismatch: canonical nesneyi tercih et
+              return Array.isArray(updated) ? createCanonicalCertificate(updated) : updated;
+            });
+            return env.DB.put(indexKeys.fullCertificates, JSON.stringify(updatedFull), { expirationTtl: CACHE_TTL });
+          })());
 
           await Promise.all(writes);
           ctx.waitUntil(purgeCachePrefix("cache:getRecentCertificates:"));
-          return jsonResponse({ success: true, data: { updatedCount: Object.keys(updatedById).length, ids, status }, kvPrimaryWrite: true, sheetsWrite: false, sideEffectsSkipped: true });
+          return jsonResponse({ success: true, data: { updatedCount, ids, status }, kvPrimaryWrite: true, sheetsWrite: false, sideEffectsSkipped: true });
         }
 
         const gasApiUrl = env.GAS_API_URL;

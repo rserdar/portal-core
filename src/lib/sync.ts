@@ -1,5 +1,6 @@
 import { api } from './api';
 import { DB } from './db';
+import { toast } from './toast';
 import { $companies, $certificates, $dashboardStats, $syncStatus, $lastSyncTime } from './store';
 
 /**
@@ -82,6 +83,17 @@ export const SyncManager = {
           console.warn('[Sync] Master KV miss detected. Automatic master hydration is disabled.');
         }
 
+        const localCount = ($certificates.get() || []).length;
+        const serverCount = (certRes.data || []).length;
+
+        // 🛡️ Data Integrity Guard: Don't overwrite if server returns significantly less data than local
+        // (unless local is very small or it's an intentional clear)
+        if (localCount > 500 && serverCount < (localCount * 0.5)) {
+          console.error(`[Sync] Safety Guard Triggered! Local: ${localCount}, Server: ${serverCount}. Potential data loss prevented.`);
+          toast.warning(`Veri kaybı önlendi: Sunucudan sadece ${serverCount} kayıt geldi. Mevcut ${localCount} kaydınız korundu.`, { duration: 8000 });
+          throw new Error(`Veri bütünlüğü riski: Sunucudan gelen veri (%${Math.round((serverCount/localCount)*100)}) yereldekinden çok daha az. Lütfen sunucu senkronizasyonunu (Sheets -> KV) kontrol edin.`);
+        }
+
         const now = Date.now();
         await Promise.all([
           DB.save(DB.COMPANIES, compRes.data),
@@ -95,12 +107,28 @@ export const SyncManager = {
         $dashboardStats.set(dashRes.data || null);
         $lastSyncTime.set(now);
         
-        console.log('[Sync] KV-primary synchronization complete.');
+        await Promise.all([
+          DB.save(DB.COMPANIES, compRes.data || []),
+          DB.save(DB.CERTIFICATES, certRes.data || []),
+          DB.save(DB.DASHBOARD_STATS, dashRes.data || null),
+          DB.save(DB.LAST_SYNC, now)
+        ]);
+        
+        console.log(`[Sync] KV-primary synchronization complete. Firms: ${compRes.data?.length || 0}`);
+        
+        if (compRes.data?.length === 0) {
+          console.warn('[Sync] API returned 0 firms. Check KV indices on Worker.');
+        }
 
         $syncStatus.set('idle');
-      } catch (e) {
+      } catch (e: any) {
         console.error('[Sync] Sync failed:', e);
         $syncStatus.set('error');
+        if (String(e.message).includes('KV verisi hazır değil')) {
+           toast.error('Veritabanı (KV) henüz hazır değil. Lütfen "Şablonları Eşitle" işlemini manuel başlatın.', { duration: 10000 });
+        } else {
+           toast.error(`Senkronizasyon hatası: ${e.message || 'Bilinmeyen hata'}`);
+        }
       } finally {
         this._syncPromise = null;
       }

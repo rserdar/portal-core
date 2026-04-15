@@ -145,6 +145,8 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
 
 <script>
   import { api } from "../lib/api";
+  import { toast } from "../lib/toast";
+  import { SyncManager } from "../lib/sync";
 
   const selectEl = document.getElementById("dataset-select") as HTMLSelectElement | null;
   const syncBtn = document.getElementById("sync-master-btn") as HTMLButtonElement | null;
@@ -162,6 +164,19 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   const importFileInput = document.getElementById("import-file-input") as HTMLInputElement | null;
   const importKvBtn = document.getElementById("import-kv-btn") as HTMLButtonElement | null;
   const backupStatusBox = document.getElementById("backup-status-box") as HTMLElement | null;
+
+  // ─── Lifecycle & Cleanup ─────────────────────────────────────────────────────
+
+  let cleanupTasks: Array<() => void> = [];
+
+  function registerCleanup(fn: () => void) {
+    cleanupTasks.push(fn);
+  }
+
+  function runCleanups() {
+    cleanupTasks.forEach(fn => { try { fn(); } catch(e) {} });
+    cleanupTasks = [];
+  }
 
   let currentType: string = "standards";
   let currentVersion: string | null = null;
@@ -307,126 +322,179 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     setStatus("Kaydedildi.", "success");
   }
 
-  selectEl?.addEventListener("change", (e: Event) => {
-    loadDataset((e.target as HTMLSelectElement).value);
-  });
+  function initPage() {
+    runCleanups();
 
-  refreshBtn?.addEventListener("click", () => loadDataset(currentType));
+    const addEv = (id: string, ev: string, fn: any) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener(ev, fn);
+      registerCleanup(() => el.removeEventListener(ev, fn));
+    };
 
-  syncBtn?.addEventListener("click", async () => {
-    setStatus("Sheets -> KV master sync baslatildi...");
-    const res = await api.bulkSyncMaster();
-    if (!res.success) {
-      setStatus("Master sync basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
-      return;
-    }
-    await loadDataset(currentType);
-    setStatus("Master sync tamamlandi.", "success");
-  });
-
-  fullSyncBtn?.addEventListener("click", async () => {
-    setStatus("Sheets -> KV tam senkron baslatildi...");
-    const coreRes = await api.bulkSync();
-    if (!coreRes.success) {
-      setStatus("Core sync basarisiz: " + (coreRes.error || "Bilinmeyen hata"), "error");
-      return;
+    const selectEl = document.getElementById("dataset-select") as HTMLSelectElement | null;
+    if (selectEl) {
+      addEv("dataset-select", "change", (e: Event) => {
+        loadDataset((e.target as HTMLSelectElement).value);
+      });
     }
 
-    const masterRes = await api.bulkSyncMaster();
-    if (!masterRes.success) {
-      setStatus("Master sync basarisiz: " + (masterRes.error || "Bilinmeyen hata"), "error");
-      return;
-    }
-
-    await loadDataset(currentType);
-    setStatus("Sheets -> KV tam senkron tamamlandi.", "success");
-  });
-
-  opsSyncBtn?.addEventListener("click", async () => {
-    const scope = getSelectedScopes();
-    if (!scope.length) {
-      setBackupStatus("Lutfen en az bir kapsam secin.", "error");
-      return;
-    }
-
-    setBackupStatus("Sheets -> KV [" + scope.join(", ") + "] senkronizasyonu baslatildi...");
-    const res = await api.pullFromSheetsToKv(scope);
+    addEv("refresh-btn", "click", () => loadDataset(currentType));
     
-    if (!res.success) {
-      setBackupStatus("Senkronizasyon basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
-      return;
-    }
-    await loadDataset(currentType);
-    setBackupStatus("Senkronizasyon tamamlandi (" + scope.join(", ") + ").", "success");
-  });
+    addEv("sync-master-btn", "click", async () => {
+      setStatus("Sheets -> KV master sync baslatildi...");
+      const res = await api.bulkSyncMaster();
+      if (!res.success) {
+        setStatus("Master sync basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
+        return;
+      }
+      await loadDataset(currentType);
+      setStatus("Master sync tamamlandi.", "success");
+    });
 
-  exportKvBtn?.addEventListener("click", async () => {
-    const scope = getSelectedScopes();
-    if (!scope.length) {
-      setBackupStatus("Lutfen yedeklemek istediginiz kapsamlari secin.", "error");
-      return;
+    addEv("full-sync-btn", "click", async () => {
+      setStatus("Sheets -> KV tam senkron baslatildi...");
+      const coreRes = await api.bulkSync();
+      if (!coreRes.success) {
+        setStatus("Core sync basarisiz: " + (coreRes.error || "Bilinmeyen hata"), "error");
+        return;
+      }
+      const masterRes = await api.bulkSyncMaster();
+      if (!masterRes.success) {
+        setStatus("Master sync basarisiz: " + (masterRes.error || "Bilinmeyen hata"), "error");
+        return;
+      }
+      await loadDataset(currentType);
+      setStatus("Sheets -> KV tam senkron tamamlandi.", "success");
+    });
+
+    addEv("ops-sync-btn", "click", async () => {
+      const scope = getSelectedScopes();
+      if (!scope.length) {
+        setBackupStatus("Lutfen en az bir kapsam secin.", "error");
+        return;
+      }
+      setBackupStatus("Sheets -> KV [" + scope.join(", ") + "] senkronizasyonu baslatildi...");
+      const res = await api.pullFromSheetsToKv(scope);
+      if (!res.success) {
+        setBackupStatus("Senkronizasyon basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
+        return;
+      }
+      await loadDataset(currentType);
+      setBackupStatus("Senkronizasyon tamamlandi (" + scope.join(", ") + ").", "success");
+    });
+
+    addEv("export-kv-btn", "click", async () => {
+      const scope = getSelectedScopes();
+      if (!scope.length) {
+        setBackupStatus("Lutfen yedeklemek istediginiz kapsamlari secin.", "error");
+        return;
+      }
+      setBackupStatus("[" + scope.join(", ") + "] kapsami icin KV yedek paketi hazirlaniyor...");
+      const res = await api.exportKvData(scope);
+      if (!res.success || !res.exportData) {
+        setBackupStatus("Disa aktarma basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
+        return;
+      }
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      downloadJson("mc-kv-backup-" + stamp + ".json", res.exportData);
+      setBackupStatus("KV yedegi indirildi (" + scope.length + " kategori).", "success");
+    });
+
+    const fileInput = document.getElementById("import-file-input") as HTMLInputElement | null;
+    const iBtn = document.getElementById("import-kv-btn") as HTMLButtonElement | null;
+    
+    if (fileInput) {
+      addEv("import-file-input", "change", async (event: Event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        selectedBackupPayload = null;
+        if (iBtn) iBtn.disabled = true;
+        if (!file) {
+          setBackupStatus("Iceri aktarma icin bir JSON dosyasi secin.");
+          return;
+        }
+        try {
+          const text = await file.text();
+          selectedBackupPayload = JSON.parse(text);
+          if (iBtn) iBtn.disabled = false;
+          setBackupStatus("Yedek dosyasi hazir: " + file.name + ". 'Geri Yukle' butonuna basarak islemi baslatabilirsin.", "success");
+        } catch (error) {
+          setBackupStatus("Secilen dosya gecerli bir JSON yedegi degil.", "error");
+        }
+      });
     }
 
-    setBackupStatus("[" + scope.join(", ") + "] kapsami icin KV yedek paketi hazirlaniyor...");
-    const res = await api.exportKvData(scope);
-    if (!res.success || !res.exportData) {
-      setBackupStatus("Disa aktarma basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
-      return;
-    }
-    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    downloadJson("mc-kv-backup-" + stamp + ".json", res.exportData);
-    setBackupStatus("KV yedegi indirildi (" + scope.length + " kategori).", "success");
-  });
+    addEv("import-kv-btn", "click", async () => {
+      const scope = getSelectedScopes();
+      if (!selectedBackupPayload) {
+        setBackupStatus("Once gecerli bir backup JSON dosyasi secin.", "error");
+        return;
+      }
+      if (!scope.length) {
+        setBackupStatus("Lutfen geri yuklemek istediginiz kapsamlari (Secim Paneli) belirleyin.", "error");
+        return;
+      }
+      if (!confirm("DIKKAT! Secilen kapsamlardaki (" + scope.join(", ") + ") MEVCUT KV verileri tamamen SILINECEK ve yedektekilerle degistirilecektir. Devam etmek istiyor musun?")) {
+        return;
+      }
 
-  importFileInput?.addEventListener("change", async (event: Event) => {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    selectedBackupPayload = null;
-    if (importKvBtn) importKvBtn.disabled = true;
-    if (!file) {
-      setBackupStatus("Iceri aktarma icin bir JSON dosyasi secin.");
-      return;
-    }
-    try {
-      const text = await file.text();
-      selectedBackupPayload = JSON.parse(text);
-      if (importKvBtn) importKvBtn.disabled = false;
-      setBackupStatus("Yedek dosyasi hazir: " + file.name + ". 'Geri Yukle' butonuna basarak islemi baslatabilirsin.", "success");
-    } catch (error) {
-      setBackupStatus("Secilen dosya gecerli bir JSON yedegi degil.", "error");
-    }
-  });
+      console.log("[Backup] Geri yukleme baslatildi. Kapsam:", scope);
+      const originalText = iBtn ? iBtn.textContent : "Geri Yukle";
+      if (iBtn) {
+        iBtn.disabled = true;
+        iBtn.textContent = "Yukleniyor... Lutfen Bekleyin";
+        iBtn.classList.add("animate-pulse");
+      }
 
-  importKvBtn?.addEventListener("click", async () => {
-    const scope = getSelectedScopes();
-    if (!selectedBackupPayload) {
-      setBackupStatus("Once gecerli bir backup JSON dosyasi secin.", "error");
-      return;
-    }
-    if (!scope.length) {
-      setBackupStatus("Lutfen geri yuklemek istediginiz kapsamlari (Secim Paneli) belirleyin.", "error");
-      return;
-    }
+      setBackupStatus("[" + scope.join(", ") + "] kapsami geri yukleniyor (Replace)... Bu islem verinin boyutuna gore biraz zaman alabilir.", "info");
+      toast.info(`[${scope.join(", ")}] kapsami geri yukleniyor...`);
+      
+      try {
+        const res = await api.importKvData(selectedBackupPayload, scope);
+        console.log("[Backup] Sunucu yaniti:", res);
 
-    if (!confirm("DIKKAT! Secilen kapsamlardaki (" + scope.join(", ") + ") MEVCUT KV verileri tamamen SILINECEK ve yedektekilerle degistirilecektir. Devam etmek istiyor musun?")) {
-      return;
-    }
+        if (!res.success) {
+          toast.error("Geri yukleme basarisiz: " + (res.error || "Bilinmeyen hata"));
+          setBackupStatus("Geri yukleme basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
+          return;
+        }
 
-    setBackupStatus("[" + scope.join(", ") + "] kapsami geri yukleniyor (Replace)...");
-    const res = await api.importKvData(selectedBackupPayload, scope);
-    if (!res.success) {
-      setBackupStatus("Geri yukleme basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
-      return;
-    }
-    await loadDataset(currentType);
-    setBackupStatus("Secili kapsamlar basariyla geri yuklendi (KV-Replace).", "success");
-  });
+        console.log("[Backup] Basarili. Veri setleri tazeleniyor...");
+        setBackupStatus("Veriler yuklendi. Yerel veritabanı senkronize ediliyor...", "info");
+        toast.info("Sunucu verileri yenilendi. Yerel senkronizasyon baslatiliyor...");
+        
+        await SyncManager.forceSync();
+        
+        await loadDataset(currentType);
+        toast.success("Secili kapsamlar basariyla geri yuklendi ve senkronize edildi!");
+        setBackupStatus("Geri yukleme ve senkronizasyon basarili. Tum verileriniz artik guncel.", "success");
+      } catch (err: any) {
+        console.error("[Backup] Kritik Hata:", err);
+        toast.error("Geri yukleme sirasinda hata: " + err.message);
+        setBackupStatus("Geri yukleme sirasinda ag hatasi olustu: " + err.message, "error");
+      } finally {
+        if (iBtn) {
+          iBtn.disabled = false;
+          iBtn.textContent = originalText;
+          iBtn.classList.remove("animate-pulse");
+        }
+      }
+    });
 
-  addRowBtn?.addEventListener("click", () => {
-    currentRows.push(Array(currentHeaders.length).fill(""));
-    renderTable();
-  });
+    addEv("add-row-btn", "click", () => {
+      currentRows.push(Array(currentHeaders.length).fill(""));
+      renderTable();
+    });
 
-  saveBtn?.addEventListener("click", saveDataset);
+    addEv("save-btn", "click", saveDataset);
 
-  loadDataset(currentType);
+    loadDataset(currentType);
+  }
+
+  // Initial load
+  initPage();
+  // ViewTransitions support
+  document.addEventListener('astro:page-load', initPage);
+  // Cleanup away
+  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>

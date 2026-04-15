@@ -4,7 +4,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
 <DashboardLayout title="Firma Ara">
   <div class="space-y-4">
-    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
 
     <!-- Arama Çubuğu -->
     <div class="bg-surface border border-border-main shadow-lg p-3 sm:p-4 rounded-2xl flex items-center gap-3">
@@ -91,89 +90,20 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   import { api } from '../lib/api';
   import { $companies, $syncStatus, $certificates } from '../lib/store';
   import { SyncManager } from '../lib/sync';
-  import { consumeFlashToast } from '../lib/toast';
-
-  const loader = document.getElementById('table-loader') as HTMLElement;
-  const searchInput = document.getElementById('searchInput') as HTMLInputElement;
-  const syncIndicator = document.getElementById('sync-indicator');
-  const pageSizeSelect = document.getElementById('pageSizeSelect') as HTMLSelectElement;
+  import { toast } from '../lib/toast';
 
   let currentTerm = '';
   let currentPage = 1;
   let pageSize = 20;
-  const urlParams = new URLSearchParams(window.location.search);
-  const initialQuery = urlParams.get('q') || '';
+  let cleanupFns: Array<() => void> = [];
 
-  consumeFlashToast();
-
-  function refreshSearchView() {
-    const data = $companies.get() || [];
-    const syncState = $syncStatus.get();
-    const hasData = Array.isArray(data) && data.length > 0;
-    const emptyState = document.getElementById('empty-state');
-
-    if (hasData) {
-      loader?.classList.add('hidden');
-      renderResults(data, currentTerm);
-      return;
-    }
-
-    if (syncState === 'syncing') {
-      loader?.classList.remove('hidden');
-      emptyState?.classList.add('hidden');
-      emptyState?.classList.remove('flex');
-      return;
-    }
-
-    loader?.classList.add('hidden');
-    renderResults([], currentTerm);
+  function registerCleanup(fn: () => void) {
+    cleanupFns.push(fn);
   }
 
-  $companies.subscribe(() => {
-    refreshSearchView();
-  });
-
-  $syncStatus.subscribe(status => {
-    if (!syncIndicator) return;
-    const dot = syncIndicator.querySelector('span');
-    const textEl = syncIndicator.querySelector('.sync-status-text');
-    if (!dot) return;
-    if (status === 'syncing') {
-      dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse';
-      if (textEl) textEl.textContent = 'GÜNCELLENİYOR';
-    } else {
-      dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]';
-      if (textEl) textEl.textContent = 'HAZIR';
-    }
-    refreshSearchView();
-  });
-
-  function normalize(str: any): string {
-    if (!str) return '';
-    return str.toString()
-      .toLocaleLowerCase('tr-TR')
-      .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
-      .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c').trim();
-  }
-
-  function pickField(company: any, keys: string[], fallback = ''): string {
-    for (const key of keys) {
-      const value = company?.[key];
-      if (value !== undefined && value !== null && String(value).trim() !== '') return String(value).trim();
-    }
-    return fallback;
-  }
-
-  function mapCompany(company: any) {
-    const id = pickField(company, ['id', 'ID', 'Firma No', 'firmaNo', 'firma_no', 'no']);
-    const unvan = pickField(company, ['unvan', 'Unvan', 'UNVAN', 'firmaUnvan', 'firma_unvan'], '-');
-    const nickname = pickField(company, [
-      'Markası', 'Marka Adı', 'Kısa Adı', 'Kısa Ad', 'Marka', 'marka',
-      'Nick', 'Nickname', 'nickname', 'Firma Adı', 'FirmaAdi', 'unvan'
-    ], '-');
-    const city = pickField(company, ['city', 'City', 'CITY', 'il', 'İl', 'sehir', 'şehir', 'Sehir', 'Şehir'], '-');
-    const searchStr = normalize(`${unvan} ${nickname} ${id}`);
-    return { id, unvan, nickname, city, searchStr };
+  function runCleanups() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
   }
 
   // Desktop ikonları (16px)
@@ -184,6 +114,122 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   const folderSvgLg = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
   const eyeSvgLg   = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
   const trashSvgLg = `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+
+  function initPage() {
+    runCleanups();
+
+    const loader = document.getElementById('table-loader') as HTMLElement;
+    const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+    const syncIndicator = document.getElementById('sync-indicator');
+    const pageSizeSelect = document.getElementById('pageSizeSelect') as HTMLSelectElement;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialQuery = urlParams.get('q') || '';
+
+
+    function refreshSearchView() {
+      const data = $companies.get() || [];
+      const syncStatus = $syncStatus.get();
+      const hasData = Array.isArray(data) && data.length > 0;
+      const emptyState = document.getElementById('empty-state');
+      const loaderEl = document.getElementById('table-loader');
+
+      console.log(`[View] Refreshing: data=${data.length}, status=${syncStatus}`);
+
+      if (hasData) {
+        loaderEl?.classList.add('hidden');
+        renderResults(data, currentTerm);
+        return;
+      }
+
+      if (syncStatus === 'syncing') {
+        loaderEl?.classList.remove('hidden');
+        emptyState?.classList.add('hidden');
+        return;
+      }
+
+      // idle veya error durumu
+      loaderEl?.classList.add('hidden');
+      renderResults([], currentTerm);
+    }
+
+    const unsubCompanies = $companies.subscribe(() => {
+      refreshSearchView();
+    });
+    registerCleanup(unsubCompanies);
+
+    const unsubSync = $syncStatus.subscribe(status => {
+      if (!syncIndicator) return;
+      const dot = syncIndicator.querySelector('span');
+      const textEl = syncIndicator.querySelector('.sync-status-text');
+      if (!dot) return;
+      
+      if (status === 'syncing') {
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse';
+        if (textEl) textEl.textContent = 'GÜNCELLENİYOR';
+      } else if (status === 'error') {
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]';
+        if (textEl) textEl.textContent = 'HATA';
+      } else {
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]';
+        if (textEl) textEl.textContent = 'HAZIR';
+      }
+      refreshSearchView();
+    });
+    registerCleanup(unsubSync);
+
+    searchInput?.addEventListener('input', (e) => {
+      currentTerm = (e.target as HTMLInputElement).value;
+      currentPage = 1;
+      renderResults($companies.get(), currentTerm);
+    });
+
+    pageSizeSelect?.addEventListener('change', () => {
+      pageSize = parseInt(pageSizeSelect.value);
+      currentPage = 1;
+      refreshUI();
+    });
+
+    if (searchInput && initialQuery && !currentTerm) {
+      searchInput.value = initialQuery;
+      currentTerm = initialQuery;
+    }
+
+    refreshSearchView();
+    SyncManager.init().then(() => {
+      refreshSearchView();
+    });
+  }
+
+  // Helper functions used by renderResults (kept outside initPage for clarity)
+
+  function normalize(str: any): string {
+    if (!str) return '';
+    return str.toString()
+      .toLocaleLowerCase('tr-TR')
+      .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
+      .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c').trim();
+  }
+
+  function pickField(company: any, keys: string[], fallback = ''): string {
+    if (!company) return fallback;
+    for (const key of keys) {
+      const value = company[key];
+      if (value !== undefined && value !== null && String(value).trim() !== '') return String(value).trim();
+    }
+    return fallback;
+  }
+
+  function mapCompany(company: any) {
+    // Worker search index uses: id, nickname, unvan, city, kapsam, scope
+    const id = pickField(company, ['id', 'ID', 'Firma No', 'firmaNo']);
+    const nickname = pickField(company, ['nickname', 'nick', 'Markası', 'Marka Adı', 'Firma Adı', 'Nickname'], '-');
+    const unvan = pickField(company, ['unvan', 'Unvan', 'UNVAN'], '-');
+    const city = pickField(company, ['city', 'sehir', 'şehir', 'il', 'İl'], '-');
+    const searchStr = normalize(`${unvan} ${nickname} ${id}`);
+    return { id, unvan, nickname, city, searchStr };
+  }
+
 
   function getInitials(nick: string): string {
     return String(nick || '').trim().split(/\s+/).filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
@@ -533,25 +579,10 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     });
   }
 
-  searchInput?.addEventListener('input', (e) => {
-    currentTerm = (e.target as HTMLInputElement).value;
-    currentPage = 1;
-    renderResults($companies.get(), currentTerm);
-  });
-
-  pageSizeSelect?.addEventListener('change', () => {
-    pageSize = parseInt(pageSizeSelect.value);
-    currentPage = 1;
-    refreshUI();
-  });
-
-  if (searchInput && initialQuery) {
-    searchInput.value = initialQuery;
-    currentTerm = initialQuery;
-  }
-
-  refreshSearchView();
-  SyncManager.init().then(() => {
-    refreshSearchView();
-  });
+  // Initial load
+  initPage();
+  // ViewTransitions support
+  document.addEventListener('astro:page-load', initPage);
+  // Cleanup away
+  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>

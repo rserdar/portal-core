@@ -2,7 +2,6 @@
 import OperationPageShell from '../../components/operations/OperationPageShell.astro';
 ---
 
-<div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
 
 <OperationPageShell
   pageKey="proforma"
@@ -79,38 +78,57 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
-  import { showToast } from '../../lib/toast';
+  import { toast } from '../../lib/toast';
   import { loadCompanyOperationContext } from '../../features/operations/context';
   import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
 
   type ProformaRow = [string, string, string, string, string, string, string, string, string, string];
 
-  const params = new URLSearchParams(location.search);
-  let firmaId = params.get('id') || params.get('firmaId') || '';
   let activeContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
   let formHandlersBound = false;
   let editingProformaId = '';
   let currentRows: ProformaRow[] = [];
+  let cleanupFns: Array<() => void> = [];
 
-  const companySearch = document.getElementById('proforma-company-search') as HTMLInputElement | null;
-  const companyList = document.getElementById('proforma-company-list');
-  const companyContinue = document.getElementById('proforma-company-continue') as HTMLButtonElement | null;
-  const selectStatus = document.getElementById('proforma-page-select-status');
-  const listBox = document.getElementById('proforma-list');
-  const listPlaceholder = document.getElementById('proforma-list-placeholder');
-  const counterEl = document.getElementById('proforma-counter');
-  const saveButton = document.getElementById('proforma-save') as HTMLButtonElement | null;
-  const clearButton = document.getElementById('proforma-clear') as HTMLButtonElement | null;
-  const refreshButton = document.getElementById('proforma-refresh') as HTMLButtonElement | null;
-  const amountInputs = {
-    kdvsiz: document.getElementById('pro-kdv-haric') as HTMLInputElement | null,
-    oran: document.getElementById('pro-kdv-oran') as HTMLInputElement | null,
-    kdv: document.getElementById('pro-kdv-tutar') as HTMLInputElement | null,
-    toplam: document.getElementById('pro-toplam') as HTMLInputElement | null,
-    birim: document.getElementById('pro-para') as HTMLInputElement | null,
-    tarih: document.getElementById('pro-tarih') as HTMLInputElement | null,
-    konu: document.getElementById('pro-konu') as HTMLTextAreaElement | null,
-  };
+  function registerCleanup(fn: () => void) {
+    cleanupFns.push(fn);
+  }
+
+  function runCleanups() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
+  }
+
+  function initPage() {
+    runCleanups();
+
+    const params = new URLSearchParams(location.search);
+    let firmaId = params.get('id') || params.get('firmaId') || '';
+
+    const companySearch = document.getElementById('proforma-company-search') as HTMLInputElement | null;
+    const companyList = document.getElementById('proforma-company-list');
+    const companyContinue = document.getElementById('proforma-company-continue') as HTMLButtonElement | null;
+    const selectStatus = document.getElementById('proforma-page-select-status');
+    const listBox = document.getElementById('proforma-list');
+    const listPlaceholder = document.getElementById('proforma-list-placeholder');
+    const counterEl = document.getElementById('proforma-counter');
+    const saveButton = document.getElementById('proforma-save') as HTMLButtonElement | null;
+    const clearButton = document.getElementById('proforma-clear') as HTMLButtonElement | null;
+    const refreshButton = document.getElementById('proforma-refresh') as HTMLButtonElement | null;
+    const amountInputs = {
+      kdvsiz: document.getElementById('pro-kdv-haric') as HTMLInputElement | null,
+      oran: document.getElementById('pro-kdv-oran') as HTMLInputElement | null,
+      kdv: document.getElementById('pro-kdv-tutar') as HTMLInputElement | null,
+      toplam: document.getElementById('pro-toplam') as HTMLInputElement | null,
+      birim: document.getElementById('pro-para') as HTMLInputElement | null,
+      tarih: document.getElementById('pro-tarih') as HTMLInputElement | null,
+      konu: document.getElementById('pro-konu') as HTMLTextAreaElement | null,
+    };
+
+    // Helper to allow nested functions to see the variables
+    (window as any)._proformaCtx = { 
+      firmaId, companySearch, companyList, companyContinue, selectStatus, listBox, listPlaceholder, counterEl, saveButton, clearButton, refreshButton, amountInputs 
+    };
 
   function companyLabel(company: any) {
     const id = String(company?.['Firma No'] || company?.FirmaNo || company?.firmaNo || company?.id || company?.ID || '').trim();
@@ -288,7 +306,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     if (!res.success) {
       if (listPlaceholder) listPlaceholder.textContent = res.error || 'Proforma listesi yuklenemedi.';
       if (counterEl) counterEl.textContent = 'Liste yuklenemedi.';
-      showToast(res.error || 'Proforma listesi yuklenemedi.', 'error');
+      toast.error(res.error || 'Proforma listesi yuklenemedi.');
       return;
     }
 
@@ -325,7 +343,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   async function saveProforma() {
     const payload = buildProformaPayload();
     if ('error' in payload) {
-      showToast(payload.error, 'error');
+      toast.error(payload.error);
       return;
     }
 
@@ -336,15 +354,14 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     if (saveButton) saveButton.disabled = false;
 
     if (!res.success) {
-      showToast(res.error || 'Proforma kaydedilemedi.', 'error');
+      toast.error(res.error || 'Proforma kaydedilemedi.');
       return;
     }
 
-    showToast(
+    toast.success(
       editingProformaId
         ? `${payload.proInfo.nick} icin proforma guncellendi.`
-        : `${payload.proInfo.nick} icin proforma Cloudflare KV'ye kaydedildi.`,
-      'success'
+        : `${payload.proInfo.nick} icin proforma Cloudflare KV'ye kaydedildi.`
     );
     clearForm();
     await loadProformas();
@@ -353,7 +370,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   function startEditProforma(id: string) {
     const row = currentRows.find((item) => String(item?.[0] || '') === String(id));
     if (!row) {
-      showToast('Duzenlenecek proforma bulunamadi.', 'error');
+      toast.error('Duzenlenecek proforma bulunamadi.');
       return;
     }
     editingProformaId = id;
@@ -376,30 +393,30 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
     const res = await api.deleteProforma(id);
     if (!res.success) {
-      showToast(res.error || 'Proforma silinemedi.', 'error');
+      toast.error(res.error || 'Proforma silinemedi.');
       return;
     }
 
     if (editingProformaId === id) clearForm();
-    showToast('Proforma kaydi silindi.', 'success');
+    toast.success('Proforma kaydi silindi.');
     await loadProformas();
   }
 
   async function printProforma(id: string) {
     const row = currentRows.find((item) => String(item?.[0] || '') === String(id));
     if (!row) {
-      showToast('Yazdirilacak proforma bulunamadi.', 'error');
+      toast.error('Yazdirilacak proforma bulunamadi.');
       return;
     }
 
     const res = await api.generateProforma(id);
     if (!res.success) {
-      showToast(res.error || 'Proforma dokumani olusturulamadi.', 'error');
+      toast.error(res.error || 'Proforma dokumani olusturulamadi.');
       return;
     }
 
     const url = String((res.data as any)?.url || '');
-    showToast('Proforma dokumani Google Docs uzerinde olusturuldu.', 'success');
+    toast.success('Proforma dokumani Google Docs uzerinde olusturuldu.');
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
   }
 
@@ -511,42 +528,53 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     await loadProformas();
   }
 
-  async function prepareCompanyPicker() {
-    showCompanyPicker();
-    syncCompanyList($companies.get() as any[]);
-    $companies.subscribe((companies) => syncCompanyList(companies as any[]));
-    await SyncManager.init();
-    if (($companies.get() as any[]).length === 0) {
-      const res = await api.getCompanies();
-      if (res.success && Array.isArray(res.data)) {
-        $companies.set(res.data);
+    async function prepareCompanyPicker() {
+      showCompanyPicker();
+      syncCompanyList($companies.get() as any[]);
+      
+      await SyncManager.init();
+      if (($companies.get() as any[]).length === 0) {
+        const res = await api.getCompanies();
+        if (res.success && Array.isArray(res.data)) {
+          $companies.set(res.data);
+        }
       }
+
+      companySearch?.addEventListener('input', () => {
+        const selected = resolveCompanyFromInput();
+        setSelectStatus(selected ? 'Firma secildi. Devam edebilirsin.' : 'Listeden gecerli bir firma sec.');
+      });
+
+      companyContinue?.addEventListener('click', async () => {
+        const selected = resolveCompanyFromInput();
+        const selectedId = selected ? getCompanyId(selected) : '';
+        if (!selectedId) {
+          setSelectStatus('Devam etmek icin listeden gecerli bir firma sec.', true);
+          return;
+        }
+        firmaId = selectedId;
+        await loadScreen();
+      });
     }
 
-    companySearch?.addEventListener('input', () => {
-      const selected = resolveCompanyFromInput();
-      setSelectStatus(selected ? 'Firma secildi. Devam edebilirsin.' : 'Listeden gecerli bir firma sec.');
-    });
-
-    companyContinue?.addEventListener('click', async () => {
-      const selected = resolveCompanyFromInput();
-      const selectedId = selected ? getCompanyId(selected) : '';
-      if (!selectedId) {
-        setSelectStatus('Devam etmek icin listeden gecerli bir firma sec.', true);
+    async function boot() {
+      if (!firmaId) {
+        await prepareCompanyPicker();
         return;
       }
-      firmaId = selectedId;
       await loadScreen();
-    });
-  }
-
-  async function boot() {
-    if (!firmaId) {
-      await prepareCompanyPicker();
-      return;
     }
-    await loadScreen();
+
+    const unsubCompanies = $companies.subscribe((companies) => syncCompanyList(companies as any[]));
+    registerCleanup(unsubCompanies);
+
+    void boot();
   }
 
-  void boot();
+  // Initial load
+  initPage();
+  // Transition support
+  document.addEventListener('astro:page-load', initPage);
+  // Cleanup away
+  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>

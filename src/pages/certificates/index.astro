@@ -4,7 +4,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <DashboardLayout title="Sertifika Yönetimi">
   <div class="space-y-6">
-    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
 
     <!-- 🎛️ Filtreleme Paneli -->
     <div class="bg-surface border border-border-main shadow-xl p-3 sm:p-5 rounded-2xl sm:rounded-3xl space-y-3 sm:space-y-4">
@@ -151,32 +150,45 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   import { api } from '../../lib/api';
   import { $certificates, $syncStatus } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
-  import { showToast } from '../../lib/toast';
-
-  const tableBody = document.getElementById('cert-table-body');
-  const tableLoader = document.getElementById('table-loader');
-  const emptyState = document.getElementById('empty-state');
-  const globalSearch = document.getElementById('global-search') as HTMLInputElement;
-  const standardFilter = document.getElementById('standard-filter') as HTMLSelectElement;
-  const statusFilter = document.getElementById('status-filter') as HTMLSelectElement;
-  const syncIndicator = document.getElementById('sync-indicator');
-  const exportCsvBtn = document.getElementById('export-csv-btn') as HTMLButtonElement;
-  const exportExcelBtn = document.getElementById('export-excel-btn') as HTMLButtonElement;
-  const datasetSummary = document.getElementById('dataset-summary');
-  const pageSummary = document.getElementById('page-summary');
-  const pageSizeSelect = document.getElementById('page-size-select') as HTMLSelectElement;
-  const paginationBar = document.getElementById('pagination-bar');
-  const paginationMeta = document.getElementById('pagination-meta');
-  const pageNumberList = document.getElementById('page-number-list');
-  const prevPageBtn = document.getElementById('prev-page-btn') as HTMLButtonElement;
-  const nextPageBtn = document.getElementById('next-page-btn') as HTMLButtonElement;
+  import { toast } from '../../lib/toast';
 
   let filters = { search: '', standard: '', status: '' };
   let currentPage = 1;
   let pageSize = 20;
   let fullCertificatesLoaded = false;
+  let cleanupFns: Array<() => void> = [];
 
-  function normalizeKey(value: any) {
+  function registerCleanup(fn: () => void) {
+    cleanupFns.push(fn);
+  }
+
+  function runCleanups() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
+  }
+
+  function initPage() {
+    runCleanups();
+
+    const tableBody = document.getElementById('cert-table-body');
+    const tableLoader = document.getElementById('table-loader');
+    const emptyState = document.getElementById('empty-state');
+    const globalSearch = document.getElementById('global-search') as HTMLInputElement;
+    const standardFilter = document.getElementById('standard-filter') as HTMLSelectElement;
+    const statusFilter = document.getElementById('status-filter') as HTMLSelectElement;
+    const syncIndicator = document.getElementById('sync-indicator');
+    const exportCsvBtn = document.getElementById('export-csv-btn') as HTMLButtonElement;
+    const exportExcelBtn = document.getElementById('export-excel-btn') as HTMLButtonElement;
+    const datasetSummary = document.getElementById('dataset-summary');
+    const pageSummary = document.getElementById('page-summary');
+    const pageSizeSelect = document.getElementById('page-size-select') as HTMLSelectElement;
+    const paginationBar = document.getElementById('pagination-bar');
+    const paginationMeta = document.getElementById('pagination-meta');
+    const pageNumberList = document.getElementById('page-number-list');
+    const prevPageBtn = document.getElementById('prev-page-btn') as HTMLButtonElement;
+    const nextPageBtn = document.getElementById('next-page-btn') as HTMLButtonElement;
+
+    function normalizeKey(value: any) {
     return String(value || '')
       .trim()
       .toLocaleLowerCase('tr-TR')
@@ -415,27 +427,29 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     });
   }
 
-  $certificates.subscribe(certs => {
-    if (!fullCertificatesLoaded && (certs || []).length > 0 && !hasFullCertificateDataset(certs || [])) {
-      tableLoader?.classList.remove('hidden');
-      return;
-    }
-    tableLoader?.classList.add('hidden');
-    renderTable(certs || []);
-  });
+    const unsubCerts = $certificates.subscribe(certs => {
+      if (!fullCertificatesLoaded && (certs || []).length > 0 && !hasFullCertificateDataset(certs || [])) {
+        tableLoader?.classList.remove('hidden');
+        return;
+      }
+      tableLoader?.classList.add('hidden');
+      renderTable(certs || []);
+    });
+    registerCleanup(unsubCerts);
 
-  $syncStatus.subscribe(status => {
-    if (!syncIndicator) return;
-    const dot = syncIndicator.querySelector('span');
-    const text = syncIndicator.lastChild;
-    if (status === 'syncing') {
-      if (dot) { dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse'; }
-      if (text) text.textContent = ' GÜNCELLENİYOR';
-    } else {
-      if (dot) { dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]'; }
-      if (text) text.textContent = ' GÜNCEL';
-    }
-  });
+    const unsubSync = $syncStatus.subscribe(status => {
+      if (!syncIndicator) return;
+      const dot = syncIndicator.querySelector('span');
+      const text = syncIndicator.lastChild;
+      if (status === 'syncing') {
+        if (dot) { dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse'; }
+        if (text) text.textContent = ' GÜNCELLENİYOR';
+      } else {
+        if (dot) { dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]'; }
+        if (text) text.textContent = ' GÜNCEL';
+      }
+    });
+    registerCleanup(unsubSync);
 
   function getFilteredData(data: readonly any[]) {
     return data.filter((item: any) => {
@@ -609,10 +623,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     if (!confirm(`${checked.length} adet belgenin gözetim durumunu güncellemek istediğinizden emin misiniz?`)) return;
     const res = await api.call('updateSurveillance', { ids: checked, status });
     if (res.success) {
-      showToast('İşlem başarılı!', 'success');
+      toast.success('İşlem başarılı!');
       window.location.reload();
     } else {
-      showToast(`Hata: ${res.error}`, 'error');
+      toast.error(`Hata: ${res.error}`);
     }
   }
 
@@ -634,132 +648,110 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     });
   }
 
-  globalSearch?.addEventListener('input', (e) => {
-    filters.search = (e.target as HTMLInputElement).value;
-    currentPage = 1;
-    renderTable($certificates.get());
-  });
-  standardFilter?.addEventListener('change', (e) => {
-    filters.standard = (e.target as HTMLSelectElement).value;
-    currentPage = 1;
-    renderTable($certificates.get());
-  });
-  statusFilter?.addEventListener('change', (e) => {
-    filters.status = (e.target as HTMLSelectElement).value;
-    currentPage = 1;
-    renderTable($certificates.get());
-  });
-  pageSizeSelect?.addEventListener('change', (e) => {
-    pageSize = Number((e.target as HTMLSelectElement).value) || 20;
-    currentPage = 1;
-    renderTable($certificates.get());
-  });
-  prevPageBtn?.addEventListener('click', () => {
-    if (currentPage <= 1) return;
-    currentPage -= 1;
-    renderTable($certificates.get());
-  });
-  nextPageBtn?.addEventListener('click', () => {
-    currentPage += 1;
-    renderTable($certificates.get());
-  });
-
-  function toCsvValue(v: any) {
-    const s = String(v ?? '');
-    if (s.includes('"') || s.includes(',') || s.includes('\n')) {
-      return `"${s.replace(/"/g, '""')}"`;
-    }
-    return s;
-  }
-
-  function getExportRows() {
-    const filtered = getFilteredData($certificates.get());
-    return filtered.map((item: any) => ({
-      id: pickValue(item, ["ID", "id"]),
-      firma: pickValue(item, ["Firma Adı", "Nickname", "nick"]),
-      standart: pickValue(item, ["Standart", "standard"]),
-      belgeNo: pickValue(item, ["Sertifika No", "sNo", "SNo", "sno"]),
-      gozetim: pickValue(item, ["Gözetim", "Gözetim Conf.", "gozetimConfirmed"], "FALSE").toUpperCase(),
-      gozetimTarihi: pickValue(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ"]),
-      sertifikaTarihi: pickValue(item, ["Sertifika Tarihi", "gst", "GST"]),
-      not: pickValue(item, ["Not", "not"]),
-      danisman: pickValue(item, ["Danışman", "dan"])
-    }));
-  }
-
-  function downloadFile(filename: string, content: string, mime: string) {
-    const blob = new Blob([content], { type: mime });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  exportCsvBtn?.addEventListener('click', () => {
-    const rows = getExportRows();
-    const headers = ['ID', 'Firma', 'Standart', 'Belge No', 'Gözetim', 'Gözetim Tarihi', 'Sertifika Tarihi', 'Not', 'Danışman'];
-    const lines = [headers.join(',')];
-    rows.forEach(r => {
-      lines.push([
-        toCsvValue(r.id),
-        toCsvValue(r.firma),
-        toCsvValue(r.standart),
-        toCsvValue(r.belgeNo),
-        toCsvValue(r.gozetim),
-        toCsvValue(r.gozetimTarihi),
-        toCsvValue(r.sertifikaTarihi),
-        toCsvValue(r.not),
-        toCsvValue(r.danisman)
-      ].join(','));
-    });
-    downloadFile(`Sertifikalar_${new Date().toISOString().slice(0,10)}.csv`, '\uFEFF' + lines.join('\n'), 'text/csv;charset=utf-8;');
-  });
-
-  exportExcelBtn?.addEventListener('click', () => {
-    const rows = getExportRows();
-    const tableHtml = `
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th><th>Firma</th><th>Standart</th><th>Belge No</th><th>Gözetim</th><th>Gözetim Tarihi</th><th>Sertifika Tarihi</th><th>Not</th><th>Danışman</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map(r => `<tr><td>${r.id}</td><td>${r.firma}</td><td>${r.standart}</td><td>${r.belgeNo}</td><td>${r.gozetim}</td><td>${r.gozetimTarihi}</td><td>${r.sertifikaTarihi}</td><td>${r.not}</td><td>${r.danisman}</td></tr>`).join('')}
-        </tbody>
-      </table>
-    `;
-    const html = `<html><head><meta charset="utf-8" /></head><body>${tableHtml}</body></html>`;
-    downloadFile(`Sertifikalar_${new Date().toISOString().slice(0,10)}.xls`, html, 'application/vnd.ms-excel;charset=utf-8;');
-  });
-
-  async function ensureCertificatesLoaded() {
-    const current = $certificates.get() || [];
-    if (hasFullCertificateDataset(current)) {
-      fullCertificatesLoaded = true;
-      return;
-    }
-
-    try {
-      const res = await api.getCertificates();
-
-      if (res.success && Array.isArray(res.data)) {
+    async function ensureCertificatesLoaded() {
+      const current = $certificates.get() || [];
+      if (hasFullCertificateDataset(current)) {
         fullCertificatesLoaded = true;
-        $certificates.set(res.data);
-      } else if (res.needsHydration || res.error === 'KV_PRIMARY_MISS') {
-        console.warn('[certificates] KV miss detected. Manual sync is required before certificates can be loaded.');
+        return;
       }
-    } catch (error) {
-      console.error('[certificates] ensureCertificatesLoaded failed:', error);
-    } finally {
-      tableLoader?.classList.add('hidden');
+
+      try {
+        const res = await api.getCertificates();
+
+        if (res.success && Array.isArray(res.data)) {
+          fullCertificatesLoaded = true;
+          $certificates.set(res.data);
+        } else if (res.needsHydration || res.error === 'KV_PRIMARY_MISS') {
+          console.warn('[certificates] KV miss detected. Manual sync is required before certificates can be loaded.');
+        }
+      } catch (error) {
+        console.error('[certificates] ensureCertificatesLoaded failed:', error);
+      } finally {
+        tableLoader?.classList.add('hidden');
+      }
     }
+
+    async function boot() {
+      await SyncManager.init();
+      await ensureCertificatesLoaded();
+    }
+
+    // --- Events ---
+    globalSearch?.addEventListener('input', (e) => {
+      filters.search = (e.target as HTMLInputElement).value;
+      currentPage = 1;
+      renderTable($certificates.get());
+    });
+    standardFilter?.addEventListener('change', (e) => {
+      filters.standard = (e.target as HTMLSelectElement).value;
+      currentPage = 1;
+      renderTable($certificates.get());
+    });
+    statusFilter?.addEventListener('change', (e) => {
+      filters.status = (e.target as HTMLSelectElement).value;
+      currentPage = 1;
+      renderTable($certificates.get());
+    });
+    pageSizeSelect?.addEventListener('change', (e) => {
+      pageSize = Number((e.target as HTMLSelectElement).value) || 20;
+      currentPage = 1;
+      renderTable($certificates.get());
+    });
+    prevPageBtn?.addEventListener('click', () => {
+      if (currentPage <= 1) return;
+      currentPage -= 1;
+      renderTable($certificates.get());
+    });
+    nextPageBtn?.addEventListener('click', () => {
+      currentPage += 1;
+      renderTable($certificates.get());
+    });
+
+    if (exportCsvBtn) exportCsvBtn.onclick = () => {
+      const rows = getExportRows();
+      const headers = ['ID', 'Firma', 'Standart', 'Belge No', 'Gözetim', 'Gözetim Tarihi', 'Sertifika Tarihi', 'Not', 'Danışman'];
+      const lines = [headers.join(',')];
+      rows.forEach(r => {
+        lines.push([
+          toCsvValue(r.id),
+          toCsvValue(r.firma),
+          toCsvValue(r.standart),
+          toCsvValue(r.belgeNo),
+          toCsvValue(r.gozetim),
+          toCsvValue(r.gozetimTarihi),
+          toCsvValue(r.sertifikaTarihi),
+          toCsvValue(r.not),
+          toCsvValue(r.danisman)
+        ].join(','));
+      });
+      downloadFile(`Sertifikalar_${new Date().toISOString().slice(0,10)}.csv`, '\uFEFF' + lines.join('\n'), 'text/csv;charset=utf-8;');
+    };
+
+    if (exportExcelBtn) exportExcelBtn.onclick = () => {
+      const rows = getExportRows();
+      const tableHtml = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th><th>Firma</th><th>Standart</th><th>Belge No</th><th>Gözetim</th><th>Gözetim Tarihi</th><th>Sertifika Tarihi</th><th>Not</th><th>Danışman</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `<tr><td>${r.id}</td><td>${r.firma}</td><td>${r.standart}</td><td>${r.belgeNo}</td><td>${r.gozetim}</td><td>${r.gozetimTarihi}</td><td>${r.sertifikaTarihi}</td><td>${r.not}</td><td>${r.danisman}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      `;
+      const html = `<html><head><meta charset="utf-8" /></head><body>${tableHtml}</body></html>`;
+      downloadFile(`Sertifikalar_${new Date().toISOString().slice(0,10)}.xls`, html, 'application/vnd.ms-excel;charset=utf-8;');
+    };
+
+    void boot();
   }
 
-  SyncManager.init();
-  void ensureCertificatesLoaded();
+  // Initial load
+  initPage();
+  // Transition support
+  document.addEventListener('astro:page-load', initPage);
+  // Cleanup away
+  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>

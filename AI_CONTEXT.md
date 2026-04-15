@@ -250,6 +250,96 @@ Yeni bir READ action eklendiğinde, eğer verisi `SyncService.getFullExport()` t
 - `updateSurveillance` çoklu sertifika güncellemesini paralel `get` / paralel `put` modeliyle yapar; bu davranış performans için korunmalıdır.
 - `saveProformaState`, `saveAuditState` ve benzeri full-state helper'lar dead code olarak temizlenmiştir; tekrar eklenmemelidir.
 
+### ⚠️ KV'deki Karma Veri Formatı (Migration Dönemi)
+
+`bulkSync` yapılmamış veya eski sync'ten kalan KV key'leri iki farklı sertifika formatı içerebilir:
+
+| Format | ID field | Örnek |
+| :--- | :--- | :--- |
+| **Eski (legacy)** | `"CertNo"` | `{ "CertNo": "4763", "Firma Adı": "...", "Gözetim": "TRUE", ... }` |
+| **Yeni (canonical)** | `"ID"`, `"id"`, `"certId"` | `{ "ID": "4763", "id": "4763", "certId": "4763", "firmaNo": "...", ... }` |
+
+`getCertificateId()` her iki formatı da tanır (`["ID", "id", "certId", "CertNo"]`). KV'ye yeni yazılan kayıtlar her zaman canonical formattadır; eski kayıtlar `bulkSync` çalıştırılana kadar legacy formatta kalmaya devam edebilir. `getCertificatesByFirmaId` listelerinde her iki format aynı anda bulunabilir — ID extraction yapan her kod bunu gözetmelidir.
+
+---
+
+## ⚠️ Platform Limitleri & Risk Analizi
+
+> [!CAUTION]
+> Bu bölüm Cloudflare KV ve Google Apps Script limitlerini derler; mevcut işlemlerin bu limitlere yakınlığını analiz eder. Yeni write path veya feature tasarlanırken bu tabloya başvurulmalıdır.
+
+### Cloudflare Workers KV Limitleri
+
+| Limit | Değer | Notlar |
+| :--- | :--- | :--- |
+| **Maksimum değer boyutu** | **25 MiB / key** | ai_context.md'nin bazı yerlerinde "10MB" yazıyor — doğrusu 25 MiB. Deprecated monolitik key'ler (~10MB) bu limitin altındaydı; yeni granüler tasarım zaten güvenli bölgede. |
+| **Maksimum anahtar boyutu** | **512 byte** | `stableStringify` key'leri (ör. `{"firmaId":"1234"}`) bu limitin çok altında; ancak uzun parametreli key'ler oluşturulurken dikkat edilmeli. |
+| **Metadata boyutu** | **1,024 byte / key** | |
+| **List başına max key** | **1,000 key / çağrı** | Namespace'de 109 key mevcut — güvenli. |
+| **Eventual consistency penceresi** | ~**60 saniye** | Bir key yazıldıktan sonra tüm datacenter'lara yayılması ~60sn sürebilir. Aynı anda birden fazla Worker instance varsa stale veri görülebilir. |
+| **Free tier — Reads** | **100,000 / gün** | Nisan: 10.25k okuma (tüm ay) — güvenli. |
+| **Free tier — Writes** | **1,000 / gün** | Nisan: 2.26k yazma (tüm ay) ≈ ~75/gün ortalama — güvenli. **bulkSync tek çalıştırmada ~8-10K write üretir; free tier'da günlük limiti anında aşar.** |
+| **Free tier — Deletes** | **1,000 / gün** | Nisan: 150 silme (tüm ay) — güvenli. |
+| **Free tier — Lists** | **1,000 / gün** | Nisan: 50 listeleme — güvenli. |
+| **Workers Paid — Reads** | 10M / ay ücretsiz, sonrası $0.50 / 1M | |
+| **Workers Paid — Writes** | 1M / ay ücretsiz, sonrası $5.00 / 1M | bulkSync başına ~10K write → ayda 100 bulkSync = 1M write. Aylık 1M ücretsiz kotayı zorlayabilir. |
+| **Maksimum namespace key sayısı** | 1 milyar | |
+
+> [!IMPORTANT]
+> **bulkSync, Free tier write limitini tek çalıştırmada aşar.** Proje Workers Paid plan'da çalışmalıdır. Ücretsiz plan kullanılıyorsa bulkSync kesinlikle çalıştırılamaz.
+
+### Google Apps Script (GAS) Limitleri
+
+| Limit | Consumer (Free) | Google Workspace |
+| :--- | :--- | :--- |
+| **Script çalışma süresi** | **6 dakika / çalıştırma** | **30 dakika / çalıştırma** |
+| **Günlük toplam çalışma süresi** | 90 dakika / gün | 6 saat / gün |
+| **URL Fetch çağrısı** | 20,000 / gün | 100,000 / gün |
+| **URL Fetch maks. yanıt boyutu** | **50 MB** | **50 MB** |
+| **E-posta gönderimi** | 100 / gün | 1,500 / gün |
+| **Trigger sayısı** | 20 / kullanıcı | 20 / kullanıcı |
+| **Properties Service toplam** | 500 KB | 500 KB |
+| **Properties Service / değer** | 9,000 byte | 9,000 byte |
+| **Spreadsheet maks. hücre** | 10M hücre / dosya | 10M hücre / dosya |
+| **Eş zamanlı çalışma** | 30 eş zamanlı çalışma / kullanıcı | 30 eş zamanlı çalışma / kullanıcı |
+
+### 🔴 Mevcut Risk Noktaları
+
+#### 1. `bulkSync` — GAS 6 Dakika Execution Limiti `[YÜksek Risk]`
+`SyncService.getFullExport()` tek bir GAS çalıştırmasında 1,600+ firma + 5,000+ sertifika + testler + denetimler + proformalar + standartlar okur. Spreadsheet okuma yavaştır; bu işlem Consumer hesapta 6 dakika sınırına yaklaşabilir, zaman zaman timeout alabilir.
+- **Mevcut durum:** ai_context.md "dakikalar içinde tamamlanıyor" diyor — Google Workspace hesabı kullanılıyorsa 30dk limiti güvenli.
+- **Risk:** Consumer GAS hesabında timeout olasılığı yüksektir.
+- **Öneri:** `bulkSyncMaster` ve ana `bulkSync` akışları zaten ayrılmış. Veri büyüdükçe firma/sertifika akışını sayfalara bölmek (`page=1,2,3`) gerekebilir.
+
+#### 2. `bulkSync` — KV Write Storm `[Orta Risk]`
+Tek bir `bulkSync` oluşturduğu tahmini yazma işlemi:
+- ~1,600 × `cache:company:{id}` PUT
+- ~1,600 × `cache:getCertificatesByFirmaId:{id}` PUT
+- ~5,000 × `cache:getCertificateById:{id}` PUT
+- Index key'ler + aggregate invalidation
+
+**Toplam: ~8,000–10,000 KV PUT / bulkSync çalıştırması.**
+
+Workers Paid'de aylık 1M write ücretsiz. Ayda 100 kez `bulkSync` yapılırsa ücretli kotanın tamamı tükenir.
+- **Mevcut durum:** Nisan 2.26K write (tüm ay) — çok güvenli. Deploy-sonrası tek seferlik kural korunuyor.
+- **Öneri:** `bulkSync`'in deploy sonrası **bir kez** çalıştırılması zorunluluğunu ve incremental write kuralını ihlal etmeyin.
+
+#### 3. `cache:index:companies:search` — Boyut Büyümesi `[Düşük Risk]`
+Mevcut ~160KB (1,600+ firma, 6 alan). Firma sayısı 3,000'e ulaşırsa ~300KB olur. 25 MiB KV limitinin çok uzağında; ancak her `getCompanies` isteğinde browser'a indirilen veri boyutu izlenmelidir.
+
+#### 4. `cache:getCertificates:{}` — Belirsiz Boyut `[Orta Risk]`
+"Değişken" olarak tanımlanan aggregate sertifika cache. Eğer 5,000+ sertifika tam alanlarıyla tek key'de tutulursa 5–10 MB'a ulaşabilir; 25 MiB limitine yaklaşabilir.
+- **Öneri:** Firma listesinde yapıldığı gibi aggregate sertifika cache'i sadece özet alanlar içermeli. Tam kayıt her zaman `cache:getCertificateById:{id}` üzerinden alınmalı. Bu aggregate key yalnızca invalidate edilmeli, rebuild edilmemeli.
+
+#### 5. Deprecated Key'lerin KV'de Varlığı `[Bilgi]`
+`cache:index:companiesById` (~10MB), `cache:index:certificateById`, `cache:index:certificatesByFirmaId` monolitik key'leri KV'de hâlâ bulunabilir. Yeni kod bunları okumaz/yazmaz; TTL dolunca expire olurlar. Storage 55.17 MB olduğuna göre (Nisan) deprecated key'ler hâlâ aktif olabilir. Bir sonraki `bulkSync` çalıştırıldığında bunlar doğal yoldan temizlenir.
+
+#### 6. `getFullExport()` GAS Yanıt Boyutu `[Düşük Risk]`
+Tüm tabloların JSON çıktısı tahminen 5–15 MB. GAS URL Fetch 50 MB limitinin altında; ancak veri büyüdükçe izlenmelidir.
+
+#### 7. `runMonthlyCheck` — E-posta Limiti `[Düşük Risk — Consumer Hesapta Orta]`
+Otomatik gözetim e-postası time trigger ile çalışır. Consumer GAS hesabında 100 e-posta/gün limiti, 1,600 firma/çok danışman senaryosunda aynı gün aşılabilir. Google Workspace'te 1,500 e-posta/gün yeterlidir.
+
 ---
 
 ## 📂 Technical Directory Matrix

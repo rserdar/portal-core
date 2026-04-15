@@ -78,11 +78,7 @@ const quickActions = [
 ---
 
 <DashboardLayout title="Genel Bakış">
-  <div
-    id="toast-container"
-    class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"
-  >
-  </div>
+
 
   <div class="grid grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-10">
     {
@@ -459,7 +455,7 @@ const quickActions = [
     import { $companies, $certificates, $dashboardStats, $lastSyncTime } from "../lib/store";
     import { SyncManager } from "../lib/sync";
     import { api } from "../lib/api";
-    import { showToast } from "../lib/toast";
+    import { toast } from "../lib/toast";
 
     // --- Helpers ---
 
@@ -752,9 +748,9 @@ const quickActions = [
           if (syncIcon) syncIcon.classList.add("animate-spin");
 
           await SyncManager.checkAndSync();
-          showToast("Mevcut KV verisi tarayıcıyla yeniden eşitlendi.", "success");
-        } catch (err) {
-          showToast("Beklenmeyen hata: " + (err?.message || err), "error");
+          toast.success("Mevcut KV verisi tarayıcıyla yeniden eşitlendi.");
+        } catch (err: any) {
+          toast.error("Beklenmeyen hata: " + (err?.message || err));
         } finally {
           if (btnSync) btnSync.disabled = false;
           if (syncLabel) syncLabel.textContent = "GÖRÜNÜMÜ YENİLE (KV CACHE)";

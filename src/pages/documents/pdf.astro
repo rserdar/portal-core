@@ -5,7 +5,6 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
 
 <DashboardLayout title="PDF Çevirici">
   <div class="max-w-6xl mx-auto space-y-6 pb-20">
-    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
 
     <div class="flex items-center gap-3">
       <a id="back-link" href="/documents/view" class="flex items-center gap-2 text-xs font-bold text-muted hover:text-primary transition-colors group">
@@ -126,34 +125,7 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
 </DashboardLayout>
 
 <script>
-  import { api } from '../../lib/api';
-  import { $companies } from '../../lib/store';
-  import { SyncManager } from '../../lib/sync';
-  import { showToast } from '../../lib/toast';
-
-  const params = new URLSearchParams(window.location.search);
-  const firmaId = params.get('id') || '';
-  const companySearch = document.getElementById('company-search') as HTMLInputElement | null;
-  const companyList = document.getElementById('company-list') as HTMLDataListElement | null;
-  const resultTitle = document.getElementById('result-title');
-  const pageSubtitle = document.getElementById('page-subtitle');
-  const statusLine = document.getElementById('status-line');
-  const fileCount = document.getElementById('file-count');
-  const tableBody = document.getElementById('doc-table-body');
-  const tableLoader = document.getElementById('table-loader');
-  const emptyState = document.getElementById('empty-state');
-  const resultsContainer = document.getElementById('results-container');
-  const refreshBtn = document.getElementById('refresh-btn') as HTMLButtonElement | null;
-  const openFolderBtn = document.getElementById('open-folder-btn') as HTMLButtonElement | null;
-  const backLink = document.getElementById('back-link') as HTMLAnchorElement | null;
-  const pdfConvertProgress = document.getElementById('pdf-convert-progress');
-  const pdfConvertStatus = document.getElementById('pdf-convert-status');
-  const pdfConvertCounts = document.getElementById('pdf-convert-counts');
-  const pdfConvertBar = document.getElementById('pdf-convert-progress-bar') as HTMLDivElement | null;
-  const pdfConvertSuccess = document.getElementById('pdf-convert-success');
-  const pdfConvertFailed = document.getElementById('pdf-convert-failed');
-  const pdfConvertPhase = document.getElementById('pdf-convert-phase');
-  const pdfConvertLastResult = document.getElementById('pdf-convert-last-result');
+  import { toast } from '../../lib/toast';
 
   let selectedNickname = '';
   let selectedFirmaNo = '';
@@ -161,13 +133,48 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
   let convertProgressTimer: number | null = null;
   let convertProgressValue = 0;
   let currentFiles: any[] = [];
+  let cleanupFns: Array<() => void> = [];
 
-  function setStatus(message: string) {
-    if (statusLine) statusLine.textContent = message;
+  function registerCleanup(fn: () => void) {
+    cleanupFns.push(fn);
   }
 
-  function updateCompanyOptions(companies: any[]) {
-    if (!companyList) return;
+  function runCleanups() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
+  }
+
+  function initPage() {
+    runCleanups();
+
+    const params = new URLSearchParams(window.location.search);
+    const firmaId = params.get('id') || '';
+    const companySearch = document.getElementById('company-search') as HTMLInputElement | null;
+    const companyList = document.getElementById('company-list') as HTMLDataListElement | null;
+    const resultTitle = document.getElementById('result-title');
+    const pageSubtitle = document.getElementById('page-subtitle');
+    const statusLine = document.getElementById('status-line');
+    const fileCount = document.getElementById('file-count');
+    const tableBody = document.getElementById('doc-table-body');
+    const tableLoader = document.getElementById('table-loader');
+    const emptyState = document.getElementById('empty-state');
+    const resultsContainer = document.getElementById('results-container');
+    const refreshBtn = document.getElementById('refresh-btn') as HTMLButtonElement | null;
+    const openFolderBtn = document.getElementById('open-folder-btn') as HTMLButtonElement | null;
+    const backLink = document.getElementById('back-link') as HTMLAnchorElement | null;
+    const pdfConvertProgress = document.getElementById('pdf-convert-progress');
+    const pdfConvertStatus = document.getElementById('pdf-convert-status');
+    const pdfConvertCounts = document.getElementById('pdf-convert-counts');
+    const pdfConvertBar = document.getElementById('pdf-convert-progress-bar') as HTMLDivElement | null;
+    const pdfConvertSuccess = document.getElementById('pdf-convert-success');
+    const pdfConvertFailed = document.getElementById('pdf-convert-failed');
+    const pdfConvertPhase = document.getElementById('pdf-convert-phase');
+    const pdfConvertLastResult = document.getElementById('pdf-convert-last-result');
+
+    function setStatus(message: string) {
+      if (statusLine) statusLine.textContent = message;
+    }
+
     companyList.innerHTML = '';
     companies.forEach((company) => {
       const nickname = String(company.nickname || company.nick || company['Firma Adı'] || '').trim();
@@ -341,11 +348,11 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
               dateCreated: res.data.dateCreated || new Date().toISOString()
             });
           }
-          showToast('PDF başarıyla oluşturuldu. Liste yenileniyor...', 'success');
+          toast.success('PDF başarıyla oluşturuldu. Liste yenileniyor...');
           await loadDocuments(true);
         } else {
           finishPdfConvertProgress(fileName, false, res.error || 'PDF oluşturulamadı.');
-          showToast(res.error || 'PDF oluşturulamadı.', 'error');
+          toast.error(res.error || 'PDF oluşturulamadı.');
         }
       });
     });
@@ -404,41 +411,50 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
 
     if (!res?.success || !company) {
       setStatus(`Firma bulunamadı (ID: ${firmaId})`);
-      showToast(`Firma bulunamadı (ID: ${firmaId})`, 'error');
+      toast.error(`Firma bulunamadı (ID: ${firmaId})`);
       return;
     }
 
     selectCompany(company);
   }
 
-  $companies.subscribe((companies) => {
-    updateCompanyOptions(companies);
-    if (!selectedFirmaNo && firmaId) {
-      const company = companies.find((item) => String(item.id || item['Firma No'] || '').trim() === String(firmaId));
-      if (company) {
-        hydratedFromUrl = true;
-        selectCompany(company);
+    const unsubCompanies = $companies.subscribe((companies) => {
+      updateCompanyOptions(companies);
+      if (!selectedFirmaNo && firmaId) {
+        const company = companies.find((item) => String(item.id || item['Firma No'] || '').trim() === String(firmaId));
+        if (company) {
+          hydratedFromUrl = true;
+          selectCompany(company);
+        }
       }
-    }
-  });
+    });
+    registerCleanup(unsubCompanies);
 
-  companySearch?.addEventListener('input', () => {
-    const company = findCompanyByInput(companySearch.value);
-    if (company) selectCompany(company);
-  });
+    companySearch?.addEventListener('input', () => {
+      const company = findCompanyByInput(companySearch.value);
+      if (company) selectCompany(company);
+    });
 
-  refreshBtn?.addEventListener('click', () => void loadDocuments(true));
+    refreshBtn?.addEventListener('click', () => void loadDocuments(true));
 
-  openFolderBtn?.addEventListener('click', async () => {
-    if (!selectedNickname) return;
-    const res = await api.call('getFolderId', { nickname: selectedNickname });
-    if (res.success && res.data) {
-      window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
-    } else {
-      showToast(res.error || 'Firma klasörü bulunamadı.', 'error');
-    }
-  });
+    openFolderBtn?.addEventListener('click', async () => {
+      if (!selectedNickname) return;
+      const res = await api.call('getFolderId', { nickname: selectedNickname });
+      if (res.success && res.data) {
+        window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
+      } else {
+        toast.error(res.error || 'Firma klasörü bulunamadı.');
+      }
+    });
 
-  SyncManager.init();
-  void hydrateCompanyFromUrl();
+    SyncManager.init();
+    void hydrateCompanyFromUrl();
+  }
+
+  // Initial load
+  initPage();
+  // Transition support
+  document.addEventListener('astro:page-load', initPage);
+  // Cleanup away
+  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>

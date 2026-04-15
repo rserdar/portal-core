@@ -8,7 +8,6 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   description="Standart, dil ve kapsam tercihlerini belirleyerek sertifika taslağı oluşturur. Firma bilgileri otomatik yüklenir."
 >
   <div class="space-y-6">
-    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
 
     <section class="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6">
 
@@ -99,34 +98,42 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 </OperationPageShell>
 
 <script>
-  import { api } from '../../lib/api';
-  import { $companies } from '../../lib/store';
-  import { SyncManager } from '../../lib/sync';
-  import { showToast } from '../../lib/toast';
-  import { loadCompanyOperationContext } from '../../features/operations/context';
-  import { normalizeLegacyIsoRows, type LegacyIsoOption } from '../../features/operations/certificate-form';
-  import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
+  import { toast } from '../../lib/toast';
 
-  const params = new URLSearchParams(location.search);
-  let activeFirmaId = params.get('firmaId') || params.get('id') || '';
-  let companyContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
-  let standards: LegacyIsoOption[] = [];
+  let cleanupFns: Array<() => void> = [];
 
-  const els = {
-    standard: document.getElementById('draft-standard') as HTMLSelectElement | null,
-    otherWrap: document.getElementById('draft-other-wrap'),
-    otherFull: document.getElementById('draft-other-full') as HTMLInputElement | null,
-    otherDesc: document.getElementById('draft-other-desc') as HTMLInputElement | null,
-    kapsam: document.getElementById('draft-kapsam') as HTMLTextAreaElement | null,
-    scope: document.getElementById('draft-scope') as HTMLTextAreaElement | null,
-    previewFirma: document.getElementById('draft-preview-firma'),
-    previewYetkili: document.getElementById('draft-preview-yetkili'),
-    previewStandard: document.getElementById('draft-preview-standard'),
-    previewButton: document.getElementById('draft-preview-button') as HTMLButtonElement | null,
-    generateButton: document.getElementById('draft-generate-button') as HTMLButtonElement | null,
-  };
+  function registerCleanup(fn: () => void) {
+    cleanupFns.push(fn);
+  }
 
-  function getCompanyValue(company: any, ...keys: string[]) {
+  function runCleanups() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
+  }
+
+  function initPage() {
+    runCleanups();
+
+    const params = new URLSearchParams(location.search);
+    let activeFirmaId = params.get('firmaId') || params.get('id') || '';
+    let companyContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
+    let standards: LegacyIsoOption[] = [];
+
+    const els = {
+      standard: document.getElementById('draft-standard') as HTMLSelectElement | null,
+      otherWrap: document.getElementById('draft-other-wrap'),
+      otherFull: document.getElementById('draft-other-full') as HTMLInputElement | null,
+      otherDesc: document.getElementById('draft-other-desc') as HTMLInputElement | null,
+      kapsam: document.getElementById('draft-kapsam') as HTMLTextAreaElement | null,
+      scope: document.getElementById('draft-scope') as HTMLTextAreaElement | null,
+      previewFirma: document.getElementById('draft-preview-firma'),
+      previewYetkili: document.getElementById('draft-preview-yetkili'),
+      previewStandard: document.getElementById('draft-preview-standard'),
+      previewButton: document.getElementById('draft-preview-button') as HTMLButtonElement | null,
+      generateButton: document.getElementById('draft-generate-button') as HTMLButtonElement | null,
+    };
+
+    function getCompanyValue(company: any, ...keys: string[]) {
     if (!company || typeof company !== 'object') return '';
     for (const key of keys) {
       const value = company[key];
@@ -291,21 +298,21 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     if (!companyContext || !els.standard || !els.generateButton) return;
     const payload = buildDraftPayloadPreview();
     if (!payload?.standardId || !payload.standardLabel) {
-      showToast('Lütfen bir standart seçin.', 'error');
+      toast.error('Lütfen bir standart seçin.');
       return;
     }
     if (!payload.kapsam || !payload.scope) {
-      showToast('Türkçe kapsam ve İngilizce scope alanlarını doldurun.', 'error');
+      toast.error('Türkçe kapsam ve İngilizce scope alanlarını doldurun.');
       return;
     }
     if (payload.isOther && (!payload.other || !payload.aStandart)) {
-      showToast('Diğer standart için iki özel alanı da doldurun.', 'error');
+      toast.error('Diğer standart için iki özel alanı da doldurun.');
       return;
     }
 
     const standardRes = await api.getStandardById(payload.standardId);
     if (!standardRes.success || !standardRes.data) {
-      showToast(`Standart bilgileri alınamadı: ${standardRes.error || 'Bilinmeyen hata'}`, 'error');
+      toast.error(`Standart bilgileri alınamadı: ${standardRes.error || 'Bilinmeyen hata'}`);
       return;
     }
 
@@ -315,7 +322,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
       : pickObjectValue(standardInfo, ['Temaid', 'TemaID', 'temaid', 'TR Tema', 'Türkçe Tema ID']);
 
     if (!tempId) {
-      showToast('Seçilen standart için tema ID bulunamadı.', 'error');
+      toast.error('Seçilen standart için tema ID bulunamadı.');
       return;
     }
 
@@ -353,12 +360,12 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     els.generateButton.textContent = originalText;
 
     if (!res.success) {
-      showToast(`Taslak oluşturulamadı: ${res.error || 'Bilinmeyen hata'}`, 'error');
+      toast.error(`Taslak oluşturulamadı: ${res.error || 'Bilinmeyen hata'}`);
       return;
     }
 
     const url = String((res.data as any)?.url || '');
-    showToast('Taslak sertifika Google Docs\'ta oluşturuldu.', 'success');
+    toast.success('Taslak sertifika Google Docs\'ta oluşturuldu.');
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
   }
 
@@ -489,7 +496,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     els.otherDesc?.addEventListener('input', hydratePreview);
     els.previewButton?.addEventListener('click', () => {
       hydratePreview();
-      showToast('Önizleme özeti güncellendi.', 'info');
+      toast.info('Önizleme özeti güncellendi.');
     });
     els.generateButton?.addEventListener('click', () => void generateDraft());
     syncOtherStandardFields();
@@ -500,5 +507,16 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     document.getElementById('op-shell')?.classList.remove('hidden');
   }
 
-  void boot();
+    const unsubCompanies = $companies.subscribe(() => syncCompanyList());
+    registerCleanup(unsubCompanies);
+
+    void boot();
+  }
+
+  // Initial load
+  initPage();
+  // Transition support
+  document.addEventListener('astro:page-load', initPage);
+  // Cleanup away
+  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>

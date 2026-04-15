@@ -5,7 +5,6 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
 
 <DashboardLayout title="Sertifika Ekle">
   <div class="max-w-5xl mx-auto pb-24 space-y-6">
-    <div id="toast-container" class="fixed inset-x-4 bottom-4 sm:inset-x-auto sm:right-6 sm:bottom-6 z-[100] flex flex-col gap-3 pointer-events-none sm:max-w-sm"></div>
     <div class="flex items-center gap-3">
       <a id="cert-back-link" href="/company" class="flex items-center gap-2 text-xs font-bold text-muted hover:text-primary transition-colors group">
         <ArrowLeft size={14} class="group-hover:-translate-x-1 transition-transform" />
@@ -377,95 +376,82 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
 </DashboardLayout>
 
 <script>
-  import { api } from '../../lib/api';
-  import { $companies } from '../../lib/store';
-  import { SyncManager } from '../../lib/sync';
-  import { setFlashToast, showToast } from '../../lib/toast';
-  import { loadCompanyOperationContext } from '../../features/operations/context';
-  import {
-    normalizeLegacyIsoRows,
-    buildSuggestedCertPrefix,
-    mergeCertNoSuggestion,
-    addOneYearMinusOneDay,
-    toDisplayDate,
-    buildCertificateQrLink,
-    type LegacyIsoOption,
-  } from '../../features/operations/certificate-form';
+  import { toast } from '../../lib/toast';
 
-  const params = new URLSearchParams(location.search);
-  const initialFirmaId = params.get('firmaId') || params.get('id') || '';
-  const editId = params.get('edit') || '';
-  const cloneId = params.get('clone') || '';
+  let cleanupFns: Array<() => void> = [];
 
-  const els = {
-    skeleton: document.getElementById('cert-page-skeleton'),
-    select: document.getElementById('cert-page-select'),
-    selectStatus: document.getElementById('cert-page-select-status'),
-    companySearch: document.getElementById('cert-company-search') as HTMLInputElement | null,
-    companyList: document.getElementById('cert-company-list'),
-    companyContinue: document.getElementById('cert-company-continue') as HTMLButtonElement | null,
-    error: document.getElementById('cert-page-error'),
-    shell: document.getElementById('cert-page-shell'),
-    form: document.getElementById('certificate-form') as HTMLFormElement | null,
-    backLink: document.getElementById('cert-back-link') as HTMLAnchorElement | null,
-    standSelect: document.getElementById('cert-standart') as HTMLSelectElement | null,
-    otherWrap: document.getElementById('other-standard-wrap'),
-    otherInput: document.getElementById('cert-other') as HTMLInputElement | null,
-    isoFull: document.getElementById('cert-iso-full') as HTMLInputElement | null,
-    nick: document.getElementById('cert-nick') as HTMLInputElement | null,
-    gst: document.getElementById('cert-gst') as HTMLInputElement | null,
-    goz: document.getElementById('cert-goz') as HTMLInputElement | null,
-    stt: document.getElementById('cert-stt') as HTMLInputElement | null,
-    sgt: document.getElementById('cert-sgt') as HTMLInputElement | null,
-    sno: document.getElementById('cert-sno') as HTMLInputElement | null,
-    suggested: document.getElementById('cert-sno-suggested') as HTMLInputElement | null,
-    kapsam: document.getElementById('cert-kapsam') as HTMLTextAreaElement | null,
-    scope: document.getElementById('cert-scope') as HTMLTextAreaElement | null,
-    logo: document.getElementById('cert-logo') as HTMLInputElement | null,
-    dan: document.getElementById('cert-dan') as HTMLInputElement | null,
-    consultantList: document.getElementById('consultant-list'),
-    submit: document.getElementById('cert-submit') as HTMLButtonElement | null,
-    submitLabel: document.getElementById('cert-submit-label'),
-    openRecent: document.getElementById('cert-open-recent') as HTMLButtonElement | null,
-    recentModal: document.getElementById('cert-recent-modal'),
-    recentBackdrop: document.getElementById('cert-recent-backdrop') as HTMLButtonElement | null,
-    recentClose: document.getElementById('cert-recent-close') as HTMLButtonElement | null,
-    recentRefresh: document.getElementById('cert-recent-refresh') as HTMLButtonElement | null,
-    recentSummary: document.getElementById('cert-recent-summary'),
-    recentEmpty: document.getElementById('cert-recent-empty'),
-    recentList: document.getElementById('cert-recent-list'),
-    denetim: document.getElementById('cert-denetim') as HTMLSelectElement | null,
-    kod: document.getElementById('cert-kod') as HTMLInputElement | null,
-    akreditasyon: document.getElementById('cert-akreditasyon') as HTMLInputElement | null,
-    akredite: document.getElementById('cert-akredite') as HTMLInputElement | null,
-    durum: document.getElementById('cert-durum') as HTMLInputElement | null,
-    not: document.getElementById('cert-not') as HTMLTextAreaElement | null,
-    gozetimRow: document.getElementById('cert-gozetim-row'),
-    gozetimDone: document.getElementById('cert-gozetim-done') as HTMLInputElement | null,
-  };
-
-  let companyContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
-  let standards: LegacyIsoOption[] = [];
-  let editingCertificate: Record<string, any> | null = null;
-  let activeFirmaId = initialFirmaId;
-  let selectedCompany: any = null;
-  let formBindingsReady = false;
-  let recentCertificates: Record<string, any>[] = [];
-
-  function isEditMode() {
-    return Boolean(editId);
+  function registerCleanup(fn: () => void) {
+    cleanupFns.push(fn);
   }
 
-  function isCloneMode() {
-    return !isEditMode() && Boolean(cloneId);
+  function runCleanups() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
   }
 
-  function getCompanyValue(company: any, ...keys: string[]) {
-    if (!company || typeof company !== 'object') return '';
-    for (const key of keys) {
-      const value = company[key];
-      if (value !== undefined && value !== null && String(value).trim() !== '') {
-        return String(value).trim();
+  function initPage() {
+    runCleanups();
+
+    const params = new URLSearchParams(location.search);
+    const initialFirmaId = params.get('firmaId') || params.get('id') || '';
+    const editId = params.get('edit') || '';
+    const cloneId = params.get('clone') || '';
+
+    const els = {
+      skeleton: document.getElementById('cert-page-skeleton'),
+      select: document.getElementById('cert-page-select'),
+      selectStatus: document.getElementById('cert-page-select-status'),
+      companySearch: document.getElementById('cert-company-search') as HTMLInputElement | null,
+      companyList: document.getElementById('cert-company-list'),
+      companyContinue: document.getElementById('cert-company-continue') as HTMLButtonElement | null,
+      error: document.getElementById('cert-page-error'),
+      shell: document.getElementById('cert-page-shell'),
+      form: document.getElementById('certificate-form') as HTMLFormElement | null,
+      backLink: document.getElementById('cert-back-link') as HTMLAnchorElement | null,
+      standSelect: document.getElementById('cert-standart') as HTMLSelectElement | null,
+      otherWrap: document.getElementById('other-standard-wrap'),
+      otherInput: document.getElementById('cert-other') as HTMLInputElement | null,
+      isoFull: document.getElementById('cert-iso-full') as HTMLInputElement | null,
+      nick: document.getElementById('cert-nick') as HTMLInputElement | null,
+      gst: document.getElementById('cert-gst') as HTMLInputElement | null,
+      goz: document.getElementById('cert-goz') as HTMLInputElement | null,
+      stt: document.getElementById('cert-stt') as HTMLInputElement | null,
+      sgt: document.getElementById('cert-sgt') as HTMLInputElement | null,
+      sno: document.getElementById('cert-sno') as HTMLInputElement | null,
+      suggested: document.getElementById('cert-sno-suggested') as HTMLInputElement | null,
+      kapsam: document.getElementById('cert-kapsam') as HTMLTextAreaElement | null,
+      scope: document.getElementById('cert-scope') as HTMLTextAreaElement | null,
+      logo: document.getElementById('cert-logo') as HTMLInputElement | null,
+      dan: document.getElementById('cert-dan') as HTMLInputElement | null,
+      consultantList: document.getElementById('consultant-list'),
+      submit: document.getElementById('cert-submit') as HTMLButtonElement | null,
+      submitLabel: document.getElementById('cert-submit-label'),
+      openRecent: document.getElementById('cert-open-recent') as HTMLButtonElement | null,
+      recentModal: document.getElementById('cert-recent-modal'),
+      recentBackdrop: document.getElementById('cert-recent-backdrop') as HTMLButtonElement | null,
+      recentClose: document.getElementById('cert-recent-close') as HTMLButtonElement | null,
+      recentRefresh: document.getElementById('cert-recent-refresh') as HTMLButtonElement | null,
+      recentSummary: document.getElementById('cert-recent-summary'),
+      recentEmpty: document.getElementById('cert-recent-empty'),
+      recentList: document.getElementById('cert-recent-list'),
+      denetim: document.getElementById('cert-denetim') as HTMLSelectElement | null,
+      kod: document.getElementById('cert-kod') as HTMLInputElement | null,
+      akreditasyon: document.getElementById('cert-akreditasyon') as HTMLInputElement | null,
+      akredite: document.getElementById('cert-akredite') as HTMLInputElement | null,
+      durum: document.getElementById('cert-durum') as HTMLInputElement | null,
+      not: document.getElementById('cert-not') as HTMLTextAreaElement | null,
+      gozetimRow: document.getElementById('cert-gozetim-row'),
+      gozetimDone: document.getElementById('cert-gozetim-done') as HTMLInputElement | null,
+    };
+
+    let companyContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
+    let standards: LegacyIsoOption[] = [];
+    let editingCertificate: Record<string, any> | null = null;
+    let activeFirmaId = initialFirmaId;
+    let selectedCompany: any = null;
+    let formBindingsReady = false;
+    let recentCertificates: Record<string, any>[] = [];
+
       }
     }
     return '';
@@ -1064,14 +1050,14 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       if (!els.kapsam || !els.scope || !els.kapsam.value.trim()) return;
       const res = await api.translate(els.kapsam.value, true);
       if (res.success && els.scope) els.scope.value = String(res.data || '');
-      else showToast(`Ceviri hatasi: ${res.error}`, 'error');
+      else toast.error(`Ceviri hatasi: ${res.error}`);
     });
 
     document.getElementById('cert-scope-translate')?.addEventListener('click', async () => {
       if (!els.scope || !els.kapsam || !els.scope.value.trim()) return;
       const res = await api.translate(els.scope.value, false);
       if (res.success && els.kapsam) els.kapsam.value = String(res.data || '');
-      else showToast(`Ceviri hatasi: ${res.error}`, 'error');
+      else toast.error(`Ceviri hatasi: ${res.error}`);
     });
 
     document.getElementById('cert-clear')?.addEventListener('click', () => {
@@ -1099,7 +1085,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       const selected = els.standSelect.selectedOptions[0];
       const standardText = selected?.textContent?.trim() || '';
       if (!standardText) {
-        showToast('Lutfen bir standart secin.', 'error');
+        toast.error('Lutfen bir standart secin.');
         return;
       }
 
@@ -1107,7 +1093,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
         nick: companyContext.nick || getEditingValue('Firma Adı', 'Nickname', 'nick', 'isim'),
         firmano: companyContext.firmaId || getEditingValue('Firma No', 'firmaNo', 'firmano'),
         standart: standardText,
-        other: els.otherInput?.value.trim() || getEditingValue('Other Standard', 'Other', 'other'),
+        other: els.otherInput?.value.trim() || '',
         denetim: normalizeDenetimValue(els.denetim?.value || ''),
         sno: els.sno?.value.trim() || '',
         gst: toDisplayDate(els.gst?.value || ''),
@@ -1116,13 +1102,13 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
         sgt: toDisplayDate(els.sgt?.value || ''),
         kapsam: els.kapsam?.value.trim() || '',
         scope: els.scope?.value.trim() || '',
-        logo: els.logo?.value.trim() || getEditingValue('Logo', 'logo'),
-        kod: els.kod?.value.trim() || getEditingValue('Kod', 'kod', 'NACE', 'nace'),
-        akreditasyon: els.akreditasyon?.value.trim() || getEditingValue('Akreditasyon', 'akreditasyon'),
-        akredite: els.akredite?.value.trim() || getEditingValue('Akredite', 'akredite'),
-        dan: els.dan?.value.trim() || getEditingValue('Danışman', 'Danisman', 'dan', 'danisman'),
-        durum: els.durum?.value.trim() || getEditingValue('Durum', 'durum'),
-        not: els.not?.value.trim() || getEditingValue('Not', 'not'),
+        logo: els.logo?.value.trim() || '',
+        kod: els.kod?.value.trim() || '',
+        akreditasyon: els.akreditasyon?.value.trim() || 'IAKS',
+        akredite: els.akredite?.value.trim() || 'Medicert',
+        dan: els.dan?.value.trim() || '',
+        durum: els.durum?.value.trim() || '',
+        not: els.not?.value.trim() || '',
         gozetimConfirmed: els.gozetimDone?.checked ? 'TRUE' : 'FALSE',
         qr: buildCertificateQrLink(companyContext.unvan || companyContext.nick, (els.isoFull?.value || standardText), els.sno?.value || ''),
         calendar: getEditingValue('Calendar ID', 'eventId', 'calendar'),
@@ -1143,15 +1129,15 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
           : cloneId
             ? 'Gozetim sertifikasi basariyla olusturuldu.'
             : 'Sertifika basariyla eklendi.';
-        setFlashToast(successMessage, 'success');
-        showToast(successMessage, 'success');
+        toast.flash(successMessage, 'success');
+        toast.success(successMessage);
         setTimeout(() => {
           window.location.href = companyContext ? `/company?id=${encodeURIComponent(companyContext.firmaId)}` : '/certificates';
         }, 800);
         return;
       }
 
-      showToast(`Hata: ${response.error}`, 'error');
+      toast.error(`Hata: ${response.error}`);
       els.submit.disabled = false;
       els.submit.innerHTML = originalText;
     });
@@ -1228,19 +1214,16 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
     }
   }
 
-  async function boot() {
-    if (!activeFirmaId) {
-      await prepareCompanyPicker();
-      return;
-    }
+    const unsubCompanies = $companies.subscribe((companies) => syncCompanyList(companies as any[]));
+    registerCleanup(unsubCompanies);
 
-    try {
-      await loadScreen();
-    } catch (error: any) {
-      console.error('Certificate boot failed:', error);
-      showError('Sertifika sayfasi acilirken hata olustu.', error?.message || String(error || 'Bilinmeyen hata'));
-    }
+    void boot();
   }
 
-  void boot();
+  // Initial load
+  initPage();
+  // Transition support
+  document.addEventListener('astro:page-load', initPage);
+  // Cleanup away
+  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>
