@@ -1,6 +1,6 @@
 import { api } from './api';
 import { DB } from './db';
-import { $companies, $certificates, $syncStatus, $lastSyncTime } from './store';
+import { $companies, $certificates, $dashboardStats, $syncStatus, $lastSyncTime } from './store';
 
 /**
  * 🔄 SyncManager: KV-Primary Senkronizasyon Yöneticisi
@@ -22,17 +22,19 @@ export const SyncManager = {
     console.log('[Sync] Initializing...');
     
     // 1. Yerel verileri anında yükle (Hızlı UI)
-    const [localCompanies, localCerts, localLastSync] = await Promise.all([
+    const [localCompanies, localCerts, localStats, localLastSync] = await Promise.all([
       DB.get<any[]>(DB.COMPANIES),
       DB.get<any[]>(DB.CERTIFICATES),
+      DB.get<any>(DB.DASHBOARD_STATS),
       DB.get<number>(DB.LAST_SYNC)
     ]);
 
     if (localCompanies) $companies.set(localCompanies);
     if (localCerts) $certificates.set(localCerts);
+    if (localStats) $dashboardStats.set(localStats);
     if (typeof localLastSync === 'number') $lastSyncTime.set(localLastSync);
 
-    if (localCompanies || localCerts) {
+    if (localCompanies || localCerts || localStats) {
       console.log('[Sync] Loaded data from IndexedDB.');
     }
 
@@ -53,13 +55,14 @@ export const SyncManager = {
         const fetchCore = async () => {
           return Promise.all([
             api.call<any[]>('getCompanies'),
-            api.call<any[]>('getCertificateSummaries')
+            api.call<any[]>('getCertificateSummaries'),
+            api.getDashboardSummary()
           ]);
         };
 
-        const [compRes, certRes] = await fetchCore();
-        const needsHydration = [compRes, certRes].some((r: any) => !r.success && (r.needsHydration || r.error === 'KV_PRIMARY_MISS'));
-        const corsBlocked = [compRes, certRes].some((r: any) => !r.success && (r.status === 403 || r.error === 'CORS_ORIGIN_NOT_ALLOWED'));
+        const [compRes, certRes, dashRes] = await fetchCore();
+        const needsHydration = [compRes, certRes, dashRes].some((r: any) => !r.success && (r.needsHydration || r.error === 'KV_PRIMARY_MISS'));
+        const corsBlocked = [compRes, certRes, dashRes].some((r: any) => !r.success && (r.status === 403 || r.error === 'CORS_ORIGIN_NOT_ALLOWED'));
 
         if (corsBlocked) {
           throw new Error('Worker origin izni reddetti. CORS allowlist veya PUBLIC_WORKER_URL ayarını kontrol edin.');
@@ -70,8 +73,8 @@ export const SyncManager = {
           throw new Error('KV verisi hazır değil. Lütfen Ayarlar veya ana ekrandaki senkronizasyonu manuel başlatın.');
         }
 
-        if (!compRes.success || !certRes.success) {
-          throw new Error(compRes.error || certRes.error || "One or more fetch requests failed.");
+        if (!compRes.success || !certRes.success || !dashRes.success) {
+          throw new Error(compRes.error || certRes.error || dashRes.error || "One or more fetch requests failed.");
         }
 
         const masterProbe = await api.getMasterData('standards');
@@ -83,11 +86,13 @@ export const SyncManager = {
         await Promise.all([
           DB.save(DB.COMPANIES, compRes.data),
           DB.save(DB.CERTIFICATES, certRes.data),
+          DB.save(DB.DASHBOARD_STATS, dashRes.data),
           DB.save(DB.LAST_SYNC, now)
         ]);
         
         $companies.set(compRes.data || []);
         $certificates.set(certRes.data || []);
+        $dashboardStats.set(dashRes.data || null);
         $lastSyncTime.set(now);
         
         console.log('[Sync] KV-primary synchronization complete.');
@@ -124,21 +129,24 @@ export const SyncManager = {
         const res = await api.pullFromSheetsToKv();
         if (!res.success) throw new Error(res.error || 'Sheets -> KV sync başarısız');
         await DB.clearAll();
-        const [compRes, certRes] = await Promise.all([
+        const [compRes, certRes, dashRes] = await Promise.all([
           api.call<any[]>('getCompanies'),
-          api.call<any[]>('getCertificateSummaries')
+          api.call<any[]>('getCertificateSummaries'),
+          api.getDashboardSummary()
         ]);
-        if (!compRes.success || !certRes.success) {
-          throw new Error(compRes.error || certRes.error || 'KV yeniden okuma başarısız');
+        if (!compRes.success || !certRes.success || !dashRes.success) {
+          throw new Error(compRes.error || certRes.error || dashRes.error || 'KV yeniden okuma başarısız');
         }
         const now = Date.now();
         await Promise.all([
           DB.save(DB.COMPANIES, compRes.data),
           DB.save(DB.CERTIFICATES, certRes.data),
+          DB.save(DB.DASHBOARD_STATS, dashRes.data),
           DB.save(DB.LAST_SYNC, now)
         ]);
         $companies.set(compRes.data || []);
         $certificates.set(certRes.data || []);
+        $dashboardStats.set(dashRes.data || null);
         $lastSyncTime.set(now);
         $syncStatus.set('idle');
       } catch (e) {

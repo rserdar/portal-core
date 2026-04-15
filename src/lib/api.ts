@@ -181,6 +181,7 @@ export const api = {
   async getCompanies() { return this.call("getCompanies"); },
   async getCompanyById(id: string | number) { return this.call("getCompanyById", { id }); },
   async updateCompany(id: string | number, companyInfo: any) { return this.call("updateCompany", { id, companyInfo }); },
+  async getDashboardSummary() { return this.call("getDashboardSummary"); },
   async getCertificateSummaries() { return this.call("getCertificateSummaries"); },
   async getCertificates() { return this.call("getCertificates"); },
   async getCertificateById(id: string | number) { return this.call("getCertificateById", { id }); },

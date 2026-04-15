@@ -13,6 +13,9 @@ export const $companies = atom<any[]>([]);
 // Sertifika Summary Listesi
 export const $certificates = atom<any[]>([]);
 
+// Dashboard Aggregated Stats
+export const $dashboardStats = atom<any>(null);
+
 // Senkronizasyon Durumu
 export const $syncStatus = atom<'idle' | 'syncing' | 'error'>('idle');
 
