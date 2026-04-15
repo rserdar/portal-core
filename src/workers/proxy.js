@@ -306,8 +306,30 @@ export default {
       }
       return fallback;
     };
-    const getCertificateId = (record) => Array.isArray(record) ? String(record[0] ?? "").trim() : pickObjectValue(record, ["ID", "id", "certId", "CertNo"]);
-    const getCertificateFirmaId = (record) => Array.isArray(record) ? String(record[2] ?? "").trim() : pickObjectValue(record, ["Firma No", "firmaNo", "firmano", "fno"]);
+    const findValueCaseInsensitive = (obj, searchKeys) => {
+      if (!obj || typeof obj !== "object" || Array.isArray(obj)) return null;
+      const kv = Object.entries(obj);
+      for (const s of searchKeys) {
+        const normSearch = s.toLowerCase().replace(/[^a-z0-9]/g, "");
+        for (const [k, v] of kv) {
+          const normKey = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (normKey === normSearch) return v;
+        }
+      }
+      return null;
+    };
+
+    const getCertificateId = (record) => {
+      if (Array.isArray(record)) return String(record[0] ?? "").trim();
+      const val = findValueCaseInsensitive(record, ["ID", "certId", "CertNo", "Sertifika No", "Belge No", "sno", "sertifikano"]);
+      return val ? String(val).trim() : null;
+    };
+
+    const getCertificateFirmaId = (record) => {
+      if (Array.isArray(record)) return String(record[2] ?? "").trim();
+      const val = findValueCaseInsensitive(record, ["firmaNo", "Firma No", "firmano", "fno", "cid"]);
+      return val ? String(val).trim() : null;
+    };
     const buildCertificatesByFirmaId = (certificates) => {
       const grouped = {};
       for (const certificate of Array.isArray(certificates) ? certificates : []) {
@@ -435,12 +457,12 @@ export default {
       const input = normalizedSource && typeof normalizedSource === "object" ? normalizedSource : {};
       const pick = getPicker(input, options.explicit || null);
       const id = String(options.id ?? getCertificateId(input) ?? "").trim();
-      const nick = pick(["nick", "nickname", "Nickname", "Firma Adı", "isim"]);
-      const firmaNo = pick(["firmano", "firmaNo", "Firma No", "fno"]);
-      const standart = pick(["standart", "standard", "Standart"]);
-      const denetim = pick(["denetim", "Denetim Tipi", "Denetim", "denetimTipi"]);
-      const sno = pick(["sno", "sNo", "Sertifika No", "sertNo", "SertifikaNo"]);
-      const gst = pick(["gst", "sTarihi", "Sertifika Tarihi", "Belge Tarihi"]);
+      const nick = pick(["nick", "nickname", "Nickname", "Firma Adı", "isim", "FirmaAdi"]);
+      const firmaNo = pick(["firmano", "firmaNo", "Firma No", "fno", "FirmaNo"]);
+      const standart = pick(["standart", "standard", "Standart", "Standard"]);
+      const denetim = pick(["denetim", "Denetim Tipi", "Denetim", "denetimTipi", "DenetimTipi"]);
+      const sno = pick(["sno", "sNo", "Sertifika No", "sertNo", "SertifikaNo", "Belge No", "BelgeNo"]);
+      const gst = pick(["gst", "sTarihi", "Sertifika Tarihi", "Belge Tarihi", "BelgeTarihi"]);
       const goz = pick(["goz", "sGozetimT", "Gözetim Tarihi", "Sertifika Gözetim Tarihi"]);
       const stt = pick(["stt", "sTT", "Tescil Tarihi", "Sertifika Tescil Tarihi", "Son Tetkik Tarihi"]);
       const sgt = pick(["sgt", "sGT", "Sertifika Geçerlilik Tarihi"]);
@@ -628,7 +650,7 @@ export default {
         gozetimTarihi: String(pickObjectValue(canonical, ["Gözetim Tarihi", "goz", "sGozetimT", "Sertifika Gözetim Tarihi"], "")),
         gozetimConfirmed: String(pickObjectValue(canonical, ["Gözetim Conf.", "gozetimConfirmed", "gozetimConf", "gozetim"], "")),
         danisman: String(pickObjectValue(canonical, ["Danışman", "Danisman", "dan", "danisman"], "")),
-        durum: String(pickObjectValue(canonical, ["Durum", "durum", "Status"], "")),
+        durum: String(pickObjectValue(canonical, ["Durum", "durum", "Status"], "AKTIF")),
         gecerlilikTarihi: String(pickObjectValue(canonical, ["Sertifika Geçerlilik Tarihi", "sGT", "SGT", "gecerlilikTarihi"], "")),
       };
     };
@@ -639,93 +661,90 @@ export default {
      */
     const rebuildDashboardStats = async () => {
       if (!env.DB) return null;
+      try {
+        const [summaryRaw, fullRaw, companyRaw] = await Promise.all([
+          env.DB.get(indexKeys.certificateSummary),
+          env.DB.get(indexKeys.fullCertificates),
+          env.DB.get(indexKeys.companySearch)
+        ]);
 
-      const [summaryRaw, fullRaw, companyRaw] = await Promise.all([
-        env.DB.get(indexKeys.certificateSummary),
-        env.DB.get(indexKeys.fullCertificates),
-        env.DB.get(indexKeys.companySearch)
-      ]);
+        let certificates = [];
+        const summaryList = summaryRaw ? Object.values(JSON.parse(summaryRaw)) : [];
+        const fullList = fullRaw ? JSON.parse(fullRaw) : [];
 
-      let certificates = [];
-      const summaryList = summaryRaw ? Object.values(JSON.parse(summaryRaw)) : [];
-      const fullList = fullRaw ? JSON.parse(fullRaw) : [];
-
-      // 🛡️ En dolgun veriyi seç (İndeks bozulmalarına karşı koruma)
-      if (fullList.length > summaryList.length) {
-        certificates = fullList;
-        console.log(`[Stats] Using fullCertificates (${fullList.length}) instead of summary (${summaryList.length})`);
-      } else {
-        certificates = summaryList;
-      }
-
-      const companies = companyRaw ? Object.values(JSON.parse(companyRaw)) : [];
-
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-
-      const stats = {
-        totalCompanies: 0,
-        totalCertificates: certificates.length,
-        activeCertificates: 0,
-        pendingSurveillance: 0,
-        lastSync: Date.now()
-      };
-
-      const charts = {
-        consultants: {},
-        yearly: {},
-        cityDensity: {},
-        cities: {}
-      };
-
-      const uniqueCompanies = new Set();
-      const companyToCity = new Map();
-      
-      companies.forEach(c => {
-        if (c.id) {
-          const city = String(c.city || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I");
-          companyToCity.set(String(c.id), city);
-        }
-      });
-
-      const cityMap = new Map();
-
-      certificates.forEach((c) => {
-        if (c.firmaNo) uniqueCompanies.add(String(c.firmaNo));
-
-        const status = String(c.durum || "").toUpperCase().replace(/\u0130/g, "I");
-        const isActive = status === "AKTIF";
-        if (isActive) stats.activeCertificates++;
-
-        const gozStr = String(c.gozetimTarihi || "").trim();
-        const gozConf = String(c.gozetimConfirmed || "").toUpperCase();
-        const match = gozStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-        let isPending = false;
-        if (match && gozConf === "FALSE") {
-          const m = parseInt(match[2], 10) - 1;
-          const y = parseInt(match[3], 10);
-          if (m === currentMonth && y === currentYear) {
-            stats.pendingSurveillance++;
-            isPending = true;
-          }
+        // 🛡️ En dolgun veriyi seç
+        if (fullList.length > summaryList.length && fullList.length > 0) {
+          // Full list ham veri ise onu özetle / summarize et
+          certificates = fullList.map(item => createCertificateSummary(createCanonicalCertificate(item)));
+          console.log(`[Stats] Using fullCertificates (${fullList.length}) summarized on-the-fly.`);
+        } else {
+          certificates = summaryList;
         }
 
-        const dan = String(c.danisman || "Atanmamış").trim() || "Atanmamış";
-        charts.consultants[dan] = (charts.consultants[dan] || 0) + 1;
+        const companies = companyRaw ? Object.values(JSON.parse(companyRaw)) : [];
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
 
-        const dateStr = String(c.sertifikaTarihi || "").trim();
-        const yearMatch = dateStr.match(/\.(\d{4})$/);
-        if (yearMatch) charts.yearly[yearMatch[1]] = (charts.yearly[yearMatch[1]] || 0) + 1;
+        const stats = {
+          totalCompanies: 0,
+          totalCertificates: certificates.length,
+          activeCertificates: 0,
+          pendingSurveillance: 0,
+          lastSync: Date.now()
+        };
 
-        const city = String(c.city || companyToCity.get(String(c.firmaNo)) || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I");
+        const charts = { consultants: {}, yearly: {}, cityDensity: {}, cities: {} };
+        const uniqueCompanies = new Set();
+        const companyToCity = new Map();
         
-        if (!cityMap.has(city)) {
-          cityMap.set(city, { activeCerts: 0, pendingSurveillance: 0, consultants: new Set(), totalCompanies: new Set(), nicknames: [] });
-        }
-        const entry = cityMap.get(city);
-        if (isActive) entry.activeCerts++;
-        if (isPending) entry.pendingSurveillance++;
+        companies.forEach(c => {
+          if (c.id) {
+            const city = String(c.city || c.City || c.Il || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I").replace(/Ğ/g, "G").replace(/Ü/g, "U").replace(/Ş/g, "S").replace(/Ö/g, "O").replace(/Ç/g, "C");
+            companyToCity.set(String(c.id), city);
+          }
+        });
+
+        const cityMap = new Map();
+
+        certificates.forEach((c) => {
+          if (!c) return;
+          if (c.firmaNo) uniqueCompanies.add(String(c.firmaNo));
+
+          // Robust Status Mapping
+          const status = String(c.durum || c.Durum || c.Status || "AKTIF").toUpperCase().trim().replace(/\u0130/g, "I");
+          const isActive = status === "AKTIF" || status === "GEÇERLİ" || status === "GECERLI" || status === "VALID" || status === "GEERL";
+          if (isActive) stats.activeCertificates++;
+
+          // Robust Date Parsing
+          const gozStr = String(c.gozetimTarihi || "").trim();
+          const gozConf = String(c.gozetimConfirmed || "").toUpperCase();
+          const match = gozStr.match(/^(\d{2})[./](\d{2})[./](\d{4})$/);
+          let isPending = false;
+          if (match && (gozConf === "FALSE" || gozConf === "" || !gozConf)) {
+            const m = parseInt(match[2], 10) - 1;
+            const y = parseInt(match[3], 10);
+            if (m === currentMonth && y === currentYear) {
+              stats.pendingSurveillance++;
+              isPending = true;
+            }
+          }
+
+          const dan = String(c.danisman || "Atanmamış").trim() || "Atanmamış";
+          charts.consultants[dan] = (charts.consultants[dan] || 0) + 1;
+
+          const dateStr = String(c.sertifikaTarihi || "").trim();
+          const yearMatch = dateStr.match(/[./](\d{4})$/);
+          if (yearMatch) charts.yearly[yearMatch[1]] = (charts.yearly[yearMatch[1]] || 0) + 1;
+
+          const city = String(c.city || companyToCity.get(String(c.firmaNo)) || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I").replace(/Ğ/g, "G").replace(/Ü/g, "U").replace(/Ş/g, "S").replace(/Ö/g, "O").replace(/Ç/g, "C");
+          
+          if (!cityMap.has(city)) {
+            cityMap.set(city, { activeCerts: 0, pendingSurveillance: 0, consultants: new Set(), totalCompanies: new Set(), nicknames: [] });
+          }
+          const entry = cityMap.get(city);
+          if (isActive) entry.activeCerts++;
+          if (isPending) entry.pendingSurveillance++;
         if (dan !== "Atanmamış") entry.consultants.add(dan);
         if (c.firmaNo) entry.totalCompanies.add(String(c.firmaNo));
         if (entry.nicknames.length < 15) entry.nicknames.push(c.nickname || "İsimsiz Firma");
@@ -748,7 +767,11 @@ export default {
       const payload = { stats, charts };
       await env.DB.put(indexKeys.dashboardStats, JSON.stringify(payload), { expirationTtl: CACHE_TTL });
       return payload;
-    };
+    } catch (err) {
+      console.error("rebuildDashboardStats Hatası:", err);
+      return null;
+    }
+  };
     const createCanonicalTestRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
       const pick = getPicker(input, options.explicit || null);
@@ -2244,79 +2267,11 @@ export default {
         // 3.3a ⚡ STATS REBUILD (Senkron — certificateSummary'den direkt hesapla)
         if (action === "rebuildStats") {
           try {
-            const [summaryRaw, companyRaw] = await Promise.all([
-              env.DB.get(indexKeys.certificateSummary),
-              env.DB.get(indexKeys.companySearch),
-            ]);
-
-            if (!summaryRaw) {
-              return jsonResponse({ success: false, error: "certificateSummary KV'de yok. Once deepRepairIndex calistirin." });
-            }
-
-            const summaryObj = JSON.parse(summaryRaw);
-            const summaryList = Object.values(summaryObj);
-            const companyObj = companyRaw ? JSON.parse(companyRaw) : {};
-
-            // City map: firmaNo -> city
-            const cityByFirmaId = new Map();
-            for (const [id, company] of Object.entries(companyObj)) {
-              const city = String(company.city || "").trim().toUpperCase().replace(/\u0130/g, "I") || "BILINMIYOR";
-              cityByFirmaId.set(String(id), city);
-            }
-
-            const now = new Date();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
-
-            const stats = {
-              totalCompanies: 0, totalCertificates: summaryList.length,
-              activeCertificates: 0, pendingSurveillance: 0, lastSync: Date.now()
-            };
-            const charts = { consultants: {}, yearly: {}, cityDensity: {}, cities: {} };
-            const uniqueCompanies = new Set();
-            const cityMap = new Map();
-
-            for (const c of summaryList) {
-              if (c.firmaNo) uniqueCompanies.add(String(c.firmaNo));
-              const status = String(c.durum || "").toUpperCase().replace(/\u0130/g, "I");
-              const isActive = status === "AKTIF";
-              if (isActive) stats.activeCertificates++;
-              const gozStr = String(c.gozetimTarihi || "").trim();
-              const gozConf = String(c.gozetimConfirmed || "").toUpperCase();
-              const gM = gozStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-              let isPending = false;
-              if (gM && gozConf === "FALSE") {
-                if (parseInt(gM[2],10)-1 === currentMonth && parseInt(gM[3],10) === currentYear) { stats.pendingSurveillance++; isPending = true; }
-              }
-              const dan = String(c.danisman || "Atanmamis").trim() || "Atanmamis";
-              charts.consultants[dan] = (charts.consultants[dan] || 0) + 1;
-              const yM = String(c.sertifikaTarihi || "").trim().match(/\.(\d{4})$/);
-              if (yM) charts.yearly[yM[1]] = (charts.yearly[yM[1]] || 0) + 1;
-              const city = String(c.city || cityByFirmaId.get(String(c.firmaNo)) || "BILINMIYOR").trim().toUpperCase();
-              if (!cityMap.has(city)) cityMap.set(city, { activeCerts: 0, pendingSurveillance: 0, consultants: new Set(), totalCompanies: new Set(), nicknames: [] });
-              const e = cityMap.get(city);
-              if (isActive) e.activeCerts++;
-              if (isPending) e.pendingSurveillance++;
-              if (dan !== "Atanmamis") e.consultants.add(dan);
-              if (c.firmaNo) e.totalCompanies.add(String(c.firmaNo));
-              if (e.nicknames.length < 15) e.nicknames.push(c.nickname || "Isimsiz");
-              charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
-            }
-            stats.totalCompanies = uniqueCompanies.size;
-            cityMap.forEach((e, city) => {
-              charts.cities[city] = { companyCount: e.totalCompanies.size, activeCerts: e.activeCerts, pendingSurveillance: e.pendingSurveillance, consultants: Array.from(e.consultants).slice(0,5), details: e.nicknames };
-            });
-
-            const dashPayload = { stats, charts };
-            await env.DB.put(indexKeys.dashboardStats, JSON.stringify(dashPayload), { expirationTtl: CACHE_TTL });
-
-            return jsonResponse({
-              success: true,
-              message: `Stats guncellendi! totalCertificates=${stats.totalCertificates}, active=${stats.activeCertificates}, companies=${stats.totalCompanies}`,
-              stats
-            });
-          } catch (err) {
-            return jsonResponse({ success: false, error: "rebuildStats Hatasi: " + err.message });
+            const statsRes = await rebuildDashboardStats();
+            if (!statsRes) return jsonResponse({ success: false, error: "Stats Rebuild Failed" });
+            return jsonResponse({ success: true, data: statsRes, stats: statsRes.stats, charts: statsRes.charts });
+          } catch (error) {
+            return jsonResponse({ success: false, error: "rebuildStats Hatasi: " + error.message });
           }
         }
 
@@ -2331,42 +2286,33 @@ export default {
               env.DB.get("cache:getCertificateSummaries:{}"),
             ]);
 
-            const fullList    = fullRaw     ? JSON.parse(fullRaw)     : null;
-            const summaryObj  = summaryRaw  ? JSON.parse(summaryRaw)  : null;
-            const companyObj  = companyRaw  ? JSON.parse(companyRaw)  : null;
+            const fullList    = fullRaw     ? JSON.parse(fullRaw)     : [];
+            const summaryObj  = summaryRaw  ? JSON.parse(summaryRaw)  : {};
+            const companyObj  = companyRaw  ? JSON.parse(companyRaw)  : {};
             const statsObj    = statsRaw    ? JSON.parse(statsRaw)    : null;
-            const summLst     = summariesRaw? JSON.parse(summariesRaw): null;
+            const summLst     = summariesRaw? JSON.parse(summariesRaw): [];
 
             // Bireysel cert key sayısı (eski mimari)
             const individualKeys = await listKvKeys("cache:getCertificateById:");
 
+            // Detaylı inceleme için ilk 10 cert
+            const samples = Array.isArray(fullList) ? fullList.slice(0, 10).map(c => ({
+              keys: Object.keys(c),
+              detectedId: getCertificateId(c),
+              detectedFirma: getCertificateFirmaId(c),
+              data: JSON.stringify(c).substring(0, 200)
+            })) : [];
+
             return jsonResponse({
               success: true,
               diagnostic: {
-                fullCertificates:      { exists: !!fullRaw,     count: Array.isArray(fullList)   ? fullList.length   : null, sizeKB: fullRaw     ? Math.round(fullRaw.length    / 1024) : 0 },
-                certificateSummary:    { exists: !!summaryRaw,  count: summaryObj                ? Object.keys(summaryObj).length : null, sizeKB: summaryRaw  ? Math.round(summaryRaw.length / 1024) : 0 },
-                getCertificateSummaries:{ exists: !!summariesRaw,count: Array.isArray(summLst)  ? summLst.length    : null, sizeKB: summariesRaw ? Math.round(summariesRaw.length / 1024) : 0 },
-                companySearch:         { exists: !!companyRaw,  count: companyObj               ? Object.keys(companyObj).length : null, sizeKB: companyRaw  ? Math.round(companyRaw.length / 1024) : 0 },
-                dashboardStats:        { exists: !!statsRaw,    totalCertificates: statsObj?.stats?.totalCertificates ?? null },
+                fullCertificates:      { exists: !!fullRaw,     count: fullList?.length, sizeKB: fullRaw ? Math.round(fullRaw.length / 1024) : 0 },
+                certificateSummary:    { exists: !!summaryRaw,  count: Object.keys(summaryObj).length, sizeKB: summaryRaw ? Math.round(summaryRaw.length / 1024) : 0 },
+                getCertificateSummaries:{ exists: !!summariesRaw,count: summLst?.length, sizeKB: summariesRaw ? Math.round(summariesRaw.length / 1024) : 0 },
+                companySearch:         { exists: !!companyRaw,  count: Object.keys(companyObj).length, sizeKB: companyRaw ? Math.round(companyRaw.length / 1024) : 0 },
+                dashboardStats:        { exists: !!statsRaw,    totalCertificates: statsObj?.stats?.totalCertificates ?? 0, lastSync: statsObj?.stats?.lastSync },
                 individualCertKeys:    { count: individualKeys.length, sample: individualKeys.slice(0, 3) },
-                // İlk sertifikanın hangi fieldları taşıdığını göster
-                sampleCert: Array.isArray(fullList) && fullList.length > 0 ? {
-                  keys: Object.keys(fullList[0]).slice(0, 20),
-                  extractedId: getCertificateId(fullList[0]),
-                  extractedFirmaNo: getCertificateFirmaId(fullList[0]),
-                  raw: JSON.stringify(fullList[0]).substring(0, 300),
-                  summaryTest: (() => {
-                    try { return createCertificateSummary(createCanonicalCertificate(fullList[0])); } catch(e) { return { error: e.message }; }
-                  })()
-                } : null,
-                // Summary'den de örnek al
-                sampleSummary: Array.isArray(summLst) && summLst.length > 0 ? {
-                  keys: Object.keys(summLst[0]),
-                  id: summLst[0].id,
-                  firmaNo: summLst[0].firmaNo,
-                  durum: summLst[0].durum,
-                  city: summLst[0].city,
-                } : null,
+                samples: samples
               }
             });
           } catch (err) {
@@ -2377,7 +2323,6 @@ export default {
         // 3.4 🛠️ DERİN İNDEKS ONARIMI — fullCertificates + companySearch join
         if (action === "deepRepairIndex") {
           try {
-            // Önce en büyük kaynağı kontrol et: fullCertificates
             const [fullRaw, companyRaw] = await Promise.all([
               env.DB.get(indexKeys.fullCertificates),
               env.DB.get(indexKeys.companySearch),
@@ -2394,119 +2339,56 @@ export default {
               return jsonResponse({ success: false, error: "fullCertificates bos. KV'de hic sertifika yok." });
             }
 
-            // Şimdi arka planda: join + summary + stats
-            ctx.waitUntil((async () => {
-              console.log(`[DeepRepair] ${rawCount} sertifika bulundu. Join & rebuild basliyor...`);
+            console.log(`[DeepRepair] ${rawCount} sertifika bulundu. Synchronous repair starting...`);
 
-              // Firmadan city map'ini hazirla: { firmaNo -> city }
-              const cityByFirmaId = new Map();
-              const companyList = [];
-              if (companyRaw) {
-                const companyIndex = JSON.parse(companyRaw);
-                for (const [id, company] of Object.entries(companyIndex)) {
-                  const city = String(company.city || "").trim().toUpperCase().replace(/\u0130/g, "I") || "BILINMIYOR";
-                  cityByFirmaId.set(String(id), city);
-                  companyList.push(company);
-                }
-                console.log(`[DeepRepair] ${cityByFirmaId.size} firmadan city verisi yuklendi.`);
+            // Firmadan city map'ini hazirla
+            const cityByFirmaId = new Map();
+            if (companyRaw) {
+              const companyIndex = JSON.parse(companyRaw);
+              for (const [id, company] of Object.entries(companyIndex)) {
+                const city = String(company.city || company.City || company.Il || "").trim().toUpperCase().replace(/\u0130/g, "I") || "BILINMIYOR";
+                cityByFirmaId.set(String(id), city);
               }
+            }
 
-              // Sertifikalari isle: summary olustur + city join
-              const summaryIndex = {};
-              for (const cert of fullList) {
-                const canonical = createCanonicalCertificate(cert);
-                const cid = getCertificateId(canonical);
-                if (!cid) continue;
+            // Sertifikalari isle
+            const summaryIndex = {};
+            for (const cert of fullList) {
+              const canonical = createCanonicalCertificate(cert);
+              const cid = getCertificateId(canonical);
+              if (!cid) continue;
 
-                const firmaNo = String(getCertificateFirmaId(canonical) || "");
-                const city = cityByFirmaId.get(firmaNo) || String(canonical.city || canonical.sehir || "").trim().toUpperCase() || "BILINMIYOR";
+              const fNo = getCertificateFirmaId(canonical);
+              const city = (fNo && cityByFirmaId.get(String(fNo))) || String(canonical.city || canonical.sehir || "").trim().toUpperCase() || "BILINMIYOR";
 
-                const summary = createCertificateSummary(canonical);
-                summary.city = city;
-                summaryIndex[cid] = summary;
+              const summary = createCertificateSummary(canonical);
+              summary.city = city;
+              summaryIndex[cid] = summary;
+            }
+
+            const summaryList = sortCertificatesByIdDesc(Object.values(summaryIndex));
+            console.log(`[DeepRepair] Writing ${summaryList.length} items to KV...`);
+
+            // ─── KV Yazma ─────────────────────────────────────────────────────
+            await Promise.all([
+              env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIndex), { expirationTtl: CACHE_TTL }),
+              env.DB.put("cache:getCertificateSummaries:{}", JSON.stringify(summaryList), { expirationTtl: CACHE_TTL }),
+              env.DB.put("cache:getCertificates:{}", JSON.stringify(fullList), { expirationTtl: CACHE_TTL }),
+              env.DB.put("sys:kvVersion", String(Date.now()), { expirationTtl: CACHE_TTL })
+            ]);
+
+            // 🔥 Dashboard istatistiklerini de SENKRON tazele
+            const finalStats = await rebuildDashboardStats();
+
+            return jsonResponse({ 
+              success: true, 
+              message: `Derin onarim tamamlandi! ${summaryList.length} sertifika işlendi.`, 
+              stats: {
+                totalFound: rawCount,
+                processed: summaryList.length,
+                finalTotal: finalStats?.stats?.totalCertificates,
+                active: finalStats?.stats?.activeCertificates
               }
-
-              const summaryList = sortCertificatesByIdDesc(Object.values(summaryIndex));
-              console.log(`[DeepRepair] ${summaryList.length} sertifika ozeti olusturuldu.`);
-
-              // ─── KV Yazma ───────────────────────────────────────────────
-              await Promise.all([
-                env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIndex), { expirationTtl: CACHE_TTL }),
-                env.DB.put("cache:getCertificateSummaries:{}", JSON.stringify(summaryList), { expirationTtl: CACHE_TTL }),
-                env.DB.put("cache:getCertificates:{}", JSON.stringify(fullList), { expirationTtl: CACHE_TTL }),
-              ]);
-
-              // ─── Dashboard Stats: BELLEKTEN hesapla (KV'yi yeniden okuma — eventual consistency sorunu) ──
-              const now = new Date();
-              const currentMonth = now.getMonth();
-              const currentYear = now.getFullYear();
-
-              const stats = {
-                totalCompanies: 0,
-                totalCertificates: summaryList.length,
-                activeCertificates: 0,
-                pendingSurveillance: 0,
-                lastSync: Date.now()
-              };
-              const charts = { consultants: {}, yearly: {}, cityDensity: {}, cities: {} };
-              const uniqueCompanies = new Set();
-              const cityMap = new Map();
-
-              for (const c of summaryList) {
-                if (c.firmaNo) uniqueCompanies.add(String(c.firmaNo));
-
-                const status = String(c.durum || "").toUpperCase().replace(/\u0130/g, "I");
-                const isActive = status === "AKTIF";
-                if (isActive) stats.activeCertificates++;
-
-                const gozStr = String(c.gozetimTarihi || "").trim();
-                const gozConf = String(c.gozetimConfirmed || "").toUpperCase();
-                const gozMatch = gozStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-                let isPending = false;
-                if (gozMatch && gozConf === "FALSE") {
-                  const m = parseInt(gozMatch[2], 10) - 1;
-                  const y = parseInt(gozMatch[3], 10);
-                  if (m === currentMonth && y === currentYear) { stats.pendingSurveillance++; isPending = true; }
-                }
-
-                const dan = String(c.danisman || "Atanmamis").trim() || "Atanmamis";
-                charts.consultants[dan] = (charts.consultants[dan] || 0) + 1;
-
-                const dateStr = String(c.sertifikaTarihi || "").trim();
-                const yearMatch = dateStr.match(/\.(\d{4})$/);
-                if (yearMatch) charts.yearly[yearMatch[1]] = (charts.yearly[yearMatch[1]] || 0) + 1;
-
-                const city = String(c.city || cityByFirmaId.get(String(c.firmaNo)) || "BILINMIYOR").trim().toUpperCase();
-                if (!cityMap.has(city)) cityMap.set(city, { activeCerts: 0, pendingSurveillance: 0, consultants: new Set(), totalCompanies: new Set(), nicknames: [] });
-                const entry = cityMap.get(city);
-                if (isActive) entry.activeCerts++;
-                if (isPending) entry.pendingSurveillance++;
-                if (dan !== "Atanmamis") entry.consultants.add(dan);
-                if (c.firmaNo) entry.totalCompanies.add(String(c.firmaNo));
-                if (entry.nicknames.length < 15) entry.nicknames.push(c.nickname || "Isimsiz");
-                charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
-              }
-
-              stats.totalCompanies = uniqueCompanies.size;
-              cityMap.forEach((entry, city) => {
-                charts.cities[city] = {
-                  companyCount: entry.totalCompanies.size,
-                  activeCerts: entry.activeCerts,
-                  pendingSurveillance: entry.pendingSurveillance,
-                  consultants: Array.from(entry.consultants).slice(0, 5),
-                  details: entry.nicknames
-                };
-              });
-
-              const dashPayload = { stats, charts };
-              await env.DB.put(indexKeys.dashboardStats, JSON.stringify(dashPayload), { expirationTtl: CACHE_TTL });
-              console.log(`[DeepRepair] TAMAMLANDI. totalCertificates=${stats.totalCertificates}, active=${stats.activeCertificates}`);
-            })());
-
-            return jsonResponse({
-              success: true,
-              message: `Onarim baslatildi. KV'de ${rawCount} sertifika bulundu. Dashboard birkan saniye icinde guncellenmeli.`,
-              totalFound: rawCount,
             });
           } catch (error) {
             return jsonResponse({ success: false, error: "Onarim Hatasi: " + error.message });

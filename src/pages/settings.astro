@@ -103,6 +103,9 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
           <button id="ops-sync-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/20 active:scale-95 transition-all">
             Secili Verileri Sheets'ten Cek
           </button>
+          <button id="rebuild-stats-btn" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-bold shadow-lg shadow-emerald-700/20 active:scale-95 transition-all">
+            Dashboard Istatistiklerini Yeniden Hesapla
+          </button>
         </div>
       </div>
 
@@ -137,6 +140,25 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
           <p>
             <b>DIKKAT:</b> Iceri aktarma islemi, sectiginiz kapsamdaki mevcut KV verilerini tamamen <u>siler</u> ve yedektekilerle degistirir. Diger kapsamlar korunur.
           </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🛠️ BAKIM & KURTARMA -->
+    <div class="bg-surface border border-amber-500/20 rounded-2xl p-5 shadow-xl space-y-4 bg-amber-500/5">
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-amber-500 font-bold">Bakim & Kurtarma</p>
+          <h2 class="text-xl font-extrabold mt-1 text-main">Sistem Indeks Onarimi</h2>
+          <p class="text-sm text-muted mt-2">
+            Anasayfa istatistikleri veya listeler eksik/hatali gorunuyorsa, KV'deki ham sertifika dosyalarini tarayarak indeksleri yeniden insa eder. 
+            <span class="text-amber-500 font-medium">Bu islem Google Sheets'ten veri cekmez, mevcut KV verisini duzenler.</span>
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="deep-repair-btn" class="px-6 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold shadow-lg shadow-amber-600/20 active:scale-95 transition-all">
+            Indeksleri KV'den Onar
+          </button>
         </div>
       </div>
     </div>
@@ -384,6 +406,26 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
       setBackupStatus("Senkronizasyon tamamlandi (" + scope.join(", ") + ").", "success");
     });
 
+    addEv("rebuild-stats-btn", "click", async () => {
+      setBackupStatus("Dashboard istatistikleri yeniden hesaplaniyor...");
+      const btn = document.getElementById("rebuild-stats-btn") as HTMLButtonElement | null;
+      if (btn) btn.disabled = true;
+      try {
+        const res = await api.call("rebuildStats");
+        if (!res.success) {
+          setBackupStatus("Rebuild basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
+          return;
+        }
+        const stats = res.data?.stats;
+        setBackupStatus(
+          `Istatistikler guncellendi — Aktif sertifika: ${stats?.activeCertificates ?? "?"}, Toplam firma: ${stats?.totalCompanies ?? "?"}`,
+          "success"
+        );
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+
     addEv("export-kv-btn", "click", async () => {
       const scope = getSelectedScopes();
       if (!scope.length) {
@@ -487,6 +529,37 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     });
 
     addEv("save-btn", "click", saveDataset);
+
+    addEv("deep-repair-btn", "click", async () => {
+      if (!confirm("Indeks onarimi baslatilacak. Bu islem anasayfa istatistiklerini ve sertifika listelerini KV verisine gore yeniden duzenler. Devam etmek istiyor musun?")) return;
+      
+      const btn = document.getElementById("deep-repair-btn") as HTMLButtonElement | null;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Onarim Baslatiliyor...";
+      }
+
+      toast.info("Indeks onarimi Cloudflare uzerinde baslatildi...");
+      const res = await api.deepRepairIndex();
+      
+      if (res.success) {
+        toast.success("Onarim emri gonderildi! Arka planda tamamlandiginda verileriniz duzelecektir.");
+        // Bir kac saniye sonra force sync yapip durumu gorelim
+        setTimeout(async () => {
+          await SyncManager.forceSync();
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = "Indeksleri KV'den Onar";
+          }
+        }, 3000);
+      } else {
+        toast.error("Hata: " + (res.error || "Bilinmeyen hata"));
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Indeksleri KV'den Onar";
+        }
+      }
+    });
 
     loadDataset(currentType);
   }

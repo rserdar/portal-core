@@ -40,7 +40,15 @@ const stats = [
     glowClass: "bg-emerald-500/10 group-hover:bg-emerald-500/20",
   },
   {
-    label: "Bu Ayki Gözetimler",
+    label: "Toplam Sertifika",
+    id: "stat-certificates-total",
+    icon: ShieldCheck,
+    iconClass:
+      "bg-blue-500/10 text-blue-400 ring-blue-500/20 group-hover:rotate-6",
+    glowClass: "bg-blue-500/10 group-hover:bg-blue-500/20",
+  },
+  {
+    label: "Daha Fazlası",
     id: "stat-pending-count",
     icon: CalendarClock,
     iconClass:
@@ -80,7 +88,7 @@ const quickActions = [
 <DashboardLayout title="Genel Bakış">
 
 
-  <div class="grid grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-10">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-10">
     {
       stats.map((item) => {
         const Icon = item.icon;
@@ -694,13 +702,16 @@ const quickActions = [
       renderActivity(val);
     });
 
-    const unsubDashboard = $dashboardStats.subscribe((val) => {
-      if (!val) return;
-      const { stats, charts } = val;
+      const statCertificatesTotal = document.getElementById("stat-certificates-total");
 
-      // Stats
-      if (statCertificates) countUp(statCertificates, stats.activeCertificates);
-      if (statPendingCount) countUp(statPendingCount, stats.pendingSurveillance);
+      const unsubDashboard = $dashboardStats.subscribe((val) => {
+        if (!val) return;
+        const { stats, charts } = val;
+
+        // Stats
+        if (statCertificates) countUp(statCertificates, stats.activeCertificates);
+        if (statCertificatesTotal) countUp(statCertificatesTotal, stats.totalCertificates);
+        if (statPendingCount) countUp(statPendingCount, stats.pendingSurveillance);
       
       if (statPendingBadge) {
           const pendingCount = stats.pendingSurveillance;

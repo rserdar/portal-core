@@ -136,6 +136,7 @@ export const api = {
       "generateSingleBatchDoc",
       "convertToPdf",
       "uploadFile",
+      "deepRepairIndex",
     ]);
     const timeoutMs = longRunningActions.has(action) ? LONG_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -332,4 +333,5 @@ export const api = {
     });
   },
   async clearCache() { return this.call("clearCache"); },
+  async deepRepairIndex() { return this.call("deepRepairIndex"); },
 };
