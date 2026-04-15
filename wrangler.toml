@@ -1,0 +1,12 @@
+name = "portal-api"
+main = "src/workers/proxy.js"
+compatibility_date = "2025-01-01"
+account_id = "e2d6828ee7890229a51772bae6c27aae"
+
+[vars]
+API_KEY = "mc-portal-3.0_8a2d7f9e4c1b5a6c3d2e1f0b9a8c7d6e"
+GAS_API_URL = "https://script.google.com/macros/s/AKfycbyc2TdGEAsfO5y_UPSFo748wpTim3b3wfTCoRFK3M_sHUQBYzQY9UzKk6fqvAuO2LL4/exec"
+
+[[kv_namespaces]]
+binding = "DB"
+id = "8eb0dc6ffe2947729b29f0db1c84fd52"
