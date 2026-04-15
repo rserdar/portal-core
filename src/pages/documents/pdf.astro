@@ -175,17 +175,6 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
       if (statusLine) statusLine.textContent = message;
     }
 
-    companyList.innerHTML = '';
-    companies.forEach((company) => {
-      const nickname = String(company.nickname || company.nick || company['Firma Adı'] || '').trim();
-      const id = String(company.id || company['Firma No'] || '').trim();
-      if (!nickname || !id) return;
-      const option = document.createElement('option');
-      option.value = `${nickname} (M${id})`;
-      companyList.appendChild(option);
-    });
-  }
-
   function findCompanyByInput(value: string) {
     return $companies.get().find((company) => {
       const nickname = String(company.nickname || company.nick || company['Firma Adı'] || '').trim();
@@ -418,6 +407,19 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
     selectCompany(company);
   }
 
+  function updateCompanyOptions(companies: any[]) {
+    if (!companyList) return;
+    companyList.innerHTML = '';
+    companies.forEach((company) => {
+      const nickname = String(company.nickname || company.nick || company['Firma Adı'] || '').trim();
+      const id = String(company.id || company['Firma No'] || '').trim();
+      if (!nickname || !id) return;
+      const option = document.createElement('option');
+      option.value = `${nickname} (M${id})`;
+      companyList.appendChild(option);
+    });
+  }
+
     const unsubCompanies = $companies.subscribe((companies) => {
       updateCompanyOptions(companies);
       if (!selectedFirmaNo && firmaId) {
@@ -447,6 +449,7 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
       }
     });
 
+    updateCompanyOptions($companies.get() as any[]);
     SyncManager.init();
     void hydrateCompanyFromUrl();
   }
