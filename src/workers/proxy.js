@@ -2241,6 +2241,85 @@ export default {
             return jsonResponse({ success: false, error: "KV Import Hatası: " + error.message });
           }
         }
+        // 3.3a ⚡ STATS REBUILD (Senkron — certificateSummary'den direkt hesapla)
+        if (action === "rebuildStats") {
+          try {
+            const [summaryRaw, companyRaw] = await Promise.all([
+              env.DB.get(indexKeys.certificateSummary),
+              env.DB.get(indexKeys.companySearch),
+            ]);
+
+            if (!summaryRaw) {
+              return jsonResponse({ success: false, error: "certificateSummary KV'de yok. Once deepRepairIndex calistirin." });
+            }
+
+            const summaryObj = JSON.parse(summaryRaw);
+            const summaryList = Object.values(summaryObj);
+            const companyObj = companyRaw ? JSON.parse(companyRaw) : {};
+
+            // City map: firmaNo -> city
+            const cityByFirmaId = new Map();
+            for (const [id, company] of Object.entries(companyObj)) {
+              const city = String(company.city || "").trim().toUpperCase().replace(/\u0130/g, "I") || "BILINMIYOR";
+              cityByFirmaId.set(String(id), city);
+            }
+
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            const stats = {
+              totalCompanies: 0, totalCertificates: summaryList.length,
+              activeCertificates: 0, pendingSurveillance: 0, lastSync: Date.now()
+            };
+            const charts = { consultants: {}, yearly: {}, cityDensity: {}, cities: {} };
+            const uniqueCompanies = new Set();
+            const cityMap = new Map();
+
+            for (const c of summaryList) {
+              if (c.firmaNo) uniqueCompanies.add(String(c.firmaNo));
+              const status = String(c.durum || "").toUpperCase().replace(/\u0130/g, "I");
+              const isActive = status === "AKTIF";
+              if (isActive) stats.activeCertificates++;
+              const gozStr = String(c.gozetimTarihi || "").trim();
+              const gozConf = String(c.gozetimConfirmed || "").toUpperCase();
+              const gM = gozStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+              let isPending = false;
+              if (gM && gozConf === "FALSE") {
+                if (parseInt(gM[2],10)-1 === currentMonth && parseInt(gM[3],10) === currentYear) { stats.pendingSurveillance++; isPending = true; }
+              }
+              const dan = String(c.danisman || "Atanmamis").trim() || "Atanmamis";
+              charts.consultants[dan] = (charts.consultants[dan] || 0) + 1;
+              const yM = String(c.sertifikaTarihi || "").trim().match(/\.(\d{4})$/);
+              if (yM) charts.yearly[yM[1]] = (charts.yearly[yM[1]] || 0) + 1;
+              const city = String(c.city || cityByFirmaId.get(String(c.firmaNo)) || "BILINMIYOR").trim().toUpperCase();
+              if (!cityMap.has(city)) cityMap.set(city, { activeCerts: 0, pendingSurveillance: 0, consultants: new Set(), totalCompanies: new Set(), nicknames: [] });
+              const e = cityMap.get(city);
+              if (isActive) e.activeCerts++;
+              if (isPending) e.pendingSurveillance++;
+              if (dan !== "Atanmamis") e.consultants.add(dan);
+              if (c.firmaNo) e.totalCompanies.add(String(c.firmaNo));
+              if (e.nicknames.length < 15) e.nicknames.push(c.nickname || "Isimsiz");
+              charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
+            }
+            stats.totalCompanies = uniqueCompanies.size;
+            cityMap.forEach((e, city) => {
+              charts.cities[city] = { companyCount: e.totalCompanies.size, activeCerts: e.activeCerts, pendingSurveillance: e.pendingSurveillance, consultants: Array.from(e.consultants).slice(0,5), details: e.nicknames };
+            });
+
+            const dashPayload = { stats, charts };
+            await env.DB.put(indexKeys.dashboardStats, JSON.stringify(dashPayload), { expirationTtl: CACHE_TTL });
+
+            return jsonResponse({
+              success: true,
+              message: `Stats guncellendi! totalCertificates=${stats.totalCertificates}, active=${stats.activeCertificates}, companies=${stats.totalCompanies}`,
+              stats
+            });
+          } catch (err) {
+            return jsonResponse({ success: false, error: "rebuildStats Hatasi: " + err.message });
+          }
+        }
+
         // 3.3b 🔍 KV TANİ (Diagnostic)
         if (action === "kvDiagnostic") {
           try {
