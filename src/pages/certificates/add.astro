@@ -452,10 +452,16 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
     let formBindingsReady = false;
     let recentCertificates: Record<string, any>[] = [];
 
+    function getCompanyValue(company: any, ...keys: string[]) {
+      if (!company || typeof company !== 'object') return '';
+      for (const key of keys) {
+        const value = company[key];
+        if (value !== undefined && value !== null && String(value).trim() !== '') {
+          return String(value).trim();
+        }
       }
+      return '';
     }
-    return '';
-  }
 
   function getCompanyId(company: any) {
     return getCompanyValue(company, 'Firma No', 'FirmaNo', 'firmaNo', 'id', 'ID');
