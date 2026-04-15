@@ -155,9 +155,12 @@ export const api = {
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
         if (payload && typeof payload === 'object') {
+          console.error(`[API] ${action} failed with ${response.status}:`, payload);
           return { status: response.status, ...(payload as ApiResponse<T>) };
         }
-        throw new Error(response.status === 403 ? "CORS veya origin izni reddedildi." : `HTTP Hatası: ${response.status}`);
+        const errorMsg = response.status === 403 ? "CORS veya origin izni reddedildi." : `HTTP Hatası: ${response.status}`;
+        console.error(`[API] ${action} critical failure:`, errorMsg);
+        throw new Error(errorMsg);
       }
       return { status: response.status, ...((payload || { success: false, data: null, error: "Geçersiz yanıt" }) as ApiResponse<T>) };
     } catch (error: any) {

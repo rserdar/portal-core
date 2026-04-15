@@ -1,4 +1,4 @@
-# 🤖 Project Intelligence & Context (AI_CONTEXT.md v5.7.1)
+# 🤖 Project Intelligence & Context (AI_CONTEXT.md v5.8.0)
 
 > [!IMPORTANT]
 > **Granular KV Architecture (v5.7.1):** Bu proje hem okuma hem yazma için **Cloudflare KV**'yi birincil veri tabanı olarak kullanır. Cloudflare Worker (`src/workers/proxy.js`) tüm veri operasyonlarını yönetir.

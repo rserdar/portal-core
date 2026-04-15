@@ -923,7 +923,20 @@ import {
   }
 
   const copyResetTimers = new WeakMap<HTMLButtonElement, number>();
+  const EXPANDABLE_TEXT_LIMITS = {
+    'hero-kapsam': { mobile: 170, desktop: 340 },
+    'hero-scope': { mobile: 170, desktop: 360 },
+  } as const;
+
+  // ─── URL Param & Identity ───────────────────────────────────────────────────────
+  const params = new URLSearchParams(location.search);
+  const firmaId = params.get('id') || params.get('firmaId') || '';
   let currentCompanyNick = '';
+  
+  if (!firmaId) {
+    console.warn('[Profile] firmaId URL parametresi bulunamadı.');
+  }
+
   let currentCertRows: Array<{ id: string; status: string }> = [];
   const selectedCertIds = new Set<string>();
   let allCertData: any[] = [];
@@ -932,10 +945,7 @@ import {
   let certLang: 'TR' | 'EN' = 'EN';
   let certSign: 'S' | 'NS' = 'S';
   let certGenerationInFlight = false;
-  const EXPANDABLE_TEXT_LIMITS = {
-    'hero-kapsam': { mobile: 170, desktop: 340 },
-    'hero-scope': { mobile: 170, desktop: 360 },
-  } as const;
+
   const copySuccessMarkup = `
     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M20 6 9 17l-5-5"/>
@@ -1343,12 +1353,7 @@ import {
     syncCertProductionToggleUI();
   }
 
-  // ─── URL Param ────────────────────────────────────────────────────────────────
-
-  // ─── URL Param ────────────────────────────────────────────────────────────────
-
-  const params = new URLSearchParams(location.search);
-  const firmaId = params.get('id') || params.get('firmaId') || '';
+  // ─── Company Helpers ──────────────────────────────────────────────────────────
 
 
   function buildCompanyOperationLink(baseHref: string) {

@@ -1,5 +1,5 @@
 /**
- * 🛰️ Medicert Portal: Cloudflare Worker Proxy (v5.5 / Phase 3.6)
+ * 🛰️ Medicert Portal: Cloudflare Worker Proxy (v5.5.2 / Phase 3.7)
  *
  * Mimari özeti:
  * - KV-primary read (miss => needsHydration)
@@ -1204,7 +1204,11 @@ export default {
         const kvReadThroughActions = new Set([
           "getFolderId",
           "getRecentFiles",
-          "getCompanyById",   // KV miss olursa GAS'a fallback et (edit/profile sayfası KV boşken çalışabilsin)
+          "getRawStats",
+          "getCompanyById",   // KV miss durumunda GAS'a fallback yapılmasına izin ver
+          "getCertificatesByFirmaId",
+          "getTestsByFirmaId",
+          "getMasterData"
         ]);
         const gasWriteActions = [
           "editCell",
@@ -2797,9 +2801,9 @@ export default {
           }
 
           const status = params?.status === true || String(params?.status || "").toUpperCase() === "TRUE" ? "TRUE" : "FALSE";
-          const hintFirmaId = params?.firmaId ? String(params.firmaId).trim() : null;
-          if (!hintFirmaId) {
-            return jsonResponse({ success: false, error: "firmaId parametresi eksik." }, 400);
+          const hintFirmaId = params?.firmaId || params?.id || params?.targetId || null;
+          if (!hintFirmaId || String(hintFirmaId).trim() === "") {
+            return jsonResponse({ success: false, error: "firmaId parametresi eksik.", action, params }, 400);
           }
 
           const idSet = new Set(ids);
