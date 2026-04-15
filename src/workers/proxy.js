@@ -347,6 +347,15 @@ export default {
     };
     const rebuildCertificatesFromEntityKeys = async () => {
       if (!env.DB) return null;
+      
+      // Try rebuilding from full index first (Fast & Reliable)
+      const fullRaw = await env.DB.get(indexKeys.fullCertificates);
+      if (fullRaw) {
+        const fullList = JSON.parse(fullRaw);
+        return sortCertificatesByIdDesc(fullList);
+      }
+
+      // Fallback: list individual entity keys (Slow, legacy method)
       const entityKeys = await listKvKeys("cache:getCertificateById:");
       if (!entityKeys.length) return [];
       const certRaws = await Promise.all(entityKeys.map((key) => env.DB.get(key)));
@@ -622,6 +631,123 @@ export default {
         durum: String(pickObjectValue(canonical, ["Durum", "durum", "Status"], "")),
         gecerlilikTarihi: String(pickObjectValue(canonical, ["Sertifika Geçerlilik Tarihi", "sGT", "SGT", "gecerlilikTarihi"], "")),
       };
+    };
+
+    /**
+     * 📊 REBUILD DASHBOARD STATS (New Gen Architecture)
+     * Verileri tek tek yüklemek yerine indeksleri çekip bellekte istatistikleri fırınlar.
+     */
+    const rebuildDashboardStats = async () => {
+      if (!env.DB) return null;
+
+      const [summaryRaw, fullRaw, companyRaw] = await Promise.all([
+        env.DB.get(indexKeys.certificateSummary),
+        env.DB.get(indexKeys.fullCertificates),
+        env.DB.get(indexKeys.companySearch)
+      ]);
+
+      let certificates = [];
+      const summaryList = summaryRaw ? Object.values(JSON.parse(summaryRaw)) : [];
+      const fullList = fullRaw ? JSON.parse(fullRaw) : [];
+
+      // 🛡️ En dolgun veriyi seç (İndeks bozulmalarına karşı koruma)
+      if (fullList.length > summaryList.length) {
+        certificates = fullList;
+        console.log(`[Stats] Using fullCertificates (${fullList.length}) instead of summary (${summaryList.length})`);
+      } else {
+        certificates = summaryList;
+      }
+
+      const companies = companyRaw ? Object.values(JSON.parse(companyRaw)) : [];
+
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      const stats = {
+        totalCompanies: 0,
+        totalCertificates: certificates.length,
+        activeCertificates: 0,
+        pendingSurveillance: 0,
+        lastSync: Date.now()
+      };
+
+      const charts = {
+        consultants: {},
+        yearly: {},
+        cityDensity: {},
+        cities: {}
+      };
+
+      const uniqueCompanies = new Set();
+      const companyToCity = new Map();
+      
+      companies.forEach(c => {
+        if (c.id) {
+          const city = String(c.city || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I");
+          companyToCity.set(String(c.id), city);
+        }
+      });
+
+      const cityMap = new Map();
+
+      certificates.forEach((c) => {
+        if (c.firmaNo) uniqueCompanies.add(String(c.firmaNo));
+
+        const status = String(c.durum || "").toUpperCase().replace(/\u0130/g, "I");
+        const isActive = status === "AKTIF";
+        if (isActive) stats.activeCertificates++;
+
+        const gozStr = String(c.gozetimTarihi || "").trim();
+        const gozConf = String(c.gozetimConfirmed || "").toUpperCase();
+        const match = gozStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+        let isPending = false;
+        if (match && gozConf === "FALSE") {
+          const m = parseInt(match[2], 10) - 1;
+          const y = parseInt(match[3], 10);
+          if (m === currentMonth && y === currentYear) {
+            stats.pendingSurveillance++;
+            isPending = true;
+          }
+        }
+
+        const dan = String(c.danisman || "Atanmamış").trim() || "Atanmamış";
+        charts.consultants[dan] = (charts.consultants[dan] || 0) + 1;
+
+        const dateStr = String(c.sertifikaTarihi || "").trim();
+        const yearMatch = dateStr.match(/\.(\d{4})$/);
+        if (yearMatch) charts.yearly[yearMatch[1]] = (charts.yearly[yearMatch[1]] || 0) + 1;
+
+        const city = String(c.city || companyToCity.get(String(c.firmaNo)) || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I");
+        
+        if (!cityMap.has(city)) {
+          cityMap.set(city, { activeCerts: 0, pendingSurveillance: 0, consultants: new Set(), totalCompanies: new Set(), nicknames: [] });
+        }
+        const entry = cityMap.get(city);
+        if (isActive) entry.activeCerts++;
+        if (isPending) entry.pendingSurveillance++;
+        if (dan !== "Atanmamış") entry.consultants.add(dan);
+        if (c.firmaNo) entry.totalCompanies.add(String(c.firmaNo));
+        if (entry.nicknames.length < 15) entry.nicknames.push(c.nickname || "İsimsiz Firma");
+
+        charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
+      });
+
+      stats.totalCompanies = uniqueCompanies.size;
+
+      cityMap.forEach((entry, city) => {
+        charts.cities[city] = {
+          companyCount: entry.totalCompanies.size,
+          activeCerts: entry.activeCerts,
+          pendingSurveillance: entry.pendingSurveillance,
+          consultants: Array.from(entry.consultants).slice(0, 5),
+          details: entry.nicknames
+        };
+      });
+
+      const payload = { stats, charts };
+      await env.DB.put(indexKeys.dashboardStats, JSON.stringify(payload), { expirationTtl: CACHE_TTL });
+      return payload;
     };
     const createCanonicalTestRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
@@ -1353,115 +1479,30 @@ export default {
           if (action === "getDashboardSummary") {
             const dashStatsRaw = await env.DB.get(indexKeys.dashboardStats);
             if (dashStatsRaw) {
-               return jsonResponse({
-                 success: true,
-                 ...JSON.parse(dashStatsRaw),
-                 fromPreCalc: true
-               });
+              const parsed = JSON.parse(dashStatsRaw);
+              return jsonResponse({
+                success: true,
+                data: parsed,          // ← sync.ts dashRes.data olarak okur
+                stats: parsed.stats,   // ← geriye dönük uyumluluk
+                charts: parsed.charts,
+                fromPreCalc: true
+              });
             }
 
-            const [summaryRaw, companyRaw] = await Promise.all([
-              env.DB.get(indexKeys.certificateSummary),
-              env.DB.get(indexKeys.companySearch)
-            ]);
+            // Fallback: Eğer önceden hesaplanmış veri yoksa bellekte yeniden oluştur.
+            const rebuilt = await rebuildDashboardStats();
+            if (rebuilt) {
+              return jsonResponse({
+                success: true,
+                data: rebuilt,
+                stats: rebuilt.stats,
+                charts: rebuilt.charts,
+                fromPreCalc: false,
+                rebuiltOnDemand: true
+              });
+            }
 
-            const certificates = summaryRaw ? Object.values(JSON.parse(summaryRaw)) : [];
-            const companies = companyRaw ? Object.values(JSON.parse(companyRaw)) : [];
-
-            const now = new Date();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
-
-            const stats = {
-              totalCompanies: 0,
-              totalCertificates: certificates.length,
-              activeCertificates: 0,
-              pendingSurveillance: 0,
-              lastSync: Date.now()
-            };
-
-            const charts = {
-              consultants: {},
-              yearly: {},
-              cityDensity: {},
-              cities: {} 
-            };
-
-            // Helpers for counting unique companies and mapping cities
-            const uniqueCompanies = new Set();
-            const companyToCity = new Map();
-            companies.forEach(c => {
-              if (c.id) {
-                const city = String(c.city || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I");
-                companyToCity.set(String(c.id), city);
-              }
-            });
-
-            const cityMap = new Map();
-
-            certificates.forEach((c) => {
-              // Firm Count (Unique)
-              if (c.firmaNo) uniqueCompanies.add(String(c.firmaNo));
-
-              // Active Stats
-              const status = String(c.durum || "").toUpperCase().replace(/\u0130/g, "I");
-              const isActive = status === "AKTIF";
-              if (isActive) stats.activeCertificates++;
-
-              // Surveillance
-              const gozStr = String(c.gozetimTarihi || "").trim();
-              const gozConf = String(c.gozetimConfirmed || "").toUpperCase();
-              const match = gozStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-              let isPending = false;
-              if (match && gozConf === "FALSE") {
-                  const m = parseInt(match[2], 10) - 1;
-                  const y = parseInt(match[3], 10);
-                  if (m === currentMonth && y === currentYear) {
-                      stats.pendingSurveillance++;
-                      isPending = true;
-                  }
-              }
-
-              // Consultant Chart
-              const dan = String(c.danisman || "Atanmamış").trim() || "Atanmamış";
-              charts.consultants[dan] = (charts.consultants[dan] || 0) + 1;
-
-              // Yearly Chart
-              const dateStr = String(c.sertifikaTarihi || "").trim();
-              const yearMatch = dateStr.match(/\.(\d{4})$/);
-              if (yearMatch) charts.yearly[yearMatch[1]] = (charts.yearly[yearMatch[1]] || 0) + 1;
-
-              // City attribution
-              // Fallback to pre-built map if c.city isn't enriched yet
-              const city = String(c.city || companyToCity.get(String(c.firmaNo)) || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I");
-              
-              if (!cityMap.has(city)) {
-                  cityMap.set(city, { activeCerts: 0, pendingSurveillance: 0, consultants: new Set(), totalCompanies: new Set() });
-              }
-              const entry = cityMap.get(city);
-              if (isActive) entry.activeCerts++;
-              if (isPending) entry.pendingSurveillance++;
-              if (dan !== "Atanmamış") entry.consultants.add(dan);
-              if (c.firmaNo) entry.totalCompanies.add(String(c.firmaNo));
-
-              charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
-            });
-
-            stats.totalCompanies = uniqueCompanies.size;
-
-            // Finalize cities object for map sidebar
-            cityMap.forEach((entry, city) => {
-                charts.cities[city] = {
-                    companyCount: entry.totalCompanies.size,
-                    activeCerts: entry.activeCerts,
-                    pendingSurveillance: entry.pendingSurveillance,
-                    consultants: Array.from(entry.consultants).slice(0, 5)
-                };
-            });
-
-            const data = { stats, charts };
-            ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(data), { expirationTtl: CACHE_TTL }));
-            return jsonResponse({ success: true, data, fromCache: false });
+            return jsonResponse({ success: false, error: "DASHBOARD_STATS_NOT_AVAILABLE" }, 404);
           }
 
           if (action === "getRecentCertificates") {
@@ -1935,90 +1976,15 @@ export default {
                 const dedupedCertificates = Object.values(certById);
                 const certsByFirmaId = buildCertificatesByFirmaId(dedupedCertificates);
                 
-                // Pre-build a city map for enrichment
-                const tempCityMap = new Map();
-                for (const company of canonicalCompanies) {
-                   const cid = getCompanyId(company);
-                   const city = pickCompanyValue(company, ["İl", "Il", "sehir", "Şehir", "city"]);
-                   if (cid && city) tempCityMap.set(String(cid), city);
-                }
-
                 const certificateSummaryIndex = {};
-                const now = new Date();
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
-
-                const dashboardStats = {
-                   stats: {
-                      activeCertificates: 0,
-                      pendingSurveillance: 0,
-                      totalCompanies: canonicalCompanies.length || Object.keys(companySearchIndex || {}).length || 0
-                   },
-                   charts: {
-                      consultants: {},
-                      yearly: {},
-                      cityDensity: {},
-                      cities: {}
-                   }
-                };
 
                 for (const cert of dedupedCertificates) {
                   const certId = getCertificateId(cert);
                   const fNo = getCertificateFirmaId(cert);
-                  const city = fNo ? (tempCityMap.get(String(fNo)) || "BİLİNMİYOR") : "BİLİNMİYOR";
-                  const normalizedCity = String(city).trim().toUpperCase().replace(/\u0130/g, "I");
                   
                   if (certId) {
-                      // Fast-path summary generation
-                      const summary = {
-                        id: String(certId),
-                        firmaNo: String(fNo || ""),
-                        nickname: String(cert.nickname || cert.nick || cert["Firma Adı"] || cert["isim"] || ""),
-                        standart: String(cert.standart || cert.Standart || cert.Standard || ""),
-                        city: String(city || "").trim(),
-                        denetimTipi: String(cert.denetim || cert["Denetim Tipi"] || cert.denetimTipi || ""),
-                        sertifikaNo: String(cert.sno || cert.sNo || cert["Sertifika No"] || ""),
-                        sertifikaTarihi: String(cert.gst || cert.sTarihi || cert["Sertifika Tarihi"] || ""),
-                        gozetimTarihi: String(cert.goz || cert.gozetimTarihi || cert["Gözetim Tarihi"] || ""),
-                        gozetimConfirmed: String(cert.gozetimConfirmed || cert["Gözetim Conf."] || ""),
-                        danisman: String(cert.danisman || cert.Danışman || cert.dan || ""),
-                        durum: String(cert.durum || cert.Durum || cert.Status || ""),
-                        gecerlilikTarihi: String(cert.sgt || cert.gecerlilikTarihi || cert["Sertifika Geçerlilik Tarihi"] || "")
-                      };
+                      const summary = createCertificateSummary(cert);
                       certificateSummaryIndex[String(certId)] = summary;
-
-                      // --- PRE-CALC Stats ---
-                      const status = String(summary.durum).toUpperCase().replace(/\u0130/g, "I");
-                      if (status === "AKTIF") dashboardStats.stats.activeCertificates++;
-
-                      // Surveillance
-                      const gozStr = summary.gozetimTarihi.trim();
-                      const gozConf = summary.gozetimConfirmed.toUpperCase();
-                      const matchGoz = gozStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-                      if (matchGoz && gozConf === "FALSE") {
-                          const m = parseInt(matchGoz[2], 10) - 1;
-                          const y = parseInt(matchGoz[3], 10);
-                          if (m === currentMonth && y === currentYear) dashboardStats.stats.pendingSurveillance++;
-                      }
-
-                      // Charts
-                      const dan = summary.danisman.trim() || "Atanmamış";
-                      dashboardStats.charts.consultants[dan] = (dashboardStats.charts.consultants[dan] || 0) + 1;
-
-                      const dateStr = summary.sertifikaTarihi.trim();
-                      const yearMatch = dateStr.match(/\.(\d{4})$/);
-                      if (yearMatch) dashboardStats.charts.yearly[yearMatch[1]] = (dashboardStats.charts.yearly[yearMatch[1]] || 0) + 1;
-
-                      // Map
-                      if (normalizedCity) {
-                          dashboardStats.charts.cityDensity[normalizedCity] = (dashboardStats.charts.cityDensity[normalizedCity] || 0) + 1;
-                          if (!dashboardStats.charts.cities[normalizedCity]) dashboardStats.charts.cities[normalizedCity] = { count: 0, details: [] };
-                          dashboardStats.charts.cities[normalizedCity].count++;
-                          // Harita popup'ı için son 10 firma nickname'ini ekle (Boyutu küçük tutmak için)
-                          if (dashboardStats.charts.cities[normalizedCity].details.length < 15) {
-                             dashboardStats.charts.cities[normalizedCity].details.push(summary.nickname);
-                          }
-                      }
                   }
                 }
 
@@ -2031,7 +1997,6 @@ export default {
                 const recentObjects = sorted.slice(0, 25);
 
                 writes.push(env.DB.put(indexKeys.certificateSummary, JSON.stringify(certificateSummaryIndex), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(indexKeys.dashboardStats, JSON.stringify(dashboardStats), { expirationTtl: CACHE_TTL }));
                 writes.push(env.DB.put(indexKeys.certificateNextId, String(certNextId), { expirationTtl: CACHE_TTL }));
                 writes.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
                 writes.push(env.DB.put(`cache:getCertificateSummaries:{}`, JSON.stringify(sortCertificatesByIdDesc(Object.values(certificateSummaryIndex))), { expirationTtl: CACHE_TTL }));
@@ -2119,6 +2084,9 @@ export default {
                 await Promise.all(writes.slice(i, i + 50));
               }
               if (purges.length) ctx.waitUntil(Promise.all(purges));
+
+              // 🔥 Dashboard istatistiklerini arka planda tazele
+              ctx.waitUntil(rebuildDashboardStats());
 
               return jsonResponse({ success: true, message: "Senkronizasyon başarılı!", stats, scope });
             } else {
@@ -2211,42 +2179,10 @@ export default {
               const dedupedCertificates = currentCerts;
               const certificateSummaryIndex = {};
               
-              // --- Rebuild Dashboard Stats based on imported data ---
-              const dashboardStats = {
-                 stats: { activeCertificates: 0, pendingSurveillance: 0, totalCompanies: baseCompanyCount },
-                 charts: { consultants: {}, yearly: {}, cityDensity: {}, cities: {} }
-              };
-              
-              const now = new Date();
-              const currentMonth = now.getMonth();
-              const currentYear = now.getFullYear();
-
               for (const cert of dedupedCertificates) {
                 const certId = getCertificateId(cert);
                 if (certId) {
-                  const summary = createCertificateSummary(cert);
-                  certificateSummaryIndex[String(certId)] = summary;
-                  
-                  // Stats rebuild
-                  const status = String(summary.durum).toUpperCase().replace(/\u0130/g, "I");
-                  if (status === "AKTIF") dashboardStats.stats.activeCertificates++;
-                  
-                  // Surveillance
-                  const gozStr = summary.gozetimTarihi.trim();
-                  const gozConf = summary.gozetimConfirmed.toUpperCase();
-                  const matchGoz = gozStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-                  if (matchGoz && gozConf === "FALSE") {
-                      const m = parseInt(matchGoz[2], 10) - 1;
-                      const y = parseInt(matchGoz[3], 10);
-                      if (m === currentMonth && y === currentYear) dashboardStats.stats.pendingSurveillance++;
-                  }
-                  
-                  // Consultants & Years
-                  const dan = summary.danisman.trim() || "Atanmamış";
-                  dashboardStats.charts.consultants[dan] = (dashboardStats.charts.consultants[dan] || 0) + 1;
-                  const dateStr = summary.sertifikaTarihi.trim();
-                  const yearMatch = dateStr.match(/\.(\d{4})$/);
-                  if (yearMatch) dashboardStats.charts.yearly[yearMatch[1]] = (dashboardStats.charts.yearly[yearMatch[1]] || 0) + 1;
+                  certificateSummaryIndex[String(certId)] = createCertificateSummary(cert);
                 }
               }
 
@@ -2258,7 +2194,6 @@ export default {
               const recentIds = sorted.slice(0, 50).map(c => getCertificateId(c));
 
               writes.push(env.DB.put(indexKeys.certificateSummary, JSON.stringify(certificateSummaryIndex), { expirationTtl: CACHE_TTL }));
-              writes.push(env.DB.put(indexKeys.dashboardStats, JSON.stringify(dashboardStats), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(indexKeys.certificateNextId, String(certNextId), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
               writes.push(env.DB.put(`cache:getCertificateSummaries:{}`, JSON.stringify(sortCertificatesByIdDesc(Object.values(certificateSummaryIndex))), { expirationTtl: CACHE_TTL }));
@@ -2297,10 +2232,205 @@ export default {
               await Promise.all(writes.slice(i, i + 50));
             }
             if (purges.length) ctx.waitUntil(Promise.all(purges));
+ 
+            // 🔥 Dashboard istatistiklerini arka planda tazele
+            ctx.waitUntil(rebuildDashboardStats());
 
             return jsonResponse({ success: true, message: "Yedek başarıyla geri yüklendi (İndeksler tazelendi).", scope, stats });
           } catch (error) {
             return jsonResponse({ success: false, error: "KV Import Hatası: " + error.message });
+          }
+        }
+        // 3.3b 🔍 KV TANİ (Diagnostic)
+        if (action === "kvDiagnostic") {
+          try {
+            const [fullRaw, summaryRaw, companyRaw, statsRaw, summariesRaw] = await Promise.all([
+              env.DB.get(indexKeys.fullCertificates),
+              env.DB.get(indexKeys.certificateSummary),
+              env.DB.get(indexKeys.companySearch),
+              env.DB.get(indexKeys.dashboardStats),
+              env.DB.get("cache:getCertificateSummaries:{}"),
+            ]);
+
+            const fullList    = fullRaw     ? JSON.parse(fullRaw)     : null;
+            const summaryObj  = summaryRaw  ? JSON.parse(summaryRaw)  : null;
+            const companyObj  = companyRaw  ? JSON.parse(companyRaw)  : null;
+            const statsObj    = statsRaw    ? JSON.parse(statsRaw)    : null;
+            const summLst     = summariesRaw? JSON.parse(summariesRaw): null;
+
+            // Bireysel cert key sayısı (eski mimari)
+            const individualKeys = await listKvKeys("cache:getCertificateById:");
+
+            return jsonResponse({
+              success: true,
+              diagnostic: {
+                fullCertificates:      { exists: !!fullRaw,     count: Array.isArray(fullList)   ? fullList.length   : null, sizeKB: fullRaw     ? Math.round(fullRaw.length    / 1024) : 0 },
+                certificateSummary:    { exists: !!summaryRaw,  count: summaryObj                ? Object.keys(summaryObj).length : null, sizeKB: summaryRaw  ? Math.round(summaryRaw.length / 1024) : 0 },
+                getCertificateSummaries:{ exists: !!summariesRaw,count: Array.isArray(summLst)  ? summLst.length    : null, sizeKB: summariesRaw ? Math.round(summariesRaw.length / 1024) : 0 },
+                companySearch:         { exists: !!companyRaw,  count: companyObj               ? Object.keys(companyObj).length : null, sizeKB: companyRaw  ? Math.round(companyRaw.length / 1024) : 0 },
+                dashboardStats:        { exists: !!statsRaw,    totalCertificates: statsObj?.stats?.totalCertificates ?? null },
+                individualCertKeys:    { count: individualKeys.length, sample: individualKeys.slice(0, 3) },
+                // İlk sertifikanın hangi fieldları taşıdığını göster
+                sampleCert: Array.isArray(fullList) && fullList.length > 0 ? {
+                  keys: Object.keys(fullList[0]).slice(0, 20),
+                  extractedId: getCertificateId(fullList[0]),
+                  extractedFirmaNo: getCertificateFirmaId(fullList[0]),
+                  raw: JSON.stringify(fullList[0]).substring(0, 300),
+                  summaryTest: (() => {
+                    try { return createCertificateSummary(createCanonicalCertificate(fullList[0])); } catch(e) { return { error: e.message }; }
+                  })()
+                } : null,
+                // Summary'den de örnek al
+                sampleSummary: Array.isArray(summLst) && summLst.length > 0 ? {
+                  keys: Object.keys(summLst[0]),
+                  id: summLst[0].id,
+                  firmaNo: summLst[0].firmaNo,
+                  durum: summLst[0].durum,
+                  city: summLst[0].city,
+                } : null,
+              }
+            });
+          } catch (err) {
+            return jsonResponse({ success: false, error: "Diagnostic Hatasi: " + err.message });
+          }
+        }
+
+        // 3.4 🛠️ DERİN İNDEKS ONARIMI — fullCertificates + companySearch join
+        if (action === "deepRepairIndex") {
+          try {
+            // Önce en büyük kaynağı kontrol et: fullCertificates
+            const [fullRaw, companyRaw] = await Promise.all([
+              env.DB.get(indexKeys.fullCertificates),
+              env.DB.get(indexKeys.companySearch),
+            ]);
+
+            if (!fullRaw) {
+              return jsonResponse({ success: false, error: "KV'de 'fullCertificates' bulunamadi. Once 'Sheets'ten Cek' butonunu kullanin." });
+            }
+
+            const fullList = JSON.parse(fullRaw);
+            const rawCount = fullList.length;
+
+            if (rawCount === 0) {
+              return jsonResponse({ success: false, error: "fullCertificates bos. KV'de hic sertifika yok." });
+            }
+
+            // Şimdi arka planda: join + summary + stats
+            ctx.waitUntil((async () => {
+              console.log(`[DeepRepair] ${rawCount} sertifika bulundu. Join & rebuild basliyor...`);
+
+              // Firmadan city map'ini hazirla: { firmaNo -> city }
+              const cityByFirmaId = new Map();
+              const companyList = [];
+              if (companyRaw) {
+                const companyIndex = JSON.parse(companyRaw);
+                for (const [id, company] of Object.entries(companyIndex)) {
+                  const city = String(company.city || "").trim().toUpperCase().replace(/\u0130/g, "I") || "BILINMIYOR";
+                  cityByFirmaId.set(String(id), city);
+                  companyList.push(company);
+                }
+                console.log(`[DeepRepair] ${cityByFirmaId.size} firmadan city verisi yuklendi.`);
+              }
+
+              // Sertifikalari isle: summary olustur + city join
+              const summaryIndex = {};
+              for (const cert of fullList) {
+                const canonical = createCanonicalCertificate(cert);
+                const cid = getCertificateId(canonical);
+                if (!cid) continue;
+
+                const firmaNo = String(getCertificateFirmaId(canonical) || "");
+                const city = cityByFirmaId.get(firmaNo) || String(canonical.city || canonical.sehir || "").trim().toUpperCase() || "BILINMIYOR";
+
+                const summary = createCertificateSummary(canonical);
+                summary.city = city;
+                summaryIndex[cid] = summary;
+              }
+
+              const summaryList = sortCertificatesByIdDesc(Object.values(summaryIndex));
+              console.log(`[DeepRepair] ${summaryList.length} sertifika ozeti olusturuldu.`);
+
+              // ─── KV Yazma ───────────────────────────────────────────────
+              await Promise.all([
+                env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIndex), { expirationTtl: CACHE_TTL }),
+                env.DB.put("cache:getCertificateSummaries:{}", JSON.stringify(summaryList), { expirationTtl: CACHE_TTL }),
+                env.DB.put("cache:getCertificates:{}", JSON.stringify(fullList), { expirationTtl: CACHE_TTL }),
+              ]);
+
+              // ─── Dashboard Stats: BELLEKTEN hesapla (KV'yi yeniden okuma — eventual consistency sorunu) ──
+              const now = new Date();
+              const currentMonth = now.getMonth();
+              const currentYear = now.getFullYear();
+
+              const stats = {
+                totalCompanies: 0,
+                totalCertificates: summaryList.length,
+                activeCertificates: 0,
+                pendingSurveillance: 0,
+                lastSync: Date.now()
+              };
+              const charts = { consultants: {}, yearly: {}, cityDensity: {}, cities: {} };
+              const uniqueCompanies = new Set();
+              const cityMap = new Map();
+
+              for (const c of summaryList) {
+                if (c.firmaNo) uniqueCompanies.add(String(c.firmaNo));
+
+                const status = String(c.durum || "").toUpperCase().replace(/\u0130/g, "I");
+                const isActive = status === "AKTIF";
+                if (isActive) stats.activeCertificates++;
+
+                const gozStr = String(c.gozetimTarihi || "").trim();
+                const gozConf = String(c.gozetimConfirmed || "").toUpperCase();
+                const gozMatch = gozStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+                let isPending = false;
+                if (gozMatch && gozConf === "FALSE") {
+                  const m = parseInt(gozMatch[2], 10) - 1;
+                  const y = parseInt(gozMatch[3], 10);
+                  if (m === currentMonth && y === currentYear) { stats.pendingSurveillance++; isPending = true; }
+                }
+
+                const dan = String(c.danisman || "Atanmamis").trim() || "Atanmamis";
+                charts.consultants[dan] = (charts.consultants[dan] || 0) + 1;
+
+                const dateStr = String(c.sertifikaTarihi || "").trim();
+                const yearMatch = dateStr.match(/\.(\d{4})$/);
+                if (yearMatch) charts.yearly[yearMatch[1]] = (charts.yearly[yearMatch[1]] || 0) + 1;
+
+                const city = String(c.city || cityByFirmaId.get(String(c.firmaNo)) || "BILINMIYOR").trim().toUpperCase();
+                if (!cityMap.has(city)) cityMap.set(city, { activeCerts: 0, pendingSurveillance: 0, consultants: new Set(), totalCompanies: new Set(), nicknames: [] });
+                const entry = cityMap.get(city);
+                if (isActive) entry.activeCerts++;
+                if (isPending) entry.pendingSurveillance++;
+                if (dan !== "Atanmamis") entry.consultants.add(dan);
+                if (c.firmaNo) entry.totalCompanies.add(String(c.firmaNo));
+                if (entry.nicknames.length < 15) entry.nicknames.push(c.nickname || "Isimsiz");
+                charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
+              }
+
+              stats.totalCompanies = uniqueCompanies.size;
+              cityMap.forEach((entry, city) => {
+                charts.cities[city] = {
+                  companyCount: entry.totalCompanies.size,
+                  activeCerts: entry.activeCerts,
+                  pendingSurveillance: entry.pendingSurveillance,
+                  consultants: Array.from(entry.consultants).slice(0, 5),
+                  details: entry.nicknames
+                };
+              });
+
+              const dashPayload = { stats, charts };
+              await env.DB.put(indexKeys.dashboardStats, JSON.stringify(dashPayload), { expirationTtl: CACHE_TTL });
+              console.log(`[DeepRepair] TAMAMLANDI. totalCertificates=${stats.totalCertificates}, active=${stats.activeCertificates}`);
+            })());
+
+            return jsonResponse({
+              success: true,
+              message: `Onarim baslatildi. KV'de ${rawCount} sertifika bulundu. Dashboard birkan saniye icinde guncellenmeli.`,
+              totalFound: rawCount,
+            });
+          } catch (error) {
+            return jsonResponse({ success: false, error: "Onarim Hatasi: " + error.message });
           }
         }
 
@@ -2396,6 +2526,9 @@ export default {
               env.DB.delete("cache:getConsultants:{}"),
             ]);
 
+            // 🔥 Dashboard istatistiklerini arka planda tazele
+            ctx.waitUntil(rebuildDashboardStats());
+
             return jsonResponse({ success: true, data: { id: newId, company: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false });
           }
 
@@ -2444,6 +2577,9 @@ export default {
             env.DB.put("cache:getCompanies:{}", JSON.stringify(updatedCompaniesList), { expirationTtl: CACHE_TTL }),
             env.DB.delete("cache:getConsultants:{}"),
           ]);
+
+          // 🔥 Dashboard istatistiklerini arka planda tazele
+          ctx.waitUntil(rebuildDashboardStats());
 
           return jsonResponse({ success: true, data: { etag: updated.__etag, company: updated }, kvPrimaryWrite: true, sheetsWrite: false });
         }
@@ -2728,6 +2864,10 @@ export default {
             }
             await Promise.all(writes);
             ctx.waitUntil(purgeCachePrefix("cache:getRecentCertificates:"));
+
+            // 🔥 Dashboard istatistiklerini arka planda tazele
+            ctx.waitUntil(rebuildDashboardStats());
+
             return jsonResponse({ success: true, data: { id: newId, certificate: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false });
           }
 
@@ -2791,6 +2931,10 @@ export default {
 
           await Promise.all(cacheWrites);
           ctx.waitUntil(purgeCachePrefix("cache:getRecentCertificates:"));
+
+          // 🔥 Dashboard istatistiklerini arka planda tazele
+          ctx.waitUntil(rebuildDashboardStats());
+
           return jsonResponse({ success: true, data: { id: targetId, certificate: updated }, kvPrimaryWrite: true, sheetsWrite: false });
         }
 
@@ -2891,6 +3035,10 @@ export default {
 
           await Promise.all(writes);
           ctx.waitUntil(purgeCachePrefix("cache:getRecentCertificates:"));
+
+          // 🔥 Dashboard istatistiklerini arka planda tazele
+          ctx.waitUntil(rebuildDashboardStats());
+
           return jsonResponse({ success: true, data: { updatedCount, ids, status }, kvPrimaryWrite: true, sheetsWrite: false, sideEffectsSkipped: true });
         }
 
