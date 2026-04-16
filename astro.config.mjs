@@ -33,7 +33,7 @@ export default defineConfig({
         globPatterns: ['**/*.{css,js,html,svg,png,ico,woff,woff2}'],
         // API çağrıları önbelleklenmez — IndexedDB zaten hallediyor
         navigateFallback: '/offline',
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/cdn-cgi\//],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
@@ -49,6 +49,10 @@ export default defineConfig({
           },
           {
             urlPattern: /^\/api\/.*/i,
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /^\/cdn-cgi\/.*/i,
             handler: 'NetworkOnly',
           },
         ],
