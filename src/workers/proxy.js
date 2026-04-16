@@ -681,15 +681,19 @@ export default {
           env.DB.get(indexKeys.companySearch)
         ]);
 
+        // [LIMIT REHAB] 1.000 Limitini aşan gerçek sayımlar
+        const [realCertKeys, realCompKeys] = await Promise.all([
+          listAllKvKeys(env, "cache:getCertificateById:"),
+          listAllKvKeys(env, "cache:company:")
+        ]);
+
         let certificates = [];
         const summaryList = summaryRaw ? Object.values(JSON.parse(summaryRaw)) : [];
         const fullList = fullRaw ? JSON.parse(fullRaw) : [];
 
-        // 🛡️ En dolgun veriyi seç
+        // 🛡️ En dolgun veriyi seç (Grafikler için)
         if (fullList.length > summaryList.length && fullList.length > 0) {
-          // Full list ham veri ise onu özetle / summarize et
           certificates = fullList.map(item => createCertificateSummary(item));
-          console.log(`[Stats] Using fullCertificates (${fullList.length}) summarized on-the-fly.`);
         } else {
           certificates = summaryList;
         }
@@ -708,8 +712,8 @@ export default {
         };
 
         const stats = {
-          totalCompanies: 0,
-          totalCertificates: certificates.length,
+          totalCompanies: realCompKeys.length,
+          totalCertificates: realCertKeys.length,
           activeCertificates: 0,
           pendingSurveillance: 0,
           lastSync: Date.now()
@@ -2037,16 +2041,21 @@ export default {
                   return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
                 }, 1);
 
-                writes.push(env.DB.put(indexKeys.companySearch, JSON.stringify(companySearchIndex), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(`cache:getCompanies:{}`, JSON.stringify(Object.values(companySearchIndex)), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(canonicalCompanies), { expirationTtl: CACHE_TTL }));
-
                 // [LIMIT REHAB] Tekil yazma döngüsü kaldırıldı (Read-through fallback kullanılacak)
                 const companyEntityKeys = new Set(canonicalCompanies.map(c => `cache:company:${getCompanyId(c)}`));
                 purges.push(purgeCachePrefix("cache:getCompanyById:"));
-                purges.push(purgeStaleKvKeys("cache:company:", companyEntityKeys));
-                stats.companies = canonicalCompanies.length;
+                
+                // --- 🛡️ MERGE INDEX LOGIC ---
+                const existingSearchRaw = await env.DB.get(indexKeys.companySearch);
+                const existingSearch = existingSearchRaw ? JSON.parse(existingSearchRaw) : {};
+                const mergedSearch = { ...existingSearch, ...companySearchIndex };
+
+                writes.push(env.DB.put(indexKeys.companySearch, JSON.stringify(mergedSearch), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(`cache:getCompanies:{}`, JSON.stringify(Object.values(mergedSearch)), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(canonicalCompanies), { expirationTtl: CACHE_TTL }));
+                
+                stats.companies = Object.keys(mergedSearch).length;
               }
 
               // --- 🎖️ CERTIFICATES ---
@@ -2082,21 +2091,23 @@ export default {
                 const recentIds = sorted.slice(0, 50).map(c => getCertificateId(c));
                 const recentObjects = sorted.slice(0, 25);
 
-                writes.push(env.DB.put(indexKeys.certificateSummary, JSON.stringify(certificateSummaryIndex), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(indexKeys.certificateNextId, String(certNextId), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(`cache:getCertificateSummaries:{}`, JSON.stringify(sortCertificatesByIdDesc(Object.values(certificateSummaryIndex))), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(`cache:getCertificates:{}`, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(`cache:getRecentCertificates:${stableStringify({ limit: 25 })}`, JSON.stringify(recentObjects), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(indexKeys.fullCertificates, JSON.stringify(dedupedCertificates), { expirationTtl: CACHE_TTL }));
-
                 // [LIMIT REHAB] Tekil yazma döngüleri kaldırıldı (Read-through fallback kullanılacak)
                 const certEntityKeys = new Set(dedupedCertificates.map(c => `cache:getCertificateById:${stableStringify({ id: String(getCertificateId(c)) })}`));
                 const certFirmaKeys = new Set(Object.keys(certsByFirmaId).map(fId => `cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`));
                 purges.push(purgeCachePrefix("cache:getRecentCertificates:"));
-                // purges.push(purgeStaleKvKeys("cache:getCertificateById:", certEntityKeys)); // [DÜZELTME] Opsiyonel: Stale temizliği sub-request harcar, şimdilik devre dışı
-                // purges.push(purgeStaleKvKeys("cache:getCertificatesByFirmaId:", certFirmaKeys)); // [DÜZELTME] Opsiyonel
-                stats.certs = dedupedCertificates.length;
+                
+                // --- 🛡️ MERGE INDEX LOGIC ---
+                // Mevcut özeti çek ve yenilerle birleştir (Overwrite'ı engelle)
+                const existingSummaryRaw = await env.DB.get(indexKeys.certificateSummary);
+                const existingSummary = existingSummaryRaw ? JSON.parse(existingSummaryRaw) : {};
+                const mergedSummary = { ...existingSummary, ...certificateSummaryIndex };
+                
+                writes.push(env.DB.put(indexKeys.certificateSummary, JSON.stringify(mergedSummary), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(indexKeys.certificateNextId, String(certNextId), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(`cache:getCertificateSummaries:{}`, JSON.stringify(sortCertificatesByIdDesc(Object.values(mergedSummary))), { expirationTtl: CACHE_TTL }));
+                
+                stats.certs = Object.keys(mergedSummary).length;
               }
 
               // --- 🧪 TESTS & AUDITS & PROFORMAS ---
@@ -3311,4 +3322,34 @@ export default {
       headers: { ...corsHeaders, "Content-Type": "text/plain" },
     });
   },
+  
+  /**
+   * 📜 KV Paging Helper
+   * Cloudflare KV list() limitini (1.000) aşarak tüm anahtarları toplar.
+   */
+  async function listAllKvKeys(env, prefix) {
+    const keys = [];
+    let cursor = "";
+    while (true) {
+      const list = await env.DB.list({ prefix, cursor });
+      keys.push(...list.keys);
+      if (list.list_complete) break;
+      cursor = list.cursor;
+    }
+    return keys;
+  }
+
+  async function cleanupCache(env) {
+    try {
+      const allCacheKeys = await listAllKvKeys(env, "cache:");
+      for (let i = 0; i < allCacheKeys.length; i += 50) {
+        const batch = allCacheKeys.slice(i, i + 50).map(k => env.DB.delete(k.name));
+        await Promise.all(batch);
+      }
+      return true;
+    } catch (err) {
+      console.error("[Cleanup] Error:", err);
+      return false;
+    }
+  }
 };
