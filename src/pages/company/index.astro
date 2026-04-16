@@ -538,7 +538,7 @@ import {
           <table class="w-full min-w-[420px] text-xs">
             <thead>
               <tr class="border-b-2 border-emerald-500/20 bg-emerald-500/5">
-                <th class="hidden sm:table-cell px-3 py-3 text-center text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest w-10">
+                <th class="px-3 py-3 text-center text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest w-10">
                   <input id="cert-select-all" type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface-hover text-emerald-500 focus:ring-emerald-500/40" title="Tümünü seç" />
                 </th>
                 <th class="hidden sm:table-cell px-3 sm:px-4 py-3 text-left text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest whitespace-nowrap">Tarih</th>
@@ -1887,7 +1887,7 @@ import {
 
       const zebraClass = rowIdx % 2 !== 0 ? 'bg-emerald-500/[0.03]' : 'bg-surface';
       return `<tr class="border-b border-border-main hover:bg-emerald-500/10 transition-colors ${zebraClass}">
-        <td class="hidden sm:table-cell px-3 py-3 text-center align-middle">
+        <td class="px-3 py-3 text-center align-middle">
           <input type="checkbox" class="cert-select-row h-4 w-4 rounded border-border-main bg-surface-hover text-emerald-500 focus:ring-emerald-500/40" value="${id}">
         </td>
         <td class="hidden sm:table-cell px-3 sm:px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${belgeTarihi || '—'}</td>
