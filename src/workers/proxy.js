@@ -1592,12 +1592,36 @@ export default {
                 ctx.waitUntil(env.DB.put(cacheKey, testFirmaRaw, { expirationTtl: CACHE_TTL }));
                 return jsonResponseWithRawData(testFirmaRaw, { fromCache: true, indexed: true });
               }
+              // [FALLBACK] Full test listesine bak
+              const fullTestRaw = await env.DB.get(indexKeys.fullTests);
+              if (fullTestRaw) {
+                const fullTests = JSON.parse(fullTestRaw);
+                const filtered = fullTests.filter(t => String(getTestFirmaId(t)) === idKey);
+                const filteredStr = JSON.stringify(filtered);
+                ctx.waitUntil(Promise.all([
+                  env.DB.put(cacheKey, filteredStr, { expirationTtl: CACHE_TTL }),
+                  env.DB.put(testFirmaKey, filteredStr, { expirationTtl: CACHE_TTL })
+                ]));
+                return jsonResponseWithRawData(filteredStr, { fromCache: true, rebuiltFromFull: true });
+              }
             } else if (action === "getAuditsByFirmaId") {
               const auditFirmaKey = `cache:getAuditsByFirmaId:${stableStringify({ firmaId: idKey })}`;
               const auditRaw = await env.DB.get(auditFirmaKey);
               if (auditRaw) {
                 ctx.waitUntil(env.DB.put(cacheKey, auditRaw, { expirationTtl: CACHE_TTL }));
                 return jsonResponseWithRawData(auditRaw, { fromCache: true, indexed: true });
+              }
+              // [FALLBACK] Full denetim listesine bak
+              const fullAuditRaw = await env.DB.get(indexKeys.fullAudits);
+              if (fullAuditRaw) {
+                const fullAudits = JSON.parse(fullAuditRaw);
+                const filtered = fullAudits.filter(a => String(getAuditFirmaId(a)) === idKey);
+                const filteredStr = JSON.stringify(filtered);
+                ctx.waitUntil(Promise.all([
+                   env.DB.put(cacheKey, filteredStr, { expirationTtl: CACHE_TTL }),
+                   env.DB.put(auditFirmaKey, filteredStr, { expirationTtl: CACHE_TTL })
+                ]));
+                return jsonResponseWithRawData(filteredStr, { fromCache: true, rebuiltFromFull: true });
               }
             } else if (action === "getProformasByFirmaId") {
               const proformaFirmaKey = `cache:getProformasByFirmaId:${stableStringify({ firmaId: idKey })}`;
@@ -1606,6 +1630,18 @@ export default {
                 ctx.waitUntil(env.DB.put(cacheKey, proformaRaw, { expirationTtl: CACHE_TTL }));
                 return jsonResponseWithRawData(proformaRaw, { fromCache: true, indexed: true });
               }
+              // [FALLBACK] Full proforma listesine bak
+              const fullProRaw = await env.DB.get(indexKeys.fullProformas);
+              if (fullProRaw) {
+                const fullProformas = JSON.parse(fullProRaw);
+                const filtered = fullProformas.filter(p => String(getProformaFirmaId(p)) === idKey);
+                const filteredStr = JSON.stringify(filtered);
+                ctx.waitUntil(Promise.all([
+                  env.DB.put(cacheKey, filteredStr, { expirationTtl: CACHE_TTL }),
+                  env.DB.put(proformaFirmaKey, filteredStr, { expirationTtl: CACHE_TTL })
+                ]));
+                return jsonResponseWithRawData(filteredStr, { fromCache: true, rebuiltFromFull: true });
+              }
               return jsonResponse({ success: true, data: [] });
             } else if (action === "getProformaById") {
               const proformaEntityKey = `cache:getProformaById:${stableStringify({ id: idKey })}`;
@@ -1613,6 +1649,20 @@ export default {
               if (proformaRaw) {
                 ctx.waitUntil(env.DB.put(cacheKey, proformaRaw, { expirationTtl: CACHE_TTL }));
                 return jsonResponseWithRawData(proformaRaw, { fromCache: true, indexed: true });
+              }
+              // [FALLBACK] Full listeye bak
+              const fullProRaw = await env.DB.get(indexKeys.fullProformas);
+              if (fullProRaw) {
+                const fullProformas = JSON.parse(fullProRaw);
+                const found = fullProformas.find(p => String(getProformaId(p)) === idKey);
+                if (found) {
+                  const foundStr = JSON.stringify(found);
+                  ctx.waitUntil(Promise.all([
+                    env.DB.put(cacheKey, foundStr, { expirationTtl: CACHE_TTL }),
+                    env.DB.put(proformaEntityKey, foundStr, { expirationTtl: CACHE_TTL })
+                  ]));
+                  return jsonResponseWithRawData(foundStr, { fromCache: true, rebuiltFromFull: true });
+                }
               }
               return jsonResponse({ success: false, error: "PROFORMA_NOT_FOUND" }, 404);
             } else if (action === "getStandardById") {
@@ -2067,15 +2117,17 @@ export default {
                 const companySearchIndex = {};
                 for (const company of canonicalCompanies) {
                   const cid = getCompanyId(company);
-                  if (cid) companySearchIndex[cid] = createSearchEntry(company);
+                  if (cid) {
+                    companySearchIndex[cid] = createSearchEntry(company);
+                    // [OPTIMIZATION] Individual writes removed to stay within KV limits.
+                    // Fallback to fullCompanies index handles individual lookups.
+                  }
                 }
                 const companyNextId = canonicalCompanies.reduce((highest, company) => {
                   const parsed = parseInt(getCompanyId(company), 10);
                   return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
                 }, 1);
 
-                // [LIMIT REHAB] Tekil yazma döngüsü kaldırıldı (Read-through fallback kullanılacak)
-                const companyEntityKeys = new Set(canonicalCompanies.map(c => `cache:company:${getCompanyId(c)}`));
                 purges.push(purgeCachePrefix("cache:getCompanyById:"));
                 
                 // --- 🛡️ MERGE INDEX LOGIC ---
@@ -2102,17 +2154,14 @@ export default {
 
                 const certById = buildCertificatesById(canonicalCertificates);
                 const dedupedCertificates = Object.values(certById);
-                const certsByFirmaId = buildCertificatesByFirmaId(dedupedCertificates);
 
                 const certificateSummaryIndex = {};
 
                 for (const cert of dedupedCertificates) {
                   const certId = getCertificateId(cert);
-                  const fNo = getCertificateFirmaId(cert);
-
                   if (certId) {
-                    const summary = createCertificateSummary(cert);
-                    certificateSummaryIndex[String(certId)] = summary;
+                    certificateSummaryIndex[String(certId)] = createCertificateSummary(cert);
+                    // [OPTIMIZATION] Individual writes removed to stay within KV limits.
                   }
                 }
 
@@ -2122,15 +2171,10 @@ export default {
                 }, 1);
                 const sorted = [...dedupedCertificates].sort((a, b) => (parseInt(getCertificateId(b), 10) || 0) - (parseInt(getCertificateId(a), 10) || 0));
                 const recentIds = sorted.slice(0, 50).map(c => getCertificateId(c));
-                const recentObjects = sorted.slice(0, 25);
 
-                // [LIMIT REHAB] Tekil yazma döngüleri kaldırıldı (Read-through fallback kullanılacak)
-                const certEntityKeys = new Set(dedupedCertificates.map(c => `cache:getCertificateById:${stableStringify({ id: String(getCertificateId(c)) })}`));
-                const certFirmaKeys = new Set(Object.keys(certsByFirmaId).map(fId => `cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`));
                 purges.push(purgeCachePrefix("cache:getRecentCertificates:"));
                 
                 // --- 🛡️ MERGE INDEX LOGIC ---
-                // Mevcut özeti çek ve yenilerle birleştir (Overwrite'ı engelle)
                 const existingSummaryRaw = await env.DB.get(indexKeys.certificateSummary);
                 const existingSummary = existingSummaryRaw ? JSON.parse(existingSummaryRaw) : {};
                 const mergedSummary = { ...existingSummary, ...certificateSummaryIndex };
@@ -2147,22 +2191,7 @@ export default {
               if (hasScope("tests")) {
                 const rawTests = Array.isArray(d.tests) ? d.tests : [];
                 const canonicalTests = rawTests.map(row => createCanonicalTestRow(row));
-                const testsByFirmaId = {};
-                for (const t of canonicalTests) {
-                  const fNo = getTestFirmaId(t);
-                  if (!fNo) continue;
-                  if (!testsByFirmaId[fNo]) testsByFirmaId[fNo] = [];
-                  testsByFirmaId[fNo].push(t);
-                }
-                // Per-test entity key'leri
-                for (const t of canonicalTests) {
-                  const tid = getTestId(t);
-                  if (tid) writes.push(env.DB.put(`cache:getTestById:${stableStringify({ id: tid })}`, JSON.stringify(t), { expirationTtl: CACHE_TTL }));
-                }
-                // Per-firma key'leri
-                for (const [fNo, list] of Object.entries(testsByFirmaId)) {
-                  writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: fNo })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
-                }
+                
                 // nextId sayacı
                 const maxTestId = canonicalTests.reduce((m, t) => {
                   const n = parseInt(getTestId(t), 10);
@@ -2175,27 +2204,9 @@ export default {
               }
 
               if (hasScope("audits")) {
-                // d.auditObjects: GAS'tan gelen nesne dizisi (array'den dönüştürülmüş, doğru field adları var)
-                // d.audits: ham satır dizisi — createCanonicalAuditRow getPicker ile okuyamaz, kullanılmaz
                 const rawAuditObjects = Array.isArray(d.auditObjects) ? d.auditObjects : [];
                 const canonicalAudits = rawAuditObjects.map(a => createCanonicalAuditRow(a));
 
-                const auditsByFirmaId = {};
-                for (const audit of canonicalAudits) {
-                  const aId = getAuditId(audit);
-                  const fNo = getAuditFirmaId(audit);
-                  if (aId) {
-                    writes.push(env.DB.put(`cache:getAuditById:${stableStringify({ id: aId })}`, JSON.stringify(audit), { expirationTtl: CACHE_TTL }));
-                    if (fNo) {
-                      if (!auditsByFirmaId[fNo]) auditsByFirmaId[fNo] = [];
-                      auditsByFirmaId[fNo].push(audit);
-                    }
-                  }
-                }
-                // Per-firma key'leri
-                for (const [fId, companyAudits] of Object.entries(auditsByFirmaId)) {
-                  writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(companyAudits), { expirationTtl: CACHE_TTL }));
-                }
                 // Timeline listesi
                 writes.push(env.DB.put(`cache:getAudits:{}`, JSON.stringify(canonicalAudits), { expirationTtl: CACHE_TTL }));
                 // Full aggregate — export/import için
@@ -2216,21 +2227,6 @@ export default {
                   const mapped = Array.isArray(row) ? mapRawProformaRow(row) : row;
                   return createCanonicalProformaRow(mapped);
                 });
-                const proformasByFirmaId = {};
-                for (const p of canonicalProformas) {
-                  const pId = getProformaId(p);
-                  const fNo = getProformaFirmaId(p);
-                  if (pId) {
-                    writes.push(env.DB.put(`cache:getProformaById:${stableStringify({ id: pId })}`, JSON.stringify(p), { expirationTtl: CACHE_TTL }));
-                    if (fNo) {
-                      if (!proformasByFirmaId[fNo]) proformasByFirmaId[fNo] = [];
-                      proformasByFirmaId[fNo].push(p);
-                    }
-                  }
-                }
-                for (const [fId, companyProformas] of Object.entries(proformasByFirmaId)) {
-                  writes.push(env.DB.put(`cache:getProformasByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(companyProformas), { expirationTtl: CACHE_TTL }));
-                }
                 writes.push(env.DB.put(indexKeys.fullProformas, JSON.stringify(canonicalProformas), { expirationTtl: CACHE_TTL }));
                 const proformaNextId = canonicalProformas.reduce((highest, p) => {
                   const parsed = parseInt(getProformaId(p), 10);
@@ -2251,7 +2247,6 @@ export default {
                   if (sId) {
                     const stringId = String(sId);
                     standardsById[stringId] = std;
-                    writes.push(env.DB.put(`cache:getStandardById:${stableStringify({ id: stringId })}`, JSON.stringify(std), { expirationTtl: CACHE_TTL }));
                   }
                 }
 
@@ -2261,7 +2256,6 @@ export default {
                   if (aId) {
                     const stringId = String(aId);
                     auditorsById[stringId] = aud;
-                    writes.push(env.DB.put(`cache:getAuditorById:${stableStringify({ id: stringId })}`, JSON.stringify(aud), { expirationTtl: CACHE_TTL }));
                   }
                 }
 
@@ -2288,12 +2282,6 @@ export default {
                 }
 
                 writes.push(env.DB.put(`cache:getConsultants:{}`, JSON.stringify(consultants), { expirationTtl: CACHE_TTL }));
-                // Danışmanları granüler olarak da kaydet
-                for (const name of consultants) {
-                  if (name) {
-                    writes.push(env.DB.put(`cache:getConsultantById:${stableStringify({ id: String(name) })}`, JSON.stringify(name), { expirationTtl: CACHE_TTL }));
-                  }
-                }
                 stats.master_consultants = consultants.length;
                 stats.master_standards = standards.length;
                 stats.master_auditors = auditors.length;
