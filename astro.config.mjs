@@ -36,6 +36,18 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
+              },
+              networkTimeoutSeconds: 5,
+            },
+          },
+          {
             urlPattern: /^\/api\/.*/i,
             handler: 'NetworkOnly',
           },

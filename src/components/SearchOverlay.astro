@@ -85,6 +85,7 @@ import { Icon } from "astro-icon/components";
 <script>
   import { $companies } from "../lib/store";
   import { SyncManager } from "../lib/sync";
+  import { navigate } from 'astro:transitions/client';
 
   // Elements
   let dialog: HTMLDialogElement | null, 
@@ -252,7 +253,10 @@ import { Icon } from "astro-icon/components";
       fragment.append(li);
       
       li.addEventListener("mouseenter", () => setActiveIndex(index));
-      li.addEventListener("click", () => window.location.href = result.url);
+      li.addEventListener("click", () => {
+        closeSearch();
+        navigate(result.url);
+      });
     });
     
     hitsEl.replaceChildren(fragment);
@@ -351,7 +355,10 @@ import { Icon } from "astro-icon/components";
       if (e.key === "Escape") { e.preventDefault(); closeSearch(); }
       if (e.key === "ArrowDown") { e.preventDefault(); setActiveIndex(activeIndex + 1); }
       if (e.key === "ArrowUp") { e.preventDefault(); setActiveIndex(activeIndex - 1); }
-      if (e.key === "Enter" && activeIndex >= 0) window.location.href = renderedResults[activeIndex].url;
+      if (e.key === "Enter" && activeIndex >= 0) {
+        closeSearch();
+        navigate(renderedResults[activeIndex].url);
+      }
     };
 
     document.addEventListener("keydown", boundOnKey);
