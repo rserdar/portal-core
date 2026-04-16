@@ -111,7 +111,7 @@ export const api = {
       "getTestsByFirmaId",
       "getConsultants",
       "getStandardById",
-      "getProformaByFirmaId",
+      "getProformasByFirmaId",
       "getProformaById",
       "getMasterData",
       "getFolderId",
@@ -217,8 +217,8 @@ export const api = {
   async getTestsByFirmaId(firmaId: string | number) { 
     return this.call("getTestsByFirmaId", { firmaId }); 
   },
-  async getProformaByFirmaId(firmaId: string | number) {
-    return this.call("getProformaByFirmaId", { firmaId });
+  async getProformasByFirmaId(firmaId: string | number) {
+    return this.call("getProformasByFirmaId", { firmaId });
   },
   async getProformaById(id: string | number) {
     return this.call("getProformaById", { id });

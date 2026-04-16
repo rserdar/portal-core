@@ -1,4 +1,4 @@
-# 🤖 Project Intelligence & Context (AI_CONTEXT.md v5.8.0)
+# 🤖 Project Intelligence & Context (AI_CONTEXT.md v5.8.5)
 
 > [!IMPORTANT]
 > **Granular KV Architecture (v5.7.1):** Bu proje hem okuma hem yazma için **Cloudflare KV**'yi birincil veri tabanı olarak kullanır. Cloudflare Worker (`src/workers/proxy.js`) tüm veri operasyonlarını yönetir.
@@ -8,7 +8,7 @@
 > - **Bulk Hydration:** "SİSTEMİ SENKRONİZE ET" butonu GAS → KV → IndexedDB tam hydration'ı tetikler. Deploy sonrası **bir kez** çalıştırılması zorunludur.
 > - **Performance Manifesto:** `bulkSync` / `importBackup` dışındaki hiçbir write path full dataset rebuild yapamaz. Günlük write operasyonları yalnızca etkilenen KV key'lerini incremental günceller.
 > - **Granular Key Rule:** Firma verisi `cache:company:{id}` + `cache:index:companies:search`, sertifika verisi `cache:getCertificateById:{stableKey}` + `cache:getCertificatesByFirmaId:{stableKey}` + `cache:index:certificates:recent` üzerinden yönetilir. Monolitik `cache:index:companiesById`, `cache:index:certificateById`, `cache:index:certificatesByFirmaId` key'leri **kaldırılmıştır** — bu isimleri kullanan hiçbir kod yazılmamalıdır.
-> - **Refactor Status:** `addCompany`, `updateCompany`, `bulkSync`, `getCompanies`, `getCompanyById`, `addCertificate`, `updateCertificate`, `updateCertificateField`, `updateGozetim`, `updateSurveillance` granüler mimariye geçirilmiştir. `saveProformaState`, `saveAuditState` ve türev dead code'lar temizlenmiştir.
+> - **Refactor Status:** Tüm operasyonel entity'ler (company, certificate, test, audit, proforma, standard, consultant, auditor, sysdoc, testdoc) granüler KV mimarisine geçirilmiştir. `saveProformaState`, `saveAuditState`, `loadXIndexes`, `saveXIndexes`, `buildXsByFirmaId`, `buildXsById` ve türev monolitik helper'lar temizlenmiştir. Detaylar için bkz. **📖 Granüler KV Entity Mimarisi El Kitabı**.
 > - **New Hard Rule:** Doküman üretimi için gereken operasyonel payload'lar Google Sheets'ten okunamaz; Worker bunları KV indexlerinden kurar ve GAS'e hazır veri gönderir.
 > - **Operational Status:** `buildCertPayload` ve `buildTestPayload` operasyonel path'te Worker/KV tarafından üretilir; GAS tarafındaki sheet-backed helper'lar yalnızca legacy/fallback referansıdır.
 
@@ -110,8 +110,8 @@ Browser → CF Worker → KV hit? → Dön (0ms)
 | `getCompanyById` | `cache:getCompanyById:{"id":"X"}` | fallback: `cache:company:{id}` (granular) |
 | `getCertificates` | `cache:getCertificates:{}` | bulkSync ile hydrate edilir |
 | `getCertificatesByFirmaId` | `cache:getCertificatesByFirmaId:{"firmaId":"X"}` | granüler firma sertifika listesi |
-| `getTestsByFirmaId` | `cache:getTestsByFirmaId:{"firmaId":"X"}` | index: `cache:index:testsByFirmaId` |
-| `getAuditsByFirmaId` | `cache:getAuditsByFirmaId:{"firmaId":"X"}` | index: `cache:index:auditsByFirmaId` |
+| `getTestsByFirmaId` | `cache:getTestsByFirmaId:{"firmaId":"X"}` | granüler firma test listesi |
+| `getAuditsByFirmaId` | `cache:getAuditsByFirmaId:{"firmaId":"X"}` | granüler firma denetim listesi |
 | `getFolderId` | `cache:getFolderId:{"nickname":"X"}` | Drive klasör ID'si değişmez |
 | `getRecentFiles` | `cache:getRecentFiles:{"nickname":"X",...}` | Kısa TTL düşünülebilir |
 | `getConsultants` | `cache:getConsultants:{}` | ✅ Aktif |
@@ -159,8 +159,8 @@ Browser → CF Worker → KV'ye yaz (primary) → Başarılı?
 | `updateCertificate` | **KV-primary** | `cache:getCertificateById:{stableKey}` güncellenir, yalnızca etkilenen eski/yeni firma listeleri patch edilir; aggregate cache invalidate edilir |
 | `updateCertificateField` | **KV-primary** | `cache:getCertificateById:{stableKey}` güncellenir, yalnızca etkilenen firma listesi patch edilir; aggregate cache invalidate edilir |
 | `updateSurveillance` | **KV-primary** + Calendar GAS side-effect | Etkilenen sertifikalar ve firma listeleri paralel yüklenir, in-place güncellenir; full rebuild yapılmaz |
-| `addTest` | **KV-primary** | `cache:index:testsByFirmaId`, `cache:meta:testNextId`, `cache:getTestsByFirmaId:{"firmaId":"X"}` güncellenir |
-| `scheduleAudit` | **KV-primary** + Calendar GAS side-effect | `cache:index:auditsByFirmaId`, `cache:meta:auditNextId`, `cache:getAuditsByFirmaId:{"firmaId":"X"}` güncellenir; aggregate audit cache invalidate edilir |
+| `addTest` | **KV-primary** | `cache:getTestById:{stableKey}` yazılır, `cache:getTestsByFirmaId:{firmaId}` append edilir, `cache:meta:testNextId` artırılır; aggregate cache invalidate edilir |
+| `scheduleAudit` | **KV-primary** + Calendar GAS side-effect | `cache:getAuditById:{stableKey}` yazılır, `cache:getAuditsByFirmaId:{firmaId}` append edilir, `cache:meta:auditNextId` artırılır; `cache:getAudits:{}` invalidate edilir |
 | `addProforma` | **KV-primary** | `cache:index:proformasById`, `cache:index:proformasByFirmaId`, `cache:meta:proformaNextId`, ilgili firma cache'i güncellenir |
 | `updateMasterData` | **KV-primary** | `cache:getMasterData:*` güncellenir |
 
@@ -219,16 +219,26 @@ Yeni bir READ action eklendiğinde, eğer verisi `SyncService.getFullExport()` t
 
 | KV Key | İçerik |
 | :--- | :--- |
-| `cache:getTestsByFirmaId:{stableKey}` | Firma test listesi |
+| `cache:getTestById:{stableKey}` | Tam canonical test objesi (~1KB/test) — `addTest`, `updateTest`, `bulkSync` yazar |
+| `cache:getTestsByFirmaId:{stableKey}` | Firma test listesi (canonical obje array'i) — `addTest`, `updateTest`, `bulkSync` yazar |
 | `cache:meta:testNextId` | Test ID sayacı |
-| `cache:getAuditsByFirmaId:{stableKey}` | Firma denetim listesi |
+| `cache:full:tests` | Tüm test objeleri düz array — **yalnızca** `exportKvData`/`importKvData` için |
+| `cache:getAuditById:{stableKey}` | Tam canonical denetim objesi — `scheduleAudit`, `updateAudit`, `bulkSync` yazar |
+| `cache:getAuditsByFirmaId:{stableKey}` | Firma denetim listesi (canonical obje array'i) — `scheduleAudit`, `updateAudit`, `bulkSync` yazar |
 | `cache:meta:auditNextId` | Denetim ID sayacı |
-| `cache:getProformaByFirmaId:{stableKey}` | Firma proforma listesi |
-| `cache:getProformaById:{stableKey}` | Tekil proforma |
-| `cache:meta:proformaNextId` | Proforma ID sayacı |
-| `cache:getMasterData:{stableKey}` | standards/auditors/consultants/testdocs/sysdocs |
-| `cache:getStandardById:{stableKey}` | Tekil standart |
-| `cache:getConsultants:{}` | Danışman listesi |
+| `cache:full:audits` | Tüm denetim objeleri düz array — **yalnızca** `exportKvData`/`importKvData` için |
+| `cache:getProformaById:{stableKey}` | Tam canonical proforma objesi — `addProforma`, `updateProforma`, `bulkSync` yazar | ✅ Aktif |
+| `cache:getProformasByFirmaId:{stableKey}` | Firma proforma listesi (canonical obje array'i) — `addProforma`, `updateProforma`, `deleteProforma`, `bulkSync` yazar | ✅ Aktif |
+| `cache:meta:proformaNextId` | Proforma ID sayacı | ✅ Aktif |
+| `cache:full:proformas` | Tüm proforma objeleri düz array — **yalnızca** `exportKvData`/`importKvData` için | ✅ Aktif |
+| `cache:getMasterData:{stableKey}` | standards/auditors/consultants/testdocs/sysdocs | ✅ Aktif |
+| `cache:getStandardById:{stableKey}` | Tekil standart — `updateMasterData` (type=standards) ve `bulkSync` (scope=master) yazar | ✅ Aktif |
+| `cache:getAuditorById:{stableKey}` | Tekil denetçi — `updateMasterData` (type=auditors) ve `bulkSync` (scope=master) yazar | ✅ Aktif |
+| `cache:getConsultantById:{stableKey}` | Tekil danışman — `updateMasterData` (type=consultants) ve `bulkSync` (scope=master) yazar | ✅ Aktif |
+| `cache:getConsultants:{}` | Danışman listesi — aggregate uyumluluk katmanı | ✅ Aktif |
+| `cache:getTestDocByName:{stableKey}` | Tekil test parametre dokümanı | ✅ Aktif |
+| `cache:getSysDocsBySetName:{stableKey}` | Bir sete ait sistem dokümanları listesi (klasörler/şablonlar) | ✅ Aktif |
+| `cache:index:sysdocSets` | Kullanılabilir sistem doküman setleri listesi (index) | ✅ Aktif |
 | `cache:getRecentCertificates:{stableKey}` | `certificate:recent` indexinden rebuild edilen son sertifikalar listesi |
 | `cache:getFolderId:{stableKey}` | Drive klasör ID cache'i |
 | `cache:getRecentFiles:{stableKey}` | Drive son dosyalar cache'i |
@@ -240,6 +250,11 @@ Yeni bir READ action eklendiğinde, eğer verisi `SyncService.getFullExport()` t
 | `cache:index:companiesById` | ~10MB monolith — KV limitini zorluyor, her write'ta full rebuild gerekiyordu | `cache:company:{id}` + `cache:index:companies:search` |
 | `cache:index:certificateById` | ~2-3MB monolith | `cache:getCertificateById:{stableKey}` |
 | `cache:index:certificatesByFirmaId` | ~2-3MB monolith | `cache:getCertificatesByFirmaId:{stableKey}` |
+| `cache:index:testsByFirmaId` | Tüm testleri tek JSON'da + dizi formatında saklıyordu — write-amplification, pozisyonel erişim kırılganlığı | `cache:getTestById:{stableKey}` + `cache:getTestsByFirmaId:{stableKey}` |
+| `cache:index:auditsByFirmaId` | Tüm denetimleri tek monolitik JSON'da saklıyordu | `cache:getAuditById:{stableKey}` + `cache:getAuditsByFirmaId:{stableKey}` |
+| `index:auditsByFirmaId:{firmaId}` | Eski per-firma prefix formatı (yanlış namespace) | `cache:getAuditsByFirmaId:{stableKey}` |
+| `cache:audit:{id}` | Eski tekil denetim key formatı | `cache:getAuditById:{stableKey}` |
+| `cache:index:standardsById` | Monolitik standart indeksi (tüm standartlar tek JSON'da) | `cache:getStandardById:{stableKey}` |
 
 > Bu key'ler `bulkSync` çalıştırılmadan önce KV'de hâlâ bulunabilir — yeni Worker kodu bunları okumaz, yeni değer yazmaz. TTL dolunca otomatik expire olurlar.
 
@@ -249,6 +264,188 @@ Yeni bir READ action eklendiğinde, eğer verisi `SyncService.getFullExport()` t
 - `cache:index:certificateById` kaldırıldı; sertifika read/write path'i artık per-certificate key üzerinden ilerler.
 - `updateSurveillance` çoklu sertifika güncellemesini paralel `get` / paralel `put` modeliyle yapar; bu davranış performans için korunmalıdır.
 - `saveProformaState`, `saveAuditState` ve benzeri full-state helper'lar dead code olarak temizlenmiştir; tekrar eklenmemelidir.
+- `cache:index:standardsById` monolitik indeksi yerine `cache:getStandardById:{stableKey}` kullanılmaktadır; `updateMasterData` ve `bulkSync` bu anahtarları otomatik senkronize eder.
+- Danışman verileri `cache:getConsultantById:{stableKey}` üzerinden granüler erişime açılmıştır; `cache:getConsultants:{}` aggregate listesi uyumluluk için korunmaktadır.
+- Denetçi (Auditor) verileri `cache:getAuditorById:{stableKey}` üzerinden granüler erişime açılmıştır; `bulkSync` ve `updateMasterData` bu anahtarları otomatik senkronize eder.
+- Test ve Sistem Dokümanları (`testdocs`, `sysdocs`) granüler key-value modeline taşınmıştır. Toplu dataset taramaları (scan) yerine doğrudan key lookup yapılmaktadır.
+- `cache:index:auditsByFirmaId` / `index:auditsByFirmaId:{firmaId}` / `cache:audit:{id}` kaldırıldı; denetim read/write path'i artık `cache:getAuditById:{stableKey}` + `cache:getAuditsByFirmaId:{stableKey}` üzerinden ilerler.
+- `bulkSync` denetimleri için GAS'ın gönderdiği `d.audits` (ham 2D array) artık kullanılmaz; `d.auditObjects` (GAS tarafında `_mapAuditRows` ile dönüştürülmüş canonical objeler) kullanılır.
+
+---
+
+## 📖 Granüler KV Entity Mimarisi El Kitabı
+
+Bu el kitabı, projedeki test / denetim / proforma ve benzeri entity tiplerine uygulanacak KV mimarisini tanımlar. Her yeni AI oturumu ve her geliştirici bu kuralları baz almalıdır. Kurallar kod tabanında uygulanmış kararların özetidir; yeniden tartışmaya açılmamalıdır.
+
+---
+
+### 1. Temel İlke: Her Entity Granüler Olarak Saklanır
+
+Her entity tipi için **üç** KV key şablonu zorunludur:
+
+| Şablon | Format | Amaç |
+| :--- | :--- | :--- |
+| **Entity key** | `cache:get{X}ById:{stableStringify({id})}` | Tek kaydın tüm alanlarını barındıran canonical obje |
+| **Firma-bazlı liste key** | `cache:get{X}sByFirmaId:{stableStringify({firmaId})}` | Bir firmaya ait tüm entity'lerin canonical obje array'i |
+| **Full aggregate key** | `cache:full:{entities}` | Tüm entity'lerin düz array'i — **yalnızca** `exportKvData` / `importKvData` için |
+
+`{X}` = entity adının Pascal-case tekili (Test, Audit, Proforma, ...).  
+`{entities}` = küçük harf çoğul (tests, audits, proformas, ...).
+
+**`stableKey` formatı:** `stableStringify({id: "123"})` → `{"id":"123"}`. Parametreleri deterministik sıralar; aynı parametreler her zaman aynı key'i üretir.
+
+---
+
+### 2. Canonical Object Formatı — Array Yasaktır
+
+Her entity KV'de **named field'lara sahip plain object** olarak saklanır. Pozisyonel array (`[id, nick, firmaNo, ...]`) kullanımı **kesinlikle yasaktır**.
+
+**Neden?**
+
+1. `getPicker(input)` fonksiyonu objenin string key'lerini arar. Array'in key'leri `"0"`, `"1"`, `"2"`'dir. `pick(["id"])` bir array'de **her zaman boş döner** — bu sessiz bir veri kaybıdır.
+2. Array'de pozisyona bakılır, isme bakılmaz. Sütun sırası değişirse tüm okumalar sessizce yanlış değer döner.
+3. Okunabilirlik: `audit.a1Auditor` vs `audit[6]` — hangisi debug edilebilir?
+
+**Doğru `createCanonical{X}Row` şablonu:**
+
+```js
+const createCanonicalTestRow = (source, options = {}) => {
+  const input = source && typeof source === "object" ? source : {};
+  const pick = getPicker(input);
+  const id = String(options.id ?? pick(["ID", "id"]) ?? "").trim();
+  return {
+    id,
+    fieldA: pick(["fieldA", "aliasA"], "defaultA"),
+    fieldB: pick(["fieldB", "aliasB"], "defaultB"),
+    // ...
+  };
+};
+```
+
+**GAS raw array → obje dönüşümü için ayrı mapper** yazılır (bkz. `mapRawProformaRow`, `_mapAuditRows`). Bu mapper `createCanonical...`'dan ayrı tutulur; canonical fonksiyon her zaman obje alır.
+
+---
+
+### 3. CRUD Handler Deseni — Slim Granüler Yazma
+
+Her CRUD handler şu deseni izler; monolith yüklemez, tam state tutmaz:
+
+**Add (Ekle):**
+```
+nextId = loadXNextId()                        // Yalnızca sayacı oku
+created = createCanonicalXRow(params, {id})   // Canonical obje yarat
+writes:
+  put entity key → created
+  get firma key → parse → append created → put firma key
+  put nextId key → nextId + 1
+```
+
+**Update (Güncelle):**
+```
+existing = get entity key → parse            // Yalnızca bu kaydı oku
+updated  = createCanonicalXRow({...existing, ...params.updates}, {id})
+prevFirma ≠ nextFirma?
+  put prevFirma key → filtered (eski kaydı çıkar)
+  put nextFirma key → appended (yeni firmaya ekle)
+  else:
+  put firma key → mapped (kaydı yerinde güncelle)
+put entity key → updated
+```
+
+**Delete (Sil):**
+```
+existing = get entity key → parse
+delete entity key
+put firma key → filtered (kaydı çıkar)
+```
+
+**Kural:** Hiçbir handler `JSON.parse(tüm veri seti)` yapamaz. Yalnızca etkilenen entity key'i ve ilgili firma list key'i okunur.
+
+---
+
+### 4. Kesinlikle Kullanılmayacak Fonksiyon Kalıpları
+
+Aşağıdaki fonksiyon kalıpları monolitik mimarinin belirtisidir. Adı ne olursa olsun bu kalıpları gören kod yeniden yazılmalıdır:
+
+| Yasak Kalıp | Neden Yasak | Yerine Ne Kullanılır |
+| :--- | :--- | :--- |
+| `loadXState()` | Tüm entity dataset'ini tek bir monolith key'den yükler | `get entity key` — yalnızca ihtiyaç duyulan kayıt |
+| `loadXIndexes()` | Monolith + fallback scan — her CRUD öncesi tam yük | `loadXNextId()` — sadece sayaç |
+| `saveXIndexes(state)` | Tüm state'i monolith olarak geri yazar + per-firma loop | Per-entity put + per-firma put |
+| `buildXsByFirmaId(rows)` | Tüm kayıtları `{firmaId: [...]}` hash'ine dönüştürür | Gerekmiyor; her firma key zaten ayrı saklanıyor |
+| `buildXsById(rows)` | Tüm kayıtları `{id: {...}}` hash'ine dönüştürür | `get entity key` ile tekil lookup |
+| `rebuildXFromIndex()` | Tüm key'leri tarayıp monolith yeniden kurar | `cache:full:X` aggregate'ten rebuild |
+| `Array.isArray(row)` dalı `getXId/FirmaId` içinde | Array desteği = eski format hâlâ hayatta | Sadece object field erişimi; array geliyorsa önce mapper çalıştır |
+
+---
+
+### 5. `cache:full:X` Key'inin Amacı ve Sınırları
+
+`cache:full:tests`, `cache:full:audits`, `cache:full:proformas` key'leri **yalnızca iki senaryo** için vardır:
+
+1. **`exportKvData`:** Tüm entity'leri tek pakette dışa aktarır (backup / KV → Sheets sync).
+2. **`importKvData`:** Paketi alıp tüm granüler key'leri yeniden kurar.
+
+Bu key'ler **operasyonel read path'te kullanılmaz.** Firma sayfası, liste görünümü, CRUD handler bunlara dokunmaz. Amacı dışında kullanan kod mimari ihlaldir.
+
+---
+
+### 6. bulkSync'te GAS Verisi — Array mı, Object mi?
+
+GAS `SyncService.getFullExport()` bazı entity'leri iki formatta gönderir:
+
+| Alan | Format | Kullanılabilir mi? |
+| :--- | :--- | :--- |
+| `d.audits` | Ham 2D array (`getRawData`) | **Hayır** — `getPicker` array'den okuyamaz |
+| `d.auditObjects` | `_mapAuditRows()` ile dönüştürülmüş obje array | **Evet** — canonical dönüşüme doğrudan verilir |
+| `d.proformas` | Ham 2D array | **Evet** ama önce `mapRawProformaRow()` ile objeleştirilmeli |
+| `d.companies`, `d.certificates` | `getDataAsObjects` — zaten obje | **Evet** |
+
+**Kural:** `bulkSync` handler'ında ham array (2D) alınan her entity için önce `mapRaw{X}Row()` çağrılır, ardından `createCanonical{X}Row()` çağrılır.
+
+---
+
+### 7. Key İsimlendirme Standartı — Kesin Kurallar
+
+**Doğru format:**
+- Tekil: `cache:get{X}ById:{stableKey}` → `cache:getTestById:{"id":"42"}`
+- Firma-bazlı: `cache:get{X}sByFirmaId:{stableKey}` → `cache:getTestsByFirmaId:{"firmaId":"100"}`
+- Aggregate: `cache:full:{entities}` → `cache:full:tests`
+- Sayaç: `cache:meta:{entity}NextId` → `cache:meta:testNextId`
+
+**Yasak formatlar — asla kullanılmaz:**
+- `cache:index:{entity}sByFirmaId` — monolith, kaldırıldı
+- `index:{entity}sByFirmaId:{id}` — yanlış namespace, kaldırıldı
+- `cache:{entity}:{id}` — kısa format, tutarsız (örn: `cache:proforma:42`, `cache:audit:42`)
+- `{entity}:{id}` — prefix yok, collision riski
+
+**Neden `get{X}ById` formatı?** Bu format cacheable action adlarıyla (`getTestById`, `getAuditById`) birebir eşleşir. Aynı parametreler hem action cacheKey hem entity key üretir — tutarlılık ve hata ayıklama kolaylığı sağlar.
+
+**Kasıtlı eski format toleransı — `cache:company:{id}`:**  
+Firma entity key'i `cache:company:{id}` (düz string) formatını korur. Bu `cache:get{X}ById:{stableKey}` kuralından önce tasarlandı ve geçiş maliyeti yüksek olduğu için değiştirilmedi. Bu bir hata değil, bilinçli karardır. `cache:company:` key'ini `cache:getCompanyById:` formatına çevirmek kapsam dışındadır — dokunulmamalıdır. **Yeni entity tiplerine** bu tolerans uygulanmaz; stableStringify zorunludur.
+
+---
+
+### 8. Bir Kez Reddedilen Önerilerin Kayıtları
+
+Aşağıdaki öneriler değerlendirilerek reddedilmiştir. Aynı öneri farklı bağlamlarda tekrar gelse bile bu kayıt gerekçesiyle birlikte sunulmalıdır:
+
+#### ❌ "Self-healing / `loadTestState` gibi fonksiyon ekleyelim"
+**Gerekçe:** `loadXState` monolitik index döneminin kalıntısıdır. Var olma sebebi monolith bozulunca prefix scan yaparak veriyi kurtarmaktı. Granüler mimaride her entity kendi key'inde durur — bozulacak merkezi bir monolith yoktur. Kurtarma senaryosu için `cache:full:X` aggregate key zaten mevcuttur; `importKvData` bu key'i okuyarak tüm granüler key'leri yeniden kurar. `loadXState` eklemek eski mimariye bilinçli geri adımdır.
+
+#### ❌ "`index:testsByFirmaId:{id}` gibi index namespace kullanımı"
+**Gerekçe:** `index:` prefix'i kullanılan eski monolitik dönemin (`cache:index:auditsByFirmaId`, `index:auditsByFirmaId:{id}`) namespace'idir ve deprecated listesindedir. Canonical format `cache:get{X}sByFirmaId:{stableKey}`'dir. Bu format action adlarıyla eşleşir, collision riski yoktur, `stableStringify` deterministik key üretir.
+
+#### ❌ "Her entity için `buildXsByFirmaId` / `buildXsById` yardımcı fonksiyon ekleyelim"
+**Gerekçe:** Bu fonksiyonlar tüm dataset'i belleğe alıp iki farklı hash yapısına dönüştürür. Granüler mimaride tüm dataset'e gerek yoktur; operasyonlar yalnızca ilgili entity key'ini ve ilgili firma list key'ini okur. Bu fonksiyonlar eklenmesi gereksiz bellek/işlem yükü ve eski mimariye çekim kuvvetidir.
+
+#### ❌ "`bulkSync`'te yazma işlemlerini 50'şerli chunk'a bölün (henüz yapılmamış)"
+**Gerekçe:** `bulkSync` handler'ında tüm `writes.push()` çağrıları toplandıktan sonra en sonda `for (let i = 0; i < writes.length; i += 50) { await Promise.all(writes.slice(i, i + 50)); }` döngüsü çalışır. Bu mekanizma halihazırda mevcuttur. Öneri mevcut kodu okumadan yazılmıştır.
+
+#### ❌ "Proforma/Audit CRUD'unda monolith state yükleyip tek seferde kaydedin (tutarlılık için)"
+**Gerekçe:** Monolith yükleme tutarlılık değil write-amplification üretir. 1600 firmanın tüm proformalarını tek bir key'de tutmak ve her CRUD'da parse/stringify yapmak hem KV write kotasını zorlar hem de race condition yaratır. Doğru tutarlılık stratejisi: yalnızca etkilenen entity key'i ve firma list key'i okunur, değiştirilir, geri yazılır.
+
+---
 
 ### ⚠️ KV'deki Karma Veri Formatı (Migration Dönemi)
 

@@ -302,7 +302,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     if (!firmaId) return;
     setListLoading('Proforma kayitlari yukleniyor...');
 
-    const res = await api.getProformaByFirmaId(firmaId);
+    const res = await api.getProformasByFirmaId(firmaId);
     if (!res.success) {
       if (listPlaceholder) listPlaceholder.textContent = res.error || 'Proforma listesi yuklenemedi.';
       if (counterEl) counterEl.textContent = 'Liste yuklenemedi.';

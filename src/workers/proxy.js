@@ -69,16 +69,14 @@ export default {
       certificateRecent: "cache:index:certificates:recent", // Son 50 sertifika ID dizisi (desc)
       dashboardStats: "cache:index:dashboard:stats",
       fullCertificates: "cache:index:certificates:full",
-      testsByFirmaId: "cache:index:testsByFirmaId",
       testNextId: "cache:meta:testNextId",
-      auditsByFirmaId: "cache:index:auditsByFirmaId",
+      fullTests: "cache:full:tests",
       auditNextId: "cache:meta:auditNextId",
-      proformasByFirmaId: "cache:index:proformasByFirmaId",
-      proformasById: "cache:index:proformasById",
+      fullAudits: "cache:full:audits",
       proformaNextId: "cache:meta:proformaNextId",
+      fullProformas: "cache:full:proformas",
       standardsById: "cache:index:standardsById",
-      auditEntity: "cache:audit:",
-      auditsByFirmaIdPrefix: "index:auditsByFirmaId:",
+      auditorsById: "cache:index:auditorsById",
       // [YEDEKLEME İÇİN] Tüm verileri içeren "Full" anahtarlar
       fullCompanies: "cache:full:companies",
     };
@@ -223,28 +221,25 @@ export default {
     );
     const rebuildAuditsFromIndex = async () => {
       if (!env.DB) return null;
-      let indexedRaw = await env.DB.get(indexKeys.auditsByFirmaId);
-      
-      if (!indexedRaw) {
-        // [RESILIENCE] Legacy anahtar yoksa per-company indekslerden topla
-        const keys = await listKvKeys(indexKeys.auditsByFirmaIdPrefix);
-        if (keys.length === 0) return null;
-        
-        const allAuditsRows = [];
-        const chunks = [];
-        for (let i = 0; i < keys.length; i += 25) {
-          chunks.push(Promise.all(keys.slice(i, i + 25).map(k => env.DB.get(k))));
-        }
-        const results = await Promise.all(chunks);
-        const rows = results.flat().filter(Boolean).flatMap(raw => JSON.parse(raw));
-        if (rows.length === 0) return [];
-        return rows.map(mapLegacyAuditRow).reverse();
+      // fullAudits aggregate'ten yükle (canonical objeler, ters sıralı)
+      const fullRaw = await env.DB.get(indexKeys.fullAudits);
+      if (fullRaw) {
+        const all = JSON.parse(fullRaw);
+        return Array.isArray(all) ? [...all].reverse() : [];
       }
-      
-      const indexed = JSON.parse(indexedRaw);
-      const rows = Object.values(indexed || {}).flatMap((value) => Array.isArray(value) ? value : []);
-      if (!rows.length) return [];
-      return rows.map(mapLegacyAuditRow).reverse();
+      // Fallback: per-firma key'lerden topla
+      const keys = await listKvKeys("cache:getAuditsByFirmaId:");
+      if (keys.length === 0) return null;
+      const chunks = [];
+      for (let i = 0; i < keys.length; i += 25) {
+        chunks.push(Promise.all(keys.slice(i, i + 25).map(k => env.DB.get(k))));
+      }
+      const results = await Promise.all(chunks);
+      const rows = results.flat().filter(Boolean).flatMap(raw => {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      });
+      return rows.length ? rows.reverse() : null;
     };
     const parseVersionNumber = (raw) => {
       const n = parseInt(String(raw ?? "0"), 10);
@@ -822,307 +817,125 @@ export default {
       const input = source && typeof source === "object" ? source : {};
       const pick = getPicker(input, options.explicit || null);
       const id = String(options.id ?? pick(["ID", "id"]) ?? "").trim();
-      return [
+      return {
         id,
-        pick(["firmaAdi", "fname", "nick"]),
-        pick(["firmaNo", "fno"]),
-        pick(["testAdi"]),
-        pick(["marka"]),
-        pick(["urun"]),
-        pick(["urunKodu"]),
-        pick(["urunNo"]),
-        pick(["lot"]),
-        pick(["urunKabul"]),
-        pick(["kabulSaat"]),
-        pick(["testBaslangic"]),
-        pick(["testBitis"]),
-        pick(["raporTarihi"]),
-        pick(["raporNo"]),
-        pick(["numuneSayisi"]),
-        pick(["numuneUT"]),
-        pick(["numuneSKT"]),
-        pick(["urunBilgi"]),
-        pick(["gorsel1"]),
-        pick(["gorsel2"]),
-        pick(["detay"]),
-      ];
+        firmaAdi: pick(["firmaAdi", "fname", "nick"]) ?? "",
+        firmaNo: pick(["firmaNo", "fno"]) ?? "",
+        testAdi: pick(["testAdi"]) ?? "",
+        marka: pick(["marka"]) ?? "",
+        urun: pick(["urun"]) ?? "",
+        urunKodu: pick(["urunKodu"]) ?? "",
+        urunNo: pick(["urunNo"]) ?? "",
+        lot: pick(["lot"]) ?? "",
+        urunKabul: pick(["urunKabul"]) ?? "",
+        kabulSaat: pick(["kabulSaat"]) ?? "",
+        testBaslangic: pick(["testBaslangic"]) ?? "",
+        testBitis: pick(["testBitis"]) ?? "",
+        raporTarihi: pick(["raporTarihi"]) ?? "",
+        raporNo: pick(["raporNo"]) ?? "",
+        numuneSayisi: pick(["numuneSayisi"]) ?? "",
+        numuneUT: pick(["numuneUT"]) ?? "",
+        numuneSKT: pick(["numuneSKT"]) ?? "",
+        urunBilgi: pick(["urunBilgi"]) ?? "",
+        gorsel1: pick(["gorsel1"]) ?? "",
+        gorsel2: pick(["gorsel2"]) ?? "",
+        detay: pick(["detay"]) ?? "",
+      };
     };
-    const getTestId = (row) => Array.isArray(row) ? String(row[0] ?? "").trim() : pickRowValue(row, ["ID", "id"]);
-    const getTestFirmaId = (row) => Array.isArray(row) ? String(row[2] ?? "").trim() : pickRowValue(row, ["firmaNo", "fno"]);
-    const buildTestsByFirmaId = (rows) => {
-      const grouped = {};
-      for (const row of Array.isArray(rows) ? rows : []) {
-        const firmaId = getTestFirmaId(row);
-        if (!firmaId) continue;
-        if (!grouped[firmaId]) grouped[firmaId] = [];
-        grouped[firmaId].push(row);
-      }
-      return grouped;
+    const getTestId = (t) => String(t?.id ?? t?.ID ?? "").trim();
+    const getTestFirmaId = (t) => String(t?.firmaNo ?? t?.fno ?? "").trim();
+    const loadTestNextId = async () => {
+      if (!env.DB) return "1";
+      const raw = await env.DB.get(indexKeys.testNextId);
+      const n = parseInt(String(raw || "").trim(), 10);
+      return Number.isFinite(n) && n >= 1 ? String(n) : "1";
     };
-    const loadTestState = async () => {
-      if (!env.DB) return null;
-      const indexedRaw = await env.DB.get(indexKeys.testsByFirmaId);
-      if (!indexedRaw) return null;
-      const testsByFirmaId = JSON.parse(indexedRaw) || {};
-      const rows = Object.values(testsByFirmaId).flatMap((value) => Array.isArray(value) ? value : []);
-      return { rows, testsByFirmaId: buildTestsByFirmaId(rows) };
-    };
-    const loadTestIndexes = async () => {
-      if (!env.DB) return null;
-      const [indexedRaw, nextIdRaw] = await Promise.all([
-        env.DB.get(indexKeys.testsByFirmaId),
-        env.DB.get(indexKeys.testNextId),
-      ]);
-      let testsByFirmaId = indexedRaw ? JSON.parse(indexedRaw) : null;
-      if (!testsByFirmaId || typeof testsByFirmaId !== "object") {
-        const fullState = await loadTestState();
-        if (!fullState) return null;
-        testsByFirmaId = fullState.testsByFirmaId;
-      }
-      let nextId = parseInt(String(nextIdRaw || "").trim(), 10);
-      if (!Number.isFinite(nextId) || nextId < 1) {
-        const rows = Object.values(testsByFirmaId).flatMap((value) => Array.isArray(value) ? value : []);
-        nextId = rows.reduce((highest, row) => {
-          const parsed = parseInt(getTestId(row), 10);
-          return !isNaN(parsed) && parsed >= highest ? parsed + 1 : highest;
-        }, 1);
-      }
-      return { testsByFirmaId, nextId: String(nextId) };
-    };
-    const saveTestIndexes = async (state) => {
-      const testsByFirmaId = state?.testsByFirmaId && typeof state.testsByFirmaId === "object" ? state.testsByFirmaId : {};
-      const nextId = String(state?.nextId || "1");
-      await Promise.all([
-        env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(testsByFirmaId), { expirationTtl: CACHE_TTL }),
-        env.DB.put(indexKeys.testNextId, nextId, { expirationTtl: CACHE_TTL }),
-      ]);
+    const mapRawProformaRow = (row) => {
+      const r = Array.isArray(row) ? row : [];
+      return {
+        id: String(r[0] ?? "").trim(),
+        nick: r[1] || "",
+        firmaNo: r[2] || "",
+        kdvsiz: r[3] || "0",
+        kdvOran: r[4] || "20",
+        kdv: r[5] || "0",
+        toplam: r[6] || "0",
+        birim: r[7] || "TL",
+        tarih: r[8] || "",
+        konu: r[9] || "",
+      };
     };
     const createCanonicalProformaRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
       const pick = getPicker(input);
-      const id = String(options.id ?? pick(["ID", "id", "Fatura No", "faturaNo"]) ?? "").trim();
-      return [
+      const id = String(options.id ?? pick(["ID", "id", "faturaNo"]) ?? "").trim();
+      return {
         id,
-        pick(["nick", "nickname", "firmaAdi"]),
-        pick(["firmaNo", "firmano", "fno"]),
-        pick(["kdvsiz", "haric"], "0"),
-        pick(["kdvOran", "oran"], "20"),
-        pick(["kdv", "tutar"], "0"),
-        pick(["toplam"], "0"),
-        pick(["birim", "paraBirimi", "lira"], "TL"),
-        pick(["tarih"]),
-        pick(["konu"]),
-      ];
+        nick: pick(["nick", "nickname", "firmaAdi"], ""),
+        firmaNo: pick(["firmaNo", "firmano", "fno"], ""),
+        kdvsiz: pick(["kdvsiz", "haric"], "0"),
+        kdvOran: pick(["kdvOran", "oran"], "20"),
+        kdv: pick(["kdv"], "0"),
+        toplam: pick(["toplam"], "0"),
+        birim: pick(["birim", "paraBirimi"], "TL"),
+        tarih: pick(["tarih"], ""),
+        konu: pick(["konu"], ""),
+      };
     };
-    const getProformaId = (row) => Array.isArray(row) ? String(row[0] ?? "").trim() : pickRowValue(row, ["ID", "id", "Fatura No", "faturaNo"]);
-    const getProformaFirmaId = (row) => Array.isArray(row) ? String(row[2] ?? "").trim() : pickRowValue(row, ["firmaNo", "fno"]);
-    const buildProformasByFirmaId = (rows) => {
-      const grouped = {};
-      for (const row of Array.isArray(rows) ? rows : []) {
-        const firmaId = getProformaFirmaId(row);
-        if (!firmaId) continue;
-        if (!grouped[firmaId]) grouped[firmaId] = [];
-        grouped[firmaId].push(row);
-      }
-      return grouped;
+    const getProformaId = (p) => String(p?.id ?? p?.ID ?? p?.faturaNo ?? "").trim();
+    const getProformaFirmaId = (p) => String(p?.firmaNo ?? p?.fno ?? "").trim();
+    const loadProformaNextId = async () => {
+      const raw = await env.DB.get(indexKeys.proformaNextId);
+      const parsed = parseInt(String(raw || "").trim(), 10);
+      return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
     };
-    const buildProformasById = (rows) => {
-      const indexed = {};
-      for (const row of Array.isArray(rows) ? rows : []) {
-        const id = getProformaId(row);
-        if (!id) continue;
-        indexed[id] = row;
-      }
-      return indexed;
-    };
-    const loadProformaState = async () => {
-      if (!env.DB) return null;
-      const [byFirmaRaw, byIdRaw] = await Promise.all([
-        env.DB.get(indexKeys.proformasByFirmaId),
-        env.DB.get(indexKeys.proformasById),
-      ]);
-      let rows = [];
-      const proformasById = byIdRaw ? JSON.parse(byIdRaw) : null;
-      const proformasByFirmaId = byFirmaRaw ? JSON.parse(byFirmaRaw) : null;
-      if (proformasById && typeof proformasById === "object") rows = Object.values(proformasById);
-      else if (proformasByFirmaId && typeof proformasByFirmaId === "object") rows = Object.values(proformasByFirmaId).flatMap((value) => Array.isArray(value) ? value : []);
-      if (!Array.isArray(rows)) return null;
-      return { rows, proformasByFirmaId: buildProformasByFirmaId(rows), proformasById: buildProformasById(rows) };
-    };
-    const loadProformaIndexes = async () => {
-      if (!env.DB) return null;
-      const [byFirmaRaw, byIdRaw, nextIdRaw] = await Promise.all([
-        env.DB.get(indexKeys.proformasByFirmaId),
-        env.DB.get(indexKeys.proformasById),
-        env.DB.get(indexKeys.proformaNextId),
-      ]);
-      let proformasById = byIdRaw ? JSON.parse(byIdRaw) : null;
-      let proformasByFirmaId = byFirmaRaw ? JSON.parse(byFirmaRaw) : null;
-      if ((!proformasById || typeof proformasById !== "object") && (!proformasByFirmaId || typeof proformasByFirmaId !== "object")) {
-        const fullState = await loadProformaState();
-        if (!fullState) return null;
-        proformasById = fullState.proformasById;
-        proformasByFirmaId = fullState.proformasByFirmaId;
-      }
-      if ((!proformasById || typeof proformasById !== "object") && proformasByFirmaId && typeof proformasByFirmaId === "object") {
-        proformasById = buildProformasById(Object.values(proformasByFirmaId).flatMap((value) => Array.isArray(value) ? value : []));
-      }
-      if ((!proformasByFirmaId || typeof proformasByFirmaId !== "object") && proformasById && typeof proformasById === "object") {
-        proformasByFirmaId = buildProformasByFirmaId(Object.values(proformasById));
-      }
-      let nextId = parseInt(String(nextIdRaw || "").trim(), 10);
-      if (!Number.isFinite(nextId) || nextId < 1) {
-        nextId = Object.keys(proformasById || {}).reduce((highest, id) => {
-          const parsed = parseInt(String(id), 10);
-          return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
-        }, 1);
-      }
-      return { proformasById, proformasByFirmaId, nextId: String(nextId) };
-    };
-    const saveProformaIndexes = async (state) => {
-      const proformasById = state?.proformasById && typeof state.proformasById === "object" ? state.proformasById : {};
-      const proformasByFirmaId = state?.proformasByFirmaId && typeof state.proformasByFirmaId === "object" ? state.proformasByFirmaId : {};
-      const nextId = String(state?.nextId || "1");
-      await Promise.all([
-        env.DB.put(indexKeys.proformasByFirmaId, JSON.stringify(proformasByFirmaId), { expirationTtl: CACHE_TTL }),
-        env.DB.put(indexKeys.proformasById, JSON.stringify(proformasById), { expirationTtl: CACHE_TTL }),
-        env.DB.put(indexKeys.proformaNextId, nextId, { expirationTtl: CACHE_TTL }),
-      ]);
-    };
-    const getAuditId = (row) => Array.isArray(row) ? String(row[0] ?? "").trim() : pickRowValue(row, ["id", "ID"]);
-    const getAuditFirmaId = (row) => Array.isArray(row) ? String(row[2] ?? "").trim() : pickRowValue(row, ["firmaNo", "firmano"]);
+    const getAuditId = (a) => String(a?.id ?? a?.ID ?? "").trim();
+    const getAuditFirmaId = (a) => String(a?.firmaNo ?? a?.firmano ?? "").trim();
     const createCanonicalAuditRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
-      const pick = getPicker(input);
+      const pick = getPicker(input, options.explicit || null);
       const id = String(options.id ?? getAuditId(input) ?? "").trim();
-      return [
+      return {
         id,
-        pick(["nick", "nickname"]),
-        pick(["firmano", "firmaNo"]),
-        pick(["standart"]),
-        pick(["denetim", "denetimTipi"]),
-        pick(["a1Full", "a1Denetci"]),
-        pick(["a1Auditor", "a1Denetci", "a1Full"]),
-        pick(["a2Full", "a2Denetci"]),
-        pick(["a2Auditor", "a2Denetci", "a2Full"]),
-        pick(["a1Basla", "a1Baslav2"]),
-        pick(["a1Bitis", "a1Bitisv2"]),
-        pick(["a1Md"]),
-        pick(["a1La", "a1Lead"]),
-        pick(["a1Fa"]),
-        pick(["a1Sa"]),
-        pick(["a2Basla", "a2Baslav2"]),
-        pick(["a2Bitis", "a2Bitisv2"]),
-        pick(["a2Md"]),
-        pick(["a2La", "a2Lead"]),
-        pick(["a2Fa"]),
-        pick(["a2Sa"]),
-        pick(["qms"]),
-        pick(["mdd"]),
-        pick(["ems"]),
-        pick(["ohs"]),
-        pick(["fsms"]),
-        pick(["isms"]),
-        pick(["engy"]),
-        pick(["gmp"]),
-        pick(["a1kDenet"]),
-        pick(["a2kDenet"]),
-        pick(["a1EventId"]),
-        pick(["a2EventId"]),
-      ];
+        nick:       pick(["nick", "nickname"]) ?? "",
+        firmaNo:    pick(["firmaNo", "firmano"]) ?? "",
+        standart:   pick(["standart"]) ?? "",
+        denetimTipi: pick(["denetimTipi", "denetim"]) ?? "",
+        a1Full:     pick(["a1Full", "a1Denetci"]) ?? "",
+        a1Auditor:  pick(["a1Auditor", "a1Denetci", "a1Full"]) ?? "",
+        a2Full:     pick(["a2Full", "a2Denetci"]) ?? "",
+        a2Auditor:  pick(["a2Auditor", "a2Denetci", "a2Full"]) ?? "",
+        a1Basla:    pick(["a1Basla", "a1Baslav2"]) ?? "",
+        a1Bitis:    pick(["a1Bitis", "a1Bitisv2"]) ?? "",
+        a1Md:       pick(["a1Md"]) ?? "",
+        a1La:       pick(["a1La", "a1Lead"]) ?? "",
+        a1Fa:       pick(["a1Fa"]) ?? "",
+        a1Sa:       pick(["a1Sa"]) ?? "",
+        a2Basla:    pick(["a2Basla", "a2Baslav2"]) ?? "",
+        a2Bitis:    pick(["a2Bitis", "a2Bitisv2"]) ?? "",
+        a2Md:       pick(["a2Md"]) ?? "",
+        a2La:       pick(["a2La", "a2Lead"]) ?? "",
+        a2Fa:       pick(["a2Fa"]) ?? "",
+        a2Sa:       pick(["a2Sa"]) ?? "",
+        qms:        pick(["qms"]) ?? "",
+        mdd:        pick(["mdd"]) ?? "",
+        ems:        pick(["ems"]) ?? "",
+        ohs:        pick(["ohs"]) ?? "",
+        fsms:       pick(["fsms"]) ?? "",
+        isms:       pick(["isms"]) ?? "",
+        engy:       pick(["engy"]) ?? "",
+        gmp:        pick(["gmp"]) ?? "",
+        a1kDenet:   pick(["a1kDenet"]) ?? "",
+        a2kDenet:   pick(["a2kDenet"]) ?? "",
+        a1EventId:  pick(["a1EventId"]) ?? "",
+        a2EventId:  pick(["a2EventId"]) ?? "",
+      };
     };
-    const auditRowToInfo = (row) => ({
-      id: row[0] ?? "", nick: row[1] ?? "", firmano: row[2] ?? "", firmaNo: row[2] ?? "", standart: row[3] ?? "",
-      denetim: row[4] ?? "", denetimTipi: row[4] ?? "", a1Full: row[5] ?? "", a1Denetci: row[6] ?? row[5] ?? "",
-      a2Full: row[7] ?? "", a2Denetci: row[8] ?? row[7] ?? "", a1Basla: row[9] ?? "", a1Bitis: row[10] ?? "",
-      a1Md: row[11] ?? "", a1La: row[12] ?? "", a1Lead: row[12] ?? "", a1Fa: row[13] ?? "", a1Sa: row[14] ?? "",
-      a2Basla: row[15] ?? "", a2Bitis: row[16] ?? "", a2Md: row[17] ?? "", a2La: row[18] ?? "", a2Lead: row[18] ?? "",
-      a2Fa: row[19] ?? "", a2Sa: row[20] ?? "", qms: row[21] ?? "", mdd: row[22] ?? "", ems: row[23] ?? "",
-      ohs: row[24] ?? "", fsms: row[25] ?? "", isms: row[26] ?? "", engy: row[27] ?? "", gmp: row[28] ?? "",
-      a1kDenet: row[29] ?? "", a2kDenet: row[30] ?? "", a1EventId: row[31] ?? "", a2EventId: row[32] ?? "",
-    });
-    const buildAuditsByFirmaId = (rows) => {
-      const grouped = {};
-      for (const row of Array.isArray(rows) ? rows : []) {
-        const firmaId = getAuditFirmaId(row);
-        if (!firmaId) continue;
-        if (!grouped[firmaId]) grouped[firmaId] = [];
-        grouped[firmaId].push(row);
-      }
-      return grouped;
-    };
-    const loadAuditState = async () => {
-      if (!env.DB) return null;
-      let indexedRaw = await env.DB.get(indexKeys.auditsByFirmaId);
-      
-      if (!indexedRaw) {
-        // [RESILIENCE] Per-company indekslerden topla
-        const keys = await listKvKeys(indexKeys.auditsByFirmaIdPrefix);
-        if (keys.length === 0) return null;
-        
-        const chunks = [];
-        for (let i = 0; i < keys.length; i += 25) {
-          chunks.push(Promise.all(keys.slice(i, i + 25).map(k => env.DB.get(k))));
-        }
-        const results = await Promise.all(chunks);
-        const rows = results.flat().filter(Boolean).flatMap(raw => JSON.parse(raw));
-        return { rows, auditsByFirmaId: buildAuditsByFirmaId(rows) };
-      }
-
-      const auditsByFirmaId = JSON.parse(indexedRaw) || {};
-      const rows = Object.values(auditsByFirmaId).flatMap((value) => Array.isArray(value) ? value : []);
-      return { rows, auditsByFirmaId: buildAuditsByFirmaId(rows) };
-    };
-    const loadAuditIndexes = async () => {
-      if (!env.DB) return null;
-      const [indexedRaw, nextIdRaw] = await Promise.all([
-        env.DB.get(indexKeys.auditsByFirmaId),
-        env.DB.get(indexKeys.auditNextId),
-      ]);
-      let auditsByFirmaId = indexedRaw ? JSON.parse(indexedRaw) : null;
-      if (!auditsByFirmaId || typeof auditsByFirmaId !== "object") {
-        const fullState = await loadAuditState();
-        if (!fullState) return null;
-        auditsByFirmaId = fullState.auditsByFirmaId;
-      }
-      let nextId = parseInt(String(nextIdRaw || "").trim(), 10);
-      if (!Number.isFinite(nextId) || nextId < 1) {
-        const rows = Object.values(auditsByFirmaId).flatMap((value) => Array.isArray(value) ? value : []);
-        nextId = rows.reduce((highest, row) => {
-          const parsed = parseInt(getAuditId(row), 10);
-          return !isNaN(parsed) && parsed >= highest ? parsed + 1 : highest;
-        }, 1);
-      }
-      return { auditsByFirmaId, nextId: String(nextId) };
-    };
-    const saveAuditIndexes = async (state) => {
-      const auditsByFirmaId = state?.auditsByFirmaId && typeof state.auditsByFirmaId === "object" ? state.auditsByFirmaId : {};
-      const nextId = String(state?.nextId || "1");
-      
-      const writes = [
-        env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(auditsByFirmaId), { expirationTtl: CACHE_TTL }),
-        env.DB.put(indexKeys.auditNextId, nextId, { expirationTtl: CACHE_TTL }),
-        env.DB.delete("cache:getAudits:{}"),
-      ];
-
-      // Per-company indeksleri ve tekil denetim anahtarlarını güncelle
-      // Not: Tüm firmaları dönmek maliyetli olabilir ama auditsByFirmaId objesi 
-      // genellikle sadece aktif firmaları içerdiği için şimdilik kabul edilebilir.
-      for (const [fId, companyAudits] of Object.entries(auditsByFirmaId)) {
-        const firmaIndexKey = `${indexKeys.auditsByFirmaIdPrefix}${fId}`;
-        const companyAuditsArr = Array.isArray(companyAudits) ? companyAudits : [];
-        writes.push(env.DB.put(firmaIndexKey, JSON.stringify(companyAuditsArr), { expirationTtl: CACHE_TTL }));
-        
-        // Tekil denetim anahtarlarını da (ID varsa) güncelle
-        for (const audit of companyAuditsArr) {
-          const aId = getAuditId(audit);
-          if (aId) {
-            writes.push(env.DB.put(`${indexKeys.auditEntity}${aId}`, JSON.stringify(audit), { expirationTtl: CACHE_TTL }));
-          }
-        }
-      }
-
-      await Promise.all(writes);
+    const loadAuditNextId = async () => {
+      if (!env.DB) return "1";
+      const raw = await env.DB.get(indexKeys.auditNextId);
+      const n = parseInt(String(raw || "").trim(), 10);
+      return Number.isFinite(n) && n >= 1 ? String(n) : "1";
     };
     const rowToObject = (headers, row) => {
       const obj = {};
@@ -1201,30 +1014,33 @@ export default {
       }
       return indexed;
     };
-    const findTestById = (testsByFirmaId, targetId) => {
-      for (const rows of Object.values(testsByFirmaId || {})) {
-        const found = (Array.isArray(rows) ? rows : []).find((row) => getTestId(row) === targetId);
-        if (found) return found;
-      }
-      return null;
-    };
-    const getTestValue = (row, index, aliases = []) => {
-      if (Array.isArray(row)) return String(row[index] ?? "").trim();
-      return pickObjectValue(row, aliases, "");
-    };
+    const getTestValue = (row, aliases = []) => pickObjectValue(row, aliases, "");
     const getTestDocByName = async (testName) => {
+      const target = String(testName || "").trim().toLocaleLowerCase("tr-TR");
+      if (!target) return null;
+
+      const cacheKey = `cache:getTestDocByName:${stableStringify({ name: target })}`;
+      if (env.DB) {
+        const cached = await env.DB.get(cacheKey);
+        if (cached) return JSON.parse(cached);
+      }
+
       const dataset = await getMasterDataset("testdocs");
       if (!dataset) return null;
       const headers = Array.isArray(dataset.headers) ? dataset.headers : [];
       const rows = Array.isArray(dataset.rows) ? dataset.rows : [];
-      const target = String(testName || "").trim().toLocaleLowerCase("tr-TR");
-      if (!target) return null;
+      
       const matchedRow = rows.find((row) => {
         const objectRow = rowToObject(headers, row);
         const docName = pickObjectValue(objectRow, ["Doküman Adı", "Dokuman Adi", "Doc Name", "DokumanAdi"], "");
         return String(docName || "").trim().toLocaleLowerCase("tr-TR") === target;
       });
-      return matchedRow ? rowToObject(headers, matchedRow) : null;
+
+      const matchedObj = matchedRow ? rowToObject(headers, matchedRow) : null;
+      if (matchedObj && env.DB) {
+        ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(matchedObj), { expirationTtl: CACHE_TTL }));
+      }
+      return matchedObj;
     };
     const buildCertificatePayloadFromKv = async (id, lang, select) => {
       const certKey = `cache:getCertificateById:${stableStringify({ id: String(id) })}`;
@@ -1291,22 +1107,18 @@ export default {
       };
     };
     const buildTestPayloadFromKv = async (id, lang) => {
-      const testState = await loadTestIndexes();
-      if (!testState) {
-        throw new Error("TEST_KV_EMPTY: Test KV verisi boş. Önce senkronizasyon yapın.");
-      }
-      const testRow = findTestById(testState.testsByFirmaId, String(id));
-      if (!testRow) throw new Error(`Test KV indexinde '${id}' bulunamadı.`);
+      if (!env.DB) throw new Error("TEST_KV_EMPTY: Cloudflare KV bağı bulunamadı.");
+      const testRaw = await env.DB.get(`cache:getTestById:${stableStringify({ id: String(id) })}`);
+      if (!testRaw) throw new Error(`TEST_KV_EMPTY: Test '${id}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
+      const t = JSON.parse(testRaw);
 
-      const testName = getTestValue(testRow, 3, ["Testin Adı", "Test Adı", "TestAdi", "Test Name", "testAdi"]);
+      const testName = String(t.testAdi ?? "").trim();
       if (!testName) throw new Error("Test adı boş.");
 
       const testDoc = await getTestDocByName(testName);
-      if (!testDoc) {
-        throw new Error(`TestDoc master dataset içinde '${testName}' bulunamadı.`);
-      }
+      if (!testDoc) throw new Error(`TestDoc master dataset içinde '${testName}' bulunamadı.`);
 
-      const firmId = getTestFirmaId(testRow);
+      const firmId = getTestFirmaId(t);
       if (!firmId) throw new Error("Test kaydında firma no boş.");
 
       const companyRaw = await env.DB.get(`cache:company:${firmId}`);
@@ -1314,8 +1126,8 @@ export default {
       const company = JSON.parse(companyRaw);
 
       return {
-        testno: getTestValue(testRow, 0, ["ID", "Test No", "TestNo", "id"]),
-        fnick: getTestValue(testRow, 1, ["Firma Adı", "FirmaAdi", "Nick", "Nickname", "firmaAdi", "fname"]),
+        testno: String(t.id ?? ""),
+        fnick: String(t.firmaAdi ?? ""),
         fno: String(firmId),
         testisim: testName,
         testadi: pickObjectValue(testDoc, ["Türkçe Test Adı", "Turkce Test Adi"]),
@@ -1325,24 +1137,24 @@ export default {
         gunsay: pickObjectValue(testDoc, ["Gün Sayısı", "Gun Sayisi"]),
         kisabir: pickObjectValue(testDoc, ["Kısaltma", "Kisaltma"]),
         kisaiki: pickObjectValue(testDoc, ["Kısaltma 2", "Kisaltma 2"]),
-        marka: getTestValue(testRow, 4, ["Marka", "marka"]),
-        urun: getTestValue(testRow, 5, ["Ürün", "Urun", "urun"]),
-        urunkod: getTestValue(testRow, 6, ["Ürün Kısa Kodu", "Urun Kisa Kodu", "Ürün Kodu", "Urun Kodu", "urunKodu"]),
-        urunno: getTestValue(testRow, 7, ["Ürün No", "Urun No", "urunNo"]),
-        lot: getTestValue(testRow, 8, ["Lot", "lot"]),
-        kabultarih: getTestValue(testRow, 9, ["Ürün Kabul", "Urun Kabul", "urunKabul"]),
-        kabulsaat: getTestValue(testRow, 10, ["Kabul Saat", "kabulSaat"]),
-        testba: getTestValue(testRow, 11, ["Test Başlangıç", "Test Baslangic", "testBaslangic"]),
-        testbi: getTestValue(testRow, 12, ["Test Bitiş", "Test Bitis", "testBitis"]),
-        raportarihi: getTestValue(testRow, 13, ["Rapor Tarihi", "raporTarihi"]),
-        raporno: getTestValue(testRow, 14, ["Rapor No", "raporNo"]),
-        numunesay: getTestValue(testRow, 15, ["Numune Sayısı", "Numune Sayisi", "numuneSayisi"]),
-        numuneut: getTestValue(testRow, 16, ["Numune ÜT", "Numune UT", "numuneUT"]),
-        numuneskt: getTestValue(testRow, 17, ["Numune SKT", "numuneSKT"]),
-        urunbilgi: getTestValue(testRow, 18, ["Ürün Bilgi", "Urun Bilgi", "urunBilgi"]),
-        gorselbir: getTestValue(testRow, 19, ["Görsel 1", "Gorsel 1", "gorsel1"]),
-        gorseliki: getTestValue(testRow, 20, ["Görsel 2", "Gorsel 2", "gorsel2"]),
-        detay: getTestValue(testRow, 21, ["Detay", "detay"]),
+        marka: String(t.marka ?? ""),
+        urun: String(t.urun ?? ""),
+        urunkod: String(t.urunKodu ?? ""),
+        urunno: String(t.urunNo ?? ""),
+        lot: String(t.lot ?? ""),
+        kabultarih: String(t.urunKabul ?? ""),
+        kabulsaat: String(t.kabulSaat ?? ""),
+        testba: String(t.testBaslangic ?? ""),
+        testbi: String(t.testBitis ?? ""),
+        raportarihi: String(t.raporTarihi ?? ""),
+        raporno: String(t.raporNo ?? ""),
+        numunesay: String(t.numuneSayisi ?? ""),
+        numuneut: String(t.numuneUT ?? ""),
+        numuneskt: String(t.numuneSKT ?? ""),
+        urunbilgi: String(t.urunBilgi ?? ""),
+        gorselbir: String(t.gorsel1 ?? ""),
+        gorseliki: String(t.gorsel2 ?? ""),
+        detay: String(t.detay ?? ""),
         lang: lang || "TR",
         unvan: pickObjectValue(company, ["Unvan", "unvan"]),
         adres: pickObjectValue(company, ["Adres", "adres"]),
@@ -1351,15 +1163,11 @@ export default {
       };
     };
     const buildProformaPayloadFromKv = async (id) => {
-      const proformaState = await loadProformaIndexes();
-      if (!proformaState) {
-        throw new Error("PROFORMA_KV_EMPTY: Proforma KV verisi boş. Önce senkronizasyon yapın.");
-      }
+      const proformaRaw = await env.DB.get(`cache:getProformaById:${stableStringify({ id: String(id) })}`);
+      if (!proformaRaw) throw new Error(`PROFORMA_KV_EMPTY: Proforma '${id}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
+      const proforma = JSON.parse(proformaRaw);
 
-      const proformaRow = proformaState.proformasById?.[String(id)] || null;
-      if (!proformaRow) throw new Error(`Proforma KV indexinde '${id}' bulunamadı.`);
-
-      const firmaId = getProformaFirmaId(proformaRow);
+      const firmaId = getProformaFirmaId(proforma);
       if (!firmaId) throw new Error("Proforma kaydında firma no boş.");
 
       const companyRaw = await env.DB.get(`cache:company:${firmaId}`);
@@ -1367,17 +1175,17 @@ export default {
       const company = JSON.parse(companyRaw);
 
       return {
-        id: String(proformaRow[0] ?? ""),
-        faturaNo: String(proformaRow[0] ?? ""),
-        nick: String(proformaRow[1] ?? ""),
+        id: String(proforma.id || ""),
+        faturaNo: String(proforma.id || ""),
+        nick: String(proforma.nick || ""),
         firmaNo: String(firmaId),
-        kdvsiz: String(proformaRow[3] ?? ""),
-        kdvOran: String(proformaRow[4] ?? "20"),
-        kdv: String(proformaRow[5] ?? ""),
-        toplam: String(proformaRow[6] ?? ""),
-        birim: String(proformaRow[7] ?? "TL"),
-        tarih: String(proformaRow[8] ?? ""),
-        konu: String(proformaRow[9] ?? ""),
+        kdvsiz: String(proforma.kdvsiz || ""),
+        kdvOran: String(proforma.kdvOran || "20"),
+        kdv: String(proforma.kdv || ""),
+        toplam: String(proforma.toplam || ""),
+        birim: String(proforma.birim || "TL"),
+        tarih: String(proforma.tarih || ""),
+        konu: String(proforma.konu || ""),
         unvan: pickObjectValue(company, ["Unvan", "unvan", "Firma Adı", "FirmaAdi"]),
         adres: pickObjectValue(company, ["Adres", "adres"]),
         il: pickObjectValue(company, ["İl", "Il", "Şehir", "Sehir", "sehir", "il"]),
@@ -1410,8 +1218,12 @@ export default {
           "getTestsByFirmaId",
           "getAuditsByFirmaId",
           "getConsultants",
+          "getConsultantById",
+          "getAuditorById",
           "getStandardById",
-          "getProformaByFirmaId",
+          "getTestDocByName",
+          "getSysDocsBySetName",
+          "getProformasByFirmaId",
           "getProformaById",
           "getMasterData",
           "getFolderId",
@@ -1489,7 +1301,56 @@ export default {
             }
           }
 
-          if (action === "getConsultants") {
+            if (action === "getConsultantById") {
+              const consKey = `cache:getConsultantById:${stableStringify({ id: idKey })}`;
+              const consRaw = await env.DB.get(consKey);
+              if (consRaw) {
+                ctx.waitUntil(env.DB.put(cacheKey, consRaw, { expirationTtl: CACHE_TTL }));
+                return jsonResponseWithRawData(consRaw, { fromCache: true });
+              }
+              // [FALLBACK] Aggregate listeye bak (Self-healing)
+              const listRaw = await env.DB.get("cache:getConsultants:{}");
+              if (listRaw) {
+                const list = JSON.parse(listRaw);
+                // Eğer list string dizisi ise (mevcut durum), sadece varlığını kontrol et
+                const found = list.find(c => (typeof c === 'string' ? c : c.id || c.name) === idKey);
+                if (found) {
+                  const foundStr = JSON.stringify(found);
+                  ctx.waitUntil(Promise.all([
+                    env.DB.put(cacheKey, foundStr, { expirationTtl: CACHE_TTL }),
+                    env.DB.put(consKey, foundStr, { expirationTtl: CACHE_TTL })
+                  ]));
+                  return jsonResponseWithRawData(foundStr, { fromCache: true, rebuiltFromList: true });
+                }
+              }
+              return jsonResponse({ success: false, error: "CONSULTANT_NOT_FOUND" }, 404);
+            }
+
+            if (action === "getAuditorById") {
+              const auditKey = `cache:getAuditorById:${stableStringify({ id: idKey })}`;
+              const auditRaw = await env.DB.get(auditKey);
+              if (auditRaw) {
+                ctx.waitUntil(env.DB.put(cacheKey, auditRaw, { expirationTtl: CACHE_TTL }));
+                return jsonResponseWithRawData(auditRaw, { fromCache: true });
+              }
+              // [FALLBACK] Monolitik indekse bak (Self-healing)
+              const monolithRaw = await env.DB.get(indexKeys.auditorsById);
+              if (monolithRaw) {
+                const monolith = JSON.parse(monolithRaw);
+                const found = monolith[idKey];
+                if (found) {
+                  const foundStr = JSON.stringify(found);
+                  ctx.waitUntil(Promise.all([
+                    env.DB.put(cacheKey, foundStr, { expirationTtl: CACHE_TTL }),
+                    env.DB.put(auditKey, foundStr, { expirationTtl: CACHE_TTL })
+                  ]));
+                  return jsonResponseWithRawData(foundStr, { fromCache: true, rebuiltFromMonolith: true });
+                }
+              }
+              return jsonResponse({ success: false, error: "AUDITOR_NOT_FOUND" }, 404);
+            }
+
+            if (action === "getConsultants") {
             const consultantDataset = await getMasterDataset("consultants");
             if (consultantDataset) {
               const data = buildConsultantsFromDataset(consultantDataset);
@@ -1705,37 +1566,57 @@ export default {
             // cache:getCertificateById:{"id":"X"} = entity key = per-request cache key
             // bulkSync bu key'i yazar; Phase 1 hit olur. Phase 1 miss ise KV_PRIMARY_MISS doğru.
             if (action === "getTestsByFirmaId") {
-              indexCacheKey = indexKeys.testsByFirmaId;
-              emptyValue = [];
+              const testFirmaKey = `cache:getTestsByFirmaId:${stableStringify({ firmaId: idKey })}`;
+              const testFirmaRaw = await env.DB.get(testFirmaKey);
+              if (testFirmaRaw) {
+                ctx.waitUntil(env.DB.put(cacheKey, testFirmaRaw, { expirationTtl: CACHE_TTL }));
+                return jsonResponseWithRawData(testFirmaRaw, { fromCache: true, indexed: true });
+              }
             } else if (action === "getAuditsByFirmaId") {
-              const auditIndexKey = `${indexKeys.auditsByFirmaIdPrefix}${idKey}`;
-              const auditRaw = await env.DB.get(auditIndexKey);
+              const auditFirmaKey = `cache:getAuditsByFirmaId:${stableStringify({ firmaId: idKey })}`;
+              const auditRaw = await env.DB.get(auditFirmaKey);
               if (auditRaw) {
                 ctx.waitUntil(env.DB.put(cacheKey, auditRaw, { expirationTtl: CACHE_TTL }));
                 return jsonResponseWithRawData(auditRaw, { fromCache: true, indexed: true });
               }
-              // [FALLBACK] Legacy index'ten bak
-              const legacyAuditsRaw = await env.DB.get(indexKeys.auditsByFirmaId);
-              if (legacyAuditsRaw) {
-                const legacyAudits = JSON.parse(legacyAuditsRaw);
-                const firmaAudits = legacyAudits[idKey] || [];
-                const firmaAuditsStr = JSON.stringify(firmaAudits);
-                ctx.waitUntil(Promise.all([
-                  env.DB.put(cacheKey, firmaAuditsStr, { expirationTtl: CACHE_TTL }),
-                  env.DB.put(auditIndexKey, firmaAuditsStr, { expirationTtl: CACHE_TTL })
-                ]));
-                return jsonResponse({ success: true, data: firmaAudits, fromCache: true, rebuiltFromLegacy: true });
+            } else if (action === "getProformasByFirmaId") {
+              const proformaFirmaKey = `cache:getProformasByFirmaId:${stableStringify({ firmaId: idKey })}`;
+              const proformaRaw = await env.DB.get(proformaFirmaKey);
+              if (proformaRaw) {
+                ctx.waitUntil(env.DB.put(cacheKey, proformaRaw, { expirationTtl: CACHE_TTL }));
+                return jsonResponseWithRawData(proformaRaw, { fromCache: true, indexed: true });
               }
               return jsonResponse({ success: true, data: [] });
-            } else if (action === "getCertificatesByFirmaId") {
-              indexCacheKey = indexKeys.proformasByFirmaId;
-              emptyValue = [];
             } else if (action === "getProformaById") {
-              indexCacheKey = indexKeys.proformasById;
-              emptyValue = null;
+              const proformaEntityKey = `cache:getProformaById:${stableStringify({ id: idKey })}`;
+              const proformaRaw = await env.DB.get(proformaEntityKey);
+              if (proformaRaw) {
+                ctx.waitUntil(env.DB.put(cacheKey, proformaRaw, { expirationTtl: CACHE_TTL }));
+                return jsonResponseWithRawData(proformaRaw, { fromCache: true, indexed: true });
+              }
+              return jsonResponse({ success: false, error: "PROFORMA_NOT_FOUND" }, 404);
             } else if (action === "getStandardById") {
-              indexCacheKey = indexKeys.standardsById;
-              emptyValue = null;
+              const stdKey = `cache:getStandardById:${stableStringify({ id: idKey })}`;
+              const stdRaw = await env.DB.get(stdKey);
+              if (stdRaw) {
+                ctx.waitUntil(env.DB.put(cacheKey, stdRaw, { expirationTtl: CACHE_TTL }));
+                return jsonResponseWithRawData(stdRaw, { fromCache: true, indexed: true });
+              }
+              // [FALLBACK] Monolitik indekse bak (Self-healing)
+              const monolithRaw = await env.DB.get(indexKeys.standardsById);
+              if (monolithRaw) {
+                const monolith = JSON.parse(monolithRaw);
+                const found = monolith[idKey];
+                if (found) {
+                  const foundStr = JSON.stringify(found);
+                  ctx.waitUntil(Promise.all([
+                    env.DB.put(cacheKey, foundStr, { expirationTtl: CACHE_TTL }),
+                    env.DB.put(stdKey, foundStr, { expirationTtl: CACHE_TTL })
+                  ]));
+                  return jsonResponseWithRawData(foundStr, { fromCache: true, rebuiltFromMonolith: true });
+                }
+              }
+              return jsonResponse({ success: false, error: "STANDARD_NOT_FOUND" }, 404);
             } else if (action === "getCertificateById") {
               const certKey = `cache:getCertificateById:${stableStringify({ id: idKey })}`;
               const certRaw = await env.DB.get(certKey);
@@ -1869,23 +1750,42 @@ export default {
         }
 
         if (action === "getAvailableSets") {
+          const indexKey = "cache:index:sysdocSets";
+          const cachedIndex = await env.DB.get(indexKey);
+          if (cachedIndex) {
+            ctx.waitUntil(env.DB.put(cacheKey, cachedIndex, { expirationTtl: CACHE_TTL }));
+            return jsonResponseWithRawData(cachedIndex, { fromCache: true });
+          }
+
           const dataset = await getMasterDataset("sysdocs");
           if (!dataset || !dataset.rows) return jsonResponse({ success: true, data: [] });
           const sets = [...new Set(dataset.rows.map(row => row[0]).filter(Boolean))];
-          return jsonResponse({ success: true, data: sets });
+          const dataStr = JSON.stringify(sets);
+          ctx.waitUntil(env.DB.put(indexKey, dataStr, { expirationTtl: CACHE_TTL }));
+          return jsonResponse({ success: true, data: sets, rebuiltFromMaster: true });
         }
 
         if (action === "prepareBatchFolders") {
-          const dataset = await getMasterDataset("sysdocs");
-          if (!dataset || !dataset.rows) return jsonResponse({ success: false, error: "SysDoc KV verisi boş" });
-
           const setName = params?.data?.setName;
           const nick = params?.data?.nick;
 
-          const rows = dataset.rows.filter(row => String(row[0]) === String(setName) && Boolean(row[5]));
-          if (rows.length === 0) return jsonResponse({ success: false, error: `"${setName}" setine ait geçerli şablon bulunamadı.` });
+          const sysdocKey = `cache:getSysDocsBySetName:${stableStringify({ setName })}`;
+          let rowsRaw = await env.DB.get(sysdocKey);
 
-          const uniqueSubFolders = [...new Set(rows.map(row => row[2]))];
+          if (!rowsRaw) {
+            const dataset = await getMasterDataset("sysdocs");
+            if (dataset && dataset.rows) {
+              const filtered = dataset.rows.filter(row => String(row[0]) === String(setName));
+              if (filtered.length > 0) rowsRaw = JSON.stringify(filtered);
+            }
+          }
+
+          if (!rowsRaw) return jsonResponse({ success: false, error: `"${setName}" setine ait veri bulunamadı.` });
+          const allRows = JSON.parse(rowsRaw);
+          const validRows = allRows.filter(row => Boolean(row[5])); // Kolon 5 template/ID kontrolü
+          
+          if (validRows.length === 0) return jsonResponse({ success: false, error: `"${setName}" setine ait geçerli şablon bulunamadı.` });
+          const uniqueSubFolders = [...new Set(validRows.map(row => row[2]))];
 
           // Google Drive'da klasörleri oluşturmak için GAS'a side-effect isteği at
           const gasRes = await fetch(env.GAS_API_URL, {
@@ -1986,9 +1886,67 @@ export default {
           ];
 
           if (type === "consultants") {
+            const list = buildConsultantsFromDataset(ds);
             writes.push(
-              env.DB.put("cache:getConsultants:{}", JSON.stringify(buildConsultantsFromDataset(ds)), { expirationTtl: CACHE_TTL })
+              env.DB.put("cache:getConsultants:{}", JSON.stringify(list), { expirationTtl: CACHE_TTL })
             );
+            // Granüler key'leri de güncelle
+            for (const name of list) {
+              if (name) {
+                writes.push(env.DB.put(`cache:getConsultantById:${stableStringify({ id: String(name) })}`, JSON.stringify(name), { expirationTtl: CACHE_TTL }));
+              }
+            }
+          }
+          if (type === "standards") {
+            const h = Array.isArray(ds.headers) ? ds.headers : [];
+            const r = Array.isArray(ds.rows) ? ds.rows : [];
+            const standardsById = {};
+            for (const row of r) {
+              const std = rowToObject(h, row);
+              const sId = std?.ID || std?.id;
+              if (sId) {
+                const stringId = String(sId);
+                standardsById[stringId] = std;
+                writes.push(env.DB.put(`cache:getStandardById:${stableStringify({ id: stringId })}`, JSON.stringify(std), { expirationTtl: CACHE_TTL }));
+              }
+            }
+            writes.push(env.DB.put(indexKeys.standardsById, JSON.stringify(standardsById), { expirationTtl: CACHE_TTL }));
+          }
+          if (type === "auditors") {
+            const h = Array.isArray(ds.headers) ? ds.headers : [];
+            const r = Array.isArray(ds.rows) ? ds.rows : [];
+            const auditorsById = {};
+            for (const row of r) {
+              const aud = rowToObject(h, row);
+              const aId = aud?.ID || aud?.id;
+              if (aId) {
+                const stringId = String(aId);
+                auditorsById[stringId] = aud;
+                writes.push(env.DB.put(`cache:getAuditorById:${stableStringify({ id: stringId })}`, JSON.stringify(aud), { expirationTtl: CACHE_TTL }));
+              }
+            }
+            writes.push(env.DB.put(indexKeys.auditorsById, JSON.stringify(auditorsById), { expirationTtl: CACHE_TTL }));
+          }
+          if (type === "testdocs") {
+            const h = Array.isArray(ds.headers) ? ds.headers : [];
+            const r = Array.isArray(ds.rows) ? ds.rows : [];
+            for (const row of r) {
+              const td = rowToObject(h, row);
+              const tdName = pickObjectValue(td, ["Doküman Adı", "Dokuman Adi", "Doc Name", "DokumanAdi"]);
+              if (tdName) {
+                const target = String(tdName).trim().toLocaleLowerCase("tr-TR");
+                writes.push(env.DB.put(`cache:getTestDocByName:${stableStringify({ name: target })}`, JSON.stringify(td), { expirationTtl: CACHE_TTL }));
+              }
+            }
+          }
+          if (type === "sysdocs") {
+            const r = Array.isArray(ds.rows) ? ds.rows : [];
+            const sets = [...new Set(r.map(row => row[0]).filter(Boolean))];
+            writes.push(env.DB.put("cache:index:sysdocSets", JSON.stringify(sets), { expirationTtl: CACHE_TTL }));
+            for (const setName of sets) {
+              const rows = r.filter(row => String(row[0]) === String(setName));
+              writes.push(env.DB.put(`cache:getSysDocsBySetName:${stableStringify({ setName })}`, JSON.stringify(rows), { expirationTtl: CACHE_TTL }));
+            }
           }
 
           await Promise.all(writes);
@@ -2020,7 +1978,7 @@ export default {
             const syncRes = await fetch(env.GAS_API_URL, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "getFullSyncData", apiKey: env.API_KEY })
+              body: JSON.stringify({ action: "getFullSyncData", params: { scope }, apiKey: env.API_KEY })
             });
 
             const text = await syncRes.text();
@@ -2135,52 +2093,62 @@ export default {
 
               // --- 🧪 TESTS & AUDITS & PROFORMAS ---
               if (hasScope("tests")) {
-                const tests = Array.isArray(d.tests) ? d.tests : [];
+                const rawTests = Array.isArray(d.tests) ? d.tests : [];
+                const canonicalTests = rawTests.map(row => createCanonicalTestRow(row));
                 const testsByFirmaId = {};
-                for (const row of tests) {
-                  if (!Array.isArray(row)) continue;
-                  const fNo = String(row[2] || "");
-                  if (fNo) {
-                    if (!testsByFirmaId[fNo]) testsByFirmaId[fNo] = [];
-                    testsByFirmaId[fNo].push(row);
-                  }
+                for (const t of canonicalTests) {
+                  const fNo = getTestFirmaId(t);
+                  if (!fNo) continue;
+                  if (!testsByFirmaId[fNo]) testsByFirmaId[fNo] = [];
+                  testsByFirmaId[fNo].push(t);
                 }
-                writes.push(env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(testsByFirmaId), { expirationTtl: CACHE_TTL }));
-                stats.tests = tests.length;
+                // Per-test entity key'leri
+                for (const t of canonicalTests) {
+                  const tid = getTestId(t);
+                  if (tid) writes.push(env.DB.put(`cache:getTestById:${stableStringify({ id: tid })}`, JSON.stringify(t), { expirationTtl: CACHE_TTL }));
+                }
+                // Per-firma key'leri
+                for (const [fNo, list] of Object.entries(testsByFirmaId)) {
+                  writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: fNo })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
+                }
+                // nextId sayacı
+                const maxTestId = canonicalTests.reduce((m, t) => {
+                  const n = parseInt(getTestId(t), 10);
+                  return !isNaN(n) && n >= m ? n + 1 : m;
+                }, 1);
+                writes.push(env.DB.put(indexKeys.testNextId, String(maxTestId), { expirationTtl: CACHE_TTL }));
+                // Full aggregate — yalnızca export/import için
+                writes.push(env.DB.put(indexKeys.fullTests, JSON.stringify(canonicalTests), { expirationTtl: CACHE_TTL }));
+                stats.tests = canonicalTests.length;
               }
 
               if (hasScope("audits")) {
-                const audits = Array.isArray(d.audits) ? d.audits : [];
-                const auditObjects = Array.isArray(d.auditObjects) ? d.auditObjects : [];
-                
-                // 1. Convert to canonical rows and store individually
-                const canonicalAudits = audits
-                  .map(row => Array.isArray(row) ? createCanonicalAuditRow(row) : null)
-                  .filter(Boolean);
-                
+                // d.auditObjects: GAS'tan gelen nesne dizisi (array'den dönüştürülmüş, doğru field adları var)
+                // d.audits: ham satır dizisi — createCanonicalAuditRow getPicker ile okuyamaz, kullanılmaz
+                const rawAuditObjects = Array.isArray(d.auditObjects) ? d.auditObjects : [];
+                const canonicalAudits = rawAuditObjects.map(a => createCanonicalAuditRow(a));
+
                 const auditsByFirmaId = {};
                 for (const audit of canonicalAudits) {
                   const aId = getAuditId(audit);
                   const fNo = getAuditFirmaId(audit);
                   if (aId) {
-                    writes.push(env.DB.put(`${indexKeys.auditEntity}${aId}`, JSON.stringify(audit), { expirationTtl: CACHE_TTL }));
+                    writes.push(env.DB.put(`cache:getAuditById:${stableStringify({ id: aId })}`, JSON.stringify(audit), { expirationTtl: CACHE_TTL }));
                     if (fNo) {
                       if (!auditsByFirmaId[fNo]) auditsByFirmaId[fNo] = [];
                       auditsByFirmaId[fNo].push(audit);
                     }
                   }
                 }
-
-                // 2. Save per-company audit indices
+                // Per-firma key'leri
                 for (const [fId, companyAudits] of Object.entries(auditsByFirmaId)) {
-                  writes.push(env.DB.put(`${indexKeys.auditsByFirmaIdPrefix}${fId}`, JSON.stringify(companyAudits), { expirationTtl: CACHE_TTL }));
+                  writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(companyAudits), { expirationTtl: CACHE_TTL }));
                 }
-
-                // 3. Keep legacy indices for backward compatibility (optional but safer for now)
-                writes.push(env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(auditsByFirmaId), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(`cache:getAudits:{}`, JSON.stringify(auditObjects), { expirationTtl: CACHE_TTL }));
-                
-                // 4. Update auditNextId
+                // Timeline listesi
+                writes.push(env.DB.put(`cache:getAudits:{}`, JSON.stringify(canonicalAudits), { expirationTtl: CACHE_TTL }));
+                // Full aggregate — export/import için
+                writes.push(env.DB.put(indexKeys.fullAudits, JSON.stringify(canonicalAudits), { expirationTtl: CACHE_TTL }));
+                // nextId sayacı
                 const auditNextId = canonicalAudits.reduce((highest, audit) => {
                   const parsed = parseInt(getAuditId(audit), 10);
                   return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
@@ -2191,36 +2159,92 @@ export default {
               }
 
               if (hasScope("proformas")) {
-                const proformas = Array.isArray(d.proformas) ? d.proformas : [];
+                const rawProformas = Array.isArray(d.proformas) ? d.proformas : [];
+                const canonicalProformas = rawProformas.map(row => {
+                  const mapped = Array.isArray(row) ? mapRawProformaRow(row) : row;
+                  return createCanonicalProformaRow(mapped);
+                });
                 const proformasByFirmaId = {};
-                const proformasById = {};
-                for (const row of proformas) {
-                  if (!Array.isArray(row)) continue;
-                  const pId = String(row[0] || "");
-                  const fNo = String(row[2] || "");
-                  if (pId) proformasById[pId] = row;
-                  if (fNo) {
-                    if (!proformasByFirmaId[fNo]) proformasByFirmaId[fNo] = [];
-                    proformasByFirmaId[fNo].push(row);
+                for (const p of canonicalProformas) {
+                  const pId = getProformaId(p);
+                  const fNo = getProformaFirmaId(p);
+                  if (pId) {
+                    writes.push(env.DB.put(`cache:getProformaById:${stableStringify({ id: pId })}`, JSON.stringify(p), { expirationTtl: CACHE_TTL }));
+                    if (fNo) {
+                      if (!proformasByFirmaId[fNo]) proformasByFirmaId[fNo] = [];
+                      proformasByFirmaId[fNo].push(p);
+                    }
                   }
                 }
-                writes.push(env.DB.put(indexKeys.proformasByFirmaId, JSON.stringify(proformasByFirmaId), { expirationTtl: CACHE_TTL }));
-                writes.push(env.DB.put(indexKeys.proformasById, JSON.stringify(proformasById), { expirationTtl: CACHE_TTL }));
-                stats.proformas = proformas.length;
+                for (const [fId, companyProformas] of Object.entries(proformasByFirmaId)) {
+                  writes.push(env.DB.put(`cache:getProformasByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(companyProformas), { expirationTtl: CACHE_TTL }));
+                }
+                writes.push(env.DB.put(indexKeys.fullProformas, JSON.stringify(canonicalProformas), { expirationTtl: CACHE_TTL }));
+                const proformaNextId = canonicalProformas.reduce((highest, p) => {
+                  const parsed = parseInt(getProformaId(p), 10);
+                  return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
+                }, 1);
+                writes.push(env.DB.put(indexKeys.proformaNextId, String(proformaNextId), { expirationTtl: CACHE_TTL }));
+                stats.proformas = canonicalProformas.length;
               }
 
               if (hasScope("master")) {
                 const standards = Array.isArray(d.standards) ? d.standards : [];
                 const consultants = Array.isArray(d.consultants) ? d.consultants : [];
+                const auditors = Array.isArray(d.auditors) ? d.auditors : [];
+                
                 const standardsById = {};
                 for (const std of standards) {
                   const sId = std?.ID || std?.id;
-                  if (sId) standardsById[String(sId)] = std;
+                  if (sId) {
+                    const stringId = String(sId);
+                    standardsById[stringId] = std;
+                    writes.push(env.DB.put(`cache:getStandardById:${stableStringify({ id: stringId })}`, JSON.stringify(std), { expirationTtl: CACHE_TTL }));
+                  }
                 }
+
+                const auditorsById = {};
+                for (const aud of auditors) {
+                  const aId = aud?.ID || aud?.id;
+                  if (aId) {
+                    const stringId = String(aId);
+                    auditorsById[stringId] = aud;
+                    writes.push(env.DB.put(`cache:getAuditorById:${stableStringify({ id: stringId })}`, JSON.stringify(aud), { expirationTtl: CACHE_TTL }));
+                  }
+                }
+
                 writes.push(env.DB.put(indexKeys.standardsById, JSON.stringify(standardsById), { expirationTtl: CACHE_TTL }));
+                writes.push(env.DB.put(indexKeys.auditorsById, JSON.stringify(auditorsById), { expirationTtl: CACHE_TTL }));
+                
+                // Test Dokümanlarını granüler olarak kaydet
+                const testdocs = Array.isArray(d.testdocs) ? d.testdocs : [];
+                for (const td of testdocs) {
+                  const tdName = pickObjectValue(td, ["Doküman Adı", "Dokuman Adi", "Doc Name", "DokumanAdi"]);
+                  if (tdName) {
+                    const target = String(tdName).trim().toLocaleLowerCase("tr-TR");
+                    writes.push(env.DB.put(`cache:getTestDocByName:${stableStringify({ name: target })}`, JSON.stringify(td), { expirationTtl: CACHE_TTL }));
+                  }
+                }
+
+                // Sistem Dokümanlarını (SysDocs) granüler olarak kaydet
+                const sysdocs = Array.isArray(d.sysdocs) ? d.sysdocs : [];
+                const sysdocSets = [...new Set(sysdocs.map(row => row[0]).filter(Boolean))];
+                writes.push(env.DB.put("cache:index:sysdocSets", JSON.stringify(sysdocSets), { expirationTtl: CACHE_TTL }));
+                for (const setName of sysdocSets) {
+                  const setRows = sysdocs.filter(row => String(row[0]) === String(setName));
+                  writes.push(env.DB.put(`cache:getSysDocsBySetName:${stableStringify({ setName })}`, JSON.stringify(setRows), { expirationTtl: CACHE_TTL }));
+                }
+
                 writes.push(env.DB.put(`cache:getConsultants:{}`, JSON.stringify(consultants), { expirationTtl: CACHE_TTL }));
+                // Danışmanları granüler olarak da kaydet
+                for (const name of consultants) {
+                  if (name) {
+                    writes.push(env.DB.put(`cache:getConsultantById:${stableStringify({ id: String(name) })}`, JSON.stringify(name), { expirationTtl: CACHE_TTL }));
+                  }
+                }
                 stats.master_consultants = consultants.length;
                 stats.master_standards = standards.length;
+                stats.master_auditors = auditors.length;
               }
 
               // 🚀 WRITE IN BATCHES
@@ -2255,15 +2279,17 @@ export default {
             const fetchPromises = [];
             if (scope.includes("companies")) fetchPromises.push(env.DB.get(indexKeys.fullCompanies).then(v => exportData.data.companies = v ? JSON.parse(v) : []));
             if (scope.includes("certificates")) fetchPromises.push(env.DB.get(indexKeys.fullCertificates).then(v => exportData.data.certificates = v ? JSON.parse(v) : []));
-            if (scope.includes("tests")) fetchPromises.push(env.DB.get(indexKeys.testsByFirmaId).then(v => exportData.data.testsByFirmaId = v ? JSON.parse(v) : {}));
-            if (scope.includes("audits")) fetchPromises.push(env.DB.get(indexKeys.auditsByFirmaId).then(v => exportData.data.auditsByFirmaId = v ? JSON.parse(v) : {}));
+            if (scope.includes("tests")) fetchPromises.push(env.DB.get(indexKeys.fullTests).then(v => exportData.data.tests = v ? JSON.parse(v) : []));
+            if (scope.includes("audits")) fetchPromises.push(env.DB.get(indexKeys.fullAudits).then(v => exportData.data.audits = v ? JSON.parse(v) : []));
             if (scope.includes("proformas")) {
-              fetchPromises.push(env.DB.get(indexKeys.proformasByFirmaId).then(v => exportData.data.proformasByFirmaId = v ? JSON.parse(v) : {}));
-              fetchPromises.push(env.DB.get(indexKeys.proformasById).then(v => exportData.data.proformasById = v ? JSON.parse(v) : {}));
+              fetchPromises.push(env.DB.get(indexKeys.fullProformas).then(v => exportData.data.proformas = v ? JSON.parse(v) : []));
             }
             if (scope.includes("master")) {
               fetchPromises.push(env.DB.get(indexKeys.standardsById).then(v => exportData.data.standardsById = v ? JSON.parse(v) : {}));
+              fetchPromises.push(env.DB.get(indexKeys.auditorsById).then(v => exportData.data.auditorsById = v ? JSON.parse(v) : {}));
               fetchPromises.push(env.DB.get(`cache:getConsultants:{}`).then(v => exportData.data.consultants = v ? JSON.parse(v) : []));
+              fetchPromises.push(env.DB.get(`cache:getMasterData:${stableStringify({ type: "testdocs" })}`).then(v => exportData.data.testdocs = v ? JSON.parse(v).dataset?.rows : []));
+              fetchPromises.push(env.DB.get(`cache:getMasterData:${stableStringify({ type: "sysdocs" })}`).then(v => exportData.data.sysdocs = v ? JSON.parse(v).dataset?.rows : []));
             }
 
             await Promise.all(fetchPromises);
@@ -2350,22 +2376,119 @@ export default {
               stats.certs = dedupedCertificates.length;
             }
 
-            if (scope.includes("tests") && payload.testsByFirmaId) {
-              writes.push(env.DB.put(indexKeys.testsByFirmaId, JSON.stringify(payload.testsByFirmaId), { expirationTtl: CACHE_TTL }));
-              stats.tests = Object.keys(payload.testsByFirmaId).length;
+            if (scope.includes("tests") && Array.isArray(payload.tests)) {
+              const importedTests = payload.tests.map(t => createCanonicalTestRow(t));
+              const testsByFirmaId = {};
+              for (const t of importedTests) {
+                const tid = getTestId(t);
+                if (tid) writes.push(env.DB.put(`cache:getTestById:${stableStringify({ id: tid })}`, JSON.stringify(t), { expirationTtl: CACHE_TTL }));
+                const fNo = getTestFirmaId(t);
+                if (fNo) {
+                  if (!testsByFirmaId[fNo]) testsByFirmaId[fNo] = [];
+                  testsByFirmaId[fNo].push(t);
+                }
+              }
+              for (const [fNo, list] of Object.entries(testsByFirmaId)) {
+                writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: fNo })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
+              }
+              writes.push(env.DB.put(indexKeys.fullTests, JSON.stringify(importedTests), { expirationTtl: CACHE_TTL }));
+              stats.tests = importedTests.length;
             }
-            if (scope.includes("audits") && payload.auditsByFirmaId) {
-              writes.push(env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(payload.auditsByFirmaId), { expirationTtl: CACHE_TTL }));
-              stats.audits = Object.keys(payload.auditsByFirmaId).length;
+            if (scope.includes("audits") && Array.isArray(payload.audits)) {
+              const importedAudits = payload.audits.map(a => createCanonicalAuditRow(a, { explicit: true }));
+              const auditsByFirmaId = {};
+              for (const audit of importedAudits) {
+                const aId = getAuditId(audit);
+                const fNo = getAuditFirmaId(audit);
+                if (aId) {
+                  writes.push(env.DB.put(`cache:getAuditById:${stableStringify({ id: aId })}`, JSON.stringify(audit), { expirationTtl: CACHE_TTL }));
+                  if (fNo) {
+                    if (!auditsByFirmaId[fNo]) auditsByFirmaId[fNo] = [];
+                    auditsByFirmaId[fNo].push(audit);
+                  }
+                }
+              }
+              for (const [fId, companyAudits] of Object.entries(auditsByFirmaId)) {
+                writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(companyAudits), { expirationTtl: CACHE_TTL }));
+              }
+              writes.push(env.DB.put(`cache:getAudits:{}`, JSON.stringify(importedAudits), { expirationTtl: CACHE_TTL }));
+              writes.push(env.DB.put(indexKeys.fullAudits, JSON.stringify(importedAudits), { expirationTtl: CACHE_TTL }));
+              const auditNextId = importedAudits.reduce((highest, audit) => {
+                const parsed = parseInt(getAuditId(audit), 10);
+                return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
+              }, 1);
+              writes.push(env.DB.put(indexKeys.auditNextId, String(auditNextId), { expirationTtl: CACHE_TTL }));
+              stats.audits = importedAudits.length;
             }
-            if (scope.includes("proformas")) {
-              if (payload.proformasByFirmaId) writes.push(env.DB.put(indexKeys.proformasByFirmaId, JSON.stringify(payload.proformasByFirmaId), { expirationTtl: CACHE_TTL }));
-              if (payload.proformasById) writes.push(env.DB.put(indexKeys.proformasById, JSON.stringify(payload.proformasById), { expirationTtl: CACHE_TTL }));
-              stats.proformas = Object.keys(payload.proformasById || {}).length;
+            if (scope.includes("proformas") && Array.isArray(payload.proformas)) {
+              const importedProformas = payload.proformas.map(p => createCanonicalProformaRow(p));
+              const proformasByFirmaId = {};
+              for (const p of importedProformas) {
+                const pId = getProformaId(p);
+                const fNo = getProformaFirmaId(p);
+                if (pId) {
+                  writes.push(env.DB.put(`cache:getProformaById:${stableStringify({ id: pId })}`, JSON.stringify(p), { expirationTtl: CACHE_TTL }));
+                  if (fNo) {
+                    if (!proformasByFirmaId[fNo]) proformasByFirmaId[fNo] = [];
+                    proformasByFirmaId[fNo].push(p);
+                  }
+                }
+              }
+              for (const [fId, companyProformas] of Object.entries(proformasByFirmaId)) {
+                writes.push(env.DB.put(`cache:getProformasByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(companyProformas), { expirationTtl: CACHE_TTL }));
+              }
+              writes.push(env.DB.put(indexKeys.fullProformas, JSON.stringify(importedProformas), { expirationTtl: CACHE_TTL }));
+              const proformaNextId = importedProformas.reduce((highest, p) => {
+                const parsed = parseInt(getProformaId(p), 10);
+                return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
+              }, 1);
+              writes.push(env.DB.put(indexKeys.proformaNextId, String(proformaNextId), { expirationTtl: CACHE_TTL }));
+              stats.proformas = importedProformas.length;
             }
             if (scope.includes("master")) {
-              if (payload.standardsById) writes.push(env.DB.put(indexKeys.standardsById, JSON.stringify(payload.standardsById), { expirationTtl: CACHE_TTL }));
-              if (payload.consultants) writes.push(env.DB.put(`cache:getConsultants:{}`, JSON.stringify(payload.consultants), { expirationTtl: CACHE_TTL }));
+              if (payload.standardsById) {
+                writes.push(env.DB.put(indexKeys.standardsById, JSON.stringify(payload.standardsById), { expirationTtl: CACHE_TTL }));
+                for (const [sId, std] of Object.entries(payload.standardsById)) {
+                  writes.push(env.DB.put(`cache:getStandardById:${stableStringify({ id: String(sId) })}`, JSON.stringify(std), { expirationTtl: CACHE_TTL }));
+                }
+              }
+              if (payload.auditorsById) {
+                writes.push(env.DB.put(indexKeys.auditorsById, JSON.stringify(payload.auditorsById), { expirationTtl: CACHE_TTL }));
+                for (const [aId, aud] of Object.entries(payload.auditorsById)) {
+                  writes.push(env.DB.put(`cache:getAuditorById:${stableStringify({ id: String(aId) })}`, JSON.stringify(aud), { expirationTtl: CACHE_TTL }));
+                }
+              }
+              if (payload.consultants && Array.isArray(payload.consultants)) {
+                writes.push(env.DB.put(`cache:getConsultants:{}`, JSON.stringify(payload.consultants), { expirationTtl: CACHE_TTL }));
+                for (const name of payload.consultants) {
+                  if (name) {
+                    writes.push(env.DB.put(`cache:getConsultantById:${stableStringify({ id: String(name) })}`, JSON.stringify(name), { expirationTtl: CACHE_TTL }));
+                  }
+                }
+              }
+              if (payload.testdocs && Array.isArray(payload.testdocs)) {
+                // Not: TestDocs dataset yapısında sadece row array'i geliyor olabilir (export logicine göre)
+                // Ama granular keyleri kurmak için header lazım. 
+                // exportKvData'da sadece rows aldığımız için burada fallback ya da master dataset üzerinden header alabiliriz.
+                // Basitleştirmek için rowToObject yerine direkt kolon bazlı bakabiliriz.
+                for (const row of payload.testdocs) {
+                  if (Array.isArray(row)) {
+                    const docName = row[1]; // Genellikle 2. kolon Doküman Adı
+                    if (docName) {
+                      const target = String(docName).trim().toLocaleLowerCase("tr-TR");
+                      writes.push(env.DB.put(`cache:getTestDocByName:${stableStringify({ name: target })}`, JSON.stringify(row), { expirationTtl: CACHE_TTL }));
+                    }
+                  }
+                }
+              }
+              if (payload.sysdocs && Array.isArray(payload.sysdocs)) {
+                const sysdocSets = [...new Set(payload.sysdocs.map(row => row[0]).filter(Boolean))];
+                writes.push(env.DB.put("cache:index:sysdocSets", JSON.stringify(sysdocSets), { expirationTtl: CACHE_TTL }));
+                for (const setName of sysdocSets) {
+                  const setRows = payload.sysdocs.filter(row => String(row[0]) === String(setName));
+                  writes.push(env.DB.put(`cache:getSysDocsBySetName:${stableStringify({ setName })}`, JSON.stringify(setRows), { expirationTtl: CACHE_TTL }));
+                }
+              }
               stats.master = true;
             }
 
@@ -2673,261 +2796,212 @@ export default {
         }
 
         if (env.DB && ["addTest", "updateTest"].includes(action)) {
-          const state = await loadTestIndexes();
-          if (!state) {
-            return jsonResponse({ success: false, error: "TEST_KV_EMPTY", message: "Test KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
-          }
-
-          const nextState = {
-            testsByFirmaId: { ...state.testsByFirmaId },
-            nextId: String(state.nextId || "1"),
-          };
-
           if (action === "addTest") {
-            const newId = String(nextState.nextId);
+            const nextId = await loadTestNextId();
+            const newId = String(nextId);
             const created = createCanonicalTestRow(params?.testInfo || {}, { id: newId });
             const firmaId = getTestFirmaId(created);
+            const testEntityKey = `cache:getTestById:${stableStringify({ id: newId })}`;
+            const writes = [
+              env.DB.put(testEntityKey, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
+              env.DB.put(indexKeys.testNextId, String(parseInt(newId, 10) + 1), { expirationTtl: CACHE_TTL }),
+            ];
             if (firmaId) {
-              nextState.testsByFirmaId[firmaId] = [...(nextState.testsByFirmaId[firmaId] || []), created];
-              await env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(nextState.testsByFirmaId[firmaId] || []), { expirationTtl: CACHE_TTL });
+              const firmaKey = `cache:getTestsByFirmaId:${stableStringify({ firmaId })}`;
+              const firmaRaw = await env.DB.get(firmaKey);
+              const firmaList = firmaRaw ? JSON.parse(firmaRaw) : [];
+              firmaList.push(created);
+              writes.push(env.DB.put(firmaKey, JSON.stringify(firmaList), { expirationTtl: CACHE_TTL }));
             }
-            nextState.nextId = String(parseInt(newId, 10) + 1);
-            await saveTestIndexes(nextState);
-            return jsonResponse({ success: true, data: { id: newId, row: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false });
+            await Promise.all(writes);
+            return jsonResponse({ success: true, data: { id: newId, test: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false });
           }
 
+          // updateTest
           const targetId = String(params?.id || "").trim();
-          if (!targetId) {
-            return jsonResponse({ success: false, error: "Test ID boş olamaz." }, 400);
-          }
-          let current = null;
-          let prevFirmaId = "";
-          for (const [firmaId, rows] of Object.entries(nextState.testsByFirmaId)) {
-            const found = (Array.isArray(rows) ? rows : []).find((row) => getTestId(row) === targetId);
-            if (found) {
-              current = found;
-              prevFirmaId = String(firmaId);
-              break;
-            }
-          }
-          if (!current) {
-            return jsonResponse({ success: false, error: `Test bulunamadı: ${targetId}` }, 404);
-          }
+          if (!targetId) return jsonResponse({ success: false, error: "Test ID boş olamaz." }, 400);
+
+          const testEntityKey = `cache:getTestById:${stableStringify({ id: targetId })}`;
+          const currentRaw = await env.DB.get(testEntityKey);
+          if (!currentRaw) return jsonResponse({ success: false, error: `Test bulunamadı: ${targetId}` }, 404);
+
+          const current = JSON.parse(currentRaw);
+          const prevFirmaId = getTestFirmaId(current);
           const updated = createCanonicalTestRow(current, { id: targetId, explicit: params?.testInfo || {} });
-          const writes = [];
           const nextFirmaId = getTestFirmaId(updated);
-          if (prevFirmaId) {
-            nextState.testsByFirmaId[prevFirmaId] = (nextState.testsByFirmaId[prevFirmaId] || [])
-              .map((row) => getTestId(row) === targetId ? updated : row);
-            if (nextFirmaId && nextFirmaId !== prevFirmaId) {
-              nextState.testsByFirmaId[prevFirmaId] = (nextState.testsByFirmaId[prevFirmaId] || [])
-                .filter((row) => getTestId(row) !== targetId);
+          const writes = [
+            env.DB.put(testEntityKey, JSON.stringify(updated), { expirationTtl: CACHE_TTL }),
+          ];
+
+          if (prevFirmaId === nextFirmaId) {
+            // Aynı firma — listeyi güncelle
+            if (prevFirmaId) {
+              const firmaKey = `cache:getTestsByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`;
+              const firmaRaw = await env.DB.get(firmaKey);
+              const firmaList = firmaRaw ? JSON.parse(firmaRaw) : [];
+              const newList = firmaList.map(t => getTestId(t) === targetId ? updated : t);
+              writes.push(env.DB.put(firmaKey, JSON.stringify(newList), { expirationTtl: CACHE_TTL }));
             }
-            writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`, JSON.stringify(nextState.testsByFirmaId[prevFirmaId] || []), { expirationTtl: CACHE_TTL }));
+          } else {
+            // Firma değişti — eski listeden çıkar, yeni listeye ekle
+            if (prevFirmaId) {
+              const prevKey = `cache:getTestsByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`;
+              const prevRaw = await env.DB.get(prevKey);
+              const prevList = prevRaw ? JSON.parse(prevRaw) : [];
+              writes.push(env.DB.put(prevKey, JSON.stringify(prevList.filter(t => getTestId(t) !== targetId)), { expirationTtl: CACHE_TTL }));
+            }
+            if (nextFirmaId) {
+              const nextKey = `cache:getTestsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`;
+              const nextRaw = await env.DB.get(nextKey);
+              const nextList = nextRaw ? JSON.parse(nextRaw) : [];
+              nextList.push(updated);
+              writes.push(env.DB.put(nextKey, JSON.stringify(nextList), { expirationTtl: CACHE_TTL }));
+            }
           }
-          if (nextFirmaId && nextFirmaId !== prevFirmaId) {
-            nextState.testsByFirmaId[nextFirmaId] = [...(nextState.testsByFirmaId[nextFirmaId] || []), updated];
-            writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(nextState.testsByFirmaId[nextFirmaId] || []), { expirationTtl: CACHE_TTL }));
-          } else if (nextFirmaId && !prevFirmaId) {
-            nextState.testsByFirmaId[nextFirmaId] = [...(nextState.testsByFirmaId[nextFirmaId] || []), updated];
-            writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(nextState.testsByFirmaId[nextFirmaId] || []), { expirationTtl: CACHE_TTL }));
-          }
-          await saveTestIndexes(nextState);
+
           await Promise.all(writes);
-          return jsonResponse({ success: true, data: { id: targetId, row: updated }, kvPrimaryWrite: true, sheetsWrite: false });
+          return jsonResponse({ success: true, data: { id: targetId, test: updated }, kvPrimaryWrite: true, sheetsWrite: false });
         }
 
         if (env.DB && ["addProforma", "addProInfo", "updateProforma", "deleteProforma"].includes(action)) {
-          const state = await loadProformaIndexes();
-          if (!state) {
-            return jsonResponse({ success: false, error: "PROFORMA_KV_EMPTY", message: "Proforma KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
-          }
-
           if (action === "deleteProforma") {
             const targetId = String(params?.id || "").trim();
-            if (!targetId) {
-              return jsonResponse({ success: false, error: "Proforma ID boş olamaz." }, 400);
-            }
-
-            const existing = state.proformasById?.[targetId] || null;
-            if (!existing) {
-              return jsonResponse({ success: false, error: `Proforma bulunamadı: ${targetId}` }, 404);
-            }
-
+            if (!targetId) return jsonResponse({ success: false, error: "Proforma ID boş olamaz." }, 400);
+            const entityKey = `cache:getProformaById:${stableStringify({ id: targetId })}`;
+            const existingRaw = await env.DB.get(entityKey);
+            if (!existingRaw) return jsonResponse({ success: false, error: `Proforma bulunamadı: ${targetId}` }, 404);
+            const existing = JSON.parse(existingRaw);
             const firmaId = getProformaFirmaId(existing);
-            const nextState = {
-              proformasById: { ...state.proformasById },
-              proformasByFirmaId: { ...state.proformasByFirmaId },
-              nextId: state.nextId,
-            };
-            delete nextState.proformasById[targetId];
+            const writes = [env.DB.delete(entityKey)];
             if (firmaId) {
-              nextState.proformasByFirmaId[firmaId] = (nextState.proformasByFirmaId[firmaId] || [])
-                .filter((row) => getProformaId(row) !== targetId);
+              const firmaKey = `cache:getProformasByFirmaId:${stableStringify({ firmaId })}`;
+              const firmaRaw = await env.DB.get(firmaKey);
+              const firmaList = firmaRaw ? JSON.parse(firmaRaw) : [];
+              const filtered = firmaList.filter(p => getProformaId(p) !== targetId);
+              writes.push(env.DB.put(firmaKey, JSON.stringify(filtered), { expirationTtl: CACHE_TTL }));
             }
-            await saveProformaIndexes(nextState);
-            await Promise.all([
-              env.DB.delete(`cache:getProformaById:${stableStringify({ id: targetId })}`),
-              firmaId
-                ? env.DB.put(`cache:getProformaByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(nextState.proformasByFirmaId[firmaId] || []), { expirationTtl: CACHE_TTL })
-                : Promise.resolve(),
-            ]);
+            await Promise.all(writes);
             return jsonResponse({ success: true, data: { id: targetId }, kvPrimaryWrite: true, sheetsWrite: false });
           }
 
           if (action === "updateProforma") {
             const targetId = String(params?.id || "").trim();
-            if (!targetId) {
-              return jsonResponse({ success: false, error: "Proforma ID boş olamaz." }, 400);
-            }
-
-            const existing = state.proformasById?.[targetId] || null;
-            if (!existing) {
-              return jsonResponse({ success: false, error: `Proforma bulunamadı: ${targetId}` }, 404);
-            }
-
-            const updated = createCanonicalProformaRow({
-              id: targetId,
-              nick: existing[1] ?? "",
-              firmaNo: existing[2] ?? "",
-              kdvsiz: existing[3] ?? "0",
-              kdvOran: existing[4] ?? "20",
-              kdv: existing[5] ?? "0",
-              toplam: existing[6] ?? "0",
-              birim: existing[7] ?? "TL",
-              tarih: existing[8] ?? "",
-              konu: existing[9] ?? "",
-              ...(params?.proInfo || {})
-            }, { id: targetId });
-
+            if (!targetId) return jsonResponse({ success: false, error: "Proforma ID boş olamaz." }, 400);
+            const entityKey = `cache:getProformaById:${stableStringify({ id: targetId })}`;
+            const existingRaw = await env.DB.get(entityKey);
+            if (!existingRaw) return jsonResponse({ success: false, error: `Proforma bulunamadı: ${targetId}` }, 404);
+            const existing = JSON.parse(existingRaw);
+            const updated = createCanonicalProformaRow({ ...existing, ...(params?.proInfo || {}) }, { id: targetId });
             const prevFirmaId = getProformaFirmaId(existing);
             const nextFirmaId = getProformaFirmaId(updated);
-            const nextState = {
-              proformasById: { ...state.proformasById, [targetId]: updated },
-              proformasByFirmaId: { ...state.proformasByFirmaId },
-              nextId: state.nextId,
-            };
-
+            const writes = [env.DB.put(entityKey, JSON.stringify(updated), { expirationTtl: CACHE_TTL })];
             if (prevFirmaId) {
-              nextState.proformasByFirmaId[prevFirmaId] = (nextState.proformasByFirmaId[prevFirmaId] || [])
-                .map((row) => getProformaId(row) === targetId ? updated : row);
-              if (nextFirmaId && nextFirmaId !== prevFirmaId) {
-                nextState.proformasByFirmaId[prevFirmaId] = (nextState.proformasByFirmaId[prevFirmaId] || [])
-                  .filter((row) => getProformaId(row) !== targetId);
+              const prevKey = `cache:getProformasByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`;
+              const prevRaw = await env.DB.get(prevKey);
+              const prevList = prevRaw ? JSON.parse(prevRaw) : [];
+              if (nextFirmaId === prevFirmaId) {
+                writes.push(env.DB.put(prevKey, JSON.stringify(prevList.map(p => getProformaId(p) === targetId ? updated : p)), { expirationTtl: CACHE_TTL }));
+              } else {
+                writes.push(env.DB.put(prevKey, JSON.stringify(prevList.filter(p => getProformaId(p) !== targetId)), { expirationTtl: CACHE_TTL }));
               }
             }
             if (nextFirmaId && nextFirmaId !== prevFirmaId) {
-              nextState.proformasByFirmaId[nextFirmaId] = [...(nextState.proformasByFirmaId[nextFirmaId] || []), updated];
-            } else if (nextFirmaId && !prevFirmaId) {
-              nextState.proformasByFirmaId[nextFirmaId] = [...(nextState.proformasByFirmaId[nextFirmaId] || []), updated];
+              const nextKey = `cache:getProformasByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`;
+              const nextRaw = await env.DB.get(nextKey);
+              const nextList = nextRaw ? JSON.parse(nextRaw) : [];
+              nextList.push(updated);
+              writes.push(env.DB.put(nextKey, JSON.stringify(nextList), { expirationTtl: CACHE_TTL }));
             }
-
-            await saveProformaIndexes(nextState);
-            await Promise.all([
-              env.DB.put(`cache:getProformaById:${stableStringify({ id: targetId })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL }),
-              prevFirmaId
-                ? env.DB.put(`cache:getProformaByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`, JSON.stringify(nextState.proformasByFirmaId[prevFirmaId] || []), { expirationTtl: CACHE_TTL })
-                : Promise.resolve(),
-              nextFirmaId && nextFirmaId !== prevFirmaId
-                ? env.DB.put(`cache:getProformaByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(nextState.proformasByFirmaId[nextFirmaId] || []), { expirationTtl: CACHE_TTL })
-                : Promise.resolve(),
-            ]);
+            await Promise.all(writes);
             return jsonResponse({ success: true, data: { id: targetId, row: updated }, kvPrimaryWrite: true, sheetsWrite: false });
           }
 
-          const newId = String(state.nextId);
+          // addProforma / addProInfo
+          const nextId = await loadProformaNextId();
+          const newId = String(nextId);
           const created = createCanonicalProformaRow(params?.proInfo || {}, { id: newId });
-          const nextState = {
-            proformasById: { ...state.proformasById, [newId]: created },
-            proformasByFirmaId: { ...state.proformasByFirmaId },
-            nextId: String(parseInt(newId, 10) + 1),
-          };
           const firmaId = getProformaFirmaId(created);
+          const entityKey = `cache:getProformaById:${stableStringify({ id: newId })}`;
+          const writes = [
+            env.DB.put(entityKey, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
+            env.DB.put(indexKeys.proformaNextId, String(nextId + 1), { expirationTtl: CACHE_TTL }),
+          ];
           if (firmaId) {
-            nextState.proformasByFirmaId[firmaId] = [...(nextState.proformasByFirmaId[firmaId] || []), created];
+            const firmaKey = `cache:getProformasByFirmaId:${stableStringify({ firmaId })}`;
+            const firmaRaw = await env.DB.get(firmaKey);
+            const firmaList = firmaRaw ? JSON.parse(firmaRaw) : [];
+            firmaList.push(created);
+            writes.push(env.DB.put(firmaKey, JSON.stringify(firmaList), { expirationTtl: CACHE_TTL }));
           }
-          await saveProformaIndexes(nextState);
-          await Promise.all([
-            env.DB.put(`cache:getProformaById:${stableStringify({ id: newId })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
-            firmaId
-              ? env.DB.put(`cache:getProformaByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(nextState.proformasByFirmaId[firmaId] || []), { expirationTtl: CACHE_TTL })
-              : Promise.resolve(),
-          ]);
+          await Promise.all(writes);
           return jsonResponse({ success: true, data: { id: newId, row: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false });
         }
 
         if (env.DB && ["scheduleAudit", "updateAudit"].includes(action)) {
-          const state = await loadAuditIndexes();
-          if (!state) {
-            return jsonResponse({ success: false, error: "AUDIT_KV_EMPTY", message: "Denetim KV verisi boş. Önce manuel Sheets -> KV senkronizasyonu yapın." });
-          }
-
           if (action === "scheduleAudit") {
-            const newId = String(state.nextId);
+            const nextId = await loadAuditNextId();
+            const newId = String(nextId);
             const created = createCanonicalAuditRow(params?.data || {}, { id: newId });
-            const grouped = { ...state.auditsByFirmaId };
             const firmaId = getAuditFirmaId(created);
+            const entityKey = `cache:getAuditById:${stableStringify({ id: newId })}`;
+            const writes = [
+              env.DB.put(entityKey, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
+              env.DB.put(indexKeys.auditNextId, String(parseInt(newId, 10) + 1), { expirationTtl: CACHE_TTL }),
+              env.DB.delete("cache:getAudits:{}"),
+            ];
             if (firmaId) {
-              grouped[firmaId] = [...(grouped[firmaId] || []), created];
+              const firmaKey = `cache:getAuditsByFirmaId:${stableStringify({ firmaId })}`;
+              const firmaRaw = await env.DB.get(firmaKey);
+              const firmaList = firmaRaw ? JSON.parse(firmaRaw) : [];
+              firmaList.push(created);
+              writes.push(env.DB.put(firmaKey, JSON.stringify(firmaList), { expirationTtl: CACHE_TTL }));
             }
-            await saveAuditIndexes({ auditsByFirmaId: grouped, nextId: String(parseInt(newId, 10) + 1) });
-            
-            // Per-firma request cache'ini temizle (bir sonraki çağrıda yeni indeksi okusun)
-            if (firmaId) {
-              const resKey = `cache:getAuditsByFirmaId:${stableStringify({ firmaId })}`;
-              ctx.waitUntil(env.DB.delete(resKey));
-            }
-            
-            return jsonResponse({ success: true, data: { id: newId, row: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false, sideEffectsSkipped: true });
+            await Promise.all(writes);
+            return jsonResponse({ success: true, data: { id: newId, audit: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false, sideEffectsSkipped: true });
           }
 
+          // updateAudit
           const targetId = String(params?.id || "").trim();
-          if (!targetId) {
-            return jsonResponse({ success: false, error: "Denetim ID boş olamaz." }, 400);
-          }
-          let current = null;
-          let prevFirmaId = "";
-          for (const [firmaId, rows] of Object.entries(state.auditsByFirmaId)) {
-            const found = (Array.isArray(rows) ? rows : []).find((row) => getAuditId(row) === targetId);
-            if (found) {
-              current = found;
-              prevFirmaId = String(firmaId);
-              break;
-            }
-          }
-          if (!current) {
-            return jsonResponse({ success: false, error: `Denetim bulunamadı: ${targetId}` }, 404);
-          }
-          const updated = createCanonicalAuditRow({ ...auditRowToInfo(current), ...(params?.data || params?.auditInfo || {}) }, { id: targetId });
-          const grouped = { ...state.auditsByFirmaId };
-          const writes = [];
+          if (!targetId) return jsonResponse({ success: false, error: "Denetim ID boş olamaz." }, 400);
+
+          const entityKey = `cache:getAuditById:${stableStringify({ id: targetId })}`;
+          const currentRaw = await env.DB.get(entityKey);
+          if (!currentRaw) return jsonResponse({ success: false, error: `Denetim bulunamadı: ${targetId}` }, 404);
+
+          const current = JSON.parse(currentRaw);
+          const prevFirmaId = getAuditFirmaId(current);
+          const updated = createCanonicalAuditRow({ ...current, ...(params?.data || params?.auditInfo || {}) }, { id: targetId });
           const nextFirmaId = getAuditFirmaId(updated);
-          if (prevFirmaId) {
-            grouped[prevFirmaId] = (grouped[prevFirmaId] || []).map((row) => getAuditId(row) === targetId ? updated : row);
-            if (nextFirmaId && nextFirmaId !== prevFirmaId) {
-              grouped[prevFirmaId] = (grouped[prevFirmaId] || []).filter((row) => getAuditId(row) !== targetId);
+          const writes = [
+            env.DB.put(entityKey, JSON.stringify(updated), { expirationTtl: CACHE_TTL }),
+            env.DB.delete("cache:getAudits:{}"),
+          ];
+
+          if (prevFirmaId === nextFirmaId) {
+            if (prevFirmaId) {
+              const firmaKey = `cache:getAuditsByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`;
+              const firmaRaw = await env.DB.get(firmaKey);
+              const firmaList = firmaRaw ? JSON.parse(firmaRaw) : [];
+              writes.push(env.DB.put(firmaKey, JSON.stringify(firmaList.map(a => getAuditId(a) === targetId ? updated : a)), { expirationTtl: CACHE_TTL }));
             }
-            writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`, JSON.stringify(grouped[prevFirmaId] || []), { expirationTtl: CACHE_TTL }));
+          } else {
+            if (prevFirmaId) {
+              const prevKey = `cache:getAuditsByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`;
+              const prevRaw = await env.DB.get(prevKey);
+              const prevList = prevRaw ? JSON.parse(prevRaw) : [];
+              writes.push(env.DB.put(prevKey, JSON.stringify(prevList.filter(a => getAuditId(a) !== targetId)), { expirationTtl: CACHE_TTL }));
+            }
+            if (nextFirmaId) {
+              const nextKey = `cache:getAuditsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`;
+              const nextRaw = await env.DB.get(nextKey);
+              const nextList = nextRaw ? JSON.parse(nextRaw) : [];
+              nextList.push(updated);
+              writes.push(env.DB.put(nextKey, JSON.stringify(nextList), { expirationTtl: CACHE_TTL }));
+            }
           }
-          if (nextFirmaId && nextFirmaId !== prevFirmaId) {
-            grouped[nextFirmaId] = [...(grouped[nextFirmaId] || []), updated];
-          } else if (nextFirmaId && !prevFirmaId) {
-            grouped[nextFirmaId] = [...(grouped[nextFirmaId] || []), updated];
-          }
-          
-          await saveAuditIndexes({ auditsByFirmaId: grouped, nextId: state.nextId });
-          
-          // Request cache'lerini temizle
-          const purgeWrites = [];
-          if (prevFirmaId) {
-            purgeWrites.push(env.DB.delete(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`));
-          }
-          if (nextFirmaId && nextFirmaId !== prevFirmaId) {
-            purgeWrites.push(env.DB.delete(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`));
-          }
-          if (purgeWrites.length) ctx.waitUntil(Promise.all(purgeWrites));
-          
-          return jsonResponse({ success: true, data: { id: targetId, row: updated }, kvPrimaryWrite: true, sheetsWrite: false, sideEffectsSkipped: true });
+
+          await Promise.all(writes);
+          return jsonResponse({ success: true, data: { id: targetId, audit: updated }, kvPrimaryWrite: true, sheetsWrite: false, sideEffectsSkipped: true });
         }
 
         if (env.DB && ["addCertificate", "updateCertificate", "updateCertificateField", "updateGozetim"].includes(action)) {

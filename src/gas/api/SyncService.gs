@@ -147,45 +147,49 @@ const SyncService = {
   },
 
   /**
-   * Tüm sistem verilerini dışa aktarır.
-   * @returns {Object} { companies: [], certificates: [], certificateRows: [], tests: [], audits: [], auditObjects: [], proformas: [], consultants: [], standards: [], lastUpdate: string }
+   * Tüm sistem verilerini (veya seçili kapsamı) dışa aktarır.
+   * @param {string[]} scope - İsteğe bağlı kapsam dizisi (örn: ["certificates", "companies"])
    */
-  getFullExport: function() {
+  getFullExport: function(scope) {
     const start = new Date().getTime();
     try {
       const syncWarnings = [];
-      const companies = this._safeRead(syncWarnings, "Firmalar", () => BaseService.getDataAsObjects("Firmalar"));
-      // getCertificates endpoint'i object döndürüyor; cache formatını birebir korumak için object tutulur.
-      const certificates = this._safeRead(syncWarnings, "Sertifika(objects)", () => BaseService.getDataAsObjects("Sertifika"));
-      // getCertificatesByFirmaId endpoint'i 2D raw row döndürdüğü için ayrıca raw tutulur.
-      const certificateRows = this._safeRead(syncWarnings, "Sertifika(rows)", () => BaseService.getRawData("Sertifika"));
-      // Şirket detay ekranı için firma bazlı listeler
-      const tests = this._safeRead(syncWarnings, "Testler", () => BaseService.getRawData("Testler"));
-      const audits = this._safeRead(syncWarnings, "Denetim", () => BaseService.getRawData("Denetim"));
-      const auditObjects = this._mapAuditRows(audits);
-      const proformas = this._safeRead(syncWarnings, "Proforma", () => BaseService.getRawData("Proforma"));
-      const consultants = this._safeRead(syncWarnings, "Consultants", () => CompanyService.getConsultants());
-      const standards = this._safeRead(syncWarnings, "Standarts", () => BaseService.getDataAsObjects("Standarts"));
-
-      const now = new Date().getTime().toString();
-      PropertiesService.getScriptProperties().setProperty("LAST_UPDATE", now);
-
-      const data = {
-        companies,
-        certificates,
-        certificateRows,
-        tests,
-        audits,
-        auditObjects,
-        proformas,
-        consultants,
-        standards,
-        lastUpdate: now,
-        syncWarnings
-      };
+      const data = { lastUpdate: new Date().getTime().toString(), syncWarnings };
       
+      // Kapsam kontrolü — eğer scope belirtilmemişse her şeyi çek (Legacy Fallback)
+      const has = function(s) { 
+        return !scope || (Array.isArray(scope) && scope.includes(s)); 
+      };
+
+      if (has("companies")) {
+        data.companies = this._safeRead(syncWarnings, "Firmalar", () => BaseService.getDataAsObjects("Firmalar"));
+      }
+      if (has("certificates")) {
+        data.certificates = this._safeRead(syncWarnings, "Sertifika(objects)", () => BaseService.getDataAsObjects("Sertifika"));
+        data.certificateRows = this._safeRead(syncWarnings, "Sertifika(rows)", () => BaseService.getRawData("Sertifika"));
+      }
+      if (has("tests")) {
+        data.tests = this._safeRead(syncWarnings, "Testler", () => BaseService.getRawData("Testler"));
+      }
+      if (has("audits")) {
+        const audits = this._safeRead(syncWarnings, "Denetim", () => BaseService.getRawData("Denetim"));
+        data.audits = audits;
+        data.auditObjects = this._mapAuditRows(audits);
+      }
+      if (has("proformas")) {
+        data.proformas = this._safeRead(syncWarnings, "Proforma", () => BaseService.getRawData("Proforma"));
+      }
+      if (has("master")) {
+        data.consultants = this._safeRead(syncWarnings, "Consultants", () => CompanyService.getConsultants());
+        data.standards = this._safeRead(syncWarnings, "Standarts", () => BaseService.getDataAsObjects("Standarts"));
+        data.auditors = this._safeRead(syncWarnings, "Auditors", () => BaseService.getDataAsObjects("Auditors"));
+        data.testdocs = this._safeRead(syncWarnings, "TestDoc", () => BaseService.getRawData("TestDoc"));
+        data.sysdocs = this._safeRead(syncWarnings, "SysDoc", () => BaseService.getRawData("SysDoc"));
+      }
+
+      PropertiesService.getScriptProperties().setProperty("LAST_UPDATE", data.lastUpdate);
       const end = new Date().getTime();
-      Logger.log(`[SyncService] Full Export took ${end - start}ms`);
+      Logger.log(`[SyncService] Chunked Export (${scope || 'ALL'}) took ${end - start}ms`);
       return data;
     } catch (e) {
       BaseService.logError("getFullExport", e);

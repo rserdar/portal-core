@@ -367,45 +367,85 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     
     addEv("sync-master-btn", "click", async () => {
       setStatus("Sheets -> KV master sync baslatildi...");
+      toast.info("Master Veri senkronizasyonu baslatildi (Standards, Auditors, Consultants...)");
       const res = await api.bulkSyncMaster();
       if (!res.success) {
         setStatus("Master sync basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
+        toast.error("Master sync basarisiz: " + (res.error || "Bilinmeyen hata"));
         return;
       }
       await loadDataset(currentType);
       setStatus("Master sync tamamlandi.", "success");
+      toast.success("Master Veri basariyla senkronize edildi!");
     });
 
     addEv("full-sync-btn", "click", async () => {
       setStatus("Sheets -> KV tam senkron baslatildi...");
+      toast.info("Tüm sistem senkronizasyonu başlatıldı (Sertifikalar, Firmalar, Master...). Lütfen bekleyin...");
       const coreRes = await api.bulkSync();
       if (!coreRes.success) {
         setStatus("Core sync basarisiz: " + (coreRes.error || "Bilinmeyen hata"), "error");
+        toast.error("Sistem senkronizasyonu başarısız: " + (coreRes.error || "Bilinmeyen hata"));
         return;
       }
       const masterRes = await api.bulkSyncMaster();
       if (!masterRes.success) {
         setStatus("Master sync basarisiz: " + (masterRes.error || "Bilinmeyen hata"), "error");
+        toast.error("Master veri senkronizasyonu başarısız oldu.");
         return;
       }
       await loadDataset(currentType);
       setStatus("Sheets -> KV tam senkron tamamlandi.", "success");
+      toast.success("Tüm sistem verileri başarıyla senkronize edildi!");
     });
 
     addEv("ops-sync-btn", "click", async () => {
-      const scope = getSelectedScopes();
-      if (!scope.length) {
+      const scopes = getSelectedScopes();
+      if (!scopes.length) {
         setBackupStatus("Lutfen en az bir kapsam secin.", "error");
+        toast.warning("Lütfen senkronize edilecek en az bir kapsam seçin.");
         return;
       }
-      setBackupStatus("Sheets -> KV [" + scope.join(", ") + "] senkronizasyonu baslatildi...");
-      const res = await api.pullFromSheetsToKv(scope);
-      if (!res.success) {
-        setBackupStatus("Senkronizasyon basarisiz: " + (res.error || "Bilinmeyen hata"), "error");
-        return;
+
+      const btn = document.getElementById("ops-sync-btn") as HTMLButtonElement | null;
+      if (btn) btn.disabled = true;
+
+      try {
+        for (const scope of scopes) {
+          const label = scope === "companies" ? "Firmalar" : 
+                        scope === "certificates" ? "Sertifikalar" : 
+                        scope === "audits" ? "Denetimler" : 
+                        scope === "tests" ? "Testler" : 
+                        scope === "proformas" ? "Proformalar" : "Master Veri";
+
+          setBackupStatus(`${label} Sheets'ten çekiliyor... Lütfen bekleyin.`, "info");
+          toast.info(`${label} senkronizasyonu başlatıldı...`);
+
+          const res = await api.bulkSync([scope]);
+          if (!res.success) {
+            setBackupStatus(`${label} senkronizasyonu başarısız: ` + (res.error || "Bilinmeyen hata"), "error");
+            toast.error(`${label} senkronizasyonu başarısız oldu.`);
+            break; // Hata durumunda diğerlerine geçme
+          }
+
+          // Başarılıysa checkbox'ı bul ve kaldır
+          const checkbox = document.querySelector(`input[name="sync-scope"][value="${scope}"]`) as HTMLInputElement | null;
+          if (checkbox) checkbox.checked = false;
+
+          toast.success(`${label} başarıyla senkronize edildi.`);
+          
+          // Küçük bir bekleme (500ms)
+          await new Promise(r => setTimeout(r, 500));
+        }
+
+        await loadDataset(currentType);
+        setBackupStatus("Seçili işlemler tamamlandı.", "success");
+        toast.success("Tüm seçili senkronizasyon işlemleri başarıyla tamamlandı!");
+      } catch (err: any) {
+        toast.error("Senkronizasyon sırasında bir hata oluştu: " + err.message);
+      } finally {
+        if (btn) btn.disabled = false;
       }
-      await loadDataset(currentType);
-      setBackupStatus("Senkronizasyon tamamlandi (" + scope.join(", ") + ").", "success");
     });
 
     addEv("rebuild-stats-btn", "click", async () => {

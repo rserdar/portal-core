@@ -129,6 +129,7 @@ function doPost(e) {
         break;
 
       // --- PROFORMA SERVİSİ ---
+      case "getProformasByFirmaId":
       case "getProformaByFirmaId":
       case "gdfProforma":
         result.data = ProformaService.getByFirmaId(params.firmaId || params.id);
@@ -185,6 +186,12 @@ function doPost(e) {
 
       case "returnIso":
         result.data = MasterDataService.getLegacyIso();
+        result.success = true;
+        break;
+
+      case "getFullSyncData":
+        // [UPDATE] Filtreli senkronizasyon için scope parametresini aktar
+        result.data = SyncService.getFullExport(params.scope);
         result.success = true;
         break;
 
