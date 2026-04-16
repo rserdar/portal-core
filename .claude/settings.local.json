@@ -6,7 +6,8 @@
       "Bash(ls d:/Astro/Portal/*.toml)",
       "Bash(ls d:/Astro/Portal/*.toml d:/Astro/Portal/*.json)",
       "Bash(grep -n 'loadCertsFromStore\\\\|$certificates\\\\.subscribe\\\\|$certificates\\\\.get' d:/Astro/Portal/src/pages/company/index.astro)",
-      "Bash(grep -n \"^\\\\s*[a-zA-Z_$][a-zA-Z0-9_$.]*\\\\s*\\\\+\\\\s*=\" d:/Astro/Portal/src/pages/certificates/index.astro)"
+      "Bash(grep -n \"^\\\\s*[a-zA-Z_$][a-zA-Z0-9_$.]*\\\\s*\\\\+\\\\s*=\" d:/Astro/Portal/src/pages/certificates/index.astro)",
+      "Bash(npx pwa-assets-generator *)"
     ]
   }
 }

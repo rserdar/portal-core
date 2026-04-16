@@ -22,15 +22,30 @@ const { title } = Astro.props;
 	<head>
 		<meta charset="UTF-8" />
 		<ClientRouter />
-		<meta name="description" content="Medicert Astro Portal - Profesyonel Yönetim Sistemi" />
+		<meta name="description" content="Medicert Portal - Profesyonel Yönetim Sistemi" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+		<!-- Favicon -->
+		<link rel="icon" href="/favicon.ico" sizes="48x48" />
+		<link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
+
+		<!-- PWA -->
+		<link rel="manifest" href="/manifest.webmanifest" />
+		<meta name="theme-color" content="#6366f1" />
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="Medicert" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+
 		<meta name="generator" content={Astro.generator} />
 		<meta
 			http-equiv="Permissions-Policy"
 			content="identity-credentials-get=(), digital-credentials-get=(), publickey-credentials-get=(), otp-credentials=(), payment=()"
 		/>
-		<title>{title} | Astro Portal</title>
+		<!-- PWA Service Worker Registration -->
+		{ import.meta.env.PROD && <script src="/registerSW.js" is:inline></script> }
+		<title>{title} | Medicert Portal</title>
 		<script is:inline>
 			(() => {
 				const stored = localStorage.getItem('theme');
@@ -56,7 +71,7 @@ const { title } = Astro.props;
 				</div>
 
 				<footer class="mt-20 py-8 border-t border-border-main text-center text-sm text-muted">
-					<p>&copy; 2026 Medicert Astro Portal. Tüm hakları saklıdır.</p>
+					<p>&copy; 2026 Medicert Portal. Tüm hakları saklıdır.</p>
 				</footer>
 			</main>
 		</div>

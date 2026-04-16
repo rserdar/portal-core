@@ -1,5 +1,5 @@
 /**
- * 🛠️ Astro Portal Configuration
+ * 🛠️ Medicert Portal Configuration
  *
  * Cloudflare Worker endpoint ve uygulama meta bilgileri.
  * Üretimde PUBLIC_WORKER_URL zorunlu olmalı.
@@ -11,6 +11,6 @@ export const CONFIG = {
   // Local dev ve production aynı URL'i kullanabilir (CORS localhost'a açık).
   WORKER_URL: import.meta.env.PUBLIC_WORKER_URL || "https://portalapi.medicert.com.tr",
   
-  APP_NAME: "Astro Portal",
+  APP_NAME: "Medicert Portal",
   VERSION: "5.5.0",
 };

@@ -1,2 +1,10 @@
 /*
   Permissions-Policy: identity-credentials-get=(), digital-credentials-get=(), publickey-credentials-get=(), otp-credentials=(), payment=()
+
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+  Service-Worker-Allowed: /
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache
