@@ -15,6 +15,7 @@ import {
   Zap,
   ClipboardList,
   Users,
+  BarChart2,
 } from "lucide-astro";
 import TurkeyMap from "../components/TurkeyMap.astro";
 
@@ -390,6 +391,15 @@ const quickActions = [
           <span id="sync-label">GÖRÜNÜMÜ YENİLE (KV CACHE)</span>
         </button>
 
+        <button
+          id="btn-rebuild-stats"
+          class="w-full py-3 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-xs font-black rounded-2xl transition-all flex items-center justify-center gap-2 group relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-amber-300/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+          <BarChart2 size={14} id="rebuild-stats-icon" class="group-hover:scale-125 transition-transform duration-300" />
+          <span id="rebuild-stats-label">İSTATİSTİKLERİ YENİDEN HESAPLA</span>
+        </button>
+
         <div
           class="flex items-center justify-center gap-2 pt-2 grayscale opacity-50"
         >
@@ -487,12 +497,7 @@ const quickActions = [
     }
 
     function getCurrentMonthLabel(): string {
-      const now = new Date();
-      const monthName = now.toLocaleDateString("tr-TR", { month: "long" });
-      if (!monthName) return "Bu Ayki Gözetimler";
-      return (
-        monthName.charAt(0).toUpperCase() + monthName.slice(1) + " Gözetimleri"
-      );
+      return "Bekleyen Gözetimler";
     }
 
     // --- Render Functions ---
@@ -778,6 +783,74 @@ const quickActions = [
 
       if (btnSync) btnSync.addEventListener("click", handleSync);
 
+      // İstatistik Rebuild — çift onaylı
+      const btnRebuildStats = document.getElementById("btn-rebuild-stats") as HTMLButtonElement | null;
+      const rebuildStatsLabel = document.getElementById("rebuild-stats-label");
+      const rebuildStatsIcon = document.getElementById("rebuild-stats-icon");
+
+      let rebuildConfirmTimeout: ReturnType<typeof setInterval> | null = null;
+      let rebuildConfirmState = false;
+
+      const resetRebuildBtn = () => {
+        rebuildConfirmState = false;
+        if (rebuildConfirmTimeout) clearInterval(rebuildConfirmTimeout);
+        if (rebuildStatsLabel) rebuildStatsLabel.textContent = "İSTATİSTİKLERİ YENİDEN HESAPLA";
+        if (btnRebuildStats) {
+          btnRebuildStats.className = btnRebuildStats.className
+            .replace(/border-red-500\/50|bg-red-500\/20|text-red-400/g, "")
+            .trim() + " border-amber-500/30 bg-amber-500/10 text-amber-400";
+        }
+      };
+
+      const handleRebuildStats = async () => {
+        if (!rebuildConfirmState) {
+          rebuildConfirmState = true;
+          if (btnRebuildStats) {
+            btnRebuildStats.className = btnRebuildStats.className
+              .replace(/border-amber-500\/30|bg-amber-500\/10|text-amber-400/g, "")
+              .trim() + " border-red-500/50 bg-red-500/20 text-red-400";
+          }
+          let remaining = 5;
+          if (rebuildStatsLabel) rebuildStatsLabel.textContent = `EMİN MİSİN? TEKRAR BAS (${remaining})`;
+          const countInterval = setInterval(() => {
+            remaining--;
+            if (remaining <= 0) {
+              clearInterval(countInterval);
+              resetRebuildBtn();
+            } else {
+              if (rebuildStatsLabel) rebuildStatsLabel.textContent = `EMİN MİSİN? TEKRAR BAS (${remaining})`;
+            }
+          }, 1000);
+          rebuildConfirmTimeout = countInterval;
+          return;
+        }
+
+        // İkinci tıklama — çalıştır
+        resetRebuildBtn();
+        try {
+          if (btnRebuildStats) btnRebuildStats.disabled = true;
+          if (rebuildStatsLabel) rebuildStatsLabel.textContent = "HESAPLANIYOR...";
+          if (rebuildStatsIcon) rebuildStatsIcon.classList.add("animate-spin");
+
+          const res = await api.call("rebuildStats");
+          if (res.success && res.data) {
+            $dashboardStats.set(res.data);
+            await DB.save(DB.DASHBOARD_STATS, res.data);
+            toast.success("İstatistikler yeniden hesaplandı.");
+          } else {
+            toast.error("Hesaplama başarısız: " + (res?.error || "Bilinmeyen hata"));
+          }
+        } catch (err: any) {
+          toast.error("Beklenmeyen hata: " + (err?.message || err));
+        } finally {
+          if (btnRebuildStats) btnRebuildStats.disabled = false;
+          if (rebuildStatsLabel) rebuildStatsLabel.textContent = "İSTATİSTİKLERİ YENİDEN HESAPLA";
+          if (rebuildStatsIcon) rebuildStatsIcon.classList.remove("animate-spin");
+        }
+      };
+
+      if (btnRebuildStats) btnRebuildStats.addEventListener("click", handleRebuildStats);
+
       // Cleanup işlevi geri döndürülüyor
       return () => {
         unsubCompanies();
@@ -785,6 +858,8 @@ const quickActions = [
         unsubCertificates();
         unsubLastSync();
         if (btnSync) btnSync.removeEventListener("click", handleSync);
+        if (btnRebuildStats) btnRebuildStats.removeEventListener("click", handleRebuildStats);
+        if (rebuildConfirmTimeout) clearInterval(rebuildConfirmTimeout);
       };
     }
 

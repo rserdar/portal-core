@@ -261,12 +261,10 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
     const totalCompanies = sorted.reduce((sum, c) => sum + c.companyCount, 0);
     
     document.querySelectorAll('[id^="map-summary-cities"]').forEach(el => el.textContent = String(activeCities.length));
-    document.querySelectorAll('[id^="map-summary-top-city"]').forEach(el => el.textContent = sorted[0]?.name || '—');
+    document.querySelectorAll('p[id^="map-summary-top-city"]').forEach(el => el.textContent = sorted[0]?.name || '—');
     document.querySelectorAll('[id^="map-summary-companies"]').forEach(el => el.textContent = String(totalCompanies));
     
-    const label = new Date().toLocaleDateString('tr-TR', { month: 'long' });
-    const monthText = `${label.charAt(0).toUpperCase()}${label.slice(1)} Ayı Bekleyen`;
-    document.querySelectorAll('#city-month-label').forEach(el => el.textContent = monthText);
+    document.querySelectorAll('#city-month-label').forEach(el => el.textContent = 'Bekleyen Gözetimler');
   }
 
   function updateTopCities() {
@@ -391,6 +389,8 @@ import turkeySvg from '../assets/images/turkey.svg?raw';
     if (!val?.charts?.cities) return;
     const freshStats = new Map();
     Object.keys(val.charts.cities).forEach(key => {
+      // Sadece bilinen il key'lerini dahil et; "BILINMIYOR" vb. geçersiz key'leri atla
+      if (!DISPLAY_NAMES[key]) return;
       const data = val.charts.cities[key];
       freshStats.set(key, {
         key, name: displayCityName(key), code: '',

@@ -675,7 +675,7 @@ export default {
         // 🛡️ En dolgun veriyi seç
         if (fullList.length > summaryList.length && fullList.length > 0) {
           // Full list ham veri ise onu özetle / summarize et
-          certificates = fullList.map(item => createCertificateSummary(createCanonicalCertificate(item)));
+          certificates = fullList.map(item => createCertificateSummary(item));
           console.log(`[Stats] Using fullCertificates (${fullList.length}) summarized on-the-fly.`);
         } else {
           certificates = summaryList;
@@ -685,6 +685,14 @@ export default {
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
+        const today = new Date(currentYear, currentMonth, now.getDate());
+
+        // DD.MM.YYYY veya DD/MM/YYYY → Date (geçersizse null)
+        const parseTRDate = (str) => {
+          const m = String(str || "").trim().match(/^(\d{2})[./](\d{2})[./](\d{4})$/);
+          if (!m) return null;
+          return new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]));
+        };
 
         const stats = {
           totalCompanies: 0,
@@ -697,37 +705,57 @@ export default {
         const charts = { consultants: {}, yearly: {}, cityDensity: {}, cities: {} };
         const uniqueCompanies = new Set();
         const companyToCity = new Map();
+        const foreignCompanies = new Set();
+
+        // Türkçe karakterleri ASCII'ye çevirir (şehir ve durum normalize için)
+        const normalizeTR = (raw) =>
+          String(raw || "").trim().toUpperCase()
+            .replace(/\u0130/g, "I").replace(/Ğ/g, "G").replace(/Ü/g, "U")
+            .replace(/Ş/g, "S").replace(/Ö/g, "O").replace(/Ç/g, "C");
 
         companies.forEach(c => {
-          if (c.id) {
-            const city = String(c.city || c.City || c.Il || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I").replace(/Ğ/g, "G").replace(/Ü/g, "U").replace(/Ş/g, "S").replace(/Ö/g, "O").replace(/Ç/g, "C");
-            companyToCity.set(String(c.id), city);
+          if (!c.id) return;
+          // Sadece harf bırak: "T.C." → "TC", "TÜRKİYE" → "TURKIYE", "TR (İst.)" → "TR"
+          const ulkeStr = normalizeTR(c.ulke || c.Ulke || "").replace(/[^A-Z]/g, "");
+          const isTurkish = !ulkeStr || ["TR", "TC", "TURKIYE", "TURKEY"].includes(ulkeStr);
+          if (!isTurkish) {
+            foreignCompanies.add(String(c.id));
+            return;
           }
+          const city = normalizeTR(c.city || c.City || c.Il || c.il || c.sehir) || "BILINMIYOR";
+          companyToCity.set(String(c.id), city);
         });
 
         const cityMap = new Map();
 
         certificates.forEach((c) => {
           if (!c) return;
-          if (c.firmaNo) uniqueCompanies.add(String(c.firmaNo));
 
-          // Robust Status Mapping
-          const status = String(c.durum || c.Durum || c.Status || "AKTIF").toUpperCase().trim().replace(/\u0130/g, "I");
-          const isActive = status === "AKTIF" || status === "GEÇERLİ" || status === "GECERLI" || status === "VALID" || status === "GEERL";
+          // Yabancı firmaya ait sertifika tüm sayaçlardan dışlanıyor
+          const firmaNoStr = String(c.firmaNo || "");
+          if (firmaNoStr && foreignCompanies.has(firmaNoStr)) return;
+
+          if (firmaNoStr) uniqueCompanies.add(firmaNoStr);
+
+          // Aktif sertifika: bugün sertifikaTarihi ile gozetimTarihi arasında VE gözetim onaylanmamış
+          const certDate = parseTRDate(c.sertifikaTarihi);
+          const gozDate = parseTRDate(c.gozetimTarihi);
+          const gozConf = String(c.gozetimConfirmed || "").toUpperCase();
+          const gozNotConfirmed = gozConf !== "TRUE";
+
+          const isActive = certDate !== null && gozDate !== null &&
+            certDate <= today && today <= gozDate &&
+            gozNotConfirmed;
           if (isActive) stats.activeCertificates++;
 
-          // Robust Date Parsing
-          const gozStr = String(c.gozetimTarihi || "").trim();
-          const gozConf = String(c.gozetimConfirmed || "").toUpperCase();
-          const match = gozStr.match(/^(\d{2})[./](\d{2})[./](\d{4})$/);
+          // Bekleyen gözetim: geçen ay + bu ay + gelecek ay penceresi, onaylanmamış
+          // 1 aydan eski → yeniden belgelendirme kapsamı, pencere dışında kalıyor
+          const surveillanceWindowStart = new Date(currentYear, currentMonth - 1, 1);
+          const surveillanceWindowEnd = new Date(currentYear, currentMonth + 2, 0);
           let isPending = false;
-          if (match && (gozConf === "FALSE" || gozConf === "" || !gozConf)) {
-            const m = parseInt(match[2], 10) - 1;
-            const y = parseInt(match[3], 10);
-            if (m === currentMonth && y === currentYear) {
-              stats.pendingSurveillance++;
-              isPending = true;
-            }
+          if (gozDate && gozNotConfirmed && gozDate >= surveillanceWindowStart && gozDate <= surveillanceWindowEnd) {
+            stats.pendingSurveillance++;
+            isPending = true;
           }
 
           const dan = String(c.danisman || "Atanmamış").trim() || "Atanmamış";
@@ -737,7 +765,7 @@ export default {
           const yearMatch = dateStr.match(/[./](\d{4})$/);
           if (yearMatch) charts.yearly[yearMatch[1]] = (charts.yearly[yearMatch[1]] || 0) + 1;
 
-          const city = String(c.city || companyToCity.get(String(c.firmaNo)) || "BİLİNMİYOR").trim().toUpperCase().replace(/\u0130/g, "I").replace(/Ğ/g, "G").replace(/Ü/g, "U").replace(/Ş/g, "S").replace(/Ö/g, "O").replace(/Ç/g, "C");
+          const city = normalizeTR(c.city || companyToCity.get(firmaNoStr)) || "BILINMIYOR";
 
           if (!cityMap.has(city)) {
             cityMap.set(city, { activeCerts: 0, pendingSurveillance: 0, consultants: new Set(), totalCompanies: new Set(), nicknames: [] });
@@ -746,7 +774,7 @@ export default {
           if (isActive) entry.activeCerts++;
           if (isPending) entry.pendingSurveillance++;
           if (dan !== "Atanmamış") entry.consultants.add(dan);
-          if (c.firmaNo) entry.totalCompanies.add(String(c.firmaNo));
+          if (firmaNoStr) entry.totalCompanies.add(firmaNoStr);
           if (entry.nicknames.length < 15) entry.nicknames.push(c.nickname || "İsimsiz Firma");
 
           charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
