@@ -274,7 +274,33 @@ import { Icon } from "astro-icon/components";
   }
 
   // Lifecycle
+  let unsubCompanies: (() => void) | null = null;
+  let boundOnKey: ((e: KeyboardEvent) => void) | null = null;
+
+  function openSearch() {
+    if (!dialog) return;
+    dialog.showModal();
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    requestAnimationFrame(() => input?.focus());
+  }
+
+  function closeSearch() {
+    dialog?.close();
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+  }
+
+  function cleanup() {
+    if (boundOnKey) document.removeEventListener("keydown", boundOnKey);
+    if (unsubCompanies) unsubCompanies();
+    boundOnKey = null;
+    unsubCompanies = null;
+  }
+
   function init() {
+    cleanup();
+
     dialog = document.getElementById("search-dialog") as HTMLDialogElement;
     input = document.getElementById("search-input") as HTMLInputElement;
     hitsEl = document.getElementById("search-hits");
@@ -286,19 +312,17 @@ import { Icon } from "astro-icon/components";
 
     if (!dialog || !input) return;
 
-    $companies.subscribe(val => {
+    unsubCompanies = $companies.subscribe(val => {
       companies = Array.isArray(val) ? val : [];
       if (dialog?.open && input?.value.trim()) {
         renderResults(filterCompanies(input.value));
       }
     });
 
-    SyncManager.init();
-
     input.addEventListener("input", (e) => {
       if (debounceTimer) clearTimeout(debounceTimer);
       const val = (e.target as HTMLInputElement).value;
-      
+
       debounceTimer = window.setTimeout(() => {
         if (!val.trim()) {
           initialEl?.classList.remove("hidden");
@@ -307,7 +331,7 @@ import { Icon } from "astro-icon/components";
           noResultsEl?.classList.add("hidden");
           return;
         }
-        
+
         if (!companies.length) {
           loadingEl?.classList.remove("hidden");
           SyncManager.checkAndSync();
@@ -317,39 +341,34 @@ import { Icon } from "astro-icon/components";
       }, 150);
     });
 
-    const onKey = (e: KeyboardEvent) => {
+    boundOnKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        dialog?.open ? dialog.close() : dialog?.showModal();
+        dialog?.open ? closeSearch() : openSearch();
         return;
       }
       if (!dialog?.open) return;
-      if (e.key === "Escape") dialog.close();
+      if (e.key === "Escape") { e.preventDefault(); closeSearch(); }
       if (e.key === "ArrowDown") { e.preventDefault(); setActiveIndex(activeIndex + 1); }
       if (e.key === "ArrowUp") { e.preventDefault(); setActiveIndex(activeIndex - 1); }
       if (e.key === "Enter" && activeIndex >= 0) window.location.href = renderedResults[activeIndex].url;
     };
 
-    document.addEventListener("keydown", onKey);
-    const btns = document.querySelectorAll("[data-search-open], #search-open-btn");
-    btns.forEach(b => b.addEventListener("click", () => dialog?.showModal()));
-    closeBtn.addEventListener("click", () => dialog?.close());
-    backdropEl?.addEventListener("click", () => dialog?.close());
-    
+    document.addEventListener("keydown", boundOnKey);
+
+    document.querySelectorAll("[data-search-open], #search-open-btn")
+      .forEach(b => b.addEventListener("click", openSearch));
+    closeBtn?.addEventListener("click", closeSearch);
+    backdropEl?.addEventListener("click", closeSearch);
+
     dialog.addEventListener("close", () => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
     });
-    
-    dialog.addEventListener("show", () => { // Mock event if needed or use showModal directly
-      document.body.style.overflow = "hidden";
-      document.documentElement.style.overflow = "hidden";
-      input?.focus();
-    });
   }
 
   document.addEventListener("astro:page-load", init);
-  init();
+  document.addEventListener("astro:before-swap", cleanup);
 </script>
 
 

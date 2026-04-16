@@ -1850,20 +1850,36 @@ import {
             ? `<span class="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[9px] font-bold">YAKLAŞAN</span>`
             : `<span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">AKTİF</span>`;
 
-      const detailCards = [
-        { label: 'Denetim Tipi', value: denetim },
-        { label: 'Akreditasyon', value: akreditasyon },
+      const makeCard = (label: string, value: string, extraClass = '') =>
+        `<div class="${extraClass} rounded-xl border border-border-main bg-surface-hover p-3 space-y-1">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-muted">${escHtml(label)}</p>
+          <p class="text-xs text-main leading-relaxed break-words">${escHtml(value)}</p>
+        </div>`;
+
+      // Sadece mobilde görünür — masa üstünde zaten satırda gösteriliyor
+      const mobileCards = [
+        { label: 'Sertifika Tarihi', value: belgeTarihi },
+        { label: 'Gözetim Tarihi', value: gozT },
+        { label: 'Sertifika No', value: sertNo },
+        { label: 'Danışman', value: danisman },
+      ].filter(i => i.value).map(i => makeCard(i.label, i.value, 'sm:hidden')).join('');
+
+      // Her iki boyutta da görünür
+      const sharedCards = [
         { label: 'Kapsam', value: kapsam },
         { label: 'Scope', value: scope },
+      ].filter(i => i.value).map(i => makeCard(i.label, i.value)).join('');
+
+      // Sadece masaüstünde görünür
+      const desktopCards = [
+        { label: 'Denetim Tipi', value: denetim },
+        { label: 'Akreditasyon', value: akreditasyon },
         { label: 'Not', value: note },
         { label: 'QR', value: qr },
         { label: 'Calendar ID', value: eventId },
-      ].filter((item) => item.value).map((item) => `
-        <div class="rounded-xl border border-border-main bg-surface-hover p-3 space-y-1">
-          <p class="text-[10px] font-bold uppercase tracking-widest text-muted">${escHtml(item.label)}</p>
-          <p class="text-xs text-main leading-relaxed break-words">${escHtml(item.value)}</p>
-        </div>
-      `).join('');
+      ].filter(i => i.value).map(i => makeCard(i.label, i.value, 'hidden sm:block')).join('');
+
+      const detailCards = mobileCards + sharedCards + desktopCards;
 
       const detailLink = certLink
         ? `<a href="${escHtml(certLink)}" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-emerald-300 hover:bg-emerald-500/15 transition-colors">Belgeyi Aç</a>`
