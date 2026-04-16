@@ -70,12 +70,7 @@ const BaseService = {
     }
   },
 
-  /**
-   * Sayfadaki tüm verileri nesne dizisi olarak döner.
-   * getDisplayValues() kullanır — tarih ve boolean alanları Sheets'te göründüğü
-   * gibi string olarak döner (ör. "15.01.2024", "TRUE").
-   */
-  getDataAsObjects: function(sheetName) {
+  getDataAsObjects: function(sheetName, offset, limit) {
     const ss = this.openSS();
     const sheet = ss.getSheetByName(sheetName);
 
@@ -87,7 +82,15 @@ const BaseService = {
     if (lastRow < 2) return [];
 
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0].map(h => String(h).trim());
-    const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getDisplayValues();
+    
+    // Paging logic
+    const startRow = (typeof offset === "number" ? offset : 0) + 2;
+    const maxPossibleRows = lastRow - startRow + 1;
+    const numRows = (typeof limit === "number" && limit > 0) ? Math.min(limit, maxPossibleRows) : maxPossibleRows;
+
+    if (numRows <= 0) return [];
+
+    const data = sheet.getRange(startRow, 1, numRows, sheet.getLastColumn()).getDisplayValues();
 
     return data.map(row => {
       return headers.reduce((obj, header, i) => {
@@ -98,10 +101,10 @@ const BaseService = {
   },
 
   /**
-   * Sayfadaki tüm verileri ham dizi (2D Array) olarak döner.
+   * Sayfadaki verileri ham dizi (2D Array) olarak döner (Paging destekli).
    * Başlık satırını atlar. getDisplayValues() kullanır.
    */
-  getRawData: function(sheetName) {
+  getRawData: function(sheetName, offset, limit) {
     try {
       const ss = this.openSS();
       const sheet = ss.getSheetByName(sheetName);
@@ -110,10 +113,30 @@ const BaseService = {
       const lastRow = sheet.getLastRow();
       if (lastRow < 2) return [];
 
-      return sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getDisplayValues();
+      const startRow = (typeof offset === "number" ? offset : 0) + 2;
+      const maxPossibleRows = lastRow - startRow + 1;
+      const numRows = (typeof limit === "number" && limit > 0) ? Math.min(limit, maxPossibleRows) : maxPossibleRows;
+
+      if (numRows <= 0) return [];
+
+      return sheet.getRange(startRow, 1, numRows, sheet.getLastColumn()).getDisplayValues();
     } catch (e) {
       this.logError("getRawData", e);
       return [];
+    }
+  },
+
+  /**
+   * Bir sayfadaki toplam veri satırı sayısını döner (Başlık hariç).
+   */
+  getTotalRows: function(sheetName) {
+    try {
+      const ss = this.openSS();
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet) return 0;
+      return Math.max(0, sheet.getLastRow() - 1);
+    } catch (e) {
+      return 0;
     }
   },
 

@@ -149,42 +149,52 @@ const SyncService = {
   /**
    * Tüm sistem verilerini (veya seçili kapsamı) dışa aktarır.
    * @param {string[]} scope - İsteğe bağlı kapsam dizisi (örn: ["certificates", "companies"])
+   * @param {Object} params - Paging parametreleri {offset, limit}
    */
-  getFullExport: function(scope) {
+  getFullExport: function(scope, params) {
     const start = new Date().getTime();
+    const p = params || {};
+    const offset = p.offset;
+    const limit = p.limit;
+
     try {
       const syncWarnings = [];
-      const data = { lastUpdate: new Date().getTime().toString(), syncWarnings };
+      const data = { lastUpdate: new Date().getTime().toString(), syncWarnings, totalCount: 0 };
       
-      // Kapsam kontrolü — eğer scope belirtilmemişse her şeyi çek (Legacy Fallback)
       const has = function(s) { 
         return !scope || (Array.isArray(scope) && scope.includes(s)); 
       };
 
       if (has("companies")) {
-        data.companies = this._safeRead(syncWarnings, "Firmalar", () => BaseService.getDataAsObjects("Firmalar"));
+        data.companies = BaseService.getDataAsObjects("Firmalar", offset, limit);
+        data.totalCount = BaseService.getTotalRows("Firmalar");
       }
       if (has("certificates")) {
-        data.certificates = this._safeRead(syncWarnings, "Sertifika(objects)", () => BaseService.getDataAsObjects("Sertifika"));
-        data.certificateRows = this._safeRead(syncWarnings, "Sertifika(rows)", () => BaseService.getRawData("Sertifika"));
+        data.certificates = BaseService.getDataAsObjects("Sertifika", offset, limit);
+        data.certificateRows = BaseService.getRawData("Sertifika", offset, limit);
+        data.totalCount = BaseService.getTotalRows("Sertifika");
       }
       if (has("tests")) {
-        data.tests = this._safeRead(syncWarnings, "Testler", () => BaseService.getRawData("Testler"));
+        data.tests = BaseService.getRawData("Testler", offset, limit);
+        data.totalCount = BaseService.getTotalRows("Testler");
       }
       if (has("audits")) {
-        const audits = this._safeRead(syncWarnings, "Denetim", () => BaseService.getRawData("Denetim"));
+        const audits = BaseService.getRawData("Denetim", offset, limit);
         data.audits = audits;
         data.auditObjects = this._mapAuditRows(audits);
+        data.totalCount = BaseService.getTotalRows("Denetim");
       }
       if (has("proformas")) {
-        data.proformas = this._safeRead(syncWarnings, "Proforma", () => BaseService.getRawData("Proforma"));
+        data.proformas = BaseService.getRawData("Proforma", offset, limit);
+        data.totalCount = BaseService.getTotalRows("Proforma");
       }
       if (has("master")) {
-        data.consultants = this._safeRead(syncWarnings, "Consultants", () => CompanyService.getConsultants());
-        data.standards = this._safeRead(syncWarnings, "Standarts", () => BaseService.getDataAsObjects("Standarts"));
-        data.auditors = this._safeRead(syncWarnings, "Auditors", () => BaseService.getDataAsObjects("Auditors"));
-        data.testdocs = this._safeRead(syncWarnings, "TestDoc", () => BaseService.getRawData("TestDoc"));
-        data.sysdocs = this._safeRead(syncWarnings, "SysDoc", () => BaseService.getRawData("SysDoc"));
+        data.consultants = CompanyService.getConsultants();
+        data.standards = BaseService.getDataAsObjects("Standarts");
+        data.auditors = BaseService.getDataAsObjects("Auditors");
+        data.testdocs = BaseService.getRawData("TestDoc");
+        data.sysdocs = BaseService.getRawData("SysDoc");
+        data.totalCount = 1; // Master data genellikle paging gerektirmez
       }
 
       PropertiesService.getScriptProperties().setProperty("LAST_UPDATE", data.lastUpdate);
