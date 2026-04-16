@@ -83,30 +83,29 @@ export const SyncManager = {
           console.warn('[Sync] Master KV miss detected. Automatic master hydration is disabled.');
         }
 
-        const localCount = ($certificates.get() || []).length;
-        const serverCount = (certRes.data || []).length;
+        const localCertCount = ($certificates.get() || []).length;
+        const localCompCount = ($companies.get() || []).length;
+        const serverCertCount = (certRes.data || []).length;
+        const serverCompCount = (compRes.data || []).length;
 
         // 🛡️ Data Integrity Guard: Don't overwrite if server returns significantly less data than local
-        // (unless local is very small or it's an intentional clear)
-        if (localCount > 500 && serverCount < (localCount * 0.5)) {
-          console.error(`[Sync] Safety Guard Triggered! Local: ${localCount}, Server: ${serverCount}. Potential data loss prevented.`);
-          toast.warning(`Veri kaybı önlendi: Sunucudan sadece ${serverCount} kayıt geldi. Mevcut ${localCount} kaydınız korundu.`, { duration: 8000 });
-          throw new Error(`Veri bütünlüğü riski: Sunucudan gelen veri (%${Math.round((serverCount/localCount)*100)}) yereldekinden çok daha az. Lütfen sunucu senkronizasyonunu (Sheets -> KV) kontrol edin.`);
+        if (localCertCount > 10 && serverCertCount < (localCertCount * 0.5)) {
+          console.error(`[Sync] Safety Guard Triggered! Local certs: ${localCertCount}, Server certs: ${serverCertCount}. Potential data loss prevented.`);
+          toast.warning(`Veri kaybı önlendi: Sunucudan ${serverCertCount} sertifika geldi, yerelde ${localCertCount} var. Mevcut veriniz korundu.`, { duration: 8000 });
+          throw new Error(`Veri bütünlüğü riski: Sertifikalar — sunucu %${Math.round((serverCertCount/localCertCount)*100)} döndürdü. Sheets → KV senkronizasyonunu kontrol edin.`);
+        }
+        if (localCompCount > 10 && serverCompCount < (localCompCount * 0.5)) {
+          console.error(`[Sync] Safety Guard Triggered! Local companies: ${localCompCount}, Server companies: ${serverCompCount}. Potential data loss prevented.`);
+          toast.warning(`Veri kaybı önlendi: Sunucudan ${serverCompCount} firma geldi, yerelde ${localCompCount} var. Mevcut veriniz korundu.`, { duration: 8000 });
+          throw new Error(`Veri bütünlüğü riski: Firmalar — sunucu %${Math.round((serverCompCount/localCompCount)*100)} döndürdü. Sheets → KV senkronizasyonunu kontrol edin.`);
         }
 
         const now = Date.now();
-        await Promise.all([
-          DB.save(DB.COMPANIES, compRes.data),
-          DB.save(DB.CERTIFICATES, certRes.data),
-          DB.save(DB.DASHBOARD_STATS, dashRes.data),
-          DB.save(DB.LAST_SYNC, now)
-        ]);
-        
         $companies.set(compRes.data || []);
         $certificates.set(certRes.data || []);
         $dashboardStats.set(dashRes.data || null);
         $lastSyncTime.set(now);
-        
+
         await Promise.all([
           DB.save(DB.COMPANIES, compRes.data || []),
           DB.save(DB.CERTIFICATES, certRes.data || []),

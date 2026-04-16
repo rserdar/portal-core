@@ -49,7 +49,7 @@ const stats = [
     glowClass: "bg-blue-500/10 group-hover:bg-blue-500/20",
   },
   {
-    label: "Daha Fazlası",
+    label: "Bekleyen Gözetim",
     id: "stat-pending-count",
     icon: CalendarClock,
     iconClass:
@@ -437,7 +437,7 @@ const quickActions = [
 
     <div id="activity-skeleton" class="space-y-4">
       {
-        [1, 2, 3].map(() => (
+        [1, 2, 3, 4, 5].map(() => (
           <div class="flex items-center gap-5 py-4 px-4 rounded-2xl animate-pulse">
             <div class="w-12 h-12 rounded-2xl bg-surface-hover flex-shrink-0" />
             <div class="flex-1 space-y-2">
@@ -611,19 +611,18 @@ const quickActions = [
         '<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> <span class="text-rose-400">Bağlanamadı</span>';
       const checkHTML =
         '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> <span class="text-amber-400">Kontrol...</span>';
+      const standbyHTML =
+        '<span class="w-1.5 h-1.5 rounded-full bg-slate-500 opacity-60"></span> <span class="text-muted">Talep Bekleniyor</span>';
 
       if (kvEl) kvEl.innerHTML = checkHTML;
-      if (gasEl) gasEl.innerHTML = checkHTML;
+      if (gasEl) gasEl.innerHTML = standbyHTML;
 
       try {
+        // syncCheck artık worker'dan doğrudan yanıt verir, GAS'a gitmez
         const res = await api.call("syncCheck");
-        if (res.success) {
-          if (kvEl) kvEl.innerHTML = onlineHTML;
-          if (gasEl) gasEl.innerHTML = onlineHTML;
-        } else {
-          if (kvEl) kvEl.innerHTML = onlineHTML;
-          if (gasEl) gasEl.innerHTML = offlineHTML;
-        }
+        if (kvEl) kvEl.innerHTML = res.success ? onlineHTML : offlineHTML;
+        // GAS durumu yalnızca manuel işlemde test edilir; burada talep bekleniyor gösterilir
+        if (gasEl) gasEl.innerHTML = standbyHTML;
       } catch {
         if (kvEl) kvEl.innerHTML = offlineHTML;
         if (gasEl) gasEl.innerHTML = offlineHTML;
@@ -638,7 +637,9 @@ const quickActions = [
       if (!list || !skeleton || !empty) return;
 
       skeleton.classList.add("hidden");
-      const recent = (companies || []).slice().reverse().slice(0, 5);
+      const recent = [...(companies || [])]
+        .sort((a, b) => parseInt(b.id || "0") - parseInt(a.id || "0"))
+        .slice(0, 5);
 
       if (recent.length === 0) {
         list.classList.add("hidden");
@@ -740,10 +741,6 @@ const quickActions = [
       }
     });
 
-    const unsubCertificates = $certificates.subscribe((val) => {
-      // Legacy support if needed, but primarily handled by unsubDashboard now
-    });
-
       const unsubLastSync = $lastSyncTime.subscribe((val) => {
         if (lastSyncLabel && val) {
           lastSyncLabel.textContent = new Date(Number(val))
@@ -764,12 +761,6 @@ const quickActions = [
           if (syncLabel) syncLabel.textContent = "AKTARILIYOR...";
           if (syncIcon) syncIcon.classList.add("animate-spin");
 
-          // KV stats'ı tazele, direkt store + IndexedDB'yi güncelle
-          const rebuildRes = await api.call("rebuildStats");
-          if (rebuildRes.success && rebuildRes.data) {
-            $dashboardStats.set(rebuildRes.data);
-            await DB.save(DB.DASHBOARD_STATS, rebuildRes.data);
-          }
           await SyncManager.checkAndSync();
           toast.success("Mevcut KV verisi tarayıcıyla yeniden eşitlendi.");
         } catch (err: any) {
@@ -855,7 +846,6 @@ const quickActions = [
       return () => {
         unsubCompanies();
         unsubDashboard();
-        unsubCertificates();
         unsubLastSync();
         if (btnSync) btnSync.removeEventListener("click", handleSync);
         if (btnRebuildStats) btnRebuildStats.removeEventListener("click", handleRebuildStats);
