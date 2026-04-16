@@ -813,7 +813,7 @@ export default {
           charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
         });
 
-        stats.totalCompanies = uniqueCompanies.size;
+        // stats.totalCompanies = uniqueCompanies.size; // Bu satır gerçek sayımı bozuyordu, devre dışı bırakıldı
 
         cityMap.forEach((entry, city) => {
           charts.cities[city] = {
@@ -829,8 +829,8 @@ export default {
         await env.DB.put(indexKeys.dashboardStats, JSON.stringify(payload), { expirationTtl: CACHE_TTL });
         return payload;
       } catch (err) {
-        console.error("rebuildDashboardStats Hatası:", err);
-        return null;
+        // console.error("rebuildDashboardStats Hatası:", err);
+        throw err; // Hata artık yutulmuyor, yukarı fırlatılıyor
       }
     };
     const createCanonicalTestRow = (source, options = {}) => {
