@@ -669,6 +669,22 @@ export default {
     };
 
     /**
+     * 📜 KV Paging Helper — Cloudflare'in 1.000 liste limitini cursor ile aşar
+     * Tüm eşleşen anahtarları döndürür. env.DB.list({ prefix, cursor }) kullanır.
+     */
+    const listAllKvKeys = async (prefix) => {
+      const keys = [];
+      let cursor = "";
+      while (true) {
+        const list = await env.DB.list({ prefix, cursor });
+        keys.push(...list.keys);
+        if (list.list_complete) break;
+        cursor = list.cursor;
+      }
+      return keys;
+    };
+
+    /**
      * 📊 REBUILD DASHBOARD STATS (New Gen Architecture)
      * Verileri tek tek yüklemek yerine indeksleri çekip bellekte istatistikleri fırınlar.
      */
@@ -683,8 +699,8 @@ export default {
 
         // [LIMIT REHAB] 1.000 Limitini aşan gerçek sayımlar
         const [realCertKeys, realCompKeys] = await Promise.all([
-          listAllKvKeys(env, "cache:getCertificateById:"),
-          listAllKvKeys(env, "cache:company:")
+          listAllKvKeys("cache:getCertificateById:"),
+          listAllKvKeys("cache:company:")
         ]);
 
         let certificates = [];
@@ -3322,34 +3338,4 @@ export default {
       headers: { ...corsHeaders, "Content-Type": "text/plain" },
     });
   },
-  
-  /**
-   * 📜 KV Paging Helper
-   * Cloudflare KV list() limitini (1.000) aşarak tüm anahtarları toplar.
-   */
-  async function listAllKvKeys(env, prefix) {
-    const keys = [];
-    let cursor = "";
-    while (true) {
-      const list = await env.DB.list({ prefix, cursor });
-      keys.push(...list.keys);
-      if (list.list_complete) break;
-      cursor = list.cursor;
-    }
-    return keys;
-  }
-
-  async function cleanupCache(env) {
-    try {
-      const allCacheKeys = await listAllKvKeys(env, "cache:");
-      for (let i = 0; i < allCacheKeys.length; i += 50) {
-        const batch = allCacheKeys.slice(i, i + 50).map(k => env.DB.delete(k.name));
-        await Promise.all(batch);
-      }
-      return true;
-    } catch (err) {
-      console.error("[Cleanup] Error:", err);
-      return false;
-    }
-  }
 };
