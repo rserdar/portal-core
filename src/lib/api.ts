@@ -293,8 +293,8 @@ export const api = {
   },
 
   // 🏁 Sistem Yönetimi
-  async bulkSync(scope?: string[]) { 
-    return this.call("bulkSync", scope ? { scope } : {}); 
+  async bulkSync(params?: { scope?: string[], offset?: number, limit?: number }) { 
+    return this.call("bulkSync", params || {}); 
   },
   async bulkSyncMaster() { return this.call("bulkSyncMaster"); },
   async pullFromSheetsToKv(scope?: string[]) {

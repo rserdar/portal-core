@@ -411,6 +411,8 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
       if (btn) btn.disabled = true;
 
       try {
+        const CHUNK_SIZE = 1000;
+
         for (const scope of scopes) {
           const label = scope === "companies" ? "Firmalar" : 
                         scope === "certificates" ? "Sertifikalar" : 
@@ -418,31 +420,53 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
                         scope === "tests" ? "Testler" : 
                         scope === "proformas" ? "Proformalar" : "Master Veri";
 
-          setBackupStatus(`${label} Sheets'ten çekiliyor... Lütfen bekleyin.`, "info");
-          toast.info(`${label} senkronizasyonu başlatıldı...`);
-
-          const res = await api.bulkSync([scope]);
-          if (!res.success) {
-            setBackupStatus(`${label} senkronizasyonu başarısız: ` + (res.error || "Bilinmeyen hata"), "error");
-            toast.error(`${label} senkronizasyonu başarısız oldu.`);
-            break; // Hata durumunda diğerlerine geçme
+          if (scope === "master") {
+            setBackupStatus("Master veriler çekiliyor...", "info");
+            toast.info("Master veri senkronizasyonu başlatıldı...");
+            const res = await api.bulkSyncMaster();
+            if (!res.success) throw new Error("Master veri senkronizasyonu başarısız.");
+            const checkbox = document.querySelector(`input[name="sync-scope"][value="master"]`) as HTMLInputElement | null;
+            if (checkbox) checkbox.checked = false;
+            toast.success("Master veriler başarıyla güncellendi.");
+            continue;
           }
 
-          // Başarılıysa checkbox'ı bul ve kaldır
+          // 1. İlk parçayı çek ve toplam sayıyı öğren
+          setBackupStatus(`${label} çekiliyor...`, "info");
+          const firstRes = await api.bulkSync({ scope: [scope], offset: 0, limit: CHUNK_SIZE });
+          if (!firstRes.success) throw new Error(`${label} ilk parça çekilirken hata oluştu.`);
+
+          const totalCount = firstRes.data?.totalCount || 0;
+          const totalPages = Math.ceil(totalCount / CHUNK_SIZE);
+
+          if (totalPages > 1) {
+            toast.info(`${label} senkronizasyonu başlatıldı (1/${totalPages})...`);
+            
+            for (let page = 1; page < totalPages; page++) {
+              setBackupStatus(`${label} çekiliyor (${page + 1}/${totalPages})...`, "info");
+              toast.info(`${label} çekiliyor (${page + 1}/${totalPages})...`);
+              
+              const res = await api.bulkSync({ scope: [scope], offset: page * CHUNK_SIZE, limit: CHUNK_SIZE });
+              if (!res.success) throw new Error(`${label} ${page + 1}. parça çekilirken hata oluştu.`);
+              
+              await new Promise(r => setTimeout(r, 300)); // Kısa back-off
+            }
+          }
+
+          // Başarılıysa checkbox'ı kaldır
           const checkbox = document.querySelector(`input[name="sync-scope"][value="${scope}"]`) as HTMLInputElement | null;
           if (checkbox) checkbox.checked = false;
-
           toast.success(`${label} başarıyla senkronize edildi.`);
           
-          // Küçük bir bekleme (500ms)
           await new Promise(r => setTimeout(r, 500));
         }
 
         await loadDataset(currentType);
-        setBackupStatus("Seçili işlemler tamamlandı.", "success");
+        setBackupStatus("Tüm işlemler başarıyla tamamlandı.", "success");
         toast.success("Tüm seçili senkronizasyon işlemleri başarıyla tamamlandı!");
       } catch (err: any) {
-        toast.error("Senkronizasyon sırasında bir hata oluştu: " + err.message);
+        setBackupStatus("Hata: " + err.message, "error");
+        toast.error("İşlem sırasında bir hata oluştu: " + err.message);
       } finally {
         if (btn) btn.disabled = false;
       }

@@ -1978,7 +1978,15 @@ export default {
             const syncRes = await fetch(env.GAS_API_URL, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "getFullSyncData", params: { scope }, apiKey: env.API_KEY })
+              body: JSON.stringify({ 
+                action: "getFullSyncData", 
+                params: { 
+                  scope, 
+                  offset: params?.offset, 
+                  limit: params?.limit 
+                }, 
+                apiKey: env.API_KEY 
+              })
             });
 
             const text = await syncRes.text();
