@@ -697,11 +697,6 @@ export default {
           env.DB.get(indexKeys.companySearch)
         ]);
 
-        // [LIMIT REHAB] 1.000 Limitini aşan gerçek sayımlar
-        const [realCertKeys, realCompKeys] = await Promise.all([
-          listAllKvKeys("cache:getCertificateById:"),
-          listAllKvKeys("cache:company:")
-        ]);
 
         let certificates = [];
         const summaryList = summaryRaw ? Object.values(JSON.parse(summaryRaw)) : [];
@@ -728,8 +723,8 @@ export default {
         };
 
         const stats = {
-          totalCompanies: realCompKeys.length,
-          totalCertificates: realCertKeys.length,
+          totalCompanies: companies.length,
+          totalCertificates: certificates.length,
           activeCertificates: 0,
           pendingSurveillance: 0,
           lastSync: Date.now()
