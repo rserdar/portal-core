@@ -1830,11 +1830,15 @@ export default {
           if (!env.DB) {
             return jsonResponse({ success: false, error: "Cloudflare KV Bağı (DB) bulunamadı!" }, 500);
           }
-          const result = await rebuildDashboardStats();
-          if (result) {
-            return jsonResponse({ success: true, data: result });
-          } else {
-            return jsonResponse({ success: false, error: "İŞLEM_BAŞARISIZ", details: "Stats Rebuild Failed" }, 500);
+          try {
+            const result = await rebuildDashboardStats();
+            if (result) {
+              return jsonResponse({ success: true, data: result });
+            } else {
+              return jsonResponse({ success: false, error: "İŞLEM_BAŞARISIZ", details: "rebuildDashboardStats null döndü." }, 500);
+            }
+          } catch (e) {
+             return jsonResponse({ success: false, error: "REBUILD_EXCEPTION", details: e.message, stack: e.stack }, 500);
           }
         }
 
