@@ -77,6 +77,8 @@ export default {
       proformasById: "cache:index:proformasById",
       proformaNextId: "cache:meta:proformaNextId",
       standardsById: "cache:index:standardsById",
+      auditEntity: "cache:audit:",
+      auditsByFirmaIdPrefix: "index:auditsByFirmaId:",
       // [YEDEKLEME İÇİN] Tüm verileri içeren "Full" anahtarlar
       fullCompanies: "cache:full:companies",
     };
@@ -221,8 +223,24 @@ export default {
     );
     const rebuildAuditsFromIndex = async () => {
       if (!env.DB) return null;
-      const indexedRaw = await env.DB.get(indexKeys.auditsByFirmaId);
-      if (!indexedRaw) return null;
+      let indexedRaw = await env.DB.get(indexKeys.auditsByFirmaId);
+      
+      if (!indexedRaw) {
+        // [RESILIENCE] Legacy anahtar yoksa per-company indekslerden topla
+        const keys = await listKvKeys(indexKeys.auditsByFirmaIdPrefix);
+        if (keys.length === 0) return null;
+        
+        const allAuditsRows = [];
+        const chunks = [];
+        for (let i = 0; i < keys.length; i += 25) {
+          chunks.push(Promise.all(keys.slice(i, i + 25).map(k => env.DB.get(k))));
+        }
+        const results = await Promise.all(chunks);
+        const rows = results.flat().filter(Boolean).flatMap(raw => JSON.parse(raw));
+        if (rows.length === 0) return [];
+        return rows.map(mapLegacyAuditRow).reverse();
+      }
+      
       const indexed = JSON.parse(indexedRaw);
       const rows = Object.values(indexed || {}).flatMap((value) => Array.isArray(value) ? value : []);
       if (!rows.length) return [];
@@ -1035,8 +1053,22 @@ export default {
     };
     const loadAuditState = async () => {
       if (!env.DB) return null;
-      const indexedRaw = await env.DB.get(indexKeys.auditsByFirmaId);
-      if (!indexedRaw) return null;
+      let indexedRaw = await env.DB.get(indexKeys.auditsByFirmaId);
+      
+      if (!indexedRaw) {
+        // [RESILIENCE] Per-company indekslerden topla
+        const keys = await listKvKeys(indexKeys.auditsByFirmaIdPrefix);
+        if (keys.length === 0) return null;
+        
+        const chunks = [];
+        for (let i = 0; i < keys.length; i += 25) {
+          chunks.push(Promise.all(keys.slice(i, i + 25).map(k => env.DB.get(k))));
+        }
+        const results = await Promise.all(chunks);
+        const rows = results.flat().filter(Boolean).flatMap(raw => JSON.parse(raw));
+        return { rows, auditsByFirmaId: buildAuditsByFirmaId(rows) };
+      }
+
       const auditsByFirmaId = JSON.parse(indexedRaw) || {};
       const rows = Object.values(auditsByFirmaId).flatMap((value) => Array.isArray(value) ? value : []);
       return { rows, auditsByFirmaId: buildAuditsByFirmaId(rows) };
@@ -1066,11 +1098,31 @@ export default {
     const saveAuditIndexes = async (state) => {
       const auditsByFirmaId = state?.auditsByFirmaId && typeof state.auditsByFirmaId === "object" ? state.auditsByFirmaId : {};
       const nextId = String(state?.nextId || "1");
-      await Promise.all([
+      
+      const writes = [
         env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(auditsByFirmaId), { expirationTtl: CACHE_TTL }),
         env.DB.put(indexKeys.auditNextId, nextId, { expirationTtl: CACHE_TTL }),
         env.DB.delete("cache:getAudits:{}"),
-      ]);
+      ];
+
+      // Per-company indeksleri ve tekil denetim anahtarlarını güncelle
+      // Not: Tüm firmaları dönmek maliyetli olabilir ama auditsByFirmaId objesi 
+      // genellikle sadece aktif firmaları içerdiği için şimdilik kabul edilebilir.
+      for (const [fId, companyAudits] of Object.entries(auditsByFirmaId)) {
+        const firmaIndexKey = `${indexKeys.auditsByFirmaIdPrefix}${fId}`;
+        const companyAuditsArr = Array.isArray(companyAudits) ? companyAudits : [];
+        writes.push(env.DB.put(firmaIndexKey, JSON.stringify(companyAuditsArr), { expirationTtl: CACHE_TTL }));
+        
+        // Tekil denetim anahtarlarını da (ID varsa) güncelle
+        for (const audit of companyAuditsArr) {
+          const aId = getAuditId(audit);
+          if (aId) {
+            writes.push(env.DB.put(`${indexKeys.auditEntity}${aId}`, JSON.stringify(audit), { expirationTtl: CACHE_TTL }));
+          }
+        }
+      }
+
+      await Promise.all(writes);
     };
     const rowToObject = (headers, row) => {
       const obj = {};
@@ -1656,9 +1708,26 @@ export default {
               indexCacheKey = indexKeys.testsByFirmaId;
               emptyValue = [];
             } else if (action === "getAuditsByFirmaId") {
-              indexCacheKey = indexKeys.auditsByFirmaId;
-              emptyValue = [];
-            } else if (action === "getProformaByFirmaId") {
+              const auditIndexKey = `${indexKeys.auditsByFirmaIdPrefix}${idKey}`;
+              const auditRaw = await env.DB.get(auditIndexKey);
+              if (auditRaw) {
+                ctx.waitUntil(env.DB.put(cacheKey, auditRaw, { expirationTtl: CACHE_TTL }));
+                return jsonResponseWithRawData(auditRaw, { fromCache: true, indexed: true });
+              }
+              // [FALLBACK] Legacy index'ten bak
+              const legacyAuditsRaw = await env.DB.get(indexKeys.auditsByFirmaId);
+              if (legacyAuditsRaw) {
+                const legacyAudits = JSON.parse(legacyAuditsRaw);
+                const firmaAudits = legacyAudits[idKey] || [];
+                const firmaAuditsStr = JSON.stringify(firmaAudits);
+                ctx.waitUntil(Promise.all([
+                  env.DB.put(cacheKey, firmaAuditsStr, { expirationTtl: CACHE_TTL }),
+                  env.DB.put(auditIndexKey, firmaAuditsStr, { expirationTtl: CACHE_TTL })
+                ]));
+                return jsonResponse({ success: true, data: firmaAudits, fromCache: true, rebuiltFromLegacy: true });
+              }
+              return jsonResponse({ success: true, data: [] });
+            } else if (action === "getCertificatesByFirmaId") {
               indexCacheKey = indexKeys.proformasByFirmaId;
               emptyValue = [];
             } else if (action === "getProformaById") {
@@ -2083,18 +2152,42 @@ export default {
               if (hasScope("audits")) {
                 const audits = Array.isArray(d.audits) ? d.audits : [];
                 const auditObjects = Array.isArray(d.auditObjects) ? d.auditObjects : [];
+                
+                // 1. Convert to canonical rows and store individually
+                const canonicalAudits = audits
+                  .map(row => Array.isArray(row) ? createCanonicalAuditRow(row) : null)
+                  .filter(Boolean);
+                
                 const auditsByFirmaId = {};
-                for (const row of audits) {
-                  if (!Array.isArray(row)) continue;
-                  const fNo = String(row[2] || "");
-                  if (fNo) {
-                    if (!auditsByFirmaId[fNo]) auditsByFirmaId[fNo] = [];
-                    auditsByFirmaId[fNo].push(row);
+                for (const audit of canonicalAudits) {
+                  const aId = getAuditId(audit);
+                  const fNo = getAuditFirmaId(audit);
+                  if (aId) {
+                    writes.push(env.DB.put(`${indexKeys.auditEntity}${aId}`, JSON.stringify(audit), { expirationTtl: CACHE_TTL }));
+                    if (fNo) {
+                      if (!auditsByFirmaId[fNo]) auditsByFirmaId[fNo] = [];
+                      auditsByFirmaId[fNo].push(audit);
+                    }
                   }
                 }
+
+                // 2. Save per-company audit indices
+                for (const [fId, companyAudits] of Object.entries(auditsByFirmaId)) {
+                  writes.push(env.DB.put(`${indexKeys.auditsByFirmaIdPrefix}${fId}`, JSON.stringify(companyAudits), { expirationTtl: CACHE_TTL }));
+                }
+
+                // 3. Keep legacy indices for backward compatibility (optional but safer for now)
                 writes.push(env.DB.put(indexKeys.auditsByFirmaId, JSON.stringify(auditsByFirmaId), { expirationTtl: CACHE_TTL }));
                 writes.push(env.DB.put(`cache:getAudits:{}`, JSON.stringify(auditObjects), { expirationTtl: CACHE_TTL }));
-                stats.audits = audits.length;
+                
+                // 4. Update auditNextId
+                const auditNextId = canonicalAudits.reduce((highest, audit) => {
+                  const parsed = parseInt(getAuditId(audit), 10);
+                  return Number.isFinite(parsed) && parsed >= highest ? parsed + 1 : highest;
+                }, 1);
+                writes.push(env.DB.put(indexKeys.auditNextId, String(auditNextId), { expirationTtl: CACHE_TTL }));
+
+                stats.audits = canonicalAudits.length;
               }
 
               if (hasScope("proformas")) {
@@ -2778,9 +2871,13 @@ export default {
               grouped[firmaId] = [...(grouped[firmaId] || []), created];
             }
             await saveAuditIndexes({ auditsByFirmaId: grouped, nextId: String(parseInt(newId, 10) + 1) });
+            
+            // Per-firma request cache'ini temizle (bir sonraki çağrıda yeni indeksi okusun)
             if (firmaId) {
-              await env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(grouped[firmaId] || []), { expirationTtl: CACHE_TTL });
+              const resKey = `cache:getAuditsByFirmaId:${stableStringify({ firmaId })}`;
+              ctx.waitUntil(env.DB.delete(resKey));
             }
+            
             return jsonResponse({ success: true, data: { id: newId, row: created }, id: newId, kvPrimaryWrite: true, sheetsWrite: false, sideEffectsSkipped: true });
           }
 
@@ -2814,13 +2911,22 @@ export default {
           }
           if (nextFirmaId && nextFirmaId !== prevFirmaId) {
             grouped[nextFirmaId] = [...(grouped[nextFirmaId] || []), updated];
-            writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(grouped[nextFirmaId] || []), { expirationTtl: CACHE_TTL }));
           } else if (nextFirmaId && !prevFirmaId) {
             grouped[nextFirmaId] = [...(grouped[nextFirmaId] || []), updated];
-            writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(grouped[nextFirmaId] || []), { expirationTtl: CACHE_TTL }));
           }
+          
           await saveAuditIndexes({ auditsByFirmaId: grouped, nextId: state.nextId });
-          await Promise.all(writes);
+          
+          // Request cache'lerini temizle
+          const purgeWrites = [];
+          if (prevFirmaId) {
+            purgeWrites.push(env.DB.delete(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`));
+          }
+          if (nextFirmaId && nextFirmaId !== prevFirmaId) {
+            purgeWrites.push(env.DB.delete(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`));
+          }
+          if (purgeWrites.length) ctx.waitUntil(Promise.all(purgeWrites));
+          
           return jsonResponse({ success: true, data: { id: targetId, row: updated }, kvPrimaryWrite: true, sheetsWrite: false, sideEffectsSkipped: true });
         }
 

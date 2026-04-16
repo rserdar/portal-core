@@ -1,74 +1,152 @@
-# 🛰️ Medicert Portal (v5.1.0 - Velocity Update)
+# Medicert Portal (v5.8.0)
 
-Bu proje, geleneksel bir Google Apps Script (GAS) altyapısının, **Astro 6.x**, **Tailwind CSS v4** ve **Cloudflare Workers** mimarisiyle yeniden doğuşudur. Yüksek veri yoğunluğu, milisaniyelik yanıt süreleri ve modern bir kurumsal arayüz (WOW Phase) hedeflenerek geliştirilmiştir.
-
----
-
-## 🏗️ Mimari Tasarım (V5.1.0)
-
-Portal, "Decoupled" (Ayrıştırılmış) bir mimari üzerine kurulu olup, "Cache-Aside" stratejisiyle GAS'ın limitlerini ortadan kaldırır.
-
-### 1. Frontend: Astro 6.x + Saf Tailwind
-- **Saf Tailwind (Pure Tailwind):** Tüm UI, Tailwind utility sınıfları ve opak arka planlar (`bg-surface`) ile yönetilir. Glassmorphism efektleri, okunabilirlik ve yüksek kontrast için optimize edilmiştir.
-- **Islands Architecture:** Sadece etkileşimli bileşenlerin (Arama, Senkronizasyon, Formlar) istemci tarafında (JS) çalışmasıyla maksimum sayfa hızı sağlanır.
-- **State Management:** Veriler **Nanostores** üzerinden reaktif olarak yönetilir ve **IndexedDB**'de (idb-keyval) yerel olarak saklanır.
-
-### 2. Middleware: Cloudflare Worker + KV Cache (0ms Latency)
-- **Edge Caching:** Okuma ağırlıklı tüm işlemler (Firma Listesi, Sertifikalar) Cloudflare KV üzerinden servis edilir.
-- **Security Proxy:** GAS API anahtarlarını tarayıcıdan saklayarak güvenli bir katman oluşturur.
-- **Smart Indexing:** Bulk Sync sırasında firma-sertifika ilişkileri KV üzerinde önceden indekslenir.
-
-### 3. Backend: Modular GAS API V2
-Google Apps Script mülkü, servis bazlı modüllere (S.O.L.I.D) ayrılmıştır:
-- **`CompanyService.gs`:** Firma yönetimi ve akıllı senkronizasyon verisi hazırlığı.
-- **`AuditService.gs`:** Google Takvim entegreli denetim planlama ve otomasyon.
-- **`SyncService.gs`:** Toplu veri paketleme ve `LAST_UPDATE` versiyonlama yönetimi.
-- **`BaseService.gs`:** Merkezi e-tablo erişimi, hata yönetimi ve logging.
+Geleneksel bir Google Apps Script (GAS) altyapısının **Astro 6.x**, **Tailwind CSS v4** ve **Cloudflare Workers** mimarisiyle yeniden doğuşu. 1.600+ firma ve 5.000+ sertifika kaydını milisaniye gecikmeyle yöneten, offline çalışabilen kurumsal bir yönetim portalı.
 
 ---
 
-## 🚀 Öne Çıkan Özellikler
+## Mimari
 
-### 🔍 Akıllı Arama & Sayfalama (V5.1.0)
-- **Smart Search (@ Operatörü):** `Firma Adı @ Şehir` (Örn: `Medicert @ İzmir`) yazarak konuma duyarlı filtreleme.
-- **Pagination:** 20, 50 veya 100'lük dinamik sayfalama seçenekleri ile binlerce kayıt arasında akıcı gezinti.
-- **Indestructible Search:** Firma ünvanı, markası veya ID'si üzerinden anlık arama desteği.
+### 1. Frontend: Astro 6.x + Tailwind CSS v4
 
-### 🔄 Gelişmiş Senkronizasyon (Smart Sync)
-- **Bulk Sync (KV):** Dashboard üzerinden tek tuşla tüm e-tablo verisini CF Edge noktalarına saniyeler içinde taşıma.
-- **Automatic Timestamping:** Her senkronizasyon işleminde otomatik güncellenen `LAST_UPDATE` damgasıyla tarayıcı tarafında hatasız güncel veri garantisi.
+- **Pure Tailwind:** Tüm UI, Tailwind utility sınıfları ve opak arka planlar (`bg-surface`) ile yönetilir. Özel CSS utility sınıfı (`glass`, `form-input` vb.) kullanılmaz.
+- **Islands Architecture:** Sadece etkileşimli bileşenler (Arama, Senkronizasyon, Formlar) client-side JS çalıştırır; maksimum sayfa hızı sağlanır.
+- **State Management:** Veriler **Nanostores** üzerinden reaktif yönetilir, **IndexedDB** (`idb-keyval`) ile offline saklanır.
+- **PWA:** Service Worker ile offline çalışma ve uygulama kurulumu. Cloudflare Access internal path'leri (`/cdn-cgi/`) SW kapsamı dışında tutulur.
 
-### 📅 Otorobot & Doküman Motoru
-- **Doküman Üretimi:** Google Docs şablonlarını kullanarak toplu ISO sertifika ve denetim raporu hazırlama.
-- **Takvim Entegrasyonu:** Denetim tarihlerini otomatik olarak Google Takvim'e işleme ve durum güncellemeleriyle etkinlik taşıma.
+### 2. Middleware: Cloudflare Worker (`src/workers/proxy.js`)
+
+- **KV-Primary Database:** Hem okuma hem yazma için birincil veri deposu Cloudflare KV (`env.DB`).
+- **Security Proxy:** GAS API anahtarını tarayıcıdan saklayan güvenli katman.
+- **CORS Allowlist:** Yalnızca whitelist origin'ler kabul edilir; dışındaki browser istekleri 403 ile reddedilir.
+- **Incremental Write:** `bulkSync`/`importBackup` dışındaki write path'ler yalnızca etkilenen KV key'lerini günceller — full dataset rebuild yasaktır.
+
+### 3. Backend: Modüler Google Apps Script (`src/gas/api/`)
+
+GAS artık **Google-native side-effect motoru** rolündedir; authoritative data store değildir:
+
+| Servis | Rol |
+| :--- | :--- |
+| `BaseService.gs` | Merkezi spreadsheet erişimi, logging — yalnızca backup/hydration |
+| `SyncService.gs` | `bulkSync` / `exportBackup` / `importBackup` — KV hydration ve yedekleme |
+| `AuditService.gs` | Google Calendar entegrasyonu — side-effect olarak çalışır |
+| `DocumentService.gs` | ISO/test/form belge üretimi — hazır payload consume eder |
+| `DriveService.gs` | Klasör/dosya yönetimi |
+| `PDFService.gs` | Birincil: `pdf.serdar.cc`, yedek: iLovePDF |
+| `NotificationService.gs` | Gözetim e-postaları, aylık kontrol |
+| `TranslationService.gs` | ISO kapsam metni TR↔EN (`LanguageApp`) |
 
 ---
 
-## 🛠️ Kurulum ve Geliştirme
+## Veri Stratejisi
 
-### Yerel Çalıştırma
+```
+Birincil DB:   Cloudflare KV  ──►  tüm operasyonel okuma/yazma
+Yedek/Restore: Google Sheets  ──►  yalnızca bulkSync, exportBackup, importBackup
+Offline Cache: Browser IndexedDB  ──►  sıfır gecikmeli UI açılışı
+```
+
+- **Google Native İstisna:** Docs, Drive, Calendar, Gmail operasyonları GAS üzerinden çalışır; bunlar hiçbir zaman KV'ye taşınamaz.
+- **KV Granüler Yapısı:** Her firma `cache:company:{id}` + `cache:index:companies:search`; her sertifika `cache:getCertificateById:{stableKey}` + `cache:getCertificatesByFirmaId:{stableKey}` üzerinden yönetilir. Monolitik key'ler (`cache:index:companiesById` vb.) kaldırılmıştır.
+- **Sync Akışı:** KV miss → Worker `503 + needsHydration=true` → `SyncManager` otomatik `bulkSync` → tekrar okuma.
+
+---
+
+## Öne Çıkan Özellikler
+
+### Arama & Sayfalama
+- **@ Operatörü:** `Firma @ Şehir` yazarak konuma duyarlı filtreleme (örn: `Medicert @ İzmir`).
+- **Dinamik Sayfalama:** 20 / 50 / 100'lük seçenekler, anlık ünvan/marka/ID araması.
+
+### Senkronizasyon
+- **Bulk Sync (KV):** Dashboard'dan tek tuşla tüm veriyi CF edge noktalarına yazar (~8.000–10.000 KV write/çalıştırma).
+- **Bidirectional Backup:** `exportBackup` ile JSON paketi dışa aktarma; `importBackup` ile Sheets'e geri yükleme (iki aşamalı onay protokolü).
+
+### Belge & Takvim
+- **Batch Belge Üretimi:** Google Docs şablonlarından toplu ISO sertifikası, denetim raporu, başvuru formu üretimi.
+- **Calendar Entegrasyonu:** Denetim tarihleri Google Takvim'e yazılır (şu an geçici devre dışı — KV altyapısı tamamlandıktan sonra devreye alınacak).
+
+### Ayarlar Paneli
+- **Master Data Yönetimi:** Standartlar, denetçiler, danışmanlar KV üzerinden okunur ve güncellenir.
+- **Manuel Sync Butonları:** Sheets → KV tetikleyicileri.
+
+---
+
+## Dizin Yapısı
+
+```
+src/
+├── gas/
+│   ├── api/          # Modern GAS servisleri (production)
+│   └── legacy/       # Eski GAS kodu (migrasyon referansı — silinmemeli)
+├── lib/
+│   ├── api.ts        # CF Worker fetch wrapper
+│   ├── sync.ts       # SyncManager — incremental background sync
+│   ├── db.ts         # IndexedDB wrapper (idb-keyval)
+│   ├── store.ts      # Nanostores global state
+│   └── config.ts     # PUBLIC_WORKER_URL ortam değişkeni
+├── workers/
+│   └── proxy.js      # Cloudflare Worker (deploy: wrangler deploy)
+├── features/
+│   └── company-ops/  # Firma operasyon context, form helpers
+└── pages/
+    ├── index.astro         # Dashboard
+    ├── search.astro        # Firma arama
+    ├── certificates.astro  # Sertifika grid & toplu gözetim
+    ├── audits/             # Denetim planlama
+    ├── documents/          # Belge üretimi & Drive explorer
+    ├── company/            # Firma CRUD, proforma, sertifika, draft, sözleşme
+    └── settings.astro      # Master data & sync paneli
+```
+
+---
+
+## Kurulum & Geliştirme
+
 ```bash
 # Bağımlılıkları yükle
 npm install
 
-# Geliştirme sunucusunu başlat
+# Geliştirme sunucusu
 npm run dev
+
+# PWA ikonlarını üret
+npm run generate-pwa-assets
 ```
 
-### Dağıtım (Production)
-- **Worker Deployment:** `wrangler deploy` ile CF Worker proxy yayınlanır.
-- **UI Deployment:** Astro build çıktısı Cloudflare Pages üzerinden servis edilir.
-- **Pages Env:** `PUBLIC_WORKER_URL=https://portalapi.medicert.com.tr` production environment'a eklenmelidir.
-- **GAS Setup:** `/src/gas/api/` altındaki dosyalar Google Apps Script editörüne kopyalanır ve web uygulaması olarak yayınlanır.
+### Production Dağıtımı
+
+```bash
+# Cloudflare Worker
+wrangler deploy
+
+# Astro build → Cloudflare Pages
+astro build
+```
+
+**Pages ortam değişkeni:**
+```
+PUBLIC_WORKER_URL=https://portalapi.medicert.com.tr
+```
+
+**Worker Secrets (`wrangler secret put`):**
+- `API_KEY` — GAS kimlik doğrulama
+- `GAS_API_URL` — GAS exec URL
+
+**İlk deploy sonrası:** Dashboard'dan "SİSTEMİ SENKRONİZE ET (KV)" butonu **bir kez** çalıştırılmalıdır.
 
 ---
 
-## 📊 Veri Stratejisi
-- **Single Source of Truth:** Google Sheets.
-- **Fast Read:** Cloudflare KV (Workers).
-- **Offline-First:** Browser IndexedDB.
+## Platform Limitleri (Özet)
+
+| Limit | Değer | Notlar |
+| :--- | :--- | :--- |
+| KV max değer boyutu | 25 MiB/key | Granüler tasarım güvenli bölgede |
+| KV free write | 1.000/gün | `bulkSync` ~8-10K write → **Workers Paid gerekli** |
+| GAS execution süresi | 6 dk (free) / 30 dk (Workspace) | `bulkSync` için Workspace hesabı önerilir |
+| GAS e-posta | 100/gün (free) / 1.500/gün (Workspace) | `runMonthlyCheck` Workspace gerektirebilir |
 
 ---
-**Geliştirici:** Antigravity AI  
-**Müşteri:** Medicert Ürün ve Sistem Belgelendirme  
-**Sürüm:** 5.1.0 (Velocity Phase)
+
+**Geliştirici:** Antigravity AI
+**Müşteri:** Medicert Ürün ve Sistem Belgelendirme
+**Sürüm:** 5.8.0 — Granular KV Architecture
