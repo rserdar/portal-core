@@ -411,12 +411,12 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
       if (btn) btn.disabled = true;
 
       try {
-        const CHUNK_SIZE = 1000;
+        const CHUNK_SIZE = 40; // [CRITICAL] Cloudflare 50 sub-request limitine takılmamak için 40'a düşürüldü
 
         for (const scope of scopes) {
           const label = scope === "companies" ? "Firmalar" : 
                         scope === "certificates" ? "Sertifikalar" : 
-                        scope === "audits" ? "Denetimler" : 
+                        scope === "audits" ? "Denetim" : 
                         scope === "tests" ? "Testler" : 
                         scope === "proformas" ? "Proformalar" : "Master Veri";
 
