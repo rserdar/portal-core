@@ -190,8 +190,8 @@ function doPost(e) {
         break;
 
       case "getFullSyncData":
-        // [UPDATE] Filtreli senkronizasyon için scope parametresini aktar
-        result.data = SyncService.getFullExport(params.scope);
+        // [UPDATE] Filtreli ve Sayfalı (offset/limit) senkronizasyon için parametreleri aktar
+        result.data = SyncService.getFullExport(params.scope, params);
         result.success = true;
         break;
 
