@@ -826,7 +826,12 @@ export default {
         });
 
         const payload = { stats, charts };
-        await env.DB.put(indexKeys.dashboardStats, JSON.stringify(payload), { expirationTtl: CACHE_TTL });
+        try {
+          await env.DB.put(indexKeys.dashboardStats, JSON.stringify(payload), { expirationTtl: CACHE_TTL });
+        } catch (writeErr) {
+          // Günlük yazma limiti (1.000) dolmuş olabilir, hatayı yut ama veriyi yine de dön
+          console.warn("Dashboard stats KV'ye kaydedilemedi (Limit dolmuş olabilir):", writeErr.message);
+        }
         return payload;
       } catch (err) {
         // console.error("rebuildDashboardStats Hatası:", err);
