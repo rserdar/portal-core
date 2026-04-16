@@ -1825,7 +1825,20 @@ export default {
           return jsonResponse({ success: true, rows, folderMap: payload.data });
         }
 
-        // 2. Cache Temizleme Aksiyonu (Özel)
+        // 2. Dashboard İstatistiklerini Yeniden Hesapla
+        if (action === "rebuildStats") {
+          if (!env.DB) {
+            return jsonResponse({ success: false, error: "Cloudflare KV Bağı (DB) bulunamadı!" }, 500);
+          }
+          const result = await rebuildDashboardStats();
+          if (result) {
+            return jsonResponse({ success: true, data: result });
+          } else {
+            return jsonResponse({ success: false, error: "İŞLEM_BAŞARISIZ", details: "Stats Rebuild Failed" }, 500);
+          }
+        }
+
+        // 2.1 Cache Temizleme Aksiyonu (Özel)
         if (action === "clearCache") {
           if (!env.DB) {
             return jsonResponse({ success: false, error: "Cloudflare KV Bağı (DB) bulunamadı!" }, 500);
