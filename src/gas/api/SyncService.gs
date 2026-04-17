@@ -184,7 +184,7 @@ const SyncService = {
         data.totalCount = BaseService.getTotalRows("Denetim");
       }
       if (has("proformas")) {
-        data.proformas = BaseService.getRawData("Proforma", offset, limit);
+        data.proformas = BaseService.getDataAsObjects("Proforma", offset, limit);
         data.totalCount = BaseService.getTotalRows("Proforma");
       }
       if (has("master")) {

@@ -87,10 +87,10 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 border-b border-border-main pb-4">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">Google Sheets &lt;-&gt; KV</p>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Google Sheets → D1</p>
           <h2 class="text-xl font-extrabold mt-1">Sheets Senkronizasyonu</h2>
           <p class="text-sm text-muted mt-2">
-            Verileri Google Sheets'ten Cloudflare KV'ye çeker. Seçili kapsamları günceller.
+            Verileri Google Sheets'ten Cloudflare D1'e çeker. Seçili kapsamları günceller.
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -102,10 +102,10 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
 
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-2">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">Cloudflare KV &lt;-&gt; JSON</p>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">D1 &lt;-&gt; JSON</p>
           <h2 class="text-xl font-extrabold mt-1">JSON Yedekleme / Geri Yükleme</h2>
           <p class="text-sm text-muted mt-2">
-            Canlı KV verilerini .json olarak yedekle veya bir yedeği sisteme (Replace) geri yükle.
+            Canlı D1 verilerini .json olarak yedekle veya bir yedeği sisteme (Replace) geri yükle.
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -129,7 +129,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
           </svg>
           <p>
-            <b>DİKKAT:</b> İçeri aktarma işlemi, seçtiğiniz kapsamdaki mevcut KV verilerini tamamen <u>siler</u> ve yedektekilerle değiştirir. Diğer kapsamlar korunur.
+            <b>DİKKAT:</b> İçeri aktarma işlemi, seçtiğiniz kapsamdaki mevcut D1 verilerini tamamen <u>siler</u> ve yedektekilerle değiştirir. Diğer kapsamlar korunur.
           </p>
         </div>
       </div>
@@ -142,13 +142,13 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
           <p class="text-xs uppercase tracking-[0.2em] text-amber-500 font-bold">Bakım & Kurtarma</p>
           <h2 class="text-xl font-extrabold mt-1 text-main">Sistem İndeks Onarımı</h2>
           <p class="text-sm text-muted mt-2">
-            Ana sayfa istatistikleri veya listeler eksik/hatalı görünüyorsa, KV'deki ham sertifika dosyalarını tarayarak indeksleri yeniden inşa eder.
-            <span class="text-amber-500 font-medium">Bu işlem Google Sheets'ten veri çekmez, mevcut KV verisini düzenler.</span>
+            Ana sayfa istatistikleri veya listeler eksik/hatalı görünüyorsa, D1'deki verileri tarayarak dashboard istatistiklerini yeniden inşa eder.
+            <span class="text-amber-500 font-medium">Bu işlem Google Sheets'ten veri çekmez, mevcut D1 verisini düzenler.</span>
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
           <button id="deep-repair-btn" class="px-6 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold shadow-lg shadow-amber-600/20 active:scale-95 transition-all">
-            İndeksleri KV'den Onar
+            İstatistikleri D1'den Yeniden Hesapla
           </button>
         </div>
       </div>

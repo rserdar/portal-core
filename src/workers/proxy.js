@@ -2,12 +2,16 @@
  * 🛰️ Medicert Portal: Cloudflare Worker Proxy (v6.0 - Dispatcher Pattern)
  *
  * Mimari Özeti:
- * - V6 Action Dispatcher: O(1) hızında yönlendirme ve modüler handler yapısı.
- * - KV-primary read (miss => needsHydration)
- * - KV-primary write (Sheets write-back devre dışı)
- * - Automatic GAS Fallback: Worker'da tanımlanmayan veya hata veren aksiyonlar GAS'a devredilir.
+ * - Source of Truth: Google Sheets (GAS üzerinden).
+ * - Cache / Index: Cloudflare D1 (env.DB_D1) — SQL destekli, KV'nin yerini aldı.
+ * - KV (env.DB): Yalnızca auth token ve mutex lock için korunur.
+ * - Write path: Worker → GAS (Sheets write) → D1 güncelle.
+ * - Read path:  Worker → D1 hit → dön; miss → GAS → D1 cache → dön.
+ * - Google Native (Drive/Calendar/Docs/Gmail): Doğrudan GAS, D1 bypass.
  *
- * Author: Antigravity AI
+ * Bindings:
+ *   env.DB      — Cloudflare KV  (token/lock only)
+ *   env.DB_D1   — Cloudflare D1  (primary cache/index)
  */
 
 export default {
@@ -58,48 +62,7 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    const indexKeys = {
-      companySearch: "cache:index:companies:search", // Lightweight search index: { id: {id,nickname,unvan,city,kapsam,scope} }
-      companyNextId: "cache:meta:companyNextId",
-      certificateNextId: "cache:index:certificates:nextId",
-      certificateSummary: "cache:index:certificates:summary", // Lightweight cert index: { id: {id,firmaNo,nickname,standart,...} }
-      certificateRecent: "cache:index:certificates:recent", // Son 50 sertifika ID dizisi (desc)
-      dashboardStats: "cache:index:dashboard:stats",
-      fullCertificates: "cache:index:certificates:full",
-      testNextId: "cache:meta:testNextId",
-      fullTests: "cache:full:tests",
-      auditNextId: "cache:meta:auditNextId",
-      fullAudits: "cache:full:audits",
-      proformaNextId: "cache:meta:proformaNextId",
-      fullProformas: "cache:full:proformas",
-      // [YEDEKLEME İÇİN] Tüm verileri içeren "Full" anahtarlar
-      fullCompanies: "cache:full:companies",
-    };
-    const CACHE_TTL = 86400 * 365; // 1 year (Primary Data Persistence)
-
-    const purgeCachePrefix = async (prefix) => {
-      let cursor = undefined;
-      do {
-        const page = await env.DB.list({ prefix, cursor });
-        if (page.keys && page.keys.length) {
-          await Promise.all(page.keys.map((entry) => env.DB.delete(entry.name)));
-        }
-        cursor = page.list_complete ? undefined : page.cursor;
-      } while (cursor);
-    };
-    const listKvKeys = async (prefix) => {
-      if (!env.DB) return [];
-      const keys = [];
-      let cursor = undefined;
-      do {
-        const page = await env.DB.list({ prefix, cursor });
-        if (page.keys && page.keys.length) {
-          keys.push(...page.keys.map((entry) => entry.name));
-        }
-        cursor = page.list_complete ? undefined : page.cursor;
-      } while (cursor);
-      return keys;
-    };
+    const CACHE_TTL = 86400 * 365; // Drive cache TTL (KV)
 
     const stableStringify = (value) => {
       if (value === null || typeof value !== "object") return JSON.stringify(value);
@@ -155,35 +118,6 @@ export default {
         "Medikal Sektör": String(r[42] ?? "").trim(),
         "Gıda Sektörü": String(r[43] ?? "").trim(),
       };
-    };
-    const hasUsableAuditDates = (audits) => Array.isArray(audits) && audits.some((audit) =>
-      audit && typeof audit === "object" && String(audit.a1Basla || audit.a1Bitis || audit.a2Basla || audit.a2Bitis || "").trim()
-    );
-    const rebuildAuditsFromIndex = async () => {
-      if (!env.DB) return null;
-      // fullAudits aggregate'ten yükle (canonical objeler, ters sıralı)
-      const fullRaw = await env.DB.get(indexKeys.fullAudits);
-      if (fullRaw) {
-        const all = JSON.parse(fullRaw);
-        return Array.isArray(all) ? [...all].reverse() : [];
-      }
-      // Fallback: per-firma key'lerden topla
-      const keys = await listKvKeys("cache:getAuditsByFirmaId:");
-      if (keys.length === 0) return null;
-      const chunks = [];
-      for (let i = 0; i < keys.length; i += 25) {
-        chunks.push(Promise.all(keys.slice(i, i + 25).map(k => env.DB.get(k))));
-      }
-      const results = await Promise.all(chunks);
-      const rows = results.flat().filter(Boolean).flatMap(raw => {
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
-      });
-      return rows.length ? rows.reverse() : null;
-    };
-    const parseVersionNumber = (raw) => {
-      const n = parseInt(String(raw ?? "0"), 10);
-      return isNaN(n) ? 0 : n;
     };
     const headerCache = new Map();
     const normalizeHeader = (value) => {
@@ -283,16 +217,6 @@ export default {
       const val = findValueCaseInsensitive(record, ["firmaNo", "Firma No", "firmano", "fno", "cid"]);
       return val ? String(val).trim() : null;
     };
-    const buildCertificatesByFirmaId = (certificates) => {
-      const grouped = {};
-      for (const certificate of Array.isArray(certificates) ? certificates : []) {
-        const firmaId = getCertificateFirmaId(certificate);
-        if (!firmaId) continue;
-        if (!grouped[firmaId]) grouped[firmaId] = [];
-        grouped[firmaId].push(certificate);
-      }
-      return grouped;
-    };
     const buildCertificatesById = (certificates) => {
       const indexed = {};
       for (const certificate of Array.isArray(certificates) ? certificates : []) {
@@ -308,45 +232,6 @@ export default {
         const bId = parseInt(getCertificateId(b), 10);
         return (isNaN(bId) ? 0 : bId) - (isNaN(aId) ? 0 : aId);
       });
-    const mergeRecentCertificateIds = (existingIds, incomingIds, limit = 50) => {
-      const seen = new Set();
-      const merged = [];
-      for (const rawId of [...(incomingIds || []), ...(existingIds || [])]) {
-        const id = String(rawId || "").trim();
-        if (!id || seen.has(id)) continue;
-        seen.add(id);
-        merged.push(id);
-        if (merged.length >= limit) break;
-      }
-      return merged;
-    };
-    const rebuildCertificatesFromEntityKeys = async () => {
-      if (!env.DB) return null;
-
-      // Try rebuilding from full index first (Fast & Reliable)
-      const fullRaw = await env.DB.get(indexKeys.fullCertificates);
-      if (fullRaw) {
-        const fullList = JSON.parse(fullRaw);
-        return sortCertificatesByIdDesc(fullList);
-      }
-
-      // Fallback: list individual entity keys (Slow, legacy method)
-      const entityKeys = await listKvKeys("cache:getCertificateById:");
-      if (!entityKeys.length) return [];
-      const certRaws = await Promise.all(entityKeys.map((key) => env.DB.get(key)));
-      const certificates = certRaws
-        .filter(Boolean)
-        .map((raw) => {
-          try {
-            return createCanonicalCertificate(JSON.parse(raw));
-          } catch (_) {
-            return null;
-          }
-        })
-        .filter((certificate) => certificate && getCertificateId(certificate));
-      const certById = buildCertificatesById(certificates);
-      return sortCertificatesByIdDesc(Object.values(certById));
-    };
     const mapLegacyCertificateRow = (row) => {
       const r = Array.isArray(row) ? row : [];
       return {
@@ -375,34 +260,6 @@ export default {
         "QR Code": String(r[22] ?? "").trim(),
         "Cert Link": String(r[23] ?? "").trim(),
       };
-    };
-    const unmapCertificateToRow = (c) => {
-      const row = new Array(24).fill("");
-      row[0] = String(c.ID ?? c.id ?? "");
-      row[1] = String(c["Firma Adı"] ?? c.Nickname ?? c.nick ?? "");
-      row[2] = String(c["Firma No"] ?? c.firmaNo ?? c.firmano ?? "");
-      row[3] = String(c.Standart ?? c.standart ?? "");
-      row[4] = String(c["Denetim Tipi"] ?? c.denetim ?? "");
-      row[5] = String(c["Sertifika No"] ?? c.sno ?? c.sNo ?? "");
-      row[6] = String(c["Sertifika Tarihi"] ?? c.gst ?? c.sTarihi ?? "");
-      row[7] = String(c["Gözetim Tarihi"] ?? c.goz ?? c.sGozetimT ?? "");
-      row[8] = String(c["Tescil Tarihi"] ?? c.stt ?? c.sTT ?? "");
-      row[9] = String(c["Sertifika Geçerlilik Tarihi"] ?? c.sgt ?? c.sGT ?? "");
-      row[10] = String(c.Kapsam ?? c.kapsam ?? "");
-      row[11] = String(c.Scope ?? c.scope ?? "");
-      row[12] = String(c.Logo ?? c.logo ?? "");
-      row[13] = String(c.Kod ?? c.kod ?? c.NACE ?? "");
-      row[14] = String(c.Akreditasyon ?? c.akreditasyon ?? c.akrn ?? "");
-      row[15] = String(c.Akredite ?? c.akredite ?? "");
-      row[16] = String(c["Danışman"] ?? c.dan ?? c.danisman ?? "");
-      row[17] = String(c.Durum ?? c.durum ?? "");
-      row[18] = String(c.Not ?? c.not ?? "");
-      row[19] = String(c["Gözetim Conf."] ?? c.gozetimConfirmed ?? c.gozetimConf ?? "");
-      row[20] = String(c["Other Standard"] ?? c.other ?? "");
-      row[21] = String(c["Calendar ID"] ?? c.eventId ?? c.calendar ?? "");
-      row[22] = String(c["QR Code"] ?? c.qr ?? "");
-      row[23] = String(c["Cert Link"] ?? c.certLink ?? c.certiLink ?? "");
-      return row;
     };
     const normalizeCertificateSource = (source) => Array.isArray(source) ? mapLegacyCertificateRow(source) : source;
     const createCanonicalCertificate = (source, options = {}) => {
@@ -573,56 +430,25 @@ export default {
       canonical.__etag = createEtag(canonical);
       return canonical;
     };
-    // Arama indeksi için hafif firma kaydı — sadece search.astro'nun ihtiyaç duyduğu 4 alan
-    const createSearchEntry = (company) => ({
-      id: String(getCompanyId(company) || ""),
-      nickname: String(company.nickname || company.nick || company["Firma Adı"] || company.FirmaAdi || ""),
-      unvan: String(company.unvan || company.Unvan || ""),
-      city: String(company.sehir || company["İl"] || company.Il || ""),
-      ulke: String(company.ulke || company["Ülke"] || company.Ulke || "TÜRKİYE"),
-      kapsam: String(company.kapsam || company["Türkçe Kapsam"] || company["Sertifika Kapsamı (TR)"] || company.Kapsam || ""),
-      scope: String(company.scope || company["İngilizce Kapsam"] || company["Sertifika Kapsamı (EN)"] || company.Scope || ""),
-    });
-    const createCertificateSummary = (certificate, city = "") => {
-      const canonical = createCanonicalCertificate(certificate);
-      const rawStandard = String(pickObjectValue(canonical, ["Standart", "standart", "Standard"], "")).trim();
-      const otherStandard = String(pickObjectValue(canonical, ["Other Standard", "Other", "other", "Diğer Standart", "Diğer", "Diger"], "")).trim();
-      const standardLower = rawStandard.toLocaleLowerCase("tr-TR");
-      const standart = ["diğer", "diger", "other"].includes(standardLower) && otherStandard
-        ? otherStandard
-        : rawStandard;
-
-      return {
-        id: String(getCertificateId(canonical) || ""),
-        firmaNo: String(getCertificateFirmaId(canonical) || ""),
-        nickname: String(pickObjectValue(canonical, ["Nickname", "nick", "Firma Adı", "isim"], "")),
-        standart,
-        city: String(city || "").trim(),
-        denetimTipi: String(pickObjectValue(canonical, ["Denetim Tipi", "denetimTipi", "denetim"], "")),
-        sertifikaNo: String(pickObjectValue(canonical, ["Sertifika No", "sNo", "sno"], "")),
-        sertifikaTarihi: String(pickObjectValue(canonical, ["Sertifika Tarihi", "gst", "sTarihi", "Belge Tarihi"], "")),
-        gozetimTarihi: String(pickObjectValue(canonical, ["Gözetim Tarihi", "goz", "sGozetimT", "Sertifika Gözetim Tarihi"], "")),
-        gozetimConfirmed: String(pickObjectValue(canonical, ["Gözetim Conf.", "gozetimConfirmed", "gozetimConf", "gozetim"], "")),
-        danisman: String(pickObjectValue(canonical, ["Danışman", "Danisman", "dan", "danisman"], "")),
-        durum: String(pickObjectValue(canonical, ["Durum", "durum", "Status"], "AKTIF")),
-        gecerlilikTarihi: String(pickObjectValue(canonical, ["Sertifika Geçerlilik Tarihi", "sGT", "SGT", "gecerlilikTarihi"], "")),
-      };
-    };
-
     /**
      * 📊 REBUILD DASHBOARD STATS (New Gen Architecture)
      * Verileri tek tek yüklemek yerine indeksleri çekip bellekte istatistikleri fırınlar.
      */
     const rebuildDashboardStats = async () => {
-      if (!env.DB) return null;
+      if (!env.DB_D1) return null;
       try {
-        const [summaryRaw, companyRaw] = await Promise.all([
-          env.DB.get(indexKeys.certificateSummary),
-          env.DB.get(indexKeys.companySearch)
+        const [certRows, companyRows] = await Promise.all([
+          env.DB_D1.prepare(
+            `SELECT c.firma_no, c.sertifika_tarihi, c.gozetim_tarihi, c.gozetim_confirmed,
+                    c.durum, c.consultant, co.nickname, co.city, co.ulke
+             FROM certificates c
+             LEFT JOIN companies co ON co.id = c.firma_no`
+          ).all(),
+          env.DB_D1.prepare('SELECT id, ulke, city FROM companies').all(),
         ]);
 
-        const certificates = summaryRaw ? Object.values(JSON.parse(summaryRaw)) : [];
-        const companies = companyRaw ? Object.values(JSON.parse(companyRaw)) : [];
+        const certificates = certRows.results || [];
+        const companies = companyRows.results || [];
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
@@ -656,14 +482,13 @@ export default {
 
         companies.forEach(c => {
           if (!c.id) return;
-          // Sadece harf bırak: "T.C." → "TC", "TÜRKİYE" → "TURKIYE", "TR (İst.)" → "TR"
-          const ulkeStr = normalizeTR(c.ulke || c.Ulke || "").replace(/[^A-Z]/g, "");
+          const ulkeStr = normalizeTR(c.ulke || "").replace(/[^A-Z]/g, "");
           const isTurkish = !ulkeStr || ["TR", "TC", "TURKIYE", "TURKEY"].includes(ulkeStr);
           if (!isTurkish) {
             foreignCompanies.add(String(c.id));
             return;
           }
-          const city = normalizeTR(c.city || c.City || c.Il || c.il || c.sehir) || "BILINMIYOR";
+          const city = normalizeTR(c.city || "") || "BILINMIYOR";
           companyToCity.set(String(c.id), city);
         });
 
@@ -672,18 +497,14 @@ export default {
         certificates.forEach((c) => {
           if (!c) return;
 
-          // Yabancı firmaya ait sertifika tüm sayaçlardan dışlanıyor
-          const firmaNoStr = String(c.firmaNo || "");
+          const firmaNoStr = String(c.firma_no || "");
           if (firmaNoStr && foreignCompanies.has(firmaNoStr)) return;
 
           if (firmaNoStr) uniqueCompanies.add(firmaNoStr);
 
-          // Aktif sertifika: bugün sertifikaTarihi ile gozetimTarihi arasında,
-          // gözetim onaylanmamış VE durum PASİF/İPTAL değil
-          const certDate = parseTRDate(c.sertifikaTarihi);
-          const gozDate = parseTRDate(c.gozetimTarihi);
-          const gozConf = String(c.gozetimConfirmed || "").toUpperCase();
-          const gozNotConfirmed = gozConf !== "TRUE";
+          const certDate = parseTRDate(c.sertifika_tarihi);
+          const gozDate = parseTRDate(c.gozetim_tarihi);
+          const gozNotConfirmed = c.gozetim_confirmed !== 1;
           const durumNorm = normalizeTR(c.durum || "AKTIF");
           const isActiveStatus = durumNorm !== "PASIF" && durumNorm !== "IPTAL";
 
@@ -702,10 +523,10 @@ export default {
             isPending = true;
           }
 
-          const dan = String(c.danisman || "Atanmamış").trim() || "Atanmamış";
+          const dan = String(c.consultant || "Atanmamış").trim() || "Atanmamış";
           charts.consultants[dan] = (charts.consultants[dan] || 0) + 1;
 
-          const dateStr = String(c.sertifikaTarihi || "").trim();
+          const dateStr = String(c.sertifika_tarihi || "").trim();
           const yearMatch = dateStr.match(/[./](\d{4})$/);
           if (yearMatch) charts.yearly[yearMatch[1]] = (charts.yearly[yearMatch[1]] || 0) + 1;
 
@@ -719,7 +540,7 @@ export default {
           if (isPending) entry.pendingSurveillance++;
           if (dan !== "Atanmamış") entry.consultants.add(dan);
           if (firmaNoStr) entry.totalCompanies.add(firmaNoStr);
-          if (entry.nicknames.length < 15) entry.nicknames.push(c.nickname || "İsimsiz Firma");
+          if (entry.nicknames.length < 15) entry.nicknames.push(c.nickname || "");
 
           charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
         });
@@ -737,12 +558,9 @@ export default {
         });
 
         const payload = { stats, charts };
-        try {
-          await env.DB.put(indexKeys.dashboardStats, JSON.stringify(payload), { expirationTtl: CACHE_TTL });
-        } catch (writeErr) {
-          // Günlük yazma limiti (1.000) dolmuş olabilir, hatayı yut ama veriyi yine de dön
-          console.warn("Dashboard stats KV'ye kaydedilemedi (Limit dolmuş olabilir):", writeErr.message);
-        }
+        await env.DB_D1.prepare(
+          `INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES ('dashboard_stats', ?, unixepoch())`
+        ).bind(JSON.stringify(payload)).run();
         return payload;
       } catch (err) {
         // console.error("rebuildDashboardStats Hatası:", err);
@@ -807,27 +625,6 @@ export default {
     };
     const getTestId = (t) => String(t?.id ?? t?.ID ?? "").trim();
     const getTestFirmaId = (t) => String(t?.firmaNo ?? t?.fno ?? "").trim();
-    const loadTestNextId = async () => {
-      if (!env.DB) return "1";
-      const raw = await env.DB.get(indexKeys.testNextId);
-      const n = parseInt(String(raw || "").trim(), 10);
-      return Number.isFinite(n) && n >= 1 ? String(n) : "1";
-    };
-    const mapRawProformaRow = (row) => {
-      const r = Array.isArray(row) ? row : [];
-      return {
-        id: String(r[0] ?? "").trim(),
-        nick: r[1] || "",
-        firmaNo: r[2] || "",
-        kdvsiz: r[3] || "0",
-        kdvOran: r[4] || "20",
-        kdv: r[5] || "0",
-        toplam: r[6] || "0",
-        birim: r[7] || "TL",
-        tarih: r[8] || "",
-        konu: r[9] || "",
-      };
-    };
     const createCanonicalProformaRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
       const pick = getPicker(input);
@@ -847,11 +644,6 @@ export default {
     };
     const getProformaId = (p) => String(p?.id ?? p?.ID ?? p?.faturaNo ?? "").trim();
     const getProformaFirmaId = (p) => String(p?.firmaNo ?? p?.fno ?? "").trim();
-    const loadProformaNextId = async () => {
-      const raw = await env.DB.get(indexKeys.proformaNextId);
-      const parsed = parseInt(String(raw || "").trim(), 10);
-      return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
-    };
     const getAuditId = (a) => String(a?.id ?? a?.ID ?? "").trim();
     const getAuditFirmaId = (a) => String(a?.firmaNo ?? a?.firmano ?? "").trim();
     const createCanonicalAuditRow = (source, options = {}) => {
@@ -894,12 +686,6 @@ export default {
         a2EventId: pick(["a2EventId"]) ?? "",
       };
     };
-    const loadAuditNextId = async () => {
-      if (!env.DB) return "1";
-      const raw = await env.DB.get(indexKeys.auditNextId);
-      const n = parseInt(String(raw || "").trim(), 10);
-      return Number.isFinite(n) && n >= 1 ? String(n) : "1";
-    };
     const rowToObject = (headers, row) => {
       const obj = {};
       const safeHeaders = Array.isArray(headers) ? headers : [];
@@ -909,252 +695,218 @@ export default {
       });
       return obj;
     };
-    const extractConsultantNameFromRow = (headers, row) => {
-      const objectRow = rowToObject(headers, row);
-      const directName = pickObjectValue(objectRow, ["Danışman", "Danisman", "Name", "Ad Soyad", "Adı Soyadı", "Full Name", "FullName"]);
-      if (directName) return directName;
-      const firstName = pickObjectValue(objectRow, ["Ad", "First Name", "İsim", "Isim"]);
-      const lastName = pickObjectValue(objectRow, ["Soyad", "Last Name"]);
-      const combined = `${firstName} ${lastName}`.trim();
-      if (combined) return combined;
-      const fallback = Array.isArray(row) ? String(row[0] ?? "").trim() : "";
-      return fallback;
-    };
-    const buildConsultantsFromDataset = (dataset) => {
-      const headers = Array.isArray(dataset?.headers) ? dataset.headers : [];
-      const rows = Array.isArray(dataset?.rows) ? dataset.rows : [];
-      return [...new Set(
-        rows
-          .map((row) => extractConsultantNameFromRow(headers, row))
-          .filter((value) => value && String(value).trim())
-      )].sort((a, b) => String(a).localeCompare(String(b), "tr"));
-    };
-    const getMasterDataset = async (type) => {
-      if (!env.DB) return null;
-      const typeKey = `cache:getMasterData:${stableStringify({ type })}`;
-      const typedRaw = await env.DB.get(typeKey);
-      if (typedRaw) {
-        const typedPayload = JSON.parse(typedRaw);
-        const typedDataset = typedPayload?.dataset;
-        if (typedDataset && Array.isArray(typedDataset.headers)) return typedDataset;
-      }
-
-      const allRaw = await env.DB.get("cache:getMasterData:{}");
-      if (!allRaw) return null;
-      const allPayload = JSON.parse(allRaw);
-      const dataset = allPayload?.datasets?.[type];
-      return dataset && Array.isArray(dataset.headers) ? dataset : null;
-    };
-    const buildStandardsByIdFromDataset = (dataset) => {
-      const indexed = {};
-      const headers = Array.isArray(dataset?.headers) ? dataset.headers : [];
-      const rows = Array.isArray(dataset?.rows) ? dataset.rows : [];
-      rows.forEach((row) => {
-        const objectRow = rowToObject(headers, row);
-        // "Standart" (TR sheet header) ve "standard" (EN alias) her ikisi de eşleşmeli.
-        // normalizeHeader("Standart") → "standart", normalizeHeader("standard") → "standard"
-        // Bunlar farklı olduğu için iki alias da listeye eklendi.
-        const standardId = pickObjectValue(objectRow, ["Standart", "standard", "ID", "id", "Standart ID", "Standart No"]);
-        if (!standardId) return;
-        indexed[String(standardId)] = objectRow;
-      });
-      return indexed;
-    };
-    const getTestValue = (row, aliases = []) => pickObjectValue(row, aliases, "");
-    const getTestDocByName = async (testName) => {
-      const target = String(testName || "").trim().toLocaleLowerCase("tr-TR");
-      if (!target) return null;
-
-      const cacheKey = `cache:getTestDocByName:${stableStringify({ name: target })}`;
-      if (env.DB) {
-        const cached = await env.DB.get(cacheKey);
-        if (cached) return JSON.parse(cached);
-      }
-
-      const dataset = await getMasterDataset("testdocs");
-      if (!dataset) return null;
+    const datasetRowsToObjects = (dataset) => {
+      if (!dataset || typeof dataset !== "object") return [];
       const headers = Array.isArray(dataset.headers) ? dataset.headers : [];
       const rows = Array.isArray(dataset.rows) ? dataset.rows : [];
-
-      const matchedRow = rows.find((row) => {
-        const objectRow = rowToObject(headers, row);
-        const docName = pickObjectValue(objectRow, ["Doküman Adı", "Dokuman Adi", "Doc Name", "DokumanAdi"], "");
-        return String(docName || "").trim().toLocaleLowerCase("tr-TR") === target;
-      });
-
-      const matchedObj = matchedRow ? rowToObject(headers, matchedRow) : null;
-      if (matchedObj && env.DB) {
-        ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(matchedObj), { expirationTtl: CACHE_TTL }));
-      }
-      return matchedObj;
+      return rows.map((row) => rowToObject(headers, row));
     };
-    const buildCertificatePayloadFromKv = async (id, lang, select) => {
-      const certKey = `cache:getCertificateById:${stableStringify({ id: String(id) })}`;
-      let certRaw = await env.DB.get(certKey);
+    const pickMasterField = (record, aliases, fallback = null) => {
+      const value = pickObjectValue(record, aliases, "");
+      return value === "" ? fallback : value;
+    };
+    const getTestDocByName = async (testName) => {
+      const target = String(testName || "").trim();
+      if (!target) return null;
+      const row = await env.DB_D1.prepare(
+        `SELECT * FROM testdocs WHERE LOWER(test_adi_tr)=LOWER(?) OR LOWER(dokuman_adi)=LOWER(?)`
+      ).bind(target, target).first();
+      return row || null;
+    };
+    const buildCertificatePayloadFromD1 = async (id, lang, select) => {
+      const cert = await env.DB_D1.prepare(`SELECT * FROM certificates WHERE id=?`).bind(parseInt(id)).first();
+      if (!cert) throw new Error(`CERTIFICATE_D1_EMPTY: Sertifika '${id}' bulunamadı. Önce senkronizasyon yapın.`);
+      if (!cert.firma_no) throw new Error("Sertifika kaydında firma no boş.");
 
-      // Fallback: bireysel key yoksa fullCertificates index'inden bul (bulkSync sonrası mevcuttur)
-      if (!certRaw) {
-        const fullRaw = await env.DB.get(indexKeys.fullCertificates);
-        if (fullRaw) {
-          const fullList = JSON.parse(fullRaw);
-          const found = fullList.find((c) => String(getCertificateId(c)) === String(id));
-          if (found) {
-            certRaw = JSON.stringify(found);
-            ctx.waitUntil(env.DB.put(certKey, certRaw, { expirationTtl: CACHE_TTL }));
-          }
-        }
-      }
-
-      if (!certRaw) throw new Error(`CERTIFICATE_KV_EMPTY: Sertifika '${id}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
-      const certObj = JSON.parse(certRaw);
-
-      const firmId = getCertificateFirmaId(certObj);
-      const standardId = pickObjectValue(certObj, ["Standart", "Standard", "standart"]);
-      if (!firmId) throw new Error("Sertifika kaydında firma no boş.");
-      if (!standardId) throw new Error("Sertifika kaydında standart boş.");
-
-      const [companyRaw, stdRaw] = await Promise.all([
-        env.DB.get(`cache:company:${firmId}`),
-        env.DB.get(`cache:getStandardById:${stableStringify({ id: String(standardId) })}`),
+      const [company, std] = await Promise.all([
+        env.DB_D1.prepare(`SELECT * FROM companies WHERE id=?`).bind(cert.firma_no).first(),
+        cert.standart ? env.DB_D1.prepare(`SELECT * FROM standards WHERE kod=?`).bind(cert.standart).first() : Promise.resolve(null),
       ]);
-      if (!companyRaw) throw new Error(`COMPANY_KV_EMPTY: Firma '${firmId}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
-      if (!stdRaw) throw new Error(`STANDARD_KV_EMPTY: Standart '${standardId}' KV'de bulunamadı. Önce master senkronizasyonu yapın.`);
-      const company = JSON.parse(companyRaw);
-      const stdObj = JSON.parse(stdRaw);
-      const companyNick = pickObjectValue(company, ["Firma Adı", "FirmaAdi", "nickname", "Nick", "nick", "isim"]);
-      const certificateNick = pickObjectValue(certObj, ["Nickname", "Nick", "nick", "Firma Adı", "isim"]) || companyNick;
+      if (!company) throw new Error(`COMPANY_D1_EMPTY: Firma '${cert.firma_no}' bulunamadı. Önce senkronizasyon yapın.`);
 
       return {
-        nick: certificateNick,
-        id: String(firmId),
-        standard: pickObjectValue(certObj, ["Standart", "Standard", "standart"]),
-        sNo: pickObjectValue(certObj, ["Sno", "sNo", "Sertifika No", "sertNo", "SertifikaNo"]),
-        sTarihi: pickObjectValue(certObj, ["GST", "gst", "Sertifika Tarihi", "Belge Tarihi", "sTarihi"]),
-        sGozetimT: pickObjectValue(certObj, ["GOZ", "goz", "Gözetim Tarihi", "Sertifika Gözetim Tarihi", "sGozetimT"]),
-        sTT: pickObjectValue(certObj, ["STT", "stt", "Tescil Tarihi", "Sertifika Tescil Tarihi", "Son Tetkik Tarihi", "sTT"]),
-        sGT: pickObjectValue(certObj, ["SGT", "sgt", "Sertifika Geçerlilik Tarihi", "sGT"]),
-        sKapsam: pickObjectValue(certObj, ["Kapsam", "Türkçe Kapsam", "kapsam"]),
-        sScope: pickObjectValue(certObj, ["Scope", "İngilizce Kapsam", "scope"]),
-        logo: pickObjectValue(certObj, ["Logo", "logo"]),
-        nace: pickObjectValue(certObj, ["Kod", "Nace", "NACE", "kod", "nace"]),
-        akrn: pickObjectValue(certObj, ["Akreditasyon", "Akrn", "AKRN", "akrn", "akreditasyon"]),
-        not: pickObjectValue(certObj, ["Not", "not"]),
-        other: pickObjectValue(certObj, ["Other", "Other Standard", "Diğer", "Diger", "other"]),
-        qrLink: pickObjectValue(certObj, ["QrCode", "QR Code", "QR", "Search", "qr", "certLink", "Cert Link"]),
-        unvan: pickObjectValue(company, ["Unvan", "unvan"]),
-        adres: pickObjectValue(company, ["Adres", "adres"]),
-        il: pickObjectValue(company, ["İl", "Il", "Şehir", "Sehir", "sehir", "il"]),
-        ulke: pickObjectValue(company, ["Ülke", "Ulke", "ulke"]),
-        sube: pickObjectValue(company, ["Şube", "Sube", "Yazışma Adresi", "Yazisma Adresi", "yazisma"]),
-        trtema: pickObjectValue(stdObj, ["Temaid", "TemaID", "temaid", "TR Tema", "Türkçe Tema ID"]),
-        entema: pickObjectValue(stdObj, ["Themeid", "ThemeID", "themeid", "EN Tema", "İngilizce Tema ID"]),
+        nick: company.nickname,
+        id: String(cert.firma_no),
+        standard: cert.standart,
+        sNo: cert.sertifika_no,
+        sTarihi: cert.sertifika_tarihi,
+        sGozetimT: cert.gozetim_tarihi,
+        sTT: cert.tescil_tarihi,
+        sGT: cert.gecerlilik_tarihi,
+        sKapsam: cert.kapsam,
+        sScope: cert.scope,
+        logo: cert.logo,
+        nace: cert.nace,
+        akrn: cert.akreditasyon,
+        not: cert.sertifika_not,
+        other: cert.other_standart,
+        qrLink: cert.qr || cert.cert_link,
+        unvan: company.unvan,
+        adres: company.adres,
+        il: company.city,
+        ulke: company.ulke,
+        sube: company.yazisma,
+        trtema: std?.tema_id_tr || null,
+        entema: std?.tema_id_en || null,
         lang: lang || "TR",
         select: select || "",
       };
     };
-    const buildTestPayloadFromKv = async (id, lang) => {
-      if (!env.DB) throw new Error("TEST_KV_EMPTY: Cloudflare KV bağı bulunamadı.");
-      const testRaw = await env.DB.get(`cache:getTestById:${stableStringify({ id: String(id) })}`);
-      if (!testRaw) throw new Error(`TEST_KV_EMPTY: Test '${id}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
-      const t = JSON.parse(testRaw);
+    const buildTestPayloadFromD1 = async (id, lang) => {
+      const t = await env.DB_D1.prepare(`SELECT * FROM tests WHERE id=?`).bind(parseInt(id)).first();
+      if (!t) throw new Error(`TEST_D1_EMPTY: Test '${id}' bulunamadı. Önce senkronizasyon yapın.`);
 
-      const testName = String(t.testAdi ?? "").trim();
+      const testName = String(t.test_adi || "").trim();
       if (!testName) throw new Error("Test adı boş.");
 
       const testDoc = await getTestDocByName(testName);
       if (!testDoc) throw new Error(`TestDoc master dataset içinde '${testName}' bulunamadı.`);
 
-      const firmId = getTestFirmaId(t);
-      if (!firmId) throw new Error("Test kaydında firma no boş.");
-
-      const companyRaw = await env.DB.get(`cache:company:${firmId}`);
-      if (!companyRaw) throw new Error(`COMPANY_KV_EMPTY: Firma '${firmId}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
-      const company = JSON.parse(companyRaw);
+      if (!t.firma_no) throw new Error("Test kaydında firma no boş.");
+      const company = await env.DB_D1.prepare(`SELECT * FROM companies WHERE id=?`).bind(t.firma_no).first();
+      if (!company) throw new Error(`COMPANY_D1_EMPTY: Firma '${t.firma_no}' bulunamadı. Önce senkronizasyon yapın.`);
 
       return {
-        testno: String(t.id ?? ""),
-        fnick: String(t.firmaAdi ?? ""),
-        fno: String(firmId),
+        testno: String(t.id || ""),
+        fnick: String(company.nickname || ""),
+        fno: String(t.firma_no),
         testisim: testName,
-        testadi: pickObjectValue(testDoc, ["Türkçe Test Adı", "Turkce Test Adi"]),
-        testname: pickObjectValue(testDoc, ["İngilizce Test Adı", "Ingilizce Test Adi"]),
-        trtema: pickObjectValue(testDoc, ["Türkçe Tema", "Turkce Tema"]),
-        entema: pickObjectValue(testDoc, ["İngilizce Tema", "Ingilizce Tema"]),
-        gunsay: pickObjectValue(testDoc, ["Gün Sayısı", "Gun Sayisi"]),
-        kisabir: pickObjectValue(testDoc, ["Kısaltma", "Kisaltma"]),
-        kisaiki: pickObjectValue(testDoc, ["Kısaltma 2", "Kisaltma 2"]),
-        marka: String(t.marka ?? ""),
-        urun: String(t.urun ?? ""),
-        urunkod: String(t.urunKodu ?? ""),
-        urunno: String(t.urunNo ?? ""),
-        lot: String(t.lot ?? ""),
-        kabultarih: String(t.urunKabul ?? ""),
-        kabulsaat: String(t.kabulSaat ?? ""),
-        testba: String(t.testBaslangic ?? ""),
-        testbi: String(t.testBitis ?? ""),
-        raportarihi: String(t.raporTarihi ?? ""),
-        raporno: String(t.raporNo ?? ""),
-        numunesay: String(t.numuneSayisi ?? ""),
-        numuneut: String(t.numuneUT ?? ""),
-        numuneskt: String(t.numuneSKT ?? ""),
-        urunbilgi: String(t.urunBilgi ?? ""),
-        gorselbir: String(t.gorsel1 ?? ""),
-        gorseliki: String(t.gorsel2 ?? ""),
-        detay: String(t.detay ?? ""),
+        testadi: testDoc.test_adi_tr,
+        testname: testDoc.test_adi_en,
+        trtema: testDoc.tema_tr,
+        entema: testDoc.tema_en,
+        gunsay: testDoc.gun_sayisi,
+        kisabir: testDoc.kisaltma,
+        kisaiki: testDoc.kisaltma2,
+        marka: String(t.marka || ""),
+        urun: String(t.urun || ""),
+        urunkod: String(t.urun_kodu || ""),
+        urunno: String(t.urun_no || ""),
+        lot: String(t.lot || ""),
+        kabultarih: String(t.urun_kabul || ""),
+        kabulsaat: String(t.kabul_saat || ""),
+        testba: String(t.test_baslangic || ""),
+        testbi: String(t.test_bitis || ""),
+        raportarihi: String(t.rapor_tarihi || ""),
+        raporno: String(t.rapor_no || ""),
+        numunesay: String(t.numune_sayisi || ""),
+        numuneut: String(t.numune_ut || ""),
+        numuneskt: String(t.numune_skt || ""),
+        urunbilgi: String(t.urun_bilgi || ""),
+        gorselbir: String(t.gorsel1 || ""),
+        gorseliki: String(t.gorsel2 || ""),
+        detay: String(t.detay || ""),
         lang: lang || "TR",
-        unvan: pickObjectValue(company, ["Unvan", "unvan"]),
-        adres: pickObjectValue(company, ["Adres", "adres"]),
-        sehir: pickObjectValue(company, ["İl", "Il", "Şehir", "Sehir", "sehir", "il"]),
-        ulke: pickObjectValue(company, ["Ülke", "Ulke", "ulke"]),
+        unvan: company.unvan,
+        adres: company.adres,
+        sehir: company.city,
+        ulke: company.ulke,
       };
     };
-    const buildProformaPayloadFromKv = async (id) => {
-      const proformaKey = `cache:getProformaById:${stableStringify({ id: String(id) })}`;
-      let proformaRaw = await env.DB.get(proformaKey);
-      if (!proformaRaw) {
-        const fullRaw = await env.DB.get(indexKeys.fullProformas);
-        const item = fullRaw ? JSON.parse(fullRaw).find(pr => String(getProformaId(pr)) === String(id)) : null;
-        if (!item) throw new Error(`PROFORMA_KV_EMPTY: Proforma '${id}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
-        proformaRaw = JSON.stringify(item);
-        ctx.waitUntil(env.DB.put(proformaKey, proformaRaw, { expirationTtl: CACHE_TTL }));
-      }
-      const proforma = JSON.parse(proformaRaw);
+    const buildProformaPayloadFromD1 = async (id) => {
+      const proforma = await env.DB_D1.prepare(`SELECT * FROM proformas WHERE id=?`).bind(parseInt(id)).first();
+      if (!proforma) throw new Error(`PROFORMA_D1_EMPTY: Proforma '${id}' bulunamadı. Önce senkronizasyon yapın.`);
+      if (!proforma.firma_no) throw new Error("Proforma kaydında firma no boş.");
 
-      const firmaId = getProformaFirmaId(proforma);
-      if (!firmaId) throw new Error("Proforma kaydında firma no boş.");
-
-      const companyKey = `cache:company:${firmaId}`;
-      let companyRaw = await env.DB.get(companyKey);
-      if (!companyRaw) {
-        const fullRaw = await env.DB.get(indexKeys.fullCompanies);
-        const item = fullRaw ? JSON.parse(fullRaw).find(c => String(getCompanyId(c)) === String(firmaId)) : null;
-        if (!item) throw new Error(`COMPANY_KV_EMPTY: Firma '${firmaId}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
-        companyRaw = JSON.stringify(item);
-        ctx.waitUntil(env.DB.put(companyKey, companyRaw, { expirationTtl: CACHE_TTL }));
-      }
-      const company = JSON.parse(companyRaw);
+      const company = await env.DB_D1.prepare(`SELECT * FROM companies WHERE id=?`).bind(proforma.firma_no).first();
+      if (!company) throw new Error(`COMPANY_D1_EMPTY: Firma '${proforma.firma_no}' bulunamadı. Önce senkronizasyon yapın.`);
 
       return {
         id: String(proforma.id || ""),
         faturaNo: String(proforma.id || ""),
-        nick: String(proforma.nick || ""),
-        firmaNo: String(firmaId),
+        nick: String(company.nickname || ""),
+        firmaNo: String(proforma.firma_no),
         kdvsiz: String(proforma.kdvsiz || ""),
-        kdvOran: String(proforma.kdvOran || "20"),
+        kdvOran: String(proforma.kdv_oran || "20"),
         kdv: String(proforma.kdv || ""),
         toplam: String(proforma.toplam || ""),
         birim: String(proforma.birim || "TL"),
         tarih: String(proforma.tarih || ""),
         konu: String(proforma.konu || ""),
-        unvan: pickObjectValue(company, ["Unvan", "unvan", "Firma Adı", "FirmaAdi"]),
-        adres: pickObjectValue(company, ["Adres", "adres"]),
-        il: pickObjectValue(company, ["İl", "Il", "Şehir", "Sehir", "sehir", "il"]),
-        ulke: pickObjectValue(company, ["Ülke", "Ulke", "ulke"]),
-        tel: pickObjectValue(company, ["Telefon", "Tel", "tel"]),
-        vergiD: pickObjectValue(company, ["Vergi Dairesi", "VergiDairesi", "vergiD"]),
-        vergiN: pickObjectValue(company, ["Vergi Numarası", "VergiNumarasi", "vergiN"]),
-        yetkili: pickObjectValue(company, ["Yetkili Adı", "YetkiliAdi", "yetA"]),
+        unvan: company.unvan,
+        adres: company.adres,
+        il: company.city,
+        ulke: company.ulke,
+        tel: company.tel,
+        vergiD: company.vergi_dairesi,
+        vergiN: company.vergi_no,
+        yetkili: company.yetkili_adi,
       };
+    };
+
+    // D1 upsert helpers (used by write handlers after GAS write)
+    const _D1_COMPANY_SQL = `INSERT OR REPLACE INTO companies
+      (id,nickname,unvan,adres,city,ulke,yazisma,vergi_dairesi,vergi_no,tel,faks,www,mail,
+       yetkili_adi,yetkili_unvani,kyt,irtibat_kisi,irtibat_unvani,irtibat_tel,irtibat_mail,
+       yapilan_is,tcs,ycs,ucs,yzcs,tascs,acs,alan,departman,vardiya,logo,kase,dokuman,
+       teknik,tkapsam,sinif,firma_not,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`;
+    const upsertCompanyD1 = (c, idOverride) => {
+      const id = idOverride || parseInt(getCompanyId(c)) || null;
+      return env.DB_D1.prepare(_D1_COMPANY_SQL).bind(
+        id,c.nickname||c.nick||null,c.unvan||null,c.adres||null,c.sehir||c.il||null,c.ulke||null,
+        c.yazisma||null,c.vergiD||null,c.vergiN||null,c.tel||null,c.faks||null,c.www||null,c.mail||null,
+        c.yetA||null,c.yetU||null,c.kyt||null,c.irtA||null,c.irtU||null,c.irtN||null,c.irtM||null,
+        c.yapis||null,c.tcs||null,c.ycs||null,c.ucs||null,c.yzcs||null,c.tascs||null,c.acs||null,
+        c.alan||null,c.dept||c.departman||null,c.vardiya||null,c.logo||null,c.kase||null,
+        c.dokuman||null,c.teknik||null,c.tkapsam||null,c.sinif||null,c.not||null
+      ).run();
+    };
+    const _D1_CERT_SQL = `INSERT OR REPLACE INTO certificates
+      (id,firma_no,standart,denetim_tipi,sertifika_no,sertifika_tarihi,gozetim_tarihi,tescil_tarihi,
+       gecerlilik_tarihi,kapsam,scope,akreditasyon,akredite,ea,nace,consultant,other_standart,durum,
+       sertifika_not,gozetim_confirmed,calendar_id,qr,cert_link,logo,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`;
+    const upsertCertificateD1 = (c, idOverride) => {
+      const id = idOverride || parseInt(getCertificateId(c)) || null;
+      return env.DB_D1.prepare(_D1_CERT_SQL).bind(
+        id,parseInt(c.firmaNo||c.firmano)||null,c.standart||null,c.denetim||c.denetimTipi||null,
+        c.sno||null,c.gst||null,c.goz||null,c.stt||null,c.sgt||null,
+        c.kapsam||null,c.scope||null,c.akreditasyon||c.akrn||null,c.akredite?1:0,null,
+        c.kod||c.nace||null,c.dan||c.danisman||null,c.other||null,c.durum||null,c.not||null,
+        c.gozetimConfirmed==='TRUE'||c.gozetimConf==='TRUE'?1:0,
+        c.calendar||c.eventId||null,c.qr||null,c.certLink||c.certiLink||null,c.logo||null
+      ).run();
+    };
+    const _D1_TEST_SQL = `INSERT OR REPLACE INTO tests
+      (id,firma_no,test_adi,marka,urun,urun_kodu,urun_no,lot,urun_kabul,kabul_saat,
+       test_baslangic,test_bitis,rapor_tarihi,rapor_no,numune_sayisi,numune_ut,numune_skt,
+       urun_bilgi,gorsel1,gorsel2,detay,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`;
+    const upsertTestD1 = (t, idOverride) => {
+      const id = idOverride || parseInt(getTestId(t)) || null;
+      return env.DB_D1.prepare(_D1_TEST_SQL).bind(
+        id,parseInt(getTestFirmaId(t))||null,t.testAdi||null,t.marka||null,t.urun||null,
+        t.urunKodu||null,t.urunNo||null,t.lot||null,t.urunKabul||null,t.kabulSaat||null,
+        t.testBaslangic||null,t.testBitis||null,t.raporTarihi||null,t.raporNo||null,
+        parseInt(t.numuneSayisi)||null,t.numuneUT||null,t.numuneSKT||null,
+        t.urunBilgi||null,t.gorsel1||null,t.gorsel2||null,t.detay||null
+      ).run();
+    };
+    const _D1_PROFORMA_SQL = `INSERT OR REPLACE INTO proformas
+      (id,firma_no,kdvsiz,kdv_oran,kdv,toplam,birim,tarih,konu,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,unixepoch())`;
+    const upsertProformaD1 = (p, idOverride) => {
+      const id = idOverride || parseInt(getProformaId(p)) || null;
+      return env.DB_D1.prepare(_D1_PROFORMA_SQL).bind(
+        id,parseInt(getProformaFirmaId(p))||null,parseFloat(p.kdvsiz)||null,
+        parseInt(p.kdvOran)||null,parseFloat(p.kdv)||null,parseFloat(p.toplam)||null,
+        p.birim||null,p.tarih||null,p.konu||null
+      ).run();
+    };
+    const _D1_AUDIT_SQL = `INSERT OR REPLACE INTO audits
+      (id,firma_no,sertifika_id,standart,denetim_tipi,
+       a1_baslangic,a1_bitis,a1_manday,a1_bas_denetci,a1_denetci_2,a1_denetci_3,
+       a2_baslangic,a2_bitis,a2_manday,a2_bas_denetci,a2_denetci_2,a2_denetci_3,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`;
+    const upsertAuditD1 = (a, idOverride) => {
+      const id = idOverride || parseInt(getAuditId(a)) || null;
+      return env.DB_D1.prepare(_D1_AUDIT_SQL).bind(
+        id,parseInt(getAuditFirmaId(a))||null,parseInt(a.sertifikaId||a.certId)||null,
+        a.standart||null,a.denetimTipi||null,
+        a.a1Basla||null,a.a1Bitis||null,parseFloat(a.a1Md)||null,a.a1La||null,a.a1Fa||null,a.a1Sa||null,
+        a.a2Basla||null,a.a2Bitis||null,parseFloat(a.a2Md)||null,a.a2La||null,a.a2Fa||null,a.a2Sa||null
+      ).run();
     };
 
 
@@ -1197,16 +949,32 @@ export default {
 
     const SyncHandlers = {
       bulkSync: async (params, ctx, env) => {
-        if (!env.DB) return jsonResponse({ success: false, error: "NO_DB_BINDING" }, 500);
+        if (!env.DB_D1) return jsonResponse({ success: false, error: "NO_D1_BINDING" }, 500);
         const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
         const hasScope = (s) => scope.includes(s);
 
-        // Büyük veri setleri için sayfalı GAS okuma (her sayfa ~1500 satır, GAS timeout'u önlemek için)
+        // === GAS OKUMA (değişmez — sayfalı, GAS timeout korumalı) ===
         const PAGE_SIZE = 1500;
-        const LARGE_SCOPES = new Set(["certificates", "audits", "tests"]);
+        const LARGE_SCOPES = new Set(["companies", "certificates", "audits", "tests", "proformas"]);
         const d = {};
 
         for (const s of scope) {
+          if (s === "master") {
+            const res = await fetchFromGas(env, { action: "getMasterSyncData" });
+            if (!res.success) return jsonResponse(res);
+            const master = res.data || {};
+            const datasets = master.datasets || {};
+
+            d.masterVersion = master.version || null;
+            d.masterUpdatedAt = master.updatedAt || null;
+            d.standards = datasetRowsToObjects(datasets.standards);
+            d.auditors = datasetRowsToObjects(datasets.auditors);
+            d.consultants = datasetRowsToObjects(datasets.consultants);
+            d.testdocs = datasetRowsToObjects(datasets.testdocs);
+            d.sysdocs = datasetRowsToObjects(datasets.sysdocs);
+            continue;
+          }
+
           if (!LARGE_SCOPES.has(s)) {
             const res = await fetchFromGas(env, { action: "getFullSyncData", params: { scope: [s] } });
             if (!res.success) return jsonResponse(res);
@@ -1231,34 +999,78 @@ export default {
             }
           }
         }
+
+        // === D1 YAZMA ===
         const stats = {};
-        const writes = [];
+
+        // D1 batch helper: 100'erli chunk'larda gönder
+        const batchInsert = async (stmts) => {
+          for (let i = 0; i < stmts.length; i += 100) {
+            await env.DB_D1.batch(stmts.slice(i, i + 100));
+          }
+        };
 
         // --- 🏗️ COMPANIES ---
         if (hasScope("companies")) {
           const companies = Array.isArray(d.companies) ? d.companies : [];
           const canonicalCompanies = companies.map(c => createCanonicalCompany(c)).filter(c => getCompanyId(c));
 
-          {
-            const currentSearchRaw = await env.DB.get(indexKeys.companySearch);
-            const currentCount = currentSearchRaw ? Object.keys(JSON.parse(currentSearchRaw)).length : 0;
-            if (currentCount > 10 && canonicalCompanies.length < (currentCount * 0.2)) {
-              return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: companies (current: ${currentCount}, incoming: ${canonicalCompanies.length})` }, 400);
-            }
+          const { results: cr } = await env.DB_D1.prepare('SELECT COUNT(*) as cnt FROM companies').all();
+          const currentCount = cr[0]?.cnt ?? 0;
+          if (currentCount > 10 && canonicalCompanies.length < currentCount * 0.2) {
+            return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: companies (current: ${currentCount}, incoming: ${canonicalCompanies.length})` }, 400);
           }
 
-          const companySearchIndex = {};
-          canonicalCompanies.forEach(c => {
-            const cid = getCompanyId(c);
-            if (cid) companySearchIndex[cid] = createSearchEntry(c);
-          });
-
-          const companyNextId = canonicalCompanies.reduce((h, c) => Math.max(h, parseInt(getCompanyId(c)) || 0), 0) + 1;
-
-          writes.push(env.DB.put(indexKeys.companySearch, JSON.stringify(companySearchIndex), { expirationTtl: CACHE_TTL }));
-          writes.push(env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }));
-          writes.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(canonicalCompanies), { expirationTtl: CACHE_TTL }));
-          stats.companies = Object.keys(companySearchIndex).length;
+          const stmt = env.DB_D1.prepare(
+            `INSERT OR REPLACE INTO companies
+              (id, nickname, unvan, adres, city, ulke, yazisma, vergi_dairesi, vergi_no,
+               tel, faks, www, mail, yetkili_adi, yetkili_unvani, kyt,
+               irtibat_kisi, irtibat_unvani, irtibat_tel, irtibat_mail,
+               yapilan_is, tcs, ycs, ucs, yzcs, tascs, acs,
+               alan, departman, vardiya, logo, kase, dokuman, teknik, tkapsam, sinif, firma_not,
+               updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
+          );
+          await batchInsert(canonicalCompanies.map(c => stmt.bind(
+            parseInt(getCompanyId(c)) || null,
+            c.nickname || c.nick || null,
+            c.unvan || null,
+            c.adres || null,
+            c.sehir || c.il || null,
+            c.ulke || null,
+            c.yazisma || null,
+            c.vergiD || null,
+            c.vergiN || null,
+            c.tel || null,
+            c.faks || null,
+            c.www || null,
+            c.mail || null,
+            c.yetA || null,
+            c.yetU || null,
+            c.kyt || null,
+            c.irtA || null,
+            c.irtU || null,
+            c.irtN || null,
+            c.irtM || null,
+            c.yapis || null,
+            c.tcs || null,
+            c.ycs || null,
+            c.ucs || null,
+            c.yzcs || null,
+            c.tascs || null,
+            c.acs || null,
+            c.alan || null,
+            c.dept || c.departman || null,
+            c.vardiya || null,
+            c.logo || null,
+            c.kase || null,
+            c.dokuman || null,
+            c.teknik || null,
+            c.tkapsam || null,
+            c.sinif || null,
+            c.not || null
+          )));
+          stats.companies = canonicalCompanies.length;
         }
 
         // --- 🎖️ CERTIFICATES ---
@@ -1266,197 +1078,425 @@ export default {
           const certs = Array.isArray(d.certificates) ? d.certificates : (Array.isArray(d.certs) ? d.certs : []);
           const certRows = Array.isArray(d.certificateRows) ? d.certificateRows : (Array.isArray(d.certRows) ? d.certRows : []);
           const canonicalCerts = [...certs, ...certRows].map(c => createCanonicalCertificate(c)).filter(c => getCertificateId(c));
+          const dedupedCerts = Object.values(buildCertificatesById(canonicalCerts));
 
-          const certById = buildCertificatesById(canonicalCerts);
-          const dedupedCerts = Object.values(certById);
-
-          {
-            const currentSummaryRaw = await env.DB.get(indexKeys.certificateSummary);
-            const currentCount = currentSummaryRaw ? Object.keys(JSON.parse(currentSummaryRaw)).length : 0;
-            if (currentCount > 10 && dedupedCerts.length < (currentCount * 0.2)) {
-              return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: certificates (current: ${currentCount}, incoming: ${dedupedCerts.length})` }, 400);
-            }
+          const { results: cr } = await env.DB_D1.prepare('SELECT COUNT(*) as cnt FROM certificates').all();
+          const currentCount = cr[0]?.cnt ?? 0;
+          if (currentCount > 10 && dedupedCerts.length < currentCount * 0.2) {
+            return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: certificates (current: ${currentCount}, incoming: ${dedupedCerts.length})` }, 400);
           }
 
-          const summaryIndex = {};
-          dedupedCerts.forEach(c => {
-            const id = getCertificateId(c);
-            if (id) summaryIndex[id] = createCertificateSummary(c);
-          });
-
-          const certNextId = dedupedCerts.reduce((h, c) => Math.max(h, parseInt(getCertificateId(c)) || 0), 0) + 1;
-          const sorted = sortCertificatesByIdDesc(dedupedCerts);
-          const recentIds = sorted.slice(0, 50).map(c => getCertificateId(c));
-
-          writes.push(env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIndex), { expirationTtl: CACHE_TTL }));
-          writes.push(env.DB.put(indexKeys.certificateNextId, String(certNextId), { expirationTtl: CACHE_TTL }));
-          writes.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
-          writes.push(env.DB.put(indexKeys.fullCertificates, JSON.stringify(dedupedCerts), { expirationTtl: CACHE_TTL }));
-          stats.certs = Object.keys(summaryIndex).length;
+          const stmt = env.DB_D1.prepare(
+            `INSERT OR REPLACE INTO certificates
+              (id, firma_no, standart, denetim_tipi, sertifika_no, sertifika_tarihi,
+               gozetim_tarihi, tescil_tarihi, gecerlilik_tarihi,
+               kapsam, scope, akreditasyon, akredite, ea, nace,
+               consultant, other_standart, durum, sertifika_not,
+               gozetim_confirmed, calendar_id, qr, cert_link, logo,
+               updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
+          );
+          await batchInsert(dedupedCerts.map(c => stmt.bind(
+            parseInt(getCertificateId(c)) || null,
+            parseInt(c.firmaNo || c.firmano) || null,
+            c.standart || null,
+            c.denetim || c.denetimTipi || null,
+            c.sno || null,
+            c.gst || null,
+            c.goz || null,
+            c.stt || null,
+            c.sgt || null,
+            c.kapsam || null,
+            c.scope || null,
+            c.akreditasyon || c.akrn || null,
+            c.akredite ? 1 : 0,
+            null,                              // ea — certificates tablosunda yok, sütun kaldırıldı
+            c.kod || c.nace || null,
+            c.dan || c.danisman || null,
+            c.other || null,
+            c.durum || null,
+            c.not || null,
+            c.gozetimConfirmed === 'TRUE' || c.gozetimConf === 'TRUE' ? 1 : 0,
+            c.calendar || c.eventId || null,
+            c.qr || null,
+            c.certLink || c.certiLink || null,
+            c.logo || null
+          )));
+          stats.certs = dedupedCerts.length;
         }
 
-        // --- 🧪 TESTS / AUDITS / PROFORMAS ---
+        // --- 🧪 TESTS ---
         if (hasScope("tests")) {
-          const rawTests = Array.isArray(d.tests) ? d.tests : [];
-          const canonicalTests = rawTests.map(row => createCanonicalTestRow(row));
+          const canonicalTests = (Array.isArray(d.tests) ? d.tests : [])
+            .map(row => createCanonicalTestRow(row)).filter(t => getTestId(t));
 
-          {
-            const currentFullRaw = await env.DB.get(indexKeys.fullTests);
-            const currentCount = currentFullRaw ? JSON.parse(currentFullRaw).length : 0;
-            if (currentCount > 10 && canonicalTests.length < (currentCount * 0.2)) {
-              return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: tests (current: ${currentCount}, incoming: ${canonicalTests.length})` }, 400);
-            }
+          const { results: cr } = await env.DB_D1.prepare('SELECT COUNT(*) as cnt FROM tests').all();
+          const currentCount = cr[0]?.cnt ?? 0;
+          if (currentCount > 10 && canonicalTests.length < currentCount * 0.2) {
+            return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: tests (current: ${currentCount}, incoming: ${canonicalTests.length})` }, 400);
           }
-          const testNextId = canonicalTests.reduce((h, t) => Math.max(h, parseInt(getTestId(t)) || 0), 0) + 1;
-          writes.push(env.DB.put(indexKeys.testNextId, String(testNextId), { expirationTtl: CACHE_TTL }));
-          writes.push(env.DB.put(indexKeys.fullTests, JSON.stringify(canonicalTests), { expirationTtl: CACHE_TTL }));
+
+          const stmt = env.DB_D1.prepare(
+            `INSERT OR REPLACE INTO tests
+              (id, firma_no, test_adi, marka, urun, urun_kodu, urun_no, lot,
+               urun_kabul, kabul_saat, test_baslangic, test_bitis,
+               rapor_tarihi, rapor_no, numune_sayisi, numune_ut, numune_skt,
+               urun_bilgi, gorsel1, gorsel2, detay, updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
+          );
+          await batchInsert(canonicalTests.map(t => stmt.bind(
+            parseInt(getTestId(t)) || null,
+            parseInt(getTestFirmaId(t)) || null,
+            t.testAdi || null,
+            t.marka || null,
+            t.urun || null,
+            t.urunKodu || null,
+            t.urunNo || null,
+            t.lot || null,
+            t.urunKabul || null,
+            t.kabulSaat || null,
+            t.testBaslangic || null,
+            t.testBitis || null,
+            t.raporTarihi || null,
+            t.raporNo || null,
+            parseInt(t.numuneSayisi) || null,
+            t.numuneUT || null,
+            t.numuneSKT || null,
+            t.urunBilgi || null,
+            t.gorsel1 || null,
+            t.gorsel2 || null,
+            t.detay || null
+          )));
           stats.tests = canonicalTests.length;
         }
 
+        // --- 📋 AUDITS ---
         if (hasScope("audits")) {
-          const rawAudits = Array.isArray(d.auditObjects) ? d.auditObjects : (Array.isArray(d.audits) ? d.audits : []);
-          const canonicalAudits = rawAudits.map(a => createCanonicalAuditRow(a));
+          const canonicalAudits = (Array.isArray(d.auditObjects) ? d.auditObjects : (Array.isArray(d.audits) ? d.audits : []))
+            .map(a => createCanonicalAuditRow(a)).filter(a => getAuditId(a));
 
-          {
-            const currentFullRaw = await env.DB.get(indexKeys.fullAudits);
-            const currentCount = currentFullRaw ? JSON.parse(currentFullRaw).length : 0;
-            if (currentCount > 10 && canonicalAudits.length < (currentCount * 0.2)) {
-              return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: audits (current: ${currentCount}, incoming: ${canonicalAudits.length})` }, 400);
-            }
+          const { results: cr } = await env.DB_D1.prepare('SELECT COUNT(*) as cnt FROM audits').all();
+          const currentCount = cr[0]?.cnt ?? 0;
+          if (currentCount > 10 && canonicalAudits.length < currentCount * 0.2) {
+            return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: audits (current: ${currentCount}, incoming: ${canonicalAudits.length})` }, 400);
           }
 
-          const auditNextId = canonicalAudits.reduce((h, a) => Math.max(h, parseInt(getAuditId(a)) || 0), 0) + 1;
-          writes.push(env.DB.put(indexKeys.auditNextId, String(auditNextId), { expirationTtl: CACHE_TTL }));
-          writes.push(env.DB.put(indexKeys.fullAudits, JSON.stringify(canonicalAudits), { expirationTtl: CACHE_TTL }));
-          writes.push(env.DB.delete("cache:getAudits:{}"));
+          const stmt = env.DB_D1.prepare(
+            `INSERT OR REPLACE INTO audits
+              (id, firma_no, standart, denetim_tipi,
+               a1_baslangic, a1_bitis, a1_manday, a1_bas_denetci, a1_denetci_2, a1_denetci_3,
+               a2_baslangic, a2_bitis, a2_manday, a2_bas_denetci, a2_denetci_2, a2_denetci_3,
+               updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
+          );
+          await batchInsert(canonicalAudits.map(a => stmt.bind(
+            parseInt(getAuditId(a)) || null,
+            parseInt(getAuditFirmaId(a)) || null,
+            a.standart || null,
+            a.denetimTipi || null,
+            a.a1Basla || null,
+            a.a1Bitis || null,
+            parseFloat(a.a1Md) || null,
+            a.a1La || null,
+            a.a1Fa || null,
+            a.a1Sa || null,
+            a.a2Basla || null,
+            a.a2Bitis || null,
+            parseFloat(a.a2Md) || null,
+            a.a2La || null,
+            a.a2Fa || null,
+            a.a2Sa || null
+          )));
           stats.audits = canonicalAudits.length;
         }
 
+        // --- 💰 PROFORMAS ---
         if (hasScope("proformas")) {
-          const rawProformas = Array.isArray(d.proformas) ? d.proformas : [];
-          const canonicalProformas = rawProformas.map(p => createCanonicalProformaRow(Array.isArray(p) ? rowToObject(d.proformaHeaders, p) : p));
+          const canonicalProformas = (Array.isArray(d.proformas) ? d.proformas : [])
+            .map(p => createCanonicalProformaRow(Array.isArray(p) ? rowToObject(d.proformaHeaders, p) : p))
+            .filter(p => getProformaId(p));
 
-          {
-            const currentFullRaw = await env.DB.get(indexKeys.fullProformas);
-            const currentCount = currentFullRaw ? JSON.parse(currentFullRaw).length : 0;
-            if (currentCount > 10 && canonicalProformas.length < (currentCount * 0.2)) {
-              return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: proformas (current: ${currentCount}, incoming: ${canonicalProformas.length})` }, 400);
-            }
+          const { results: cr } = await env.DB_D1.prepare('SELECT COUNT(*) as cnt FROM proformas').all();
+          const currentCount = cr[0]?.cnt ?? 0;
+          if (currentCount > 10 && canonicalProformas.length < currentCount * 0.2) {
+            return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: proformas (current: ${currentCount}, incoming: ${canonicalProformas.length})` }, 400);
           }
-          const proformaNextId = canonicalProformas.reduce((h, p) => Math.max(h, parseInt(getProformaId(p)) || 0), 0) + 1;
-          writes.push(env.DB.put(indexKeys.proformaNextId, String(proformaNextId), { expirationTtl: CACHE_TTL }));
-          writes.push(env.DB.put(indexKeys.fullProformas, JSON.stringify(canonicalProformas), { expirationTtl: CACHE_TTL }));
+
+          const stmt = env.DB_D1.prepare(
+            `INSERT OR REPLACE INTO proformas
+              (id, firma_no, kdvsiz, kdv_oran, kdv, toplam, birim, tarih, konu, updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,unixepoch())`
+          );
+          await batchInsert(canonicalProformas.map(p => stmt.bind(
+            parseInt(getProformaId(p)) || null,
+            parseInt(getProformaFirmaId(p)) || null,
+            parseFloat(p.kdvsiz) || null,
+            parseInt(p.kdvOran) || null,
+            parseFloat(p.kdv) || null,
+            parseFloat(p.toplam) || null,
+            p.birim || null,
+            p.tarih || null,
+            p.konu || null
+          )));
           stats.proformas = canonicalProformas.length;
         }
 
+        // --- 📚 MASTER DATA ---
         if (hasScope("master")) {
-          const standards = Array.isArray(d.standards) ? d.standards : [];
-          const consultants = Array.isArray(d.consultants) ? d.consultants : [];
-          const auditors = Array.isArray(d.auditors) ? d.auditors : [];
-          standards.forEach(s => {
-            const sid = String(s.ID || s.id || "");
-            if (sid) writes.push(env.DB.put(`cache:getStandardById:${stableStringify({ id: sid })}`, JSON.stringify(s), { expirationTtl: CACHE_TTL }));
+          const stdList  = Array.isArray(d.standards)   ? d.standards   : [];
+          const audList  = Array.isArray(d.auditors)    ? d.auditors    : [];
+          const conList  = Array.isArray(d.consultants) ? d.consultants : [];
+          const tdList   = Array.isArray(d.testdocs)    ? d.testdocs    : [];
+          const sdList   = Array.isArray(d.sysdocs)     ? d.sysdocs     : [];
+          let normalizedStandards = [];
+          let normalizedConsultants = [];
+          let normalizedTestDocs = [];
+          let normalizedSysDocs = [];
+
+          if (stdList.length) {
+            normalizedStandards = stdList
+              .map((r) => ({
+                kod: pickMasterField(r, ["kod", "id", "standard code", "standart kodu", "standart"]),
+                kisaltma: pickMasterField(r, ["kisaltma", "kısaltma", "short code", "kisaltma kodu"]),
+                tam_ad: pickMasterField(r, ["tam_ad", "tam adı", "tam adi", "tamad", "ad", "standart adı", "standart adi", "full"]),
+                tanim_tr: pickMasterField(r, ["tanim_tr", "tanım (tr)", "tanim tr", "türkçe tanım", "turkce tanim"]),
+                tanim_en: pickMasterField(r, ["tanim_en", "tanım (en)", "tanim en", "english description", "ingilizce tanım", "ingilizce tanim"]),
+                tema_id_en: pickMasterField(r, ["tema_id_en", "tema id (en)", "english theme id", "themeid", "en tema", "ingilizce tema id"]),
+                tema_id_tr: pickMasterField(r, ["tema_id_tr", "tema id (tr)", "turkish theme id", "temaid", "tr tema", "türkçe tema id", "turkce tema id"]),
+              }))
+          .filter((r) => r.kod || r.kisaltma || r.tam_ad || r.tanim_tr || r.tanim_en || r.tema_id_en || r.tema_id_tr);
+
+            if (normalizedStandards.length) {
+              await env.DB_D1.prepare(`DELETE FROM standards`).run();
+              const s = env.DB_D1.prepare(
+                `INSERT OR REPLACE INTO standards (kod, kisaltma, tam_ad, tanim_tr, tanim_en, tema_id_en, tema_id_tr) VALUES (?,?,?,?,?,?,?)`
+              );
+              await batchInsert(normalizedStandards.map(r => s.bind(
+                String(r.kod || ""),
+                r.kisaltma || null,
+                r.tam_ad || null,
+                r.tanim_tr || null,
+                r.tanim_en || null,
+                r.tema_id_en || null,
+                r.tema_id_tr || null
+              )));
+            }
+          }
+
+
+          const uniqueAuditorsSet = new Set();
+          audList.forEach(r => {
+            const nameG = pickMasterField(r, ["denetçiler", "denetciler"]);
+            if (nameG) uniqueAuditorsSet.add(nameG.trim());
           });
-          auditors.forEach(a => {
-            const aid = String(a.ID || a.id || "");
-            if (aid) writes.push(env.DB.put(`cache:getAuditorById:${stableStringify({ id: aid })}`, JSON.stringify(a), { expirationTtl: CACHE_TTL }));
+
+          if (uniqueAuditorsSet.size === 0) {
+            audList.forEach(r => {
+              const nameB = pickMasterField(r, ["denetçi", "denetci", "ad", "adı", "isim"]);
+              if (nameB) uniqueAuditorsSet.add(nameB.trim());
+            });
+          }
+
+          const normalizedAuditorsList = Array.from(uniqueAuditorsSet).map((fullName, idx) => {
+            const cleanName = fullName.trim();
+            const parts = cleanName.split(/\s+/);
+            const soyad = parts.length > 1 ? parts.pop() : "";
+            const ad = parts.join(" ");
+            
+            let imza = null;
+            const stds = new Set();
+            
+            audList.forEach(r => {
+              const dName = pickMasterField(r, ["denetçi", "denetci", "ad", "adı", "isim"]);
+              if (dName && dName.toLowerCase().trim() === cleanName.toLowerCase()) {
+                const imzaVal = pickMasterField(r, ["imza", "signature"]);
+                if (imzaVal && !imza) imza = imzaVal;
+                
+                const std = pickMasterField(r, ["standart", "standard"]);
+                if (std) stds.add(String(std).trim().toUpperCase());
+              }
+            });
+
+            return {
+              id: idx + 1,
+              ad: ad,
+              soyad: soyad,
+              imza: imza,
+              std_9001: stds.has("9001") ? 1 : 0,
+              std_13485: stds.has("13485") ? 1 : 0,
+              std_14001: stds.has("14001") ? 1 : 0,
+              std_22000: stds.has("22000") ? 1 : 0,
+              std_27001: stds.has("27001") ? 1 : 0,
+              std_45001: stds.has("45001") ? 1 : 0,
+              std_50001: stds.has("50001") ? 1 : 0,
+              std_gmp: stds.has("GMP") ? 1 : 0
+            };
           });
-          writes.push(env.DB.put(`cache:getConsultants:{}`, JSON.stringify(consultants), { expirationTtl: CACHE_TTL }));
-          writes.push(env.DB.delete("cache:getMasterData:{}"));
+
+          if (normalizedAuditorsList.length) {
+            await env.DB_D1.prepare(`DELETE FROM auditors`).run();
+            const a = env.DB_D1.prepare(
+              `INSERT INTO auditors (id, ad, soyad, imza, std_9001, std_13485, std_14001, std_22000, std_27001, std_45001, std_50001, std_gmp, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
+            );
+            await batchInsert(normalizedAuditorsList.map(r => a.bind(
+              null, r.ad, r.soyad, r.imza,
+              r.std_9001, r.std_13485, r.std_14001, r.std_22000,
+              r.std_27001, r.std_45001, r.std_50001, r.std_gmp
+            )));
+          }
+
+
+          if (conList.length) {
+            normalizedConsultants = conList
+              .map((r) => ({
+                id: pickMasterField(r, ["id", "consultant id", "danisman id"]),
+                ad: pickMasterField(r, ["ad", "adı", "adi", "isim", "danışman", "danisman", "danışmanlar", "name"]),
+                adres: pickMasterField(r, ["adres", "address"]),
+                tel: pickMasterField(r, ["tel", "telefon", "gsm"]),
+                mail: pickMasterField(r, ["mail", "email", "e-posta", "eposta"]),
+                yetkili_adi: pickMasterField(r, ["yetkili_adi", "yetkili adı", "yetkili adi", "yetkili", "ilgili kişi", "ilgili kisi"]),
+                yetkili_soyad: pickMasterField(r, ["yetkili_soyad", "yetkili soyadı", "yetkili soyadi"]),
+                hitabet: pickMasterField(r, ["hitabet", "unvan", "ünvan", "title"]),
+              }))
+              .filter((r) => r.id || r.ad || r.adres || r.tel || r.mail || r.yetkili_adi || r.yetkili_soyad || r.hitabet);
+
+            if (normalizedConsultants.length) {
+              await env.DB_D1.prepare(`DELETE FROM consultants`).run();
+              const c = env.DB_D1.prepare(
+                `INSERT OR REPLACE INTO consultants (id, ad, adres, tel, mail, yetkili_adi, yetkili_soyad, hitabet, updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,unixepoch())`
+              );
+              await batchInsert(normalizedConsultants.map(r => c.bind(
+                parseInt(r.id) || null,
+                r.ad || null,
+                r.adres || null,
+                r.tel || null,
+                r.mail || null,
+                r.yetkili_adi || null,
+                r.yetkili_soyad || null,
+                r.hitabet || null
+              )));
+            }
+          }
+
+          if (tdList.length) {
+            normalizedTestDocs = tdList
+              .map((r) => ({
+                id: pickMasterField(r, ["id", "testdoc id"]),
+                kategori: pickMasterField(r, ["kategori", "category"]),
+                aciklama: pickMasterField(r, ["aciklama", "açıklama", "description", "testin açıklaması", "testin aciklamasi"]),
+                dokuman_adi: pickMasterField(r, ["dokuman_adi", "doküman adı", "dokuman adi", "document name"]),
+                test_adi_tr: pickMasterField(r, ["test_adi_tr", "test adı", "test adı (tr)", "türkçe test adı", "turkce test adi"]),
+                test_adi_en: pickMasterField(r, ["test_adi_en", "test adı (en)", "ingilizce test adı", "ingilizce test adi", "english test name"]),
+                standart: pickMasterField(r, ["standart", "standard", "test standardı", "test standardi"]),
+                tema_tr: pickMasterField(r, ["tema_tr", "türkçe tema", "turkce tema", "tema tr"]),
+                tema_en: pickMasterField(r, ["tema_en", "ingilizce tema", "ingilizce tema", "tema en", "english theme"]),
+                gun_sayisi: pickMasterField(r, ["gun_sayisi", "gün sayısı", "gun sayisi", "days"]),
+                kisaltma: pickMasterField(r, ["kisaltma", "kısaltma"]),
+                kisaltma2: pickMasterField(r, ["kisaltma2", "kısaltma 2", "kisaltma 2"]),
+                notlar: pickMasterField(r, ["notlar", "not", "notes"]),
+              }))
+              .filter((r) => r.id || r.kategori || r.aciklama || r.dokuman_adi || r.test_adi_tr || r.test_adi_en || r.standart || r.tema_tr || r.tema_en || r.gun_sayisi || r.kisaltma || r.kisaltma2 || r.notlar);
+
+            if (normalizedTestDocs.length) {
+              await env.DB_D1.prepare(`DELETE FROM testdocs`).run();
+              const t = env.DB_D1.prepare(
+                `INSERT OR REPLACE INTO testdocs (id, kategori, aciklama, dokuman_adi, test_adi_tr, test_adi_en, standart, tema_tr, tema_en, gun_sayisi, kisaltma, kisaltma2, notlar, updated_at)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
+              );
+              await batchInsert(normalizedTestDocs.map(r => t.bind(
+                parseInt(r.id) || null,
+                r.kategori || null, r.aciklama || null, r.dokuman_adi || null,
+                r.test_adi_tr || null, r.test_adi_en || null, r.standart || null,
+                r.tema_tr || null, r.tema_en || null,
+                parseInt(r.gun_sayisi) || null,
+                r.kisaltma || null, r.kisaltma2 || null, r.notlar || null
+              )));
+            }
+          }
+
+          if (sdList.length) {
+            normalizedSysDocs = sdList
+              .map((r) => ({
+                id: pickMasterField(r, ["id", "sysdoc id"]),
+                set_adi: pickMasterField(r, ["set_adi", "set adı", "set adi", "set", "setin adı", "setin adi"]),
+                dosya_turu: pickMasterField(r, ["dosya_turu", "dosya türü", "dosya turu", "tür", "tur"]),
+                klasor_adi: pickMasterField(r, ["klasor_adi", "klasör adı", "klasor adi", "klasör", "folder"]),
+                dokuman_kodu: pickMasterField(r, ["dokuman_kodu", "doküman kodu", "dokuman kodu", "kod"]),
+                dokuman_adi: pickMasterField(r, ["dokuman_adi", "doküman adı", "dokuman adi", "ad"]),
+                dokuman_id: pickMasterField(r, ["dokuman_id", "doküman id", "dokuman id", "drive id", "file id"]),
+              }))
+              .filter((r) => r.id || r.set_adi || r.dosya_turu || r.klasor_adi || r.dokuman_kodu || r.dokuman_adi || r.dokuman_id);
+
+            if (normalizedSysDocs.length) {
+              await env.DB_D1.prepare(`DELETE FROM sysdocs`).run();
+              const s = env.DB_D1.prepare(
+                `INSERT OR REPLACE INTO sysdocs (id, set_adi, dosya_turu, klasor_adi, dokuman_kodu, dokuman_adi, dokuman_id, updated_at)
+                 VALUES (?,?,?,?,?,?,?,unixepoch())`
+              );
+              await batchInsert(normalizedSysDocs.map(r => s.bind(
+                parseInt(r.id) || null,
+                r.set_adi || null, r.dosya_turu || null, r.klasor_adi || null,
+                r.dokuman_kodu || null, r.dokuman_adi || null, r.dokuman_id || null
+              )));
+            }
+          }
+
+          stats.master = {
+            standards: normalizedStandards.length,
+            auditors: filteredAudList.length,
+            consultants: normalizedConsultants.length,
+            testdocs: normalizedTestDocs.length,
+            sysdocs: normalizedSysDocs.length
+          };
         }
 
-        for (let i = 0; i < writes.length; i += 50) {
-          await Promise.all(writes.slice(i, i + 50));
-        }
+        // sync_meta güncelle
+        await env.DB_D1.prepare(
+          `INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES ('last_sync', ?, unixepoch())`
+        ).bind(new Date().toISOString()).run();
+
         ctx.waitUntil(rebuildDashboardStats());
         return jsonResponse({ success: true, message: "Sync Completed", stats, scope });
       },
       exportKvData: async (params, ctx, env) => {
-
         const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
-        const exportData = { version: "1.0", timestamp: new Date().toISOString(), scope, data: {} };
+        const exportData = { version: "2.0", timestamp: new Date().toISOString(), scope, data: {} };
         const ps = [];
-        if (scope.includes("companies")) ps.push(env.DB.get(indexKeys.fullCompanies).then(v => exportData.data.companies = v ? JSON.parse(v) : []));
-        if (scope.includes("certificates")) ps.push(env.DB.get(indexKeys.fullCertificates).then(v => exportData.data.certificates = v ? JSON.parse(v) : []));
-        if (scope.includes("tests")) ps.push(env.DB.get(indexKeys.fullTests).then(v => exportData.data.tests = v ? JSON.parse(v) : []));
-        if (scope.includes("audits")) ps.push(env.DB.get(indexKeys.fullAudits).then(v => exportData.data.audits = v ? JSON.parse(v) : []));
-        if (scope.includes("proformas")) ps.push(env.DB.get(indexKeys.fullProformas).then(v => exportData.data.proformas = v ? JSON.parse(v) : []));
+        if (scope.includes("companies")) ps.push(env.DB_D1.prepare(`SELECT * FROM companies`).all().then(r => { exportData.data.companies = r.results || []; }));
+        if (scope.includes("certificates")) ps.push(env.DB_D1.prepare(`SELECT * FROM certificates`).all().then(r => { exportData.data.certificates = r.results || []; }));
+        if (scope.includes("tests")) ps.push(env.DB_D1.prepare(`SELECT * FROM tests`).all().then(r => { exportData.data.tests = r.results || []; }));
+        if (scope.includes("audits")) ps.push(env.DB_D1.prepare(`SELECT * FROM audits`).all().then(r => { exportData.data.audits = r.results || []; }));
+        if (scope.includes("proformas")) ps.push(env.DB_D1.prepare(`SELECT * FROM proformas`).all().then(r => { exportData.data.proformas = r.results || []; }));
         if (scope.includes("master")) {
-           ps.push(env.DB.get(`cache:getConsultants:{}`).then(v => exportData.data.consultants = v ? JSON.parse(v) : []));
+          ps.push(Promise.all([
+            env.DB_D1.prepare(`SELECT * FROM standards`).all(),
+            env.DB_D1.prepare(`SELECT * FROM auditors`).all(),
+            env.DB_D1.prepare(`SELECT * FROM consultants`).all(),
+            env.DB_D1.prepare(`SELECT * FROM testdocs`).all(),
+            env.DB_D1.prepare(`SELECT * FROM sysdocs`).all(),
+          ]).then(([std, aud, con, td, sd]) => {
+            exportData.data.standards = std.results || [];
+            exportData.data.auditors = aud.results || [];
+            exportData.data.consultants = con.results || [];
+            exportData.data.testdocs = td.results || [];
+            exportData.data.sysdocs = sd.results || [];
+          }));
         }
         await Promise.all(ps);
         return jsonResponse({ success: true, exportData });
       },
       importKvData: async (params, ctx, env) => {
-
-        const payload = params?.exportData?.data || params?.payload?.data || params?.payload;
-        const scope = Array.isArray(params?.scope) ? params.scope : [];
-        if (!payload || !scope.length) return jsonResponse({ success: false, error: "INVALID_IMPORT_PAYLOAD" }, 400);
-        const ws = [];
-        const stats = {};
-
-        if (scope.includes("companies") && Array.isArray(payload.companies)) {
-          const companies = payload.companies.map(c => createCanonicalCompany(c)).filter(c => getCompanyId(c));
-          const searchIdx = {};
-          companies.forEach(c => { const cid = getCompanyId(c); if (cid) searchIdx[cid] = createSearchEntry(c); });
-          const nextId = companies.reduce((h, c) => Math.max(h, parseInt(getCompanyId(c)) || 0), 0) + 1;
-          ws.push(env.DB.put(indexKeys.companySearch, JSON.stringify(searchIdx), { expirationTtl: CACHE_TTL }));
-          ws.push(env.DB.put(indexKeys.companyNextId, String(nextId), { expirationTtl: CACHE_TTL }));
-          ws.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(companies), { expirationTtl: CACHE_TTL }));
-          stats.companies = companies.length;
-        }
-
-        if (scope.includes("certificates") && Array.isArray(payload.certificates)) {
-          const certs = payload.certificates.map(c => createCanonicalCertificate(c)).filter(c => getCertificateId(c));
-          const certById = buildCertificatesById(certs);
-          const dedupedCerts = Object.values(certById);
-          const summaryIdx = {};
-          dedupedCerts.forEach(c => { const cid = getCertificateId(c); if (cid) summaryIdx[cid] = createCertificateSummary(c); });
-          const nextId = dedupedCerts.reduce((h, c) => Math.max(h, parseInt(getCertificateId(c)) || 0), 0) + 1;
-          const recentIds = sortCertificatesByIdDesc(dedupedCerts).slice(0, 50).map(c => getCertificateId(c));
-          ws.push(env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIdx), { expirationTtl: CACHE_TTL }));
-          ws.push(env.DB.put(indexKeys.certificateNextId, String(nextId), { expirationTtl: CACHE_TTL }));
-          ws.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
-          ws.push(env.DB.put(indexKeys.fullCertificates, JSON.stringify(dedupedCerts), { expirationTtl: CACHE_TTL }));
-          stats.certs = dedupedCerts.length;
-        }
-
-        if (scope.includes("audits") && Array.isArray(payload.audits)) {
-          const audits = payload.audits.map(a => createCanonicalAuditRow(a));
-          const nextId = audits.reduce((h, a) => Math.max(h, parseInt(getAuditId(a)) || 0), 0) + 1;
-          ws.push(env.DB.put(indexKeys.auditNextId, String(nextId), { expirationTtl: CACHE_TTL }));
-          ws.push(env.DB.put(indexKeys.fullAudits, JSON.stringify(audits), { expirationTtl: CACHE_TTL }));
-          stats.audits = audits.length;
-        }
-
-        if (scope.includes("tests") && Array.isArray(payload.tests)) {
-          const tests = payload.tests.map(t => createCanonicalTestRow(t));
-          const nextId = tests.reduce((h, t) => Math.max(h, parseInt(getTestId(t)) || 0), 0) + 1;
-          ws.push(env.DB.put(indexKeys.testNextId, String(nextId), { expirationTtl: CACHE_TTL }));
-          ws.push(env.DB.put(indexKeys.fullTests, JSON.stringify(tests), { expirationTtl: CACHE_TTL }));
-          stats.tests = tests.length;
-        }
-
-        if (scope.includes("proformas") && Array.isArray(payload.proformas)) {
-          const proformas = payload.proformas.map(p => createCanonicalProformaRow(p));
-          const nextId = proformas.reduce((h, p) => Math.max(h, parseInt(getProformaId(p)) || 0), 0) + 1;
-          ws.push(env.DB.put(indexKeys.proformaNextId, String(nextId), { expirationTtl: CACHE_TTL }));
-          ws.push(env.DB.put(indexKeys.fullProformas, JSON.stringify(proformas), { expirationTtl: CACHE_TTL }));
-          stats.proformas = proformas.length;
-        }
-
-        for (let i = 0; i < ws.length; i += 50) await Promise.all(ws.slice(i, i + 50));
-        ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse({ success: true, message: "Import Successful", stats });
+        return jsonResponse({ success: false, error: "DEPRECATED: importKvData is superseded by bulkSync. Use bulkSync action instead." }, 410);
       },
       syncCheck: async (params, ctx, env) => {
-        // Worker + KV sağlığını doğrular — GAS'a gitmez, kota tüketmez
-        const kvOk = !!env.DB;
-        const statsRaw = kvOk ? await env.DB.get(indexKeys.dashboardStats) : null;
+        const d1Ok = !!env.DB_D1;
+        const row = d1Ok ? await env.DB_D1.prepare(`SELECT value FROM sync_meta WHERE key='last_sync'`).first() : null;
         return jsonResponse({
-          success: kvOk,
-          kv: kvOk,
-          lastSync: statsRaw ? JSON.parse(statsRaw).stats?.lastSync : null,
+          success: d1Ok,
+          d1: d1Ok,
+          lastSync: row?.value || null,
         });
       },
       rebuildStats: async (params, ctx, env) => {
@@ -1464,36 +1504,29 @@ export default {
         return jsonResponse({ success: !!result, data: result });
       },
       kvDiagnostic: async (params, ctx, env) => {
-        const [full, summ, comp, stats] = await Promise.all([
-          env.DB.get(indexKeys.fullCertificates),
-          env.DB.get(indexKeys.certificateSummary),
-          env.DB.get(indexKeys.companySearch),
-          env.DB.get(indexKeys.dashboardStats)
+        const [companies, certs, audits, tests, proformas, syncMeta] = await Promise.all([
+          env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM companies`).first(),
+          env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM certificates`).first(),
+          env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM audits`).first(),
+          env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM tests`).first(),
+          env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM proformas`).first(),
+          env.DB_D1.prepare(`SELECT value FROM sync_meta WHERE key='last_sync'`).first(),
         ]);
         return jsonResponse({
           success: true,
           diagnostic: {
-            fullCerts: { exists: !!full, count: full ? JSON.parse(full).length : 0 },
-            summary: { exists: !!summ, count: summ ? Object.keys(JSON.parse(summ)).length : 0 },
-            companies: { exists: !!comp, count: comp ? Object.keys(JSON.parse(comp)).length : 0 },
-            dashboard: { exists: !!stats, lastSync: stats ? JSON.parse(stats).stats?.lastSync : null }
+            companies: companies?.cnt || 0,
+            certificates: certs?.cnt || 0,
+            audits: audits?.cnt || 0,
+            tests: tests?.cnt || 0,
+            proformas: proformas?.cnt || 0,
+            lastSync: syncMeta?.value || null,
           }
         });
       },
       deepRepairIndex: async (params, ctx, env) => {
-
-        const fullRaw = await env.DB.get(indexKeys.fullCertificates);
-        if (!fullRaw) return jsonResponse({ success: false, error: "NO_FULL_CERT_DATA" }, 404);
-        const fullList = JSON.parse(fullRaw);
-        const summaryIndex = {};
-        fullList.forEach(c => {
-           const canonical = createCanonicalCertificate(c);
-           const cid = getCertificateId(canonical);
-           if (cid) summaryIndex[cid] = createCertificateSummary(canonical);
-        });
-        await env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIndex), { expirationTtl: CACHE_TTL });
-        ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse({ success: true, count: Object.keys(summaryIndex).length });
+        const result = await rebuildDashboardStats();
+        return jsonResponse({ success: !!result, data: result });
       },
       clearCache: async (p, ctx, env) => {
         let cursor = undefined;
@@ -1502,278 +1535,135 @@ export default {
           if (page.keys.length) await Promise.all(page.keys.map(k => env.DB.delete(k.name)));
           cursor = page.list_complete ? undefined : page.cursor;
         } while (cursor);
-        return jsonResponse({ success: true, message: "Cache Cleared" });
+        return jsonResponse({ success: true, message: "KV Cache Cleared" });
       }
     };
 
 
     const CompanyHandlers = {
       getCompanies: async (p, ctx, env) => {
-        const raw = await env.DB.get(indexKeys.companySearch);
-        return jsonResponse({ success: true, data: raw ? Object.values(JSON.parse(raw)) : [] });
+        const { results } = await env.DB_D1.prepare(
+          `SELECT co.id, co.nickname, co.unvan, co.city, co.ulke,
+                  COALESCE(ce.kapsam, '') AS kapsam,
+                  COALESCE(ce.scope,  '') AS scope
+           FROM companies co
+           LEFT JOIN certificates ce ON ce.id = (
+             SELECT id FROM certificates
+             WHERE firma_no = co.id
+             ORDER BY id DESC LIMIT 1
+           )
+           ORDER BY co.nickname`
+        ).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       getCompanyById: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        const raw = await env.DB.get(`cache:company:${id}`);
-        if (raw) return jsonResponse({ success: true, data: JSON.parse(raw) });
-
-        // Fallback to Full Index + write-back
-        const fullRaw = await env.DB.get(indexKeys.fullCompanies);
-        const company = fullRaw ? JSON.parse(fullRaw).find(c => String(getCompanyId(c)) === id) : null;
-        if (company) ctx.waitUntil(env.DB.put(`cache:company:${id}`, JSON.stringify(company), { expirationTtl: CACHE_TTL }));
-        return jsonResponse({ success: !!company, data: company });
+        const row = await env.DB_D1.prepare(`SELECT * FROM companies WHERE id=?`).bind(parseInt(id)).first();
+        return jsonResponse({ success: !!row, data: row || null });
       },
       addCompany: async (p, ctx, env) => {
-        const nextIdRaw = await env.DB.get(indexKeys.companyNextId);
-        const newId = String(parseInt(nextIdRaw || "1") || 1);
-        const created = createCanonicalCompany(p?.companyInfo || {}, { id: newId });
-        const searchRaw = await env.DB.get(indexKeys.companySearch);
-        const searchIdx = searchRaw ? JSON.parse(searchRaw) : {};
-        searchIdx[newId] = createSearchEntry(created);
-
-        await Promise.all([
-          env.DB.put(`cache:company:${newId}`, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.companyNextId, String(parseInt(newId) + 1), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.companySearch, JSON.stringify(searchIdx), { expirationTtl: CACHE_TTL }),
-        ]);
-        return jsonResponse({ success: true, id: newId, data: created });
+        const gasResult = await fetchFromGas(env, { action: "addCompany", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        const canonical = createCanonicalCompany(gasResult.data || p?.companyInfo || {});
+        const newId = parseInt(gasResult.id || getCompanyId(canonical)) || null;
+        if (newId) await upsertCompanyD1(canonical, newId);
+        return jsonResponse(gasResult);
       },
       updateCompany: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        let existingRaw = await env.DB.get(`cache:company:${id}`);
-        if (!existingRaw) {
-          const fullRaw = await env.DB.get(indexKeys.fullCompanies);
-          const found = fullRaw ? JSON.parse(fullRaw).find(c => String(getCompanyId(c)) === id) : null;
-          if (!found) return jsonResponse({ success: false, error: "NOT_FOUND" }, 404);
-          existingRaw = JSON.stringify(found);
-        }
-
-        const updated = createCanonicalCompany(JSON.parse(existingRaw), { id, explicit: p?.companyInfo || {} });
-        const searchRaw = await env.DB.get(indexKeys.companySearch);
-        const searchIdx = searchRaw ? JSON.parse(searchRaw) : {};
-        searchIdx[id] = createSearchEntry(updated);
-
-        await Promise.all([
-          env.DB.put(`cache:company:${id}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.companySearch, JSON.stringify(searchIdx), { expirationTtl: CACHE_TTL }),
-        ]);
-        return jsonResponse({ success: true, data: updated });
+        const gasResult = await fetchFromGas(env, { action: "updateCompany", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        const canonical = createCanonicalCompany(gasResult.data || p?.companyInfo || {}, { id });
+        await upsertCompanyD1(canonical, parseInt(id));
+        return jsonResponse(gasResult);
       }
     };
 
     const CertificateHandlers = {
       getDashboardSummary: async (p, ctx, env) => {
-        const raw = await env.DB.get(indexKeys.dashboardStats);
-        return jsonResponse({ success: !!raw, data: raw ? JSON.parse(raw) : null });
+        const row = await env.DB_D1.prepare(`SELECT value FROM sync_meta WHERE key='dashboard_stats'`).first();
+        const data = row?.value ? JSON.parse(row.value) : null;
+        return jsonResponse({ success: !!data, data });
       },
       getCertificateSummaries: async (p, ctx, env) => {
-        const raw = await env.DB.get(indexKeys.certificateSummary);
-        const list = raw ? Object.values(JSON.parse(raw)) : [];
-        return jsonResponse({ success: true, data: sortCertificatesByIdDesc(list) });
+        const { results } = await env.DB_D1.prepare(
+          `SELECT c.id, c.firma_no, c.standart, c.sertifika_no, c.sertifika_tarihi,
+                  c.gozetim_tarihi, c.gecerlilik_tarihi, c.durum, c.gozetim_confirmed,
+                  c.consultant, co.nickname, co.city, co.ulke
+           FROM certificates c LEFT JOIN companies co ON co.id = c.firma_no
+           ORDER BY c.id DESC`
+        ).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       getCertificates: async (p, ctx, env) => {
-        const raw = await env.DB.get(indexKeys.fullCertificates);
-        return jsonResponse({ success: !!raw, data: raw ? JSON.parse(raw) : [] });
+        const { results } = await env.DB_D1.prepare(`SELECT * FROM certificates ORDER BY id DESC`).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       getRecentCertificates: async (p, ctx, env) => {
-        const [recentIdsRaw, summaryRaw] = await Promise.all([
-          env.DB.get(indexKeys.certificateRecent),
-          env.DB.get(indexKeys.certificateSummary),
-        ]);
-        if (!recentIdsRaw) return jsonResponse({ success: true, data: [] });
-        const ids = JSON.parse(recentIdsRaw).slice(0, p?.limit || 25);
-        const summaryIdx = summaryRaw ? JSON.parse(summaryRaw) : {};
-        const data = ids.map(id => summaryIdx[id]).filter(Boolean);
-        return jsonResponse({ success: true, data });
+        const limit = parseInt(p?.limit) || 25;
+        const { results } = await env.DB_D1.prepare(
+          `SELECT c.*, co.nickname, co.city FROM certificates c
+           LEFT JOIN companies co ON co.id = c.firma_no
+           ORDER BY c.id DESC LIMIT ?`
+        ).bind(limit).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       getCertificateById: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        const raw = await env.DB.get(`cache:getCertificateById:${stableStringify({ id })}`);
-        if (raw) return jsonResponse({ success: true, data: JSON.parse(raw) });
-        // Fallback to full list + write-back
-        const fullRaw = await env.DB.get(indexKeys.fullCertificates);
-        const cert = fullRaw ? JSON.parse(fullRaw).find(c => String(getCertificateId(c)) === id) : null;
-        if (cert) ctx.waitUntil(env.DB.put(`cache:getCertificateById:${stableStringify({ id })}`, JSON.stringify(cert), { expirationTtl: CACHE_TTL }));
-        return jsonResponse({ success: !!cert, data: cert });
+        const row = await env.DB_D1.prepare(`SELECT * FROM certificates WHERE id=?`).bind(parseInt(id)).first();
+        return jsonResponse({ success: !!row, data: row || null });
       },
       getCertificatesByFirmaId: async (p, ctx, env) => {
         const fId = String(p?.firmaId || "").trim();
         if (!fId) return jsonResponse({ success: false, error: "FIRMA_ID_REQUIRED" }, 400);
-        const cached = await env.DB.get(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`);
-        if (cached) return jsonResponse({ success: true, data: JSON.parse(cached) });
-        // Fallback to full list + write-back
-        const fullRaw = await env.DB.get(indexKeys.fullCertificates);
-        const list = fullRaw ? JSON.parse(fullRaw).filter(c => String(getCertificateFirmaId(c)) === fId) : [];
-        if (list.length) ctx.waitUntil(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
-        return jsonResponse({ success: true, data: list });
+        const { results } = await env.DB_D1.prepare(`SELECT * FROM certificates WHERE firma_no=? ORDER BY id DESC`).bind(parseInt(fId)).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       addCertificate: async (p, ctx, env) => {
-        const nextIdRaw = await env.DB.get(indexKeys.certificateNextId);
-        const newId = String(parseInt(nextIdRaw || "1") || 1);
-        const created = createCanonicalCertificate(p?.certInfo || {}, { id: newId });
-        const fId = getCertificateFirmaId(created);
-
-        const [summaryRaw, recentRaw, firmaListRaw, fullRaw] = await Promise.all([
-          env.DB.get(indexKeys.certificateSummary),
-          env.DB.get(indexKeys.certificateRecent),
-          fId ? env.DB.get(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`) : Promise.resolve(null),
-          env.DB.get(indexKeys.fullCertificates),
-        ]);
-        const summaryIdx = summaryRaw ? JSON.parse(summaryRaw) : {};
-        summaryIdx[newId] = createCertificateSummary(created);
-        const recentIds = mergeRecentCertificateIds(recentRaw ? JSON.parse(recentRaw) : [], [newId]);
-        const firmaList = firmaListRaw ? JSON.parse(firmaListRaw) : [];
-        firmaList.push(created);
-        const fullList = fullRaw ? JSON.parse(fullRaw) : [];
-        fullList.push(created);
-
-        const writes = [
-          env.DB.put(`cache:getCertificateById:${stableStringify({ id: newId })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.certificateNextId, String(parseInt(newId) + 1), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIdx), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.fullCertificates, JSON.stringify(fullList), { expirationTtl: CACHE_TTL }),
-        ];
-        if (fId) writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(firmaList), { expirationTtl: CACHE_TTL }));
-        await Promise.all(writes);
-        ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse({ success: true, id: newId, data: created });
+        const gasResult = await fetchFromGas(env, { action: "addCertificate", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        const canonical = createCanonicalCertificate(gasResult.data || p?.certInfo || {});
+        const newId = parseInt(gasResult.id || getCertificateId(canonical)) || null;
+        if (newId) {
+          await upsertCertificateD1(canonical, newId);
+          ctx.waitUntil(rebuildDashboardStats());
+        }
+        return jsonResponse(gasResult);
       },
       updateCertificate: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        let existingRaw = await env.DB.get(`cache:getCertificateById:${stableStringify({ id })}`);
-        if (!existingRaw) {
-          const fullRaw = await env.DB.get(indexKeys.fullCertificates);
-          const found = fullRaw ? JSON.parse(fullRaw).find(c => String(getCertificateId(c)) === id) : null;
-          if (!found) return jsonResponse({ success: false, error: "NOT_FOUND" }, 404);
-          existingRaw = JSON.stringify(found);
-        }
-
-        const existing = JSON.parse(existingRaw);
-        const prevFirmaId = getCertificateFirmaId(existing);
-        const updated = createCanonicalCertificate(existing, { id, explicit: p?.certInfo || {} });
-        const nextFirmaId = getCertificateFirmaId(updated);
-
-        const [summaryRaw, fullRaw] = await Promise.all([
-          env.DB.get(indexKeys.certificateSummary),
-          env.DB.get(indexKeys.fullCertificates),
-        ]);
-        const summaryIdx = summaryRaw ? JSON.parse(summaryRaw) : {};
-        summaryIdx[id] = createCertificateSummary(updated);
-        const fullList = fullRaw ? JSON.parse(fullRaw) : [];
-        const fullIdx = fullList.findIndex(c => String(getCertificateId(c)) === id);
-        if (fullIdx > -1) fullList[fullIdx] = updated;
-        else fullList.push(updated);
-
-        const writes = [
-          env.DB.put(`cache:getCertificateById:${stableStringify({ id })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIdx), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.fullCertificates, JSON.stringify(fullList), { expirationTtl: CACHE_TTL }),
-        ];
-
-        if (prevFirmaId && prevFirmaId !== nextFirmaId) {
-          // Firma değişti: eski listeden çıkar, yeni listeye ekle
-          const [prevRaw, nextRaw] = await Promise.all([
-            env.DB.get(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`),
-            nextFirmaId ? env.DB.get(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`) : Promise.resolve(null),
-          ]);
-          const prevList = prevRaw ? JSON.parse(prevRaw).filter(c => String(getCertificateId(c)) !== id) : [];
-          writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`, JSON.stringify(prevList), { expirationTtl: CACHE_TTL }));
-          if (nextFirmaId) {
-            const nextList = nextRaw ? JSON.parse(nextRaw) : [];
-            const nIdx = nextList.findIndex(c => String(getCertificateId(c)) === id);
-            if (nIdx > -1) nextList[nIdx] = updated; else nextList.push(updated);
-            writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: nextFirmaId })}`, JSON.stringify(nextList), { expirationTtl: CACHE_TTL }));
-          }
-        } else if (prevFirmaId) {
-          // Aynı firma: listeyi yerinde güncelle
-          const firmaListRaw = await env.DB.get(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`);
-          const firmaList = firmaListRaw ? JSON.parse(firmaListRaw) : [];
-          const fIdx = firmaList.findIndex(c => String(getCertificateId(c)) === id);
-          if (fIdx > -1) firmaList[fIdx] = updated; else firmaList.push(updated);
-          writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: prevFirmaId })}`, JSON.stringify(firmaList), { expirationTtl: CACHE_TTL }));
-        }
-
-        await Promise.all(writes);
+        const gasResult = await fetchFromGas(env, { action: "updateCertificate", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        const canonical = createCanonicalCertificate(gasResult.data || p?.certInfo || {}, { id });
+        await upsertCertificateD1(canonical, parseInt(id));
         ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse({ success: true, data: updated });
+        return jsonResponse(gasResult);
       },
       deleteCertificate: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-
-        let existingRaw = await env.DB.get(`cache:getCertificateById:${stableStringify({ id })}`);
-        if (!existingRaw) {
-          const fullRaw = await env.DB.get(indexKeys.fullCertificates);
-          const found = fullRaw ? JSON.parse(fullRaw).find(c => String(getCertificateId(c)) === id) : null;
-          if (!found) return jsonResponse({ success: false, error: "NOT_FOUND" }, 404);
-          existingRaw = JSON.stringify(found);
-        }
-
-        const existing = JSON.parse(existingRaw);
-        const firmaId = getCertificateFirmaId(existing);
-
-        const [summaryRaw, recentRaw, fullRaw, firmaListRaw] = await Promise.all([
-          env.DB.get(indexKeys.certificateSummary),
-          env.DB.get(indexKeys.certificateRecent),
-          env.DB.get(indexKeys.fullCertificates),
-          firmaId ? env.DB.get(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId })}`) : Promise.resolve(null),
-        ]);
-
-        const summaryIdx = summaryRaw ? JSON.parse(summaryRaw) : {};
-        delete summaryIdx[id];
-
-        const recentIds = (recentRaw ? JSON.parse(recentRaw) : []).filter(certId => String(certId) !== id);
-        const fullList = (fullRaw ? JSON.parse(fullRaw) : []).filter(c => String(getCertificateId(c)) !== id);
-
-        const writes = [
-          env.DB.delete(`cache:getCertificateById:${stableStringify({ id })}`),
-          env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIdx), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.fullCertificates, JSON.stringify(fullList), { expirationTtl: CACHE_TTL }),
-        ];
-
-        if (firmaId) {
-          const firmaList = (firmaListRaw ? JSON.parse(firmaListRaw) : []).filter(c => String(getCertificateId(c)) !== id);
-          writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(firmaList), { expirationTtl: CACHE_TTL }));
-        }
-
-        await Promise.all(writes);
+        const gasResult = await fetchFromGas(env, { action: "deleteCertificate", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        await env.DB_D1.prepare(`DELETE FROM certificates WHERE id=?`).bind(parseInt(id)).run();
         ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse({ success: true, deletedId: id });
+        return jsonResponse(gasResult);
       },
       updateSurveillance: async (p, ctx, env) => {
         const ids = Array.isArray(p?.ids) ? p.ids : [];
         const status = p?.status === true || p?.status === "TRUE" ? "TRUE" : "FALSE";
-
-        const summaryRaw = await env.DB.get(indexKeys.certificateSummary);
-        const summaryIdx = summaryRaw ? JSON.parse(summaryRaw) : {};
-
-        const ps = ids.map(async sId => {
-          sId = String(sId);
-          const certRaw = await env.DB.get(`cache:getCertificateById:${stableStringify({ id: sId })}`);
-          if (!certRaw) return;
-          const updated = createCanonicalCertificate(JSON.parse(certRaw), { id: sId, explicit: { "Gözetim Conf.": status, gozetimConfirmed: status } });
-          summaryIdx[sId] = createCertificateSummary(updated);
-
-          const fId = getCertificateFirmaId(updated);
-          const writes = [env.DB.put(`cache:getCertificateById:${stableStringify({ id: sId })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL })];
-          if (fId) {
-            const firmaListRaw = await env.DB.get(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`);
-            const firmaList = firmaListRaw ? JSON.parse(firmaListRaw) : [];
-            const fIdx = firmaList.findIndex(c => String(getCertificateId(c)) === sId);
-            if (fIdx > -1) firmaList[fIdx] = updated; else firmaList.push(updated);
-            writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(firmaList), { expirationTtl: CACHE_TTL }));
-          }
-          return Promise.all(writes);
-        });
-        await Promise.all(ps);
-
-        await env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIdx), { expirationTtl: CACHE_TTL });
+        const confirmed = status === "TRUE" ? 1 : 0;
+        const gasResult = await fetchFromGas(env, { action: "updateSurveillance", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        if (ids.length) {
+          const placeholders = ids.map(() => "?").join(",");
+          await env.DB_D1.prepare(
+            `UPDATE certificates SET gozetim_confirmed=?, updated_at=unixepoch() WHERE id IN (${placeholders})`
+          ).bind(confirmed, ...ids.map(i => parseInt(i))).run();
+        }
         ctx.waitUntil(rebuildDashboardStats());
         return jsonResponse({ success: true, updatedCount: ids.length });
       }
@@ -1783,112 +1673,76 @@ export default {
     const EntityHandlers = {
       getTestsByFirmaId: async (p, ctx, env) => {
         const id = String(p?.firmaId || "").trim();
-        const raw = await env.DB.get(`cache:getTestsByFirmaId:${stableStringify({ firmaId: id })}`);
-        if (raw) return jsonResponse({ success: true, data: JSON.parse(raw) });
-
-        // Fallback to Full Index + write-back
-        const fullRaw = await env.DB.get(indexKeys.fullTests);
-        const list = fullRaw ? JSON.parse(fullRaw).filter(t => String(getTestFirmaId(t)) === id) : [];
-        if (list.length) ctx.waitUntil(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: id })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
-        return jsonResponse({ success: true, data: list });
+        const { results } = await env.DB_D1.prepare(`SELECT * FROM tests WHERE firma_no=? ORDER BY id DESC`).bind(parseInt(id)).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       getAudits: async (p, ctx, env) => {
-        const cached = await env.DB.get("cache:getAudits:{}");
-        if (cached) {
-          const data = JSON.parse(cached);
-          if (hasUsableAuditDates(data)) return jsonResponse({ success: true, data, fromCache: true });
-        }
-        const rebuilt = await rebuildAuditsFromIndex();
-        if (rebuilt) {
-           ctx.waitUntil(env.DB.put("cache:getAudits:{}", JSON.stringify(rebuilt), { expirationTtl: CACHE_TTL }));
-           return jsonResponse({ success: true, data: rebuilt, rebuiltFromIndex: true });
-        }
-        return jsonResponse({ success: true, data: [] });
+        const { results } = await env.DB_D1.prepare(
+          `SELECT a.*, co.nickname, co.unvan FROM audits a
+           LEFT JOIN companies co ON co.id = a.firma_no
+           ORDER BY COALESCE(a.a1_baslangic, a.a2_baslangic) DESC`
+        ).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       getTests: async (p, ctx, env) => {
-        const raw = await env.DB.get(indexKeys.fullTests);
-        const data = raw ? JSON.parse(raw) : [];
-        return jsonResponse({ success: true, data });
+        const { results } = await env.DB_D1.prepare(`SELECT * FROM tests ORDER BY id DESC`).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       getAuditsByFirmaId: async (p, ctx, env) => {
         const id = String(p?.firmaId || "").trim();
-        const raw = await env.DB.get(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: id })}`);
-        if (raw) return jsonResponse({ success: true, data: JSON.parse(raw) });
-
-        // Fallback to Full Index + write-back
-        const fullRaw = await env.DB.get(indexKeys.fullAudits);
-        const list = fullRaw ? JSON.parse(fullRaw).filter(a => String(getAuditFirmaId(a)) === id) : [];
-        if (list.length) ctx.waitUntil(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: id })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
-        return jsonResponse({ success: true, data: list });
+        const { results } = await env.DB_D1.prepare(`SELECT * FROM audits WHERE firma_no=? ORDER BY id DESC`).bind(parseInt(id)).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       getProformasByFirmaId: async (p, ctx, env) => {
         const id = String(p?.firmaId || "").trim();
-        const raw = await env.DB.get(`cache:getProformasByFirmaId:${stableStringify({ firmaId: id })}`);
-        if (raw) return jsonResponse({ success: true, data: JSON.parse(raw) });
-
-        // Fallback to Full Index + write-back
-        const fullRaw = await env.DB.get(indexKeys.fullProformas);
-        const list = fullRaw ? JSON.parse(fullRaw).filter(pr => String(getProformaFirmaId(pr)) === id) : [];
-        if (list.length) ctx.waitUntil(env.DB.put(`cache:getProformasByFirmaId:${stableStringify({ firmaId: id })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
-        return jsonResponse({ success: true, data: list });
+        const { results } = await env.DB_D1.prepare(`SELECT * FROM proformas WHERE firma_no=? ORDER BY id DESC`).bind(parseInt(id)).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       getProformaById: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
-        const raw = await env.DB.get(`cache:getProformaById:${stableStringify({ id })}`);
-        if (raw) return jsonResponse({ success: true, data: JSON.parse(raw) });
-
-        // Fallback to Full Index + write-back
-        const fullRaw = await env.DB.get(indexKeys.fullProformas);
-        const item = fullRaw ? JSON.parse(fullRaw).find(pr => String(getProformaId(pr)) === id) : null;
-        if (item) ctx.waitUntil(env.DB.put(`cache:getProformaById:${stableStringify({ id })}`, JSON.stringify(item), { expirationTtl: CACHE_TTL }));
-        return jsonResponse({ success: !!item, data: item });
+        const row = await env.DB_D1.prepare(`SELECT * FROM proformas WHERE id=?`).bind(parseInt(id)).first();
+        return jsonResponse({ success: !!row, data: row || null });
       },
       getAuditById: async (p, ctx, env) => {
         const id = String(p?.id || p?.auditId || "").trim();
-        const raw = await env.DB.get(`cache:getAuditById:${stableStringify({ id })}`);
-        if (raw) return jsonResponse({ success: true, data: JSON.parse(raw) });
-
-        // Fallback to Full Index + write-back
-        const fullRaw = await env.DB.get(indexKeys.fullAudits);
-        const item = fullRaw ? JSON.parse(fullRaw).find(a => String(getAuditId(a)) === id) : null;
-        if (item) ctx.waitUntil(env.DB.put(`cache:getAuditById:${stableStringify({ id })}`, JSON.stringify(item), { expirationTtl: CACHE_TTL }));
-        return jsonResponse({ success: !!item, data: item });
+        const row = await env.DB_D1.prepare(`SELECT * FROM audits WHERE id=?`).bind(parseInt(id)).first();
+        return jsonResponse({ success: !!row, data: row || null });
       },
       buildCertPayload: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
         try {
-          const payload = await buildCertificatePayloadFromKv(id, p?.lang, p?.select);
-          return jsonResponse({ success: true, data: payload, source: "kv" });
+          const payload = await buildCertificatePayloadFromD1(id, p?.lang, p?.select);
+          return jsonResponse({ success: true, data: payload, source: "d1" });
         } catch (e) {
           return jsonResponse({ success: false, data: null, error: `Sertifika payload üretilemedi (${id}): ${e.message}` }, 500);
         }
       },
       buildTestPayload: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
-        if(!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
         try {
-           const payload = await buildTestPayloadFromKv(id);
-           return jsonResponse({ success: true, data: payload });
+          const payload = await buildTestPayloadFromD1(id, p?.lang);
+          return jsonResponse({ success: true, data: payload });
         } catch (e) {
-           return jsonResponse({ success: false, error: e.message }, 500);
+          return jsonResponse({ success: false, error: e.message }, 500);
         }
       },
       buildProformaPayload: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
-        if(!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
         try {
-           const payload = await buildProformaPayloadFromKv(id);
-           return jsonResponse({ success: true, data: payload });
+          const payload = await buildProformaPayloadFromD1(id);
+          return jsonResponse({ success: true, data: payload });
         } catch (e) {
-           return jsonResponse({ success: false, error: e.message }, 500);
+          return jsonResponse({ success: false, error: e.message }, 500);
         }
       },
       generateProforma: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
-        if(!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
         try {
-          const payload = await buildProformaPayloadFromKv(id);
+          const payload = await buildProformaPayloadFromD1(id);
           const gasResult = await fetchFromGas(env, { action: "generateProforma", params: { proforma: payload } });
           return jsonResponse(gasResult);
         } catch (e) {
@@ -1897,7 +1751,7 @@ export default {
       },
       generateContract: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
-        if(!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
         try {
           const gasResult = await fetchFromGas(env, { action: "generateContract", params: p });
           return jsonResponse(gasResult);
@@ -1906,127 +1760,55 @@ export default {
         }
       },
       addTest: async (p, ctx, env) => {
-        const nextId = await loadTestNextId();
-        const created = createCanonicalTestRow(p?.testInfo || {}, { id: String(nextId) });
-        const fId = getTestFirmaId(created);
-
-        const writes = [
-          env.DB.put(`cache:getTestById:${stableStringify({ id: String(nextId) })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.testNextId, String(nextId + 1), { expirationTtl: CACHE_TTL }),
-        ];
-        if (fId) {
-          const raw = await env.DB.get(`cache:getTestsByFirmaId:${stableStringify({ firmaId: fId })}`);
-          const list = raw ? JSON.parse(raw) : [];
-          list.push(created);
-          writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
-        }
-        await Promise.all(writes);
-        return jsonResponse({ success: true, id: String(nextId), data: created });
+        const gasResult = await fetchFromGas(env, { action: "addTest", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        const canonical = createCanonicalTestRow(gasResult.data || p?.testInfo || {});
+        const newId = parseInt(gasResult.id || getTestId(canonical)) || null;
+        if (newId) await upsertTestD1(canonical, newId);
+        return jsonResponse(gasResult);
       },
       updateTest: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
-        const existingRaw = await env.DB.get(`cache:getTestById:${stableStringify({ id })}`);
-        if (!existingRaw) return jsonResponse({ success: false, error: "NOT_FOUND" }, 404);
-        const updated = createCanonicalTestRow(JSON.parse(existingRaw), { id, explicit: p?.testInfo || {} });
-        const fId = getTestFirmaId(updated);
-
-        const writes = [env.DB.put(`cache:getTestById:${stableStringify({ id })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL })];
-        if (fId) {
-          const raw = await env.DB.get(`cache:getTestsByFirmaId:${stableStringify({ firmaId: fId })}`);
-          const list = raw ? JSON.parse(raw) : [];
-          const newList = list.map(t => getTestId(t) === id ? updated : t);
-          writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(newList), { expirationTtl: CACHE_TTL }));
-        }
-        await Promise.all(writes);
-        return jsonResponse({ success: true, data: updated });
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        const gasResult = await fetchFromGas(env, { action: "updateTest", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        const canonical = createCanonicalTestRow(gasResult.data || p?.testInfo || {}, { id });
+        await upsertTestD1(canonical, parseInt(id));
+        return jsonResponse(gasResult);
       },
       addProforma: async (p, ctx, env) => {
-        const nextId = await loadProformaNextId();
-        const created = createCanonicalProformaRow(p?.proInfo || {}, { id: String(nextId) });
-        const fId = getProformaFirmaId(created);
-
-        const writes = [
-          env.DB.put(`cache:getProformaById:${stableStringify({ id: String(nextId) })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.proformaNextId, String(nextId + 1), { expirationTtl: CACHE_TTL }),
-        ];
-        if (fId) {
-          const raw = await env.DB.get(`cache:getProformasByFirmaId:${stableStringify({ firmaId: fId })}`);
-          const list = raw ? JSON.parse(raw) : [];
-          list.push(created);
-          writes.push(env.DB.put(`cache:getProformasByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(list), { expirationTtl: CACHE_TTL }));
-        }
-        await Promise.all(writes);
-        return jsonResponse({ success: true, id: String(nextId), data: created });
+        const gasResult = await fetchFromGas(env, { action: "addProforma", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        const canonical = createCanonicalProformaRow(gasResult.data || p?.proInfo || {});
+        const newId = parseInt(gasResult.id || getProformaId(canonical)) || null;
+        if (newId) await upsertProformaD1(canonical, newId);
+        return jsonResponse(gasResult);
       },
       updateProforma: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
-        const existingRaw = await env.DB.get(`cache:getProformaById:${stableStringify({ id })}`);
-        if (!existingRaw) return jsonResponse({ success: false, error: "NOT_FOUND" }, 404);
-        const updated = createCanonicalProformaRow({ ...JSON.parse(existingRaw), ...(p?.proInfo || {}) }, { id });
-        const fId = getProformaFirmaId(updated);
-
-        const writes = [env.DB.put(`cache:getProformaById:${stableStringify({ id })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL })];
-        if (fId) {
-          const raw = await env.DB.get(`cache:getProformasByFirmaId:${stableStringify({ firmaId: fId })}`);
-          const list = raw ? JSON.parse(raw) : [];
-          const newList = list.map(pr => getProformaId(pr) === id ? updated : pr);
-          writes.push(env.DB.put(`cache:getProformasByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(newList), { expirationTtl: CACHE_TTL }));
-        }
-        await Promise.all(writes);
-        return jsonResponse({ success: true, data: updated });
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        const gasResult = await fetchFromGas(env, { action: "updateProforma", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        const canonical = createCanonicalProformaRow(gasResult.data || p?.proInfo || {}, { id });
+        await upsertProformaD1(canonical, parseInt(id));
+        return jsonResponse(gasResult);
       },
       scheduleAudit: async (p, ctx, env) => {
-        const nextId = await loadAuditNextId();
-        const created = createCanonicalAuditRow(p?.data || {}, { id: String(nextId) });
-        const fId = getAuditFirmaId(created);
-
-        const [firmaRaw, fullAuditsRaw] = await Promise.all([
-          fId ? env.DB.get(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: fId })}`) : Promise.resolve(null),
-          env.DB.get(indexKeys.fullAudits),
-        ]);
-
-        const firmaList = firmaRaw ? JSON.parse(firmaRaw) : [];
-        firmaList.push(created);
-
-        const fullList = fullAuditsRaw ? JSON.parse(fullAuditsRaw) : [];
-        fullList.push(created);
-
-        const writes = [
-          env.DB.put(`cache:getAuditById:${stableStringify({ id: String(nextId) })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.auditNextId, String(nextId + 1), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.fullAudits, JSON.stringify(fullList), { expirationTtl: CACHE_TTL }),
-          env.DB.delete("cache:getAudits:{}"),
-        ];
-        if (fId) writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(firmaList), { expirationTtl: CACHE_TTL }));
-        await Promise.all(writes);
-        return jsonResponse({ success: true, id: String(nextId), data: created });
+        const gasResult = await fetchFromGas(env, { action: "scheduleAudit", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        const canonical = createCanonicalAuditRow(gasResult.data || p?.data || {});
+        const newId = parseInt(gasResult.id || getAuditId(canonical)) || null;
+        if (newId) await upsertAuditD1(canonical, newId);
+        return jsonResponse(gasResult);
       },
       updateAudit: async (p, ctx, env) => {
         const id = String(p?.id || p?.auditId || "").trim();
-        const existingRaw = await env.DB.get(`cache:getAuditById:${stableStringify({ id })}`);
-        if (!existingRaw) return jsonResponse({ success: false, error: "NOT_FOUND" }, 404);
-        const updated = createCanonicalAuditRow({ ...JSON.parse(existingRaw), ...(p?.data || p?.auditInfo || {}) }, { id });
-        const fId = getAuditFirmaId(updated);
-
-        const [firmaRaw, fullAuditsRaw] = await Promise.all([
-          fId ? env.DB.get(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: fId })}`) : Promise.resolve(null),
-          env.DB.get(indexKeys.fullAudits),
-        ]);
-
-        const firmaList = firmaRaw ? JSON.parse(firmaRaw) : [];
-        const newFirmaList = firmaList.map(a => getAuditId(a) === id ? updated : a);
-
-        const fullList = fullAuditsRaw ? JSON.parse(fullAuditsRaw) : [];
-        const newFullList = fullList.map(a => getAuditId(a) === id ? updated : a);
-
-        const writes = [
-          env.DB.put(`cache:getAuditById:${stableStringify({ id })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL }),
-          env.DB.put(indexKeys.fullAudits, JSON.stringify(newFullList), { expirationTtl: CACHE_TTL }),
-          env.DB.delete("cache:getAudits:{}"),
-        ];
-        if (fId) writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(newFirmaList), { expirationTtl: CACHE_TTL }));
-        await Promise.all(writes);
-        return jsonResponse({ success: true, data: updated });
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        const gasResult = await fetchFromGas(env, { action: "updateAudit", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        const canonical = createCanonicalAuditRow(gasResult.data || p?.data || p?.auditInfo || {}, { id });
+        await upsertAuditD1(canonical, parseInt(id));
+        return jsonResponse(gasResult);
       }
     };
 
@@ -2073,37 +1855,52 @@ export default {
 
     const MasterHandlers = {
       getConsultants: async (p, ctx, env) => {
-        const raw = await env.DB.get(`cache:getConsultants:{}`);
-        return jsonResponse({ success: !!raw, data: raw ? JSON.parse(raw) : [] });
+        const { results } = await env.DB_D1.prepare(`SELECT * FROM consultants ORDER BY ad`).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       getConsultantById: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
-        const raw = await env.DB.get(`cache:getConsultantById:${stableStringify({ id })}`);
-        return jsonResponse({ success: !!raw, data: raw ? JSON.parse(raw) : null });
+        const row = await env.DB_D1.prepare(`SELECT * FROM consultants WHERE id=?`).bind(parseInt(id)).first();
+        return jsonResponse({ success: !!row, data: row || null });
       },
       getAuditorById: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
-        const raw = await env.DB.get(`cache:getAuditorById:${stableStringify({ id })}`);
-        return jsonResponse({ success: !!raw, data: raw ? JSON.parse(raw) : null });
+        const row = await env.DB_D1.prepare(`SELECT * FROM auditors WHERE id=?`).bind(parseInt(id)).first();
+        return jsonResponse({ success: !!row, data: row || null });
       },
       getStandardById: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
-        const raw = await env.DB.get(`cache:getStandardById:${stableStringify({ id })}`);
-        return jsonResponse({ success: !!raw, data: raw ? JSON.parse(raw) : null });
+        const row = await env.DB_D1.prepare(`SELECT * FROM standards WHERE kod=?`).bind(id).first();
+        return jsonResponse({ success: !!row, data: row || null });
       },
       getMasterData: async (p, ctx, env) => {
-        const type = p?.type || "";
-        const raw = await env.DB.get(`cache:getMasterData:${stableStringify({ type })}`);
-        return jsonResponse({ success: !!raw, data: raw ? JSON.parse(raw) : null });
+        const type = String(p?.type || "").trim().toLowerCase();
+        const tableMap = { standards: "standards", auditors: "auditors", consultants: "consultants", testdocs: "testdocs", sysdocs: "sysdocs" };
+        if (type && tableMap[type]) {
+          const { results } = await env.DB_D1.prepare(`SELECT * FROM ${tableMap[type]}`).all();
+          return jsonResponse({ success: true, data: results || [] });
+        }
+        // Return all tables combined
+        const [std, aud, con, td, sd] = await Promise.all([
+          env.DB_D1.prepare(`SELECT * FROM standards`).all(),
+          env.DB_D1.prepare(`SELECT * FROM auditors`).all(),
+          env.DB_D1.prepare(`SELECT * FROM consultants`).all(),
+          env.DB_D1.prepare(`SELECT * FROM testdocs`).all(),
+          env.DB_D1.prepare(`SELECT * FROM sysdocs`).all(),
+        ]);
+        return jsonResponse({ success: true, data: {
+          standards: std.results || [], auditors: aud.results || [],
+          consultants: con.results || [], testdocs: td.results || [], sysdocs: sd.results || []
+        }});
       },
       getAvailableSets: async (p, ctx, env) => {
-        const raw = await env.DB.get("cache:index:sysdocSets");
-        return jsonResponse({ success: !!raw, data: raw ? JSON.parse(raw) : [] });
+        const { results } = await env.DB_D1.prepare(`SELECT DISTINCT set_adi FROM sysdocs WHERE set_adi IS NOT NULL ORDER BY set_adi`).all();
+        return jsonResponse({ success: true, data: (results || []).map(r => r.set_adi) });
       },
       getSysDocsBySetName: async (p, ctx, env) => {
         const setName = String(p?.setName || "").trim();
-        const raw = await env.DB.get(`cache:getSysDocsBySetName:${stableStringify({ setName })}`);
-        return jsonResponse({ success: !!raw, data: raw ? JSON.parse(raw) : [] });
+        const { results } = await env.DB_D1.prepare(`SELECT * FROM sysdocs WHERE set_adi=? ORDER BY dokuman_kodu`).bind(setName).all();
+        return jsonResponse({ success: true, data: results || [] });
       },
       getTestDocByName: async (p, ctx, env) => {
         const name = String(p?.name || "").trim();
@@ -2111,68 +1908,17 @@ export default {
         return jsonResponse({ success: !!data, data });
       },
       updateMasterData: async (params, ctx, env) => {
-
         const type = String(params?.type || "").trim().toLowerCase();
         const validTypes = new Set(["standards", "auditors", "consultants", "testdocs", "sysdocs"]);
         if (!validTypes.has(type)) return jsonResponse({ success: false, error: "INVALID_MASTER_TYPE" }, 400);
 
-        const allKey = "cache:getMasterData:{}";
-        let payload = null;
-        const currentRaw = await env.DB.get(allKey);
-        if (currentRaw) {
-          payload = JSON.parse(currentRaw);
-        } else {
-          const fetched = await fetchFromGas(env, { action: "getMasterSyncData" });
-          if (!fetched.success) return jsonResponse({ success: false, error: "MASTER_SYNC_FAILED" }, 503);
-          payload = fetched.data;
-        }
+        const gasResult = await fetchFromGas(env, { action: "updateMasterData", params });
+        if (!gasResult.success) return jsonResponse(gasResult);
 
-        payload.datasets = payload.datasets || {};
-        const ds = payload.datasets[type];
-        if (!ds || !Array.isArray(ds.headers)) return jsonResponse({ success: false, error: "MASTER_DATASET_NOT_FOUND" }, 404);
+        // GAS Sheets'e yazdıktan sonra D1'i güncelle (async, fire-and-forget)
+        ctx.waitUntil(SyncHandlers.bulkSync({ scope: ["master"] }, ctx, env));
 
-        const expectedVersion = params?.expectedVersion;
-        if (expectedVersion !== undefined && String(expectedVersion) !== String(payload.version)) {
-          return jsonResponse({ success: false, error: "MASTER_VERSION_CONFLICT", currentVersion: payload.version }, 409);
-        }
-
-        const rows = Array.isArray(params?.data?.rows) ? params.data.rows : [];
-        const replace = params?.replace !== false;
-        if (replace && !rows.length && !params?.options?.allowEmptyReplace) {
-          return jsonResponse({ success: false, error: "EMPTY_REPLACE_BLOCKED" }, 400);
-        }
-
-        const hLen = ds.headers.length;
-        const normalized = rows.map(r => {
-          const arr = Array.isArray(r) ? r.slice(0, hLen) : [];
-          while (arr.length < hLen) arr.push("");
-          return arr;
-        });
-
-        ds.rows = replace ? normalized : [...(Array.isArray(ds.rows) ? ds.rows : []), ...normalized];
-        payload.version = String(parseVersionNumber(payload.version) + 1);
-        payload.updatedAt = new Date().toISOString();
-
-        const typeKey = `cache:getMasterData:${stableStringify({ type })}`;
-        const typePayload = { version: payload.version, updatedAt: payload.updatedAt, dataset: ds };
-        const writes = [
-          env.DB.put(allKey, JSON.stringify(payload), { expirationTtl: CACHE_TTL }),
-          env.DB.put(typeKey, JSON.stringify(typePayload), { expirationTtl: CACHE_TTL })
-        ];
-
-        if (type === "consultants") {
-          const list = buildConsultantsFromDataset(ds);
-          writes.push(env.DB.put("cache:getConsultants:{}", JSON.stringify(list), { expirationTtl: CACHE_TTL }));
-        }
-        if (type === "standards") {
-          const indexed = buildStandardsByIdFromDataset(ds);
-          Object.entries(indexed).forEach(([sid, sObj]) => {
-            writes.push(env.DB.put(`cache:getStandardById:${stableStringify({ id: sid })}`, JSON.stringify(sObj), { expirationTtl: CACHE_TTL }));
-          });
-        }
-
-        for (let i = 0; i < writes.length; i += 50) await Promise.all(writes.slice(i, i + 50));
-        return jsonResponse({ success: true, version: payload.version });
+        return jsonResponse(gasResult);
       }
     };
 
