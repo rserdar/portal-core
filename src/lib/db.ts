@@ -47,6 +47,5 @@ export const DB = {
         await del(key);
       }
     }
-    console.log('[DB] Cache cleared.');
   }
 };

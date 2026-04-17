@@ -15,32 +15,28 @@ import { $companies, $certificates, $dashboardStats, $syncStatus, $lastSyncTime 
 
 export const SyncManager = {
   _syncPromise: null as Promise<void> | null,
-  /**
-   * Uygulama başladığında çalışır. 
-   * Veriyi yerelden yükler, sonra arka planda güncel mi diye bakar.
-   */
+  _initPromise: null as Promise<void> | null,
+
   init: async function() {
-    console.log('[Sync] Initializing...');
-    
-    // 1. Yerel verileri anında yükle (Hızlı UI)
-    const [localCompanies, localCerts, localStats, localLastSync] = await Promise.all([
-      DB.get<any[]>(DB.COMPANIES),
-      DB.get<any[]>(DB.CERTIFICATES),
-      DB.get<any>(DB.DASHBOARD_STATS),
-      DB.get<number>(DB.LAST_SYNC)
-    ]);
+    if (this._initPromise) return this._initPromise;
 
-    if (localCompanies) $companies.set(localCompanies);
-    if (localCerts) $certificates.set(localCerts);
-    if (localStats) $dashboardStats.set(localStats);
-    if (typeof localLastSync === 'number') $lastSyncTime.set(localLastSync);
+    this._initPromise = (async () => {
+      const [localCompanies, localCerts, localStats, localLastSync] = await Promise.all([
+        DB.get<any[]>(DB.COMPANIES),
+        DB.get<any[]>(DB.CERTIFICATES),
+        DB.get<any>(DB.DASHBOARD_STATS),
+        DB.get<number>(DB.LAST_SYNC)
+      ]);
 
-    if (localCompanies || localCerts || localStats) {
-      console.log('[Sync] Loaded data from IndexedDB.');
-    }
+      if (localCompanies) $companies.set(localCompanies);
+      if (localCerts) $certificates.set(localCerts);
+      if (localStats) $dashboardStats.set(localStats);
+      if (typeof localLastSync === 'number') $lastSyncTime.set(localLastSync);
 
-    // 2. Senkronizasyonu arka planda başlat (UI bloklanmasın)
-    void this.checkAndSync();
+      void this.checkAndSync();
+    })();
+
+    return this._initPromise;
   },
 
   /**
@@ -112,8 +108,6 @@ export const SyncManager = {
           DB.save(DB.DASHBOARD_STATS, dashRes.data || null),
           DB.save(DB.LAST_SYNC, now)
         ]);
-        
-        console.log(`[Sync] KV-primary synchronization complete. Firms: ${compRes.data?.length || 0}`);
         
         if (compRes.data?.length === 0) {
           console.warn('[Sync] API returned 0 firms. Check KV indices on Worker.');
