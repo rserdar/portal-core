@@ -12,6 +12,7 @@ export interface CompanyOperationContext {
   vergiD: string;
   vergiN: string;
   tel: string;
+  faks: string;
   mail: string;
   web: string;
   yetkiliAdi: string;
@@ -62,6 +63,7 @@ export async function loadCompanyOperationContext(firmaId: string): Promise<Comp
     vergiD: pickValue(company, ['Vergi Dairesi', 'VergiDairesi', 'vergiD']),
     vergiN: pickValue(company, ['Vergi Numarası', 'VergiNumarasi', 'vergiN']),
     tel: pickValue(company, ['Telefon', 'Tel', 'tel']),
+    faks: pickValue(company, ['Faks', 'Fax', 'faks']),
     mail: pickValue(company, ['Mail', 'mail', 'E-Posta']),
     web: pickValue(company, ['İnternet', 'Web', 'www', 'web']),
     yetkiliAdi: pickValue(company, ['Yetkili Adı', 'YetkiliAdi', 'yetA']),

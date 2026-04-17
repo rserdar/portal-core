@@ -54,12 +54,12 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
             <p id="contract-preview-tax" class="font-bold text-main">—</p>
           </div>
           <div>
-            <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Irtibat Kisisi</p>
-            <p id="contract-preview-contact" class="font-bold text-main">—</p>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Yetkili Kisi ve Unv.</p>
+            <p id="contract-preview-auth" class="font-bold text-main">—</p>
           </div>
           <div>
-            <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">E-Posta</p>
-            <p id="contract-preview-mail" class="font-bold text-sky-300 truncate">—</p>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Telefon / Faks</p>
+            <p id="contract-preview-phones" class="font-bold text-sky-300 truncate">—</p>
           </div>
         </div>
         
@@ -177,8 +177,8 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     }
 
     setText('contract-preview-tax', [context.vergiD, context.vergiN].filter(Boolean).join(' / '));
-    setText('contract-preview-contact', [context.irtibatAdi, context.irtibatUnvani].filter(Boolean).join(' / '));
-    setText('contract-preview-mail', context.irtibatMail || context.mail || '—');
+    setText('contract-preview-auth', [context.yetkiliAdi, context.yetkiliUnvani].filter(Boolean).join(' / '));
+    setText('contract-preview-phones', [context.tel, context.faks].filter(Boolean).join(' / '));
 
     document.getElementById('contract-generate')?.addEventListener('click', generateContract);
     document.getElementById('contract-clear')?.addEventListener('click', () => {
