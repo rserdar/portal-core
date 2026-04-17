@@ -1333,10 +1333,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       render();
     });
 
-    const unsubCompanies = $companies.subscribe((companies) => syncCompanyList(companies as any[]));
-    registerCleanup(unsubCompanies);
-
-    void boot();
+    void loadAudits();
   })();
 }
 
