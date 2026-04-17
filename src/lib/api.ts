@@ -176,6 +176,7 @@ export const api = {
       "convertToPdf",
       "uploadFile",
       "deepRepairIndex",
+      "generateProforma",
     ]);
     const timeoutMs = longRunningActions.has(action) ? LONG_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);

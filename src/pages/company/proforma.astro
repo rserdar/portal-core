@@ -82,7 +82,18 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   import { loadCompanyOperationContext } from '../../features/operations/context';
   import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
 
-  type ProformaRow = [string, string, string, string, string, string, string, string, string, string];
+  interface ProformaRow {
+    id: string;
+    nick: string;
+    firmaNo: string;
+    kdvsiz: string;
+    kdvOran: string;
+    kdv: string;
+    toplam: string;
+    birim: string;
+    tarih: string;
+    konu: string;
+  }
 
   let activeContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
   let formHandlersBound = false;
@@ -256,18 +267,18 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     `;
 
     const items = [...rows]
-      .sort((a, b) => String(b?.[8] || '').localeCompare(String(a?.[8] || '')))
+      .sort((a, b) => String(b.tarih || '').localeCompare(String(a.tarih || '')))
       .map((row) => {
-        const birim = row?.[7] || '';
-        const rowId = row?.[0] || '';
+        const birim = row.birim || '';
+        const rowId = row.id || '';
         return `
           <div class="grid grid-cols-[110px_1.5fr_100px_1fr_1fr_120px_164px] gap-px bg-border-main border-t border-border-main first:border-t-0">
-            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row?.[8] || '—'}</div>
-            <div class="bg-surface px-4 py-3 text-sm text-main leading-relaxed">${row?.[9] || '—'}</div>
-            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row?.[4] || '0'}</div>
-            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row?.[3] || '0'} ${birim}</div>
-            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row?.[5] || '0'} ${birim}</div>
-            <div class="bg-surface px-4 py-3 text-sm font-bold text-indigo-300">${row?.[6] || '0'} ${birim}</div>
+            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row.tarih || '—'}</div>
+            <div class="bg-surface px-4 py-3 text-sm text-main leading-relaxed">${row.konu || '—'}</div>
+            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row.kdvOran || '0'}</div>
+            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row.kdvsiz || '0'} ${birim}</div>
+            <div class="bg-surface px-4 py-3 text-sm font-semibold text-main">${row.kdv || '0'} ${birim}</div>
+            <div class="bg-surface px-4 py-3 text-sm font-bold text-indigo-300">${row.toplam || '0'} ${birim}</div>
             <div class="bg-surface px-3 py-2">
               <div class="flex items-center justify-center gap-2">
                 <button type="button" class="proforma-print inline-flex h-9 w-9 items-center justify-center rounded-lg border border-sky-500/20 bg-sky-500/5 text-sky-300 hover:bg-sky-500/15 transition-colors" data-id="${rowId}" title="Yazdir">
@@ -368,26 +379,26 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   }
 
   function startEditProforma(id: string) {
-    const row = currentRows.find((item) => String(item?.[0] || '') === String(id));
+    const row = currentRows.find((item) => String(item.id || '') === String(id));
     if (!row) {
       toast.error('Duzenlenecek proforma bulunamadi.');
       return;
     }
     editingProformaId = id;
-    if (amountInputs.kdvsiz) amountInputs.kdvsiz.value = row[3] || '';
-    if (amountInputs.oran) amountInputs.oran.value = row[4] || '20';
-    if (amountInputs.kdv) amountInputs.kdv.value = row[5] || '';
-    if (amountInputs.toplam) amountInputs.toplam.value = row[6] || '';
-    if (amountInputs.birim) amountInputs.birim.value = row[7] || 'TL';
-    if (amountInputs.tarih) amountInputs.tarih.value = normalizeDateForInput(row[8] || '') || new Date().toISOString().slice(0, 10);
-    if (amountInputs.konu) amountInputs.konu.value = row[9] || '';
+    if (amountInputs.kdvsiz) amountInputs.kdvsiz.value = row.kdvsiz || '';
+    if (amountInputs.oran) amountInputs.oran.value = row.kdvOran || '20';
+    if (amountInputs.kdv) amountInputs.kdv.value = row.kdv || '';
+    if (amountInputs.toplam) amountInputs.toplam.value = row.toplam || '';
+    if (amountInputs.birim) amountInputs.birim.value = row.birim || 'TL';
+    if (amountInputs.tarih) amountInputs.tarih.value = normalizeDateForInput(row.tarih || '') || new Date().toISOString().slice(0, 10);
+    if (amountInputs.konu) amountInputs.konu.value = row.konu || '';
     setSaveButtonState();
     amountInputs.konu?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   async function deleteProforma(id: string) {
-    const row = currentRows.find((item) => String(item?.[0] || '') === String(id));
-    const konu = row?.[9] || 'bu proforma';
+    const row = currentRows.find((item) => String(item.id || '') === String(id));
+    const konu = row?.konu || 'bu proforma';
     const confirmed = window.confirm(`"${konu}" kaydini silmek istiyor musun?`);
     if (!confirmed) return;
 
@@ -403,7 +414,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   }
 
   async function printProforma(id: string) {
-    const row = currentRows.find((item) => String(item?.[0] || '') === String(id));
+    const row = currentRows.find((item) => String(item.id || '') === String(id));
     if (!row) {
       toast.error('Yazdirilacak proforma bulunamadi.');
       return;
