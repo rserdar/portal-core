@@ -210,13 +210,15 @@ function doPost(e) {
 
       // --- DOKÜMAN & DOSYA SERVİSLERİ ---
       case "getFolderId":
-        result.data = DriveService.getCompanyFolderId(params.nickname);
+        const folderNickname = resolveCompanyNickname(params);
+        result.data = DriveService.getCompanyFolderId(folderNickname);
         result.success = Boolean(result.data);
         if (!result.success) result.error = "Firma klasörü bulunamadı.";
         break;
 
       case "getRecentFiles":
-        const folderId = DriveService.getCompanyFolderId(params.nickname);
+        const recentFilesNickname = resolveCompanyNickname(params);
+        const folderId = DriveService.getCompanyFolderId(recentFilesNickname);
         result.data = DriveService.listRecentFiles(folderId, params.mimeTypes);
         result.success = true;
         break;
@@ -393,6 +395,19 @@ function doPost(e) {
 
   return ContentService.createTextOutput(JSON.stringify(result))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function resolveCompanyNickname(params) {
+  const directNickname = params.nickname || params.nick || params.firmNickName || params.firmNickname;
+  if (directNickname) return directNickname;
+
+  const companyId = params.id || params.firmaId;
+  if (!companyId) return "";
+
+  const company = CompanyService.getById(companyId);
+  if (!company) return "";
+
+  return company.nickname || company.nick || company["Firma Adı"] || company.FirmaAdi || "";
 }
 
 function doGet() {

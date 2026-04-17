@@ -83,6 +83,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   import { toast } from '../../lib/toast';
 
   let selectedNickname = "";
+  let selectedFirmaNo = "";
   let cleanupFns: Array<() => void> = [];
 
   function registerCleanup(fn: () => void) {
@@ -126,6 +127,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       
       if (match) {
         selectedNickname = match.nickname;
+        selectedFirmaNo = String(match.id || "");
         resultsContainer?.classList.remove('hidden');
         openFolderBtn?.classList.remove('hidden');
         if (resultTitle) resultTitle.textContent = `${match.nickname} - Doküman Listesi`;
@@ -222,7 +224,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     }
 
     openFolderBtn?.addEventListener('click', async () => {
-      const res = await api.call('getFolderId', { nickname: selectedNickname });
+      if (!selectedFirmaNo) return;
+      const res = await api.call('getFolderId', { id: selectedFirmaNo });
       if (res.success) window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
     });
 

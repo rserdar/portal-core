@@ -1176,12 +1176,12 @@ import {
   }
 
   async function openCompanyFolder(btn: HTMLButtonElement) {
-    if (!currentCompanyNick) return;
+    if (!firmaId) return;
     const prev = btn.innerHTML;
     btn.innerHTML = '<div class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>';
     btn.disabled = true;
     try {
-      const res = await api.call('getFolderId', { nickname: currentCompanyNick });
+      const res = await api.call('getFolderId', { id: firmaId });
       if (res.success && res.data) {
         window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
       } else {
@@ -1204,7 +1204,7 @@ import {
   }
 
   async function generateSelectedCertificates() {
-    if (selectedCertIds.size === 0 || !currentCompanyNick) return;
+    if (selectedCertIds.size === 0 || !firmaId) return;
 
     const button = document.getElementById('cert-generate-selected') as HTMLButtonElement | null;
     const original = button?.innerHTML || '';
@@ -1223,7 +1223,7 @@ import {
     toast.info(`${total} sertifika için üretim başlatıldı.`);
 
     try {
-      const folderRes = await api.call('getFolderId', { nickname: currentCompanyNick });
+      const folderRes = await api.call('getFolderId', { id: firmaId });
       if (!folderRes?.success) {
         throw new Error(folderRes?.error || 'Firma klasörü sorgulanamadı.');
       }

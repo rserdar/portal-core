@@ -440,8 +440,8 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
     refreshBtn?.addEventListener('click', () => void loadDocuments(true));
 
     openFolderBtn?.addEventListener('click', async () => {
-      if (!selectedNickname) return;
-      const res = await api.call('getFolderId', { nickname: selectedNickname });
+      if (!selectedFirmaNo) return;
+      const res = await api.call('getFolderId', { id: selectedFirmaNo });
       if (res.success && res.data) {
         window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
       } else {

@@ -315,7 +315,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           </td>
           <td class="px-4 py-3">
             <div class="flex items-center justify-center gap-1.5">
-              <button class="folder-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all" data-nickname="${escHtml(c.nickname)}" title="Drive Klasörü">
+              <button class="folder-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all" data-id="${safeId}" title="Drive Klasörü">
                 ${folderSvg}
               </button>
               <button class="eye-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-white hover:border-primary transition-all" data-id="${safeId}" data-preview-target="search-preview-${safeId}" aria-expanded="false" title="Hızlı Önizleme">
@@ -347,7 +347,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             </div>
           </a>
           <div class="flex items-center gap-2 shrink-0">
-            <button class="folder-btn w-11 h-11 flex items-center justify-center rounded-xl border border-border-main bg-surface-hover text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 active:scale-95 transition-all touch-manipulation" data-nickname="${escHtml(c.nickname)}" title="Drive Klasörü">
+            <button class="folder-btn w-11 h-11 flex items-center justify-center rounded-xl border border-border-main bg-surface-hover text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 active:scale-95 transition-all touch-manipulation" data-id="${safeId}" title="Drive Klasörü">
               ${folderSvgLg}
             </button>
             <button class="eye-btn w-11 h-11 flex items-center justify-center rounded-xl border border-primary/30 bg-primary/8 text-primary hover:bg-primary hover:text-white active:scale-95 transition-all touch-manipulation" data-id="${safeId}" data-preview-target="search-preview-mob-${safeId}" aria-expanded="false" title="Hızlı Önizleme">
@@ -550,11 +550,12 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     document.querySelectorAll('.folder-btn').forEach(el => {
       const btn = el as HTMLButtonElement;
       btn.onclick = async () => {
-        const nick = btn.dataset.nickname;
+        const id = btn.dataset.id;
+        if (!id) return;
         const prev = btn.innerHTML;
         btn.innerHTML = '<div class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>';
         btn.disabled = true;
-        const res = await api.call('getFolderId', { nickname: nick });
+        const res = await api.call('getFolderId', { id });
         btn.innerHTML = prev;
         btn.disabled = false;
         if (res.success && res.data) window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');

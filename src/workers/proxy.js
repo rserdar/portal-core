@@ -1021,9 +1021,11 @@ export default {
       if (!stdRaw) throw new Error(`STANDARD_KV_EMPTY: Standart '${standardId}' KV'de bulunamadı. Önce master senkronizasyonu yapın.`);
       const company = JSON.parse(companyRaw);
       const stdObj = JSON.parse(stdRaw);
+      const companyNick = pickObjectValue(company, ["Firma Adı", "FirmaAdi", "nickname", "Nick", "nick", "isim"]);
+      const certificateNick = pickObjectValue(certObj, ["Nickname", "Nick", "nick", "Firma Adı", "isim"]) || companyNick;
 
       return {
-        nick: pickObjectValue(certObj, ["Nickname", "Nick", "nick", "Firma Adı", "isim"]),
+        nick: certificateNick,
         id: String(firmId),
         standard: pickObjectValue(certObj, ["Standart", "Standard", "standart"]),
         sNo: pickObjectValue(certObj, ["Sno", "sNo", "Sertifika No", "sertNo", "SertifikaNo"]),
