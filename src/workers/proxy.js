@@ -1080,15 +1080,29 @@ export default {
       };
     };
     const buildProformaPayloadFromKv = async (id) => {
-      const proformaRaw = await env.DB.get(`cache:getProformaById:${stableStringify({ id: String(id) })}`);
-      if (!proformaRaw) throw new Error(`PROFORMA_KV_EMPTY: Proforma '${id}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
+      const proformaKey = `cache:getProformaById:${stableStringify({ id: String(id) })}`;
+      let proformaRaw = await env.DB.get(proformaKey);
+      if (!proformaRaw) {
+        const fullRaw = await env.DB.get(indexKeys.fullProformas);
+        const item = fullRaw ? JSON.parse(fullRaw).find(pr => String(getProformaId(pr)) === String(id)) : null;
+        if (!item) throw new Error(`PROFORMA_KV_EMPTY: Proforma '${id}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
+        proformaRaw = JSON.stringify(item);
+        ctx.waitUntil(env.DB.put(proformaKey, proformaRaw, { expirationTtl: CACHE_TTL }));
+      }
       const proforma = JSON.parse(proformaRaw);
 
       const firmaId = getProformaFirmaId(proforma);
       if (!firmaId) throw new Error("Proforma kaydında firma no boş.");
 
-      const companyRaw = await env.DB.get(`cache:company:${firmaId}`);
-      if (!companyRaw) throw new Error(`COMPANY_KV_EMPTY: Firma '${firmaId}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
+      const companyKey = `cache:company:${firmaId}`;
+      let companyRaw = await env.DB.get(companyKey);
+      if (!companyRaw) {
+        const fullRaw = await env.DB.get(indexKeys.fullCompanies);
+        const item = fullRaw ? JSON.parse(fullRaw).find(c => String(getCompanyId(c)) === String(firmaId)) : null;
+        if (!item) throw new Error(`COMPANY_KV_EMPTY: Firma '${firmaId}' KV'de bulunamadı. Önce senkronizasyon yapın.`);
+        companyRaw = JSON.stringify(item);
+        ctx.waitUntil(env.DB.put(companyKey, companyRaw, { expirationTtl: CACHE_TTL }));
+      }
       const company = JSON.parse(companyRaw);
 
       return {
@@ -1124,14 +1138,8 @@ export default {
       return await res.json();
     };
 
-    const isAuthorized = (params, env) => {
-      const key = params?.apiKey || params?.key;
-      return key === env.API_KEY;
-    };
-
     const SyncHandlers = {
       bulkSync: async (params, ctx, env) => {
-        if (!isAuthorized(params, env)) return jsonResponse({ success: false, error: "UNAUTHORIZED" }, 401);
         if (!env.DB) return jsonResponse({ success: false, error: "NO_DB_BINDING" }, 500);
         const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
         const hasScope = (s) => scope.includes(s);
@@ -1167,11 +1175,6 @@ export default {
           writes.push(env.DB.put(indexKeys.companySearch, JSON.stringify(companySearchIndex), { expirationTtl: CACHE_TTL }));
           writes.push(env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }));
           writes.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(canonicalCompanies), { expirationTtl: CACHE_TTL }));
-          // Granüler per-firma key'ler (getCompanyById için)
-          canonicalCompanies.forEach(c => {
-            const cid = getCompanyId(c);
-            if (cid) writes.push(env.DB.put(`cache:company:${cid}`, JSON.stringify(c), { expirationTtl: CACHE_TTL }));
-          });
           stats.companies = Object.keys(companySearchIndex).length;
         }
 
@@ -1206,16 +1209,6 @@ export default {
           writes.push(env.DB.put(indexKeys.certificateNextId, String(certNextId), { expirationTtl: CACHE_TTL }));
           writes.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
           writes.push(env.DB.put(indexKeys.fullCertificates, JSON.stringify(dedupedCerts), { expirationTtl: CACHE_TTL }));
-          // Granüler per-cert key'ler (getCertificateById için)
-          dedupedCerts.forEach(c => {
-            const cid = getCertificateId(c);
-            if (cid) writes.push(env.DB.put(`cache:getCertificateById:${stableStringify({ id: cid })}`, JSON.stringify(c), { expirationTtl: CACHE_TTL }));
-          });
-          // Granüler per-firma cert listesi (getCertificatesByFirmaId için)
-          const certsByFirma = buildCertificatesByFirmaId(dedupedCerts);
-          Object.entries(certsByFirma).forEach(([fId, fCerts]) => {
-            writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(fCerts), { expirationTtl: CACHE_TTL }));
-          });
           stats.certs = Object.keys(summaryIndex).length;
         }
 
@@ -1234,17 +1227,6 @@ export default {
           const testNextId = canonicalTests.reduce((h, t) => Math.max(h, parseInt(getTestId(t)) || 0), 0) + 1;
           writes.push(env.DB.put(indexKeys.testNextId, String(testNextId), { expirationTtl: CACHE_TTL }));
           writes.push(env.DB.put(indexKeys.fullTests, JSON.stringify(canonicalTests), { expirationTtl: CACHE_TTL }));
-          // Granüler per-test ve per-firma key'ler
-          const testsByFirma = {};
-          canonicalTests.forEach(t => {
-            const tid = getTestId(t);
-            if (tid) writes.push(env.DB.put(`cache:getTestById:${stableStringify({ id: tid })}`, JSON.stringify(t), { expirationTtl: CACHE_TTL }));
-            const fId = getTestFirmaId(t);
-            if (fId) { if (!testsByFirma[fId]) testsByFirma[fId] = []; testsByFirma[fId].push(t); }
-          });
-          Object.entries(testsByFirma).forEach(([fId, ts]) => {
-            writes.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(ts), { expirationTtl: CACHE_TTL }));
-          });
           stats.tests = canonicalTests.length;
         }
 
@@ -1263,17 +1245,6 @@ export default {
           const auditNextId = canonicalAudits.reduce((h, a) => Math.max(h, parseInt(getAuditId(a)) || 0), 0) + 1;
           writes.push(env.DB.put(indexKeys.auditNextId, String(auditNextId), { expirationTtl: CACHE_TTL }));
           writes.push(env.DB.put(indexKeys.fullAudits, JSON.stringify(canonicalAudits), { expirationTtl: CACHE_TTL }));
-          // Granüler per-audit ve per-firma key'ler
-          const auditsByFirma = {};
-          canonicalAudits.forEach(a => {
-            const aid = getAuditId(a);
-            if (aid) writes.push(env.DB.put(`cache:getAuditById:${stableStringify({ id: aid })}`, JSON.stringify(a), { expirationTtl: CACHE_TTL }));
-            const fId = getAuditFirmaId(a);
-            if (fId) { if (!auditsByFirma[fId]) auditsByFirma[fId] = []; auditsByFirma[fId].push(a); }
-          });
-          Object.entries(auditsByFirma).forEach(([fId, as]) => {
-            writes.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(as), { expirationTtl: CACHE_TTL }));
-          });
           stats.audits = canonicalAudits.length;
         }
 
@@ -1291,17 +1262,6 @@ export default {
           const proformaNextId = canonicalProformas.reduce((h, p) => Math.max(h, parseInt(getProformaId(p)) || 0), 0) + 1;
           writes.push(env.DB.put(indexKeys.proformaNextId, String(proformaNextId), { expirationTtl: CACHE_TTL }));
           writes.push(env.DB.put(indexKeys.fullProformas, JSON.stringify(canonicalProformas), { expirationTtl: CACHE_TTL }));
-          // Granüler per-proforma ve per-firma key'ler
-          const proformasByFirma = {};
-          canonicalProformas.forEach(pr => {
-            const pid = getProformaId(pr);
-            if (pid) writes.push(env.DB.put(`cache:getProformaById:${stableStringify({ id: pid })}`, JSON.stringify(pr), { expirationTtl: CACHE_TTL }));
-            const fId = getProformaFirmaId(pr);
-            if (fId) { if (!proformasByFirma[fId]) proformasByFirma[fId] = []; proformasByFirma[fId].push(pr); }
-          });
-          Object.entries(proformasByFirma).forEach(([fId, prs]) => {
-            writes.push(env.DB.put(`cache:getProformasByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(prs), { expirationTtl: CACHE_TTL }));
-          });
           stats.proformas = canonicalProformas.length;
         }
 
@@ -1327,7 +1287,7 @@ export default {
         return jsonResponse({ success: true, message: "Sync Completed", stats, scope });
       },
       exportKvData: async (params, ctx, env) => {
-        if (!isAuthorized(params, env)) return jsonResponse({ success: false, error: "UNAUTHORIZED" }, 401);
+
         const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
         const exportData = { version: "1.0", timestamp: new Date().toISOString(), scope, data: {} };
         const ps = [];
@@ -1343,7 +1303,7 @@ export default {
         return jsonResponse({ success: true, exportData });
       },
       importKvData: async (params, ctx, env) => {
-        if (!isAuthorized(params, env)) return jsonResponse({ success: false, error: "UNAUTHORIZED" }, 401);
+
         const payload = params?.exportData?.data || params?.payload?.data || params?.payload;
         const scope = Array.isArray(params?.scope) ? params.scope : [];
         if (!payload || !scope.length) return jsonResponse({ success: false, error: "INVALID_IMPORT_PAYLOAD" }, 400);
@@ -1458,7 +1418,7 @@ export default {
         });
       },
       deepRepairIndex: async (params, ctx, env) => {
-        if (!isAuthorized(params, env)) return jsonResponse({ success: false, error: "UNAUTHORIZED" }, 401);
+
         const fullRaw = await env.DB.get(indexKeys.fullCertificates);
         if (!fullRaw) return jsonResponse({ success: false, error: "NO_FULL_CERT_DATA" }, 404);
         const fullList = JSON.parse(fullRaw);
@@ -1473,7 +1433,6 @@ export default {
         return jsonResponse({ success: true, count: Object.keys(summaryIndex).length });
       },
       clearCache: async (p, ctx, env) => {
-        if (!isAuthorized(p, env)) return jsonResponse({ success: false, error: "UNAUTHORIZED" }, 401);
         let cursor = undefined;
         do {
           const page = await env.DB.list({ prefix: "cache:", cursor });
@@ -2011,7 +1970,7 @@ export default {
         return jsonResponse({ success: !!data, data });
       },
       updateMasterData: async (params, ctx, env) => {
-        if (!isAuthorized(params, env)) return jsonResponse({ success: false, error: "UNAUTHORIZED" }, 401);
+
         const type = String(params?.type || "").trim().toLowerCase();
         const validTypes = new Set(["standards", "auditors", "consultants", "testdocs", "sysdocs"]);
         if (!validTypes.has(type)) return jsonResponse({ success: false, error: "INVALID_MASTER_TYPE" }, 400);

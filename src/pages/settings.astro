@@ -408,8 +408,6 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
       if (btn) btn.disabled = true;
 
       try {
-        const CHUNK_SIZE = 40; // [CRITICAL] Cloudflare 50 sub-request limitine takılmamak için 40'a düşürüldü
-
         for (const scope of scopes) {
           const label = scope === "companies" ? "Firmalar" :
                         scope === "certificates" ? "Sertifikalar" :
@@ -428,34 +426,14 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
             continue;
           }
 
-          // 1. İlk parçayı çek ve toplam sayıyı öğren
           setBackupStatus(`${label} çekiliyor...`, "info");
-          const firstRes = await api.bulkSync({ scope: [scope], offset: 0, limit: CHUNK_SIZE });
-          if (!firstRes.success) throw new Error(`${label} ilk parça çekilirken hata oluştu.`);
+          toast.info(`${label} senkronizasyonu başlatıldı...`);
+          const res = await api.bulkSync({ scope: [scope] });
+          if (!res.success) throw new Error(`${label} senkronizasyonu başarısız: ${res.error || "Bilinmeyen hata"}`);
 
-          const totalCount = firstRes.data?.totalCount || 0;
-          const totalPages = Math.ceil(totalCount / CHUNK_SIZE);
-
-          if (totalPages > 1) {
-            toast.info(`${label} senkronizasyonu başlatıldı (1/${totalPages})...`);
-
-            for (let page = 1; page < totalPages; page++) {
-              setBackupStatus(`${label} çekiliyor (${page + 1}/${totalPages})...`, "info");
-              toast.info(`${label} çekiliyor (${page + 1}/${totalPages})...`);
-
-              const res = await api.bulkSync({ scope: [scope], offset: page * CHUNK_SIZE, limit: CHUNK_SIZE });
-              if (!res.success) throw new Error(`${label} ${page + 1}. parça çekilirken hata oluştu.`);
-
-              await new Promise(r => setTimeout(r, 300)); // Kısa back-off
-            }
-          }
-
-          // Başarılıysa checkbox'ı kaldır
           const checkbox = document.querySelector(`input[name="sync-scope"][value="${scope}"]`) as HTMLInputElement | null;
           if (checkbox) checkbox.checked = false;
           toast.success(`${label} başarıyla senkronize edildi.`);
-
-          await new Promise(r => setTimeout(r, 500));
         }
 
         await loadDataset(currentType);

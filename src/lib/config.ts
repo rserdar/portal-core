@@ -10,7 +10,7 @@ export const CONFIG = {
   // .env veya CF Pages Settings'te PUBLIC_WORKER_URL set et.
   // Local dev ve production aynı URL'i kullanabilir (CORS localhost'a açık).
   WORKER_URL: import.meta.env.PUBLIC_WORKER_URL || "https://portalapi.medicert.com.tr",
-  
+
   APP_NAME: "Medicert Portal",
   VERSION: "5.5.0",
 };

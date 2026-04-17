@@ -293,14 +293,13 @@ export const api = {
   },
 
   // 🏁 Sistem Yönetimi
-  async bulkSync(params?: { scope?: string[], offset?: number, limit?: number }) { 
-    return this.call("bulkSync", params || {}); 
+  async bulkSync(params?: { scope?: string[], offset?: number, limit?: number }) {
+    return this.call("bulkSync", params || {});
   },
   async bulkSyncMaster() { return this.call("bulkSyncMaster"); },
   async pullFromSheetsToKv(scope?: string[]) {
-    const core = await this.bulkSync(scope);
+    const core = await this.bulkSync(scope ? { scope } : undefined);
     if (!core.success) return core;
-    // Eğer master kapsamda varsa veya scope belirtilmemişse master da çekilmeli
     if (!scope || scope.includes("master")) {
       const master = await this.bulkSyncMaster();
       if (!master.success) return master;
