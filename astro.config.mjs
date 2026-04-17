@@ -37,15 +37,7 @@ export default defineConfig({
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'pages-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
-              },
-              networkTimeoutSeconds: 5,
-            },
+            handler: 'NetworkOnly',
           },
           {
             urlPattern: /^\/api\/.*/i,
