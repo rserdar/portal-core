@@ -4,9 +4,30 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
 <OperationPageShell
   pageKey="contract"
-  title="Sozlesme"
-  description="Sozlesme ucreti, tarihi ve konusu gibi alanlari firma context'i ile birlestiren ayri operasyon sayfasidir."
+  title="Sözleşme"
+  description="Sözleşme ücreti, tarihi ve konusu gibi alanları firma bağlamı ile birleştiren ayrı operasyon sayfasıdır."
 >
+  <div slot="select" class="space-y-5">
+    <div class="space-y-2">
+      <p class="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-400">Sözleşme Operasyonu</p>
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Firma Seçerek Devam Et</h1>
+      <p class="text-sm leading-relaxed text-muted max-w-2xl">Bu ekran header'dan doğrudan açıldığında önce ilgili firmayı seçersin. Firma profilinden geliyorsan bu adım otomatik atlanır.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
+      <div class="space-y-2">
+        <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Seçimi</label>
+        <input id="contract-company-search" list="contract-company-list" type="text" placeholder="Firma ara..." class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+        <datalist id="contract-company-list"></datalist>
+      </div>
+      <button id="contract-company-continue" type="button" class="w-full md:w-auto inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-colors">
+        Firma ile Devam Et
+      </button>
+    </div>
+
+    <p id="contract-page-select-status" class="text-xs font-semibold text-muted">Firma listesi hazırlanıyor...</p>
+  </div>
+
   <div class="space-y-6">
     <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-5">
@@ -15,25 +36,25 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
           </div>
           <div>
-            <h2 class="text-sm font-black uppercase tracking-widest text-main">Sozlesme Bilgileri</h2>
-            <p class="text-xs text-muted">Sozlesme ucreti, tarihi ve konusu</p>
+            <h2 class="text-sm font-black uppercase tracking-widest text-main">Sözleşme Bilgileri</h2>
+            <p class="text-xs text-muted">Sözleşme ücreti, tarihi ve konusu</p>
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="space-y-2">
-            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Sozlesme Tarihi</label>
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Sözleşme Tarihi</label>
             <input id="contract-date" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:border-indigo-500/50 outline-none transition-colors" />
           </div>
           <div class="space-y-2">
-            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Sozlesme Ucreti</label>
-            <input id="contract-price" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:border-indigo-500/50 outline-none transition-colors" placeholder="Ucret girin (Or: 5.000 TL)" />
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Sözleşme Ücreti</label>
+            <input id="contract-price" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:border-indigo-500/50 outline-none transition-colors" placeholder="Ücret girin (Örn: 5.000 TL)" />
           </div>
         </div>
         
         <div class="space-y-2">
-          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Sozlesme Konusu</label>
-          <input id="contract-subject" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:border-indigo-500/50 outline-none transition-colors" placeholder="Sozlesme konusu" />
+          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Sözleşme Konusu</label>
+          <input id="contract-subject" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:border-indigo-500/50 outline-none transition-colors" placeholder="Sözleşme konusu" />
         </div>
       </div>
 
@@ -43,8 +64,8 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"></path><path d="M14 17H5"></path><circle cx="17" cy="17" r="3"></circle><circle cx="7" cy="7" r="3"></circle></svg>
           </div>
           <div>
-            <h2 class="text-sm font-black uppercase tracking-widest text-main">Firma Referansi</h2>
-            <p class="text-xs text-muted">Sertifika ve irtibat detaylari</p>
+            <h2 class="text-sm font-black uppercase tracking-widest text-main">Firma Referansı</h2>
+            <p class="text-xs text-muted">Sertifika ve irtibat detayları</p>
           </div>
         </div>
 
@@ -54,7 +75,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
             <p id="contract-preview-tax" class="font-bold text-main">—</p>
           </div>
           <div>
-            <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Yetkili Kisi ve Unv.</p>
+            <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Yetkili Kişi ve Unv.</p>
             <p id="contract-preview-auth" class="font-bold text-main">—</p>
           </div>
           <div>
@@ -67,16 +88,22 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
         </div>
         
         <div class="rounded-2xl border border-dashed border-sky-500/20 bg-sky-500/5 p-4 text-[11px] leading-relaxed text-muted/80 italic">
-          Bu bilgiler Google Docs uzerinde olusturulacak sozlesme dokumanina otomatik olarak aktarilacaktir.
+          Bu bilgiler Google Docs üzerinde oluşturulacak sözleşme dokümanına otomatik olarak aktarılacaktır.
         </div>
       </div>
     </section>
 
     <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
       <button id="contract-clear" type="button" class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-5 py-3 text-sm font-bold text-main hover:bg-surface-hover transition-colors">Formu Temizle</button>
+      
+      <button id="contract-view-folder" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface px-5 py-3 text-sm font-bold text-main hover:bg-surface-hover transition-colors group">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500 group-hover:scale-110 transition-transform"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+        <span>Firma Klasörü</span>
+      </button>
+
       <button id="contract-generate" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-        <span id="generate-label">Sozlesme Uret</span>
+        <span id="generate-label">Sözleşme Üret</span>
       </button>
     </div>
   </div>
@@ -85,116 +112,262 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 <script>
   import { toast } from '../../lib/toast';
   import { api } from '../../lib/api';
+  import { $companies } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
   import { loadCompanyOperationContext } from '../../features/operations/context';
   import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
 
-  const params = new URLSearchParams(location.search);
-  const firmaId = params.get('id') || '';
   let activeContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
+  let firmaId = '';
+  let cleanupFns: Array<() => void> = [];
 
-  async function generateContract() {
-    if (!activeContext) return;
-    const btn = document.getElementById('contract-generate') as HTMLButtonElement | null;
-    const label = document.getElementById('generate-label');
-    const dateInput = document.getElementById('contract-date') as HTMLInputElement | null;
-    const priceInput = document.getElementById('contract-price') as HTMLInputElement | null;
-    const subjectInput = document.getElementById('contract-subject') as HTMLInputElement | null;
-
-    if (!dateInput?.value || !priceInput?.value || !subjectInput?.value) {
-      toast.warning('Lutfen sozlesme tarihi, ucreti ve konusunu doldurun.');
-      return;
-    }
-
-    if (btn) {
-      btn.disabled = true;
-      if (label) label.textContent = 'Hazirlaniyor...';
-    }
-
-    toast.info('Sozlesme dokumani hazirlaniyor, lutfen bekleyin...');
-
-    try {
-      const payload = {
-        id: firmaId,
-        ...activeContext,
-        contractDate: dateInput.value.split('-').reverse().join('.'),
-        contractPrice: priceInput.value,
-        contractSubject: subjectInput.value
-      };
-
-      const res = await api.generateContract(payload);
-      if (res.success) {
-        toast.success('Sozlesme dokumani basariyla olusturuldu.');
-        const url = (res.data as any)?.url;
-        if (url) window.open(url, '_blank');
-      } else {
-        toast.error(res.error || 'Sozlesme olusturulurken bir hata olustu.');
-      }
-    } catch (err: any) {
-      toast.error('Kritik hata: ' + err.message);
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        if (label) label.textContent = 'Sozlesme Uret';
-      }
-    }
+  function registerCleanup(fn: () => void) {
+    cleanupFns.push(fn);
   }
 
-  function setText(id: string, text: string) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text || '—';
+  function runCleanups() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
   }
 
-  async function boot() {
-    if (!firmaId) {
-      document.getElementById('op-skeleton')?.classList.add('hidden');
-      document.getElementById('op-error')?.classList.remove('hidden');
-      return;
+  function initPage() {
+    runCleanups();
+
+    const params = new URLSearchParams(location.search);
+    firmaId = params.get('id') || params.get('firmaId') || '';
+
+    const companySearch = document.getElementById('contract-company-search') as HTMLInputElement | null;
+    const companyList = document.getElementById('contract-company-list');
+    const companyContinue = document.getElementById('contract-company-continue') as HTMLButtonElement | null;
+    const selectStatus = document.getElementById('contract-page-select-status');
+
+    function companyLabel(company: any) {
+      const id = String(company?.['Firma No'] || company?.FirmaNo || company?.firmaNo || company?.id || company?.ID || '').trim();
+      const nick = String(company?.['Firma Adı'] || company?.nickname || company?.Nick || company?.nick || company?.FirmaAdi || company?.Unvan || company?.unvan || 'Firma').trim();
+      return `${nick} (${id || '—'})`;
     }
 
-    const context = await loadCompanyOperationContext(firmaId);
-    activeContext = context;
-    if (!context) {
-      document.getElementById('op-skeleton')?.classList.add('hidden');
-      document.getElementById('op-error')?.classList.remove('hidden');
-      return;
+    function getCompanyId(company: any) {
+      return String(company?.['Firma No'] || company?.FirmaNo || company?.firmaNo || company?.id || company?.ID || '').trim();
     }
 
-    (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${firmaId}`);
-    document.querySelectorAll<HTMLAnchorElement>('[data-op-link]').forEach((link) => {
-      const key = link.dataset.opLink as 'form' | 'proforma' | 'draft' | 'contract';
-      const definition = OPERATION_DEFINITIONS.find((item) => item.key === key);
-      if (definition) link.href = buildOperationHref(definition.href, firmaId);
-    });
-
-    setText('op-company-id', `M${context.firmaId}`);
-    setText('op-company-nick', context.nick || 'Firma');
-    setText('op-company-dan', context.danisman || 'Danisman atanamamis');
-    setText('op-company-unvan', context.unvan || context.nick || `Firma #${context.firmaId}`);
-    setText('op-company-address', [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—');
-    setText('op-company-kapsam', context.kapsam || context.scope || 'Kapsam bulunamadi.');
-    setText('op-company-stats', `${context.certificates.length} sertifika, ${context.tests.length} test verisi sozlesme referansi icin hazir.`);
-
-    const subjectInput = document.getElementById('contract-subject') as HTMLInputElement | null;
-    if (subjectInput) {
-      subjectInput.value = `${context.unvan || context.nick} belgelendirme hizmetleri`;
+    function setSelectStatus(message: string, isError = false) {
+      if (!selectStatus) return;
+      selectStatus.textContent = message;
+      selectStatus.className = `text-xs font-semibold ${isError ? 'text-rose-400' : 'text-muted'}`;
     }
 
-    setText('contract-preview-tax', [context.vergiD, context.vergiN].filter(Boolean).join(' / '));
-    setText('contract-preview-auth', [context.yetkiliAdi, context.yetkiliUnvani].filter(Boolean).join(' / '));
-    setText('contract-preview-tel', context.tel || '');
-    setText('contract-preview-faks', context.faks || '');
+    function showCompanyPicker() {
+      if (document.getElementById('op-skeleton')) document.getElementById('op-skeleton')!.classList.add('hidden');
+      if (document.getElementById('op-error')) document.getElementById('op-error')!.classList.add('hidden');
+      if (document.getElementById('op-shell')) document.getElementById('op-shell')!.classList.add('hidden');
+      if (document.getElementById('op-select')) document.getElementById('op-select')!.classList.remove('hidden');
+      (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', '/search');
+    }
 
-    document.getElementById('contract-generate')?.addEventListener('click', generateContract);
-    document.getElementById('contract-clear')?.addEventListener('click', () => {
-      ['contract-date', 'contract-price', 'contract-subject'].forEach(id => {
-        const el = document.getElementById(id) as HTMLInputElement | null;
-        if (el) el.value = '';
+    function syncCompanyList(companies: any[]) {
+      if (!companyList) return;
+      const frag = document.createDocumentFragment();
+      companies.forEach((company) => {
+        const option = document.createElement('option');
+        option.value = companyLabel(company);
+        frag.appendChild(option);
       });
-    });
+      companyList.innerHTML = '';
+      companyList.appendChild(frag);
+      if (companies.length > 0) setSelectStatus('Bir firma seçip devam edebilirsin.');
+    }
 
-    document.getElementById('op-skeleton')?.classList.add('hidden');
-    document.getElementById('op-shell')?.classList.remove('hidden');
+    function resolveCompanyFromInput() {
+      const raw = companySearch?.value.trim() || '';
+      const companiesItems = ($companies.get() as any[]) || [];
+      if (!raw) return null;
+      return companiesItems.find((company) => {
+        const label = companyLabel(company);
+        const id = getCompanyId(company);
+        const nick = String(company?.['Firma Adı'] || company?.nickname || company?.Nick || company?.nick || company?.FirmaAdi || '').trim();
+        return raw === label || raw === id || raw === nick;
+      }) || null;
+    }
+
+    async function generateContract() {
+      if (!activeContext) return;
+      const btn = document.getElementById('contract-generate') as HTMLButtonElement | null;
+      const label = document.getElementById('generate-label');
+      const dateInput = document.getElementById('contract-date') as HTMLInputElement | null;
+      const priceInput = document.getElementById('contract-price') as HTMLInputElement | null;
+      const subjectInput = document.getElementById('contract-subject') as HTMLInputElement | null;
+
+      if (!dateInput?.value || !priceInput?.value || !subjectInput?.value) {
+        toast.warning('Lütfen sözleşme tarihi, ücreti ve konusunu doldurun.');
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        if (label) label.textContent = 'Hazırlanıyor...';
+      }
+
+      toast.info('Sözleşme dokümanı hazırlanıyor, lütfen bekleyin...');
+
+      try {
+        const payload = {
+          ...activeContext,
+          id: firmaId,
+          tarih: dateInput.value.split('-').reverse().join('.'),
+          ucret: priceInput.value,
+          konu: subjectInput.value,
+          yetA: activeContext?.yetkiliAdi || '',
+          yetU: activeContext?.yetkiliUnvani || ''
+        };
+
+        const res = await api.generateContract(payload);
+        if (res.success) {
+          toast.success('Sözleşme dokümanı başarıyla oluşturuldu.');
+          const url = (res.data as any)?.url;
+          if (url) window.open(url, '_blank');
+        } else {
+          toast.error(res.error || 'Sözleşme oluşturulurken bir hata oluştu.');
+        }
+      } catch (err: any) {
+        toast.error('Kritik hata: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          if (label) label.textContent = 'Sözleşme Üret';
+        }
+      }
+    }
+
+    function setText(id: string, text: string) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text || '—';
+    }
+
+    async function loadScreen() {
+      if (!firmaId) return;
+
+      const context = await loadCompanyOperationContext(firmaId);
+      activeContext = context;
+      if (!context) {
+        if (document.getElementById('op-skeleton')) document.getElementById('op-skeleton')!.classList.add('hidden');
+        if (document.getElementById('op-error')) document.getElementById('op-error')!.classList.remove('hidden');
+        return;
+      }
+
+      (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${firmaId}`);
+      document.querySelectorAll<HTMLAnchorElement>('[data-op-link]').forEach((link) => {
+        const key = link.dataset.opLink as 'form' | 'proforma' | 'draft' | 'contract';
+        const definition = OPERATION_DEFINITIONS.find((item) => item.key === key);
+        if (definition) link.href = buildOperationHref(definition.href, firmaId);
+      });
+
+      setText('op-company-id', `M${context.firmaId}`);
+      setText('op-company-nick', context.nick || 'Firma');
+      setText('op-company-dan', context.danisman || 'Danışman atanamamış');
+      setText('op-company-unvan', context.unvan || context.nick || `Firma #${context.firmaId}`);
+      setText('op-company-address', [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—');
+      setText('op-company-kapsam', context.kapsam || context.scope || 'Kapsam bulunamadı.');
+      setText('op-company-stats', `${context.certificates.length} sertifika, ${context.tests.length} test verisi sözleşme referansı için hazır.`);
+
+      const subjectInput = document.getElementById('contract-subject') as HTMLInputElement | null;
+      if (subjectInput) {
+        subjectInput.value = `${context.unvan || context.nick} belgelendirme hizmetleri`;
+      }
+
+      setText('contract-preview-tax', [context.vergiD, context.vergiN].filter(Boolean).join(' / '));
+      setText('contract-preview-auth', [context.yetkiliAdi, context.yetkiliUnvani].filter(Boolean).join(' / '));
+      setText('contract-preview-tel', context.tel || '');
+      setText('contract-preview-faks', context.faks || '');
+
+      document.getElementById('contract-generate')?.addEventListener('click', generateContract);
+      
+      const folderBtn = document.getElementById('contract-view-folder');
+      if (folderBtn) {
+        folderBtn.addEventListener('click', async () => {
+          const btn = folderBtn as HTMLButtonElement;
+          const originalContent = btn.innerHTML;
+          
+          try {
+            btn.disabled = true;
+            btn.innerHTML = `
+              <span class="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-indigo-500/30 border-t-indigo-500"></span>
+              <span>Sorgulanıyor...</span>
+            `;
+            
+            const res = await api.call('getFolderId', { id: context.firmaId });
+            if (res.success && res.data) {
+              window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
+            } else {
+              toast.error(res.error || 'Firma klasörü bulunamadı.');
+            }
+          } catch (e) {
+            toast.error('Sistem hatası: Klasör bilgisi alınamadı.');
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+          }
+        });
+      }
+
+      document.getElementById('contract-clear')?.addEventListener('click', () => {
+        ['contract-date', 'contract-price', 'contract-subject'].forEach(id => {
+          const el = document.getElementById(id) as HTMLInputElement | null;
+          if (el) el.value = '';
+        });
+      });
+
+      if (document.getElementById('op-skeleton')) document.getElementById('op-skeleton')!.classList.add('hidden');
+      if (document.getElementById('op-shell')) document.getElementById('op-shell')!.classList.remove('hidden');
+    }
+
+    async function prepareCompanyPicker() {
+      showCompanyPicker();
+      syncCompanyList(($companies.get() as any[]) || []);
+      
+      const unsub = $companies.subscribe((list) => syncCompanyList(list as any[]));
+      registerCleanup(unsub);
+
+      await SyncManager.init();
+      if (($companies.get() as any[]).length === 0) {
+        const res = await api.getCompanies();
+        if (res.success && Array.isArray(res.data)) {
+          $companies.set(res.data);
+        }
+      }
+
+      companySearch?.addEventListener('input', () => {
+        const selected = resolveCompanyFromInput();
+        setSelectStatus(selected ? 'Firma seçildi. Devam edebilirsin.' : 'Listeden geçerli bir firma seç.');
+      });
+
+      companyContinue?.addEventListener('click', async () => {
+        const selected = resolveCompanyFromInput();
+        const selectedId = selected ? getCompanyId(selected) : '';
+        if (!selectedId) {
+          setSelectStatus('Devam etmek için listeden geçerli bir firma seç.', true);
+          return;
+        }
+        firmaId = selectedId;
+        await loadScreen();
+      });
+    }
+
+    async function boot() {
+      if (!firmaId) {
+        await prepareCompanyPicker();
+        return;
+      }
+      await loadScreen();
+    }
+
+    void boot();
   }
 
-  void boot();
+  // Initial load
+  initPage();
+  // Transition support
+  document.addEventListener('astro:page-load', initPage);
+  // Cleanup away
+  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>

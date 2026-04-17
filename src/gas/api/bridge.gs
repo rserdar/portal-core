@@ -93,6 +93,13 @@ function doPost(e) {
         result.error = updCertRes.error;
         break;
 
+      case "deleteCertificate":
+        const delCertRes = CertificateService.delete(params.id);
+        result.data = delCertRes;
+        result.success = delCertRes.success;
+        if (!delCertRes.success) result.error = delCertRes.error;
+        break;
+
       case "updateGozetim":
         const gozRes = CertificateService.updateGozetim(params.id, params.status);
         result.success = gozRes.success;
@@ -190,7 +197,6 @@ function doPost(e) {
         break;
 
       case "getFullSyncData":
-        // [UPDATE] Filtreli ve Sayfalı (offset/limit) senkronizasyon için parametreleri aktar
         result.data = SyncService.getFullExport(params.scope, params);
         result.success = true;
         break;
@@ -280,8 +286,6 @@ function doPost(e) {
         if (!contractRes.success) result.error = contractRes.error;
         break;
 
-
-
       // --- DENETİM & GÖZETİM ---
       case "getAudits":
         result.data = AuditService.getAudits();
@@ -366,11 +370,6 @@ function doPost(e) {
         result.success = true;
         break;
 
-      case "getFullSyncData":
-        result.data = SyncService.getFullExport();
-        result.success = true;
-        break;
-
       case "exportBackup":
         result.data = SyncService.exportBackup();
         result.success = true;
@@ -410,7 +409,56 @@ function resolveCompanyNickname(params) {
   return company.nickname || company.nick || company["Firma Adı"] || company.FirmaAdi || "";
 }
 
-function doGet() {
-  return ContentService.createTextOutput("🚀 Astro Portal API Bridge (V2) is online.")
-    .setMimeType(ContentService.MimeType.TEXT);
+function doGet(e) {
+  const action = e && e.parameter ? String(e.parameter.action || "") : "";
+
+  if (!action) {
+    return ContentService.createTextOutput("🚀 Astro Portal API Bridge (V2) is online.")
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
+
+  const result = {
+    success: false,
+    data: null,
+    error: null
+  };
+
+  try {
+    const apiSecret = e && e.parameter ? String(e.parameter.apiKey || "") : "";
+    const systemSecret = PropertiesService.getScriptProperties().getProperty("API_KEY") || "";
+
+    if (!systemSecret) {
+      result.error = "Sunucu API_KEY yapılandırması eksik.";
+      return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (apiSecret !== systemSecret) {
+      result.error = "Yetkisiz Erişim (Invalid API Key)";
+      return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    switch (action) {
+      case "translate": {
+        const text = String(e.parameter.text || "");
+        const toEnRaw = String(e.parameter.toEn || "").toLowerCase();
+        const toEn = toEnRaw === "true" || toEnRaw === "1";
+        const targetLang = toEn ? "en" : "tr";
+        const sourceLang = toEn ? "tr" : "en";
+        result.data = TranslationService.translate(text, targetLang, sourceLang);
+        result.success = true;
+        break;
+      }
+
+      default:
+        result.error = "Geçersiz eylem (Action): " + action;
+        break;
+    }
+  } catch (error) {
+    result.success = false;
+    result.error = error.message;
+    BaseService.logError("doGet", error);
+  }
+
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
 }

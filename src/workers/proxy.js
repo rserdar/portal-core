@@ -1158,15 +1158,37 @@ export default {
     };
 
 
+    const fetchFromGasViaGet = async (env, body) => {
+      if (body?.action !== "translate") return null;
+
+      const url = new URL(env.GAS_API_URL);
+      url.searchParams.set("action", "translate");
+      url.searchParams.set("apiKey", String(env.API_KEY || ""));
+      url.searchParams.set("text", String(body?.params?.text || ""));
+      url.searchParams.set("toEn", body?.params?.toEn ? "true" : "false");
+
+      const res = await fetch(url.toString(), { method: "GET" });
+      const text = await res.text();
+      if (!res.ok || !text.trimStart().startsWith('{')) {
+        throw new Error(`GAS_HTTP_ERROR: ${res.status} — ${text.slice(0, 200)}`);
+      }
+      return JSON.parse(text);
+    };
+
     const fetchFromGas = async (env, body) => {
+      const requestBody = JSON.stringify({ ...body, apiKey: env.API_KEY });
       const res = await fetch(env.GAS_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, apiKey: env.API_KEY }),
+        body: requestBody,
       });
+
       const text = await res.text();
       if (!res.ok || !text.trimStart().startsWith('{')) {
         const code = res.status;
+        if (body?.action === "translate") {
+          return await fetchFromGasViaGet(env, body);
+        }
         if (code === 524 || text.includes('524')) throw new Error('GAS_TIMEOUT_524: Google Apps Script yanıt vermedi (süre aşımı). Daha küçük bir kapsam seçin veya GAS scriptini optimize edin.');
         throw new Error(`GAS_HTTP_ERROR: ${code} — ${text.slice(0, 200)}`);
       }
@@ -1668,6 +1690,50 @@ export default {
         ctx.waitUntil(rebuildDashboardStats());
         return jsonResponse({ success: true, data: updated });
       },
+      deleteCertificate: async (p, ctx, env) => {
+        const id = String(p?.id || "").trim();
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+
+        let existingRaw = await env.DB.get(`cache:getCertificateById:${stableStringify({ id })}`);
+        if (!existingRaw) {
+          const fullRaw = await env.DB.get(indexKeys.fullCertificates);
+          const found = fullRaw ? JSON.parse(fullRaw).find(c => String(getCertificateId(c)) === id) : null;
+          if (!found) return jsonResponse({ success: false, error: "NOT_FOUND" }, 404);
+          existingRaw = JSON.stringify(found);
+        }
+
+        const existing = JSON.parse(existingRaw);
+        const firmaId = getCertificateFirmaId(existing);
+
+        const [summaryRaw, recentRaw, fullRaw, firmaListRaw] = await Promise.all([
+          env.DB.get(indexKeys.certificateSummary),
+          env.DB.get(indexKeys.certificateRecent),
+          env.DB.get(indexKeys.fullCertificates),
+          firmaId ? env.DB.get(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId })}`) : Promise.resolve(null),
+        ]);
+
+        const summaryIdx = summaryRaw ? JSON.parse(summaryRaw) : {};
+        delete summaryIdx[id];
+
+        const recentIds = (recentRaw ? JSON.parse(recentRaw) : []).filter(certId => String(certId) !== id);
+        const fullList = (fullRaw ? JSON.parse(fullRaw) : []).filter(c => String(getCertificateId(c)) !== id);
+
+        const writes = [
+          env.DB.delete(`cache:getCertificateById:${stableStringify({ id })}`),
+          env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIdx), { expirationTtl: CACHE_TTL }),
+          env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }),
+          env.DB.put(indexKeys.fullCertificates, JSON.stringify(fullList), { expirationTtl: CACHE_TTL }),
+        ];
+
+        if (firmaId) {
+          const firmaList = (firmaListRaw ? JSON.parse(firmaListRaw) : []).filter(c => String(getCertificateId(c)) !== id);
+          writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId })}`, JSON.stringify(firmaList), { expirationTtl: CACHE_TTL }));
+        }
+
+        await Promise.all(writes);
+        ctx.waitUntil(rebuildDashboardStats());
+        return jsonResponse({ success: true, deletedId: id });
+      },
       updateSurveillance: async (p, ctx, env) => {
         const ids = Array.isArray(p?.ids) ? p.ids : [];
         const status = p?.status === true || p?.status === "TRUE" ? "TRUE" : "FALSE";
@@ -1969,11 +2035,18 @@ export default {
       getRecentFiles: async (p, ctx, env) => {
         const id = String(p?.id || p?.firmaId || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        const mimeTypes = Array.isArray(p?.mimeTypes) ? p.mimeTypes : undefined;
+        const forceRefresh = Boolean(p?.refreshToken || p?.forceRefresh);
         const cacheKey = `cache:getRecentFiles:${stableStringify({ id })}`;
-        const cached = await env.DB.get(cacheKey);
-        if (cached) return jsonResponse({ success: true, data: JSON.parse(cached), fromCache: true });
+        if (!forceRefresh) {
+          const cached = await env.DB.get(cacheKey);
+          if (cached) return jsonResponse({ success: true, data: JSON.parse(cached), fromCache: true });
+        }
 
-        const res = await fetchFromGas(env, { action: "getRecentFiles", params: { id } });
+        const res = await fetchFromGas(env, {
+          action: "getRecentFiles",
+          params: { id, mimeTypes, refreshToken: p?.refreshToken }
+        });
         if (res.success && res.data) {
           ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(res.data), { expirationTtl: CACHE_TTL }));
         }
@@ -2117,18 +2190,11 @@ export default {
         }
 
         // 🛰️ 2. GAS Fallback (Tanınmayan aksiyonlar doğrudan GAS'a iletilir)
-        const gasResponse = await fetch(env.GAS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...body, apiKey: env.API_KEY }),
-        });
-
-        const gasText = await gasResponse.text();
         try {
-          const gasResult = JSON.parse(gasText);
-          return jsonResponse(gasResult, gasResponse.status);
-        } catch (_) {
-          return jsonResponse({ success: false, error: "GAS_INVALID_RESPONSE", details: gasText.slice(0, 500) }, 502);
+          const gasResult = await fetchFromGas(env, body);
+          return jsonResponse(gasResult, gasResult?.success === false ? 502 : 200);
+        } catch (gasErr) {
+          return jsonResponse({ success: false, error: "GAS_INVALID_RESPONSE", details: gasErr.message }, 502);
         }
 
       } catch (err) {

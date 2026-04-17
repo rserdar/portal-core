@@ -4,19 +4,19 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
 <OperationPageShell
   pageKey="form"
-  title="Basvuru Formu"
-  description="Standart secimi, akreditasyon tercihleri ve firma kapsam kontrolunu tek akista toplayan mobil uyumlu basvuru hazirlama ekranidir."
+  title="Başvuru Formu"
+  description="Standart seçimi, akreditasyon tercihleri ve firma kapsam kontrolünü tek akışta toplayan mobil uyumlu başvuru hazırlama ekranıdır."
 >
   <div slot="select" class="space-y-5">
     <div class="space-y-2">
-      <p class="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-400">Basvuru Formu</p>
-      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Firma Secerek Devam Et</h1>
-      <p class="text-sm leading-relaxed text-muted max-w-2xl">Bu ekran headerdan dogrudan acildiginda once ilgili firmayi secersin. Firma profilinden geliyorsan bu adim otomatik atlanir.</p>
+      <p class="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-400">Başvuru Formu</p>
+      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Firma Seçerek Devam Et</h1>
+      <p class="text-sm leading-relaxed text-muted max-w-2xl">Bu ekran header'dan doğrudan açıldığında önce ilgili firmayı seçersin. Firma profilinden geliyorsan bu adım otomatik atlanır.</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
       <div class="space-y-2">
-        <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Secimi</label>
+        <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Seçimi</label>
         <input id="form-company-search" list="form-company-list" type="text" placeholder="Firma ara..." class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
         <datalist id="form-company-list"></datalist>
       </div>
@@ -25,7 +25,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
       </button>
     </div>
 
-    <p id="form-page-select-status" class="text-xs font-semibold text-muted">Firma listesi hazirlaniyor...</p>
+    <p id="form-page-select-status" class="text-xs font-semibold text-muted">Firma listesi hazırlanıyor...</p>
   </div>
 
   <div class="space-y-6">
@@ -33,45 +33,56 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
       <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
         <div class="flex items-center justify-between gap-3">
           <h2 class="text-sm font-black uppercase tracking-widest text-main">Standartlar</h2>
-          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adim 1</span>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 1</span>
         </div>
         <div class="grid grid-cols-2 gap-3 text-sm">
-          {['ISO 9001', 'ISO 13485', 'ISO 14001', 'ISO 22000', 'ISO 27001', 'ISO 45001', 'ISO 50001', 'ISO 22716', 'ISO 10002', '2017/745/EU'].map((item) => (
-            <label class="flex items-center gap-3 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-main">
-              <input type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface text-primary" />
-              <span class="font-semibold">{item}</span>
+          {[
+            { label: 'ISO 9001', key: 'qms' },
+            { label: 'ISO 13485', key: 'mdd' },
+            { label: 'ISO 14001', key: 'ems' },
+            { label: 'ISO 22000', key: 'fsms' },
+            { label: 'ISO 27001', key: 'isms' },
+            { label: 'ISO 45001', key: 'ohs' },
+            { label: 'ISO 50001', key: 'eng' },
+            { label: 'ISO 22716', key: 'gmp' },
+            { label: 'ISO 10002', key: 'obi' },
+            { label: '2017/745/EU', key: 'ce' },
+            { label: 'Diğer', key: 'oth' }
+          ].map((item) => (
+            <label class="flex items-center gap-3 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-main cursor-pointer hover:bg-surface-active transition-colors">
+              <input type="checkbox" id={`form-std-${item.key}`} class="h-4 w-4 rounded border-border-main bg-surface text-primary" />
+              <span class="font-semibold">{item.label}</span>
             </label>
           ))}
         </div>
         <div class="space-y-2">
-          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Diger Standart</label>
-          <input type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Gerekirse manuel standart girin" />
+          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Diğer Standart</label>
+          <input type="text" id="form-std-diger" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Gerekirse manuel standart girin" />
         </div>
       </div>
 
       <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
         <div class="flex items-center justify-between gap-3">
           <h2 class="text-sm font-black uppercase tracking-widest text-main">Akreditasyon</h2>
-          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adim 2</span>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 2</span>
         </div>
         <div class="space-y-2">
-          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Notified Body</label>
-          <select class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main">
-            <option>Seciniz...</option>
-            <option>2195</option>
-            <option>1883</option>
+          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Belgelendirme Firması</label>
+          <select id="form-nbody" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+            <option value="Medicert">Medicert</option>
+            <option value="Inspect">Inspect</option>
           </select>
         </div>
         <div class="space-y-2">
-          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Akreditasyon Kurulusu</label>
-          <select class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main">
-            <option>Seciniz...</option>
-            <option>TURKAK</option>
-            <option>IAS</option>
+          <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Akreditasyon Kuruluşu</label>
+          <select id="form-acc" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+            <option value="TURKAK">TURKAK</option>
+            <option value="IAS">IAS</option>
+            <option value="NON-ACC">Akreditasyonsuz</option>
           </select>
         </div>
         <div class="rounded-2xl border border-dashed border-border-main p-4 text-sm leading-relaxed text-muted">
-          Kaydetme ve belge uretme aksiyonlari ikinci adimda API'ye baglanacak. Bu sayfa su an mobil akisi ve alan mimarisini sabitliyor.
+          Kaydetme ve belge üretme aksiyonları ikinci adımda API'ye bağlanacak. Bu sayfa şu an mobil akışı ve alan mimarisini sabitliyor.
         </div>
       </div>
     </section>
@@ -79,17 +90,25 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
         <div class="flex items-center justify-between gap-3">
-          <h2 class="text-sm font-black uppercase tracking-widest text-main">Firma Kontrolu</h2>
-          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adim 3</span>
+          <h2 class="text-sm font-black uppercase tracking-widest text-main">Firma Kontrolü</h2>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 3</span>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="space-y-2">
-            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Yetkili</label>
-            <input id="form-yetkili" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" />
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Yetkili Adı</label>
+            <input id="form-yetkili" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Yetkili ad soyad" />
           </div>
           <div class="space-y-2">
-            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Irtibat</label>
-            <input id="form-irtibat" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" />
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Yetkili Unvanı</label>
+            <input id="form-yetkili-unvan" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Örn: Genel Müdür" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">İrtibat Kişisi</label>
+            <input id="form-irtibat" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="İrtibat ad soyad" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">İrtibat Unvanı</label>
+            <input id="form-irtibat-unvan" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main" placeholder="Örn: Kalite Yöneticisi" />
           </div>
           <div class="space-y-2">
             <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Telefon</label>
@@ -104,8 +123,8 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
       <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
         <div class="flex items-center justify-between gap-3">
-          <h2 class="text-sm font-black uppercase tracking-widest text-main">Kapsam Incelemesi</h2>
-          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adim 4</span>
+          <h2 class="text-sm font-black uppercase tracking-widest text-main">Kapsam İncelemesi</h2>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 4</span>
         </div>
         <textarea id="form-kapsam" rows={6} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[180px]"></textarea>
         <textarea id="form-scope" rows={6} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[180px]" placeholder="Scope (EN)"></textarea>
@@ -113,159 +132,284 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     </section>
 
     <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
-      <a href="/company/edit" id="form-edit-link" class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-main hover:bg-surface-hover transition-colors">Firma Bilgilerini Duzenle</a>
-      <button type="button" disabled class="inline-flex items-center justify-center rounded-2xl bg-indigo-600/60 px-5 py-3 text-sm font-black text-white cursor-not-allowed">Kaydet ve Form Uret (Yakinda)</button>
+      <a href="/company/edit" id="form-edit-link" class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-main hover:bg-surface-hover transition-colors">Firma Bilgilerini Düzenle</a>
+      <button id="form-generate" type="button" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+        <span>Kaydet ve Form Üret</span>
+      </button>
     </div>
   </div>
 </OperationPageShell>
 
 <script>
+  import { toast } from '../../lib/toast';
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
   import { loadCompanyOperationContext } from '../../features/operations/context';
   import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
 
-  const params = new URLSearchParams(location.search);
-  let firmaId = params.get('id') || params.get('firmaId') || '';
+  let activeContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
+  let firmaId = '';
+  let cleanupFns: Array<() => void> = [];
 
-  const companySearch = document.getElementById('form-company-search') as HTMLInputElement | null;
-  const companyList = document.getElementById('form-company-list');
-  const companyContinue = document.getElementById('form-company-continue') as HTMLButtonElement | null;
-  const selectStatus = document.getElementById('form-page-select-status');
-
-  function companyLabel(company: any) {
-    const id = String(company?.['Firma No'] || company?.FirmaNo || company?.firmaNo || company?.id || company?.ID || '').trim();
-    const nick = String(company?.['Firma Adı'] || company?.nickname || company?.Nick || company?.nick || company?.FirmaAdi || company?.Unvan || company?.unvan || 'Firma').trim();
-    return `${nick} (${id || '—'})`;
+  function registerCleanup(fn: () => void) {
+    cleanupFns.push(fn);
   }
 
-  function getCompanyId(company: any) {
-    return String(company?.['Firma No'] || company?.FirmaNo || company?.firmaNo || company?.id || company?.ID || '').trim();
+  function runCleanups() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
   }
 
-  function setSelectStatus(message: string, isError = false) {
-    if (!selectStatus) return;
-    selectStatus.textContent = message;
-    selectStatus.className = `text-xs font-semibold ${isError ? 'text-rose-400' : 'text-muted'}`;
-  }
+  function initPage() {
+    runCleanups();
 
-  function showCompanyPicker() {
-    document.getElementById('op-skeleton')?.classList.add('hidden');
-    document.getElementById('op-error')?.classList.add('hidden');
-    document.getElementById('op-shell')?.classList.add('hidden');
-    document.getElementById('op-select')?.classList.remove('hidden');
-    (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', '/search');
-  }
+    const params = new URLSearchParams(location.search);
+    firmaId = params.get('id') || params.get('firmaId') || '';
 
-  function syncCompanyList(companies: any[]) {
-    if (!companyList) return;
-    const frag = document.createDocumentFragment();
-    companies.forEach((company) => {
-      const option = document.createElement('option');
-      option.value = companyLabel(company);
-      frag.appendChild(option);
-    });
-    companyList.innerHTML = '';
-    companyList.appendChild(frag);
-    if (companies.length > 0) setSelectStatus('Bir firma secip devam edebilirsin.');
-  }
+    const companySearch = document.getElementById('form-company-search') as HTMLInputElement | null;
+    const companyList = document.getElementById('form-company-list');
+    const companyContinue = document.getElementById('form-company-continue') as HTMLButtonElement | null;
+    const selectStatus = document.getElementById('form-page-select-status');
 
-  function resolveCompanyFromInput() {
-    const raw = companySearch?.value.trim() || '';
-    const companies = $companies.get() as any[];
-    if (!raw) return null;
-    return companies.find((company) => {
-      const label = companyLabel(company);
-      const id = getCompanyId(company);
-      const nick = String(company?.['Firma Adı'] || company?.nickname || company?.Nick || company?.nick || company?.FirmaAdi || '').trim();
-      return raw === label || raw === id || raw === nick;
-    }) || null;
-  }
-
-  function setValue(id: string, value: string) {
-    const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null;
-    if (el) el.value = value || '';
-  }
-
-  async function loadScreen() {
-    if (!firmaId) {
-      return;
+    function companyLabel(company: any) {
+      const id = String(company?.['Firma No'] || company?.FirmaNo || company?.firmaNo || company?.id || company?.ID || '').trim();
+      const nick = String(company?.['Firma Adı'] || company?.nickname || company?.Nick || company?.nick || company?.FirmaAdi || company?.Unvan || company?.unvan || 'Firma').trim();
+      return `${nick} (${id || '—'})`;
     }
 
-    const context = await loadCompanyOperationContext(firmaId);
-    if (!context) {
+    function getCompanyId(company: any) {
+      return String(company?.['Firma No'] || company?.FirmaNo || company?.firmaNo || company?.id || company?.ID || '').trim();
+    }
+
+    function setSelectStatus(message: string, isError = false) {
+      if (!selectStatus) return;
+      selectStatus.textContent = message;
+      selectStatus.className = `text-xs font-semibold ${isError ? 'text-rose-400' : 'text-muted'}`;
+    }
+
+    function showCompanyPicker() {
       document.getElementById('op-skeleton')?.classList.add('hidden');
-      document.getElementById('op-error')?.classList.remove('hidden');
-      return;
+      document.getElementById('op-error')?.classList.add('hidden');
+      document.getElementById('op-shell')?.classList.add('hidden');
+      document.getElementById('op-select')?.classList.remove('hidden');
+      (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', '/search');
     }
 
-    (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${firmaId}`);
-    document.querySelectorAll<HTMLAnchorElement>('[data-op-link]').forEach((link) => {
-      const key = link.dataset.opLink as 'form' | 'proforma' | 'draft' | 'contract';
-      const definition = OPERATION_DEFINITIONS.find((item) => item.key === key);
-      if (definition) link.href = buildOperationHref(definition.href, firmaId);
-    });
-
-    document.getElementById('op-company-id')!.textContent = `M${context.firmaId}`;
-    document.getElementById('op-company-nick')!.textContent = context.nick || 'Firma';
-    document.getElementById('op-company-dan')!.textContent = context.danisman || 'Danisman atanamamis';
-    document.getElementById('op-company-unvan')!.textContent = context.unvan || context.nick || `Firma #${context.firmaId}`;
-    document.getElementById('op-company-address')!.textContent = [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
-    document.getElementById('op-company-kapsam')!.textContent = context.kapsam || 'Kapsam bulunamadi.';
-    document.getElementById('op-company-stats')!.textContent = `${context.certificates.length} sertifika, ${context.tests.length} test kaydi bulundu.`;
-
-    setValue('form-yetkili', context.yetkiliAdi);
-    setValue('form-irtibat', context.irtibatAdi);
-    setValue('form-tel', context.tel || context.irtibatTel);
-    setValue('form-mail', context.mail || context.irtibatMail);
-    setValue('form-kapsam', context.kapsam);
-    setValue('form-scope', context.scope);
-
-    const editLink = document.getElementById('form-edit-link') as HTMLAnchorElement | null;
-    if (editLink) editLink.href = `/company/edit?id=${firmaId}`;
-
-    document.getElementById('op-select')?.classList.add('hidden');
-    document.getElementById('op-skeleton')?.classList.add('hidden');
-    document.getElementById('op-shell')?.classList.remove('hidden');
-  }
-
-  async function prepareCompanyPicker() {
-    showCompanyPicker();
-    syncCompanyList($companies.get() as any[]);
-    $companies.subscribe((companies) => syncCompanyList(companies as any[]));
-    await SyncManager.init();
-    if (($companies.get() as any[]).length === 0) {
-      const res = await api.getCompanies();
-      if (res.success && Array.isArray(res.data)) {
-        $companies.set(res.data);
-      }
+    function syncCompanyList(companies: any[]) {
+      if (!companyList) return;
+      const frag = document.createDocumentFragment();
+      companies.forEach((company) => {
+        const option = document.createElement('option');
+        option.value = companyLabel(company);
+        frag.appendChild(option);
+      });
+      companyList.innerHTML = '';
+      companyList.appendChild(frag);
+      if (companies.length > 0) setSelectStatus('Bir firma seçip devam edebilirsin.');
     }
 
-    companySearch?.addEventListener('input', () => {
-      const selected = resolveCompanyFromInput();
-      setSelectStatus(selected ? 'Firma secildi. Devam edebilirsin.' : 'Listeden gecerli bir firma sec.');
-    });
+    function resolveCompanyFromInput() {
+      const raw = companySearch?.value.trim() || '';
+      const companiesItems = ($companies.get() as any[]) || [];
+      if (!raw) return null;
+      return companiesItems.find((company) => {
+        const label = companyLabel(company);
+        const id = getCompanyId(company);
+        const nick = String(company?.['Firma Adı'] || company?.nickname || company?.Nick || company?.nick || company?.FirmaAdi || '').trim();
+        return raw === label || raw === id || raw === nick;
+      }) || null;
+    }
 
-    companyContinue?.addEventListener('click', async () => {
-      const selected = resolveCompanyFromInput();
-      const selectedId = selected ? getCompanyId(selected) : '';
-      if (!selectedId) {
-        setSelectStatus('Devam etmek icin listeden gecerli bir firma sec.', true);
+    function setValue(id: string, value: string) {
+      const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null;
+      if (el) el.value = value || '';
+    }
+
+    function getValue(id: string) {
+      const el = document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+      return el ? el.value.trim() : '';
+    }
+
+    function isChecked(id: string) {
+      const el = document.getElementById(id) as HTMLInputElement | null;
+      return el ? (el.checked ? 'X' : '') : '';
+    }
+
+    async function generateForm() {
+      if (!activeContext) {
+        toast.error('Firma verisi yüklenemedi.');
         return;
       }
-      firmaId = selectedId;
-      await loadScreen();
-    });
-  }
 
-  async function boot() {
-    if (!firmaId) {
-      await prepareCompanyPicker();
-      return;
+      const btn = document.getElementById('form-generate') as HTMLButtonElement | null;
+      const nbody = getValue('form-nbody');
+      if (!nbody) {
+        toast.warning('Lütfen belgelendirme firmasını seçin.');
+        return;
+      }
+
+      if (btn) btn.disabled = true;
+      toast.info('Başvuru formu hazırlanıyor, lütfen bekleyin...');
+
+      try {
+        const payload = {
+          ...activeContext,
+          id: firmaId,
+          nickname: activeContext?.nick || 'Firma',
+          unvan: activeContext?.unvan || activeContext?.nick || 'Firma',
+          nbody,
+          acc: getValue('form-acc'),
+          yetA: getValue('form-yetkili'),
+          yetU: getValue('form-yetkili-unvan'),
+          irtA: getValue('form-irtibat'),
+          irtU: getValue('form-irtibat-unvan'),
+          tel: getValue('form-tel'),
+          mail: getValue('form-mail'),
+          kapsam: getValue('form-kapsam'),
+          scope: getValue('form-scope'),
+          // Standartlar (Checkboxes)
+          qms: isChecked('form-std-qms'),
+          mdd: isChecked('form-std-mdd'),
+          ems: isChecked('form-std-ems'),
+          fsms: isChecked('form-std-fsms'),
+          isms: isChecked('form-std-isms'),
+          ohs: isChecked('form-std-ohs'),
+          eng: isChecked('form-std-eng'),
+          gmp: isChecked('form-std-gmp'),
+          obi: isChecked('form-std-obi'),
+          ce: isChecked('form-std-ce'),
+          oth: isChecked('form-std-oth'),
+          diger: getValue('form-std-diger')
+        };
+
+        const folderRes = await api.call('getFolderId', { id: firmaId });
+        const folderId = folderRes.success ? folderRes.data : null;
+
+        const res = await api.call('generateAppForm', { info: payload, folderId });
+        
+        if (res.success) {
+          toast.success('Başvuru formu başarıyla oluşturuldu.');
+          const url = (res.data as any)?.url;
+          if (url) window.open(url, '_blank');
+        } else {
+          toast.error(res.error || 'Form oluşturulurken bir hata meydana geldi.');
+        }
+      } catch (err: any) {
+        toast.error('Kritik sistem hatası: ' + err.message);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
-    await loadScreen();
+
+    async function loadScreen() {
+      if (!firmaId) return;
+
+      const context = await loadCompanyOperationContext(firmaId);
+      activeContext = context;
+      if (!context) {
+        document.getElementById('op-skeleton')?.classList.add('hidden');
+        document.getElementById('op-error')?.classList.remove('hidden');
+        return;
+      }
+
+      (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', `/company?id=${firmaId}`);
+      document.querySelectorAll<HTMLAnchorElement>('[data-op-link]').forEach((link) => {
+        const key = link.dataset.opLink as 'form' | 'proforma' | 'draft' | 'contract';
+        const definition = OPERATION_DEFINITIONS.find((item) => item.key === key);
+        if (definition) link.href = buildOperationHref(definition.href, firmaId);
+      });
+
+      const setText = (id: string, text: string) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text || '—';
+      };
+
+      setText('op-company-id', `M${context.firmaId}`);
+      setText('op-company-nick', context.nick || 'Firma');
+      setText('op-company-dan', context.danisman || 'Danışman atanamamış');
+      setText('op-company-unvan', context.unvan || context.nick || `Firma #${context.firmaId}`);
+      setText('op-company-address', [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—');
+      setText('op-company-kapsam', context.kapsam || context.scope || 'Kapsam bulunamadı.');
+      setText('op-company-stats', `${context.certificates.length} sertifika, ${context.tests.length} test kaydı bulundu.`);
+
+      setValue('form-yetkili', context.yetkiliAdi);
+      setValue('form-yetkili-unvan', context.yetkiliUnvani);
+      setValue('form-irtibat', context.irtibatAdi);
+      setValue('form-irtibat-unvan', context.irtibatUnvani || '');
+      setValue('form-tel', context.tel || context.irtibatTel);
+      setValue('form-mail', context.mail || context.irtibatMail);
+      setValue('form-kapsam', context.kapsam);
+      setValue('form-scope', context.scope);
+      
+      const digerInput = document.getElementById('form-std-diger') as HTMLInputElement | null;
+      const digerCheck = document.getElementById('form-std-oth') as HTMLInputElement | null;
+      if (digerInput && digerCheck) {
+        digerInput.addEventListener('input', () => {
+          if (digerInput.value.trim().length > 0) {
+            digerCheck.checked = true;
+          }
+        });
+      }
+
+      const editLink = document.getElementById('form-edit-link') as HTMLAnchorElement | null;
+      if (editLink) editLink.href = `/company/edit?id=${firmaId}`;
+
+      document.getElementById('form-generate')?.addEventListener('click', generateForm);
+
+      document.getElementById('op-select')?.classList.add('hidden');
+      document.getElementById('op-skeleton')?.classList.add('hidden');
+      document.getElementById('op-shell')?.classList.remove('hidden');
+    }
+
+    async function prepareCompanyPicker() {
+      showCompanyPicker();
+      syncCompanyList(($companies.get() as any[]) || []);
+      
+      const unsub = $companies.subscribe((list) => syncCompanyList(list as any[]));
+      registerCleanup(unsub);
+
+      await SyncManager.init();
+      if (($companies.get() as any[]).length === 0) {
+        const res = await api.getCompanies();
+        if (res.success && Array.isArray(res.data)) {
+          $companies.set(res.data);
+        }
+      }
+
+      companySearch?.addEventListener('input', () => {
+        const selected = resolveCompanyFromInput();
+        setSelectStatus(selected ? 'Firma seçildi. Devam edebilirsin.' : 'Listeden geçerli bir firma seç.');
+      });
+
+      companyContinue?.addEventListener('click', async () => {
+        const selected = resolveCompanyFromInput();
+        const selectedId = selected ? getCompanyId(selected) : '';
+        if (!selectedId) {
+          setSelectStatus('Devam etmek için listeden geçerli bir firma seç.', true);
+          return;
+        }
+        firmaId = selectedId;
+        await loadScreen();
+      });
+    }
+
+    async function boot() {
+      if (!firmaId) {
+        await prepareCompanyPicker();
+        return;
+      }
+      await loadScreen();
+    }
+
+    void boot();
   }
 
-  void boot();
+  // Initial load
+  initPage();
+  // Transition support
+  document.addEventListener('astro:page-load', initPage);
+  // Cleanup away
+  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>

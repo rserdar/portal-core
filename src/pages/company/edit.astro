@@ -708,26 +708,56 @@ import { ArrowLeft, Save } from 'lucide-astro';
     addEv('btn-kapsam-translate', 'click', async () => {
       const text = val('f-kapsam');
       if (!text) return;
-      toast.info('Çeviriliyor...');
-      const res = await api.translate(text, true);
-      if (res?.data) {
-        setVal('f-scope', res.data);
-        toast.success('Çeviri tamamlandı.');
-      } else {
-        toast.error('Çeviri başarısız.');
+      const button = document.getElementById('btn-kapsam-translate') as HTMLButtonElement | null;
+      const originalText = button?.textContent || 'İngilizceye Çevir';
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Çevriliyor...';
+      }
+      toast.info('Kapsam İngilizceye çevriliyor...');
+      try {
+        const res = await api.translate(text, true);
+        if (res?.data) {
+          setVal('f-scope', res.data);
+          toast.success('Çeviri tamamlandı.');
+        } else {
+          toast.error(res?.error || 'Çeviri başarısız.');
+        }
+      } catch (e: any) {
+        toast.error(`Çeviri hatası: ${e?.message || e || 'Bilinmeyen hata'}`);
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
       }
     });
 
     addEv('btn-scope-translate', 'click', async () => {
       const text = val('f-scope');
       if (!text) return;
-      toast.info('Çeviriliyor...');
-      const res = await api.translate(text, false);
-      if (res?.data) {
-        setVal('f-kapsam', res.data);
-        toast.success('Çeviri tamamlandı.');
-      } else {
-        toast.error('Çeviri başarısız.');
+      const button = document.getElementById('btn-scope-translate') as HTMLButtonElement | null;
+      const originalText = button?.textContent || 'Türkçeye Çevir';
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Çevriliyor...';
+      }
+      toast.info('Scope Türkçeye çevriliyor...');
+      try {
+        const res = await api.translate(text, false);
+        if (res?.data) {
+          setVal('f-kapsam', res.data);
+          toast.success('Çeviri tamamlandı.');
+        } else {
+          toast.error(res?.error || 'Çeviri başarısız.');
+        }
+      } catch (e: any) {
+        toast.error(`Çeviri hatası: ${e?.message || e || 'Bilinmeyen hata'}`);
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalText;
+        }
       }
     });
 

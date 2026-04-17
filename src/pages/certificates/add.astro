@@ -327,6 +327,10 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
           </section>
 
           <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+            <button id="cert-delete" type="button" class="hidden inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-bold text-rose-400 hover:bg-rose-500/15 transition-colors">
+              <X size={14} />
+              Sertifikayi Sil
+            </button>
             <button id="cert-clear" type="button" class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-main hover:bg-surface-hover transition-colors">Formu Temizle</button>
             <a id="cert-cancel" href="/certificates" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-bold text-rose-400 hover:bg-rose-500/15 transition-colors">
               <X size={14} />
@@ -376,7 +380,19 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
 </DashboardLayout>
 
 <script>
+  import { api } from '../../lib/api';
+  import { $companies } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
   import { toast } from '../../lib/toast';
+  import { loadCompanyOperationContext } from '../../features/operations/context';
+  import {
+    normalizeLegacyIsoRows,
+    buildSuggestedCertPrefix,
+    mergeCertNoSuggestion,
+    addOneYearMinusOneDay,
+    toDisplayDate,
+    buildCertificateQrLink,
+  } from '../../features/operations/certificate-form';
 
   let cleanupFns: Array<() => void> = [];
 
@@ -426,6 +442,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       consultantList: document.getElementById('consultant-list'),
       submit: document.getElementById('cert-submit') as HTMLButtonElement | null,
       submitLabel: document.getElementById('cert-submit-label'),
+      deleteBtn: document.getElementById('cert-delete') as HTMLButtonElement | null,
       openRecent: document.getElementById('cert-open-recent') as HTMLButtonElement | null,
       recentModal: document.getElementById('cert-recent-modal'),
       recentBackdrop: document.getElementById('cert-recent-backdrop') as HTMLButtonElement | null,
@@ -542,6 +559,14 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
     }
   }
 
+  function isEditMode() {
+    return Boolean(editId);
+  }
+
+  function isCloneMode() {
+    return !isEditMode() && Boolean(cloneId);
+  }
+
   function hydrateHeader() {
     if (!companyContext) return;
     const editing = isEditMode();
@@ -576,6 +601,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
           ? 'Gozetim Sertifikasi Olustur'
           : 'Sertifika Ekle';
     }
+    els.deleteBtn?.classList.toggle('hidden', !editing);
     document.getElementById('cert-gozetim-row')?.classList.toggle('hidden', !editing);
   }
 
@@ -1084,6 +1110,29 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       }
     });
 
+    els.deleteBtn?.addEventListener('click', async () => {
+      if (!editId || !companyContext || !els.deleteBtn) return;
+      if (!confirm(`Bu sertifika kaydini silmek istediginizden emin misiniz? (#${editId})`)) return;
+
+      const original = els.deleteBtn.innerHTML;
+      els.deleteBtn.disabled = true;
+      els.deleteBtn.innerHTML = 'Siliniyor...';
+
+      const response = await api.deleteCertificate(editId);
+      if (response.success) {
+        await SyncManager.checkAndSync();
+        toast.success('Sertifika kaydi silindi. Firma profiline yonlendiriliyorsunuz.', { duration: 2500 });
+        setTimeout(() => {
+          window.location.href = `/company?id=${encodeURIComponent(companyContext.firmaId)}`;
+        }, 1400);
+        return;
+      }
+
+      toast.error(`Silme hatasi: ${response.error}`);
+      els.deleteBtn.disabled = false;
+      els.deleteBtn.innerHTML = original;
+    });
+
     els.form?.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!companyContext || !els.standSelect || !els.submit) return;
@@ -1135,11 +1184,11 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
           : cloneId
             ? 'Gozetim sertifikasi basariyla olusturuldu.'
             : 'Sertifika basariyla eklendi.';
-        toast.flash(successMessage, 'success');
-        toast.success(successMessage);
+        els.submit.innerHTML = 'Basarili, yonlendiriliyor...';
+        toast.success(`${successMessage} Firma profiline yonlendiriliyorsunuz.`, { duration: 2500 });
         setTimeout(() => {
           window.location.href = companyContext ? `/company?id=${encodeURIComponent(companyContext.firmaId)}` : '/certificates';
-        }, 800);
+        }, 1400);
         return;
       }
 
@@ -1218,6 +1267,15 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       console.error('Certificate add screen failed:', error);
       showError('Sertifika ekrani yuklenemedi.', error?.message || String(error || 'Bilinmeyen hata'));
     }
+  }
+
+  async function boot() {
+    if (activeFirmaId) {
+      await loadScreen();
+      return;
+    }
+
+    await prepareCompanyPicker();
   }
 
     const unsubCompanies = $companies.subscribe((companies) => syncCompanyList(companies as any[]));

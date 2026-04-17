@@ -180,6 +180,32 @@ const CertificateService = {
   },
 
   /**
+   * Sertifika kaydını siler.
+   */
+  delete: function(id) {
+    try {
+      return BaseService.withScriptLock(() => {
+        const ss = BaseService.openSS();
+        const ws = ss.getSheetByName(this.sheetName);
+        const lastRow = ws.getLastRow();
+        if (lastRow < 2) throw new Error("Silinecek sertifika bulunamadı.");
+
+        const idCol = 1;
+        const ids = ws.getRange(2, idCol, lastRow - 1, 1).getDisplayValues().flat();
+        const rowIndex = ids.findIndex(v => String(v).toLowerCase() === String(id).toLowerCase());
+        if (rowIndex === -1) throw new Error("Sertifika bulunamadı: " + id);
+
+        const rowNum = rowIndex + 2;
+        ws.deleteRow(rowNum);
+        return { success: true };
+      }, 30000, "CertificateService.delete");
+    } catch (e) {
+      BaseService.logError("delete", e, { id: id });
+      return { success: false, error: e.message };
+    }
+  },
+
+  /**
    * Tek bir alanı günceller (legacy editCell).
    */
   updateField: function(id, field, value) {

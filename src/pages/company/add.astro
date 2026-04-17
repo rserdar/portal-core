@@ -450,13 +450,13 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           await SyncManager.checkAndSync();
 
           const successMessage = 'Firma başarıyla eklendi.';
-          toast.flash(successMessage, 'success');
-          toast.success(`${successMessage} Firma profiline yönlendiriliyorsunuz.`);
+          if (submitText) submitText.textContent = 'Başarılı, yönlendiriliyor...';
+          toast.success(`${successMessage} Firma profiline yönlendiriliyorsunuz.`, { duration: 2500 });
 
           const targetUrl = createdId ? `/company?id=${encodeURIComponent(createdId)}` : '/search';
           window.setTimeout(() => {
             window.location.href = targetUrl;
-          }, 700);
+          }, 1400);
         } else {
           toast.error(`Hata: ${response.error}`);
           if (submitBtn) submitBtn.disabled = false;

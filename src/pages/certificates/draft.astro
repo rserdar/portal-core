@@ -99,6 +99,12 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
 <script>
   import { toast } from '../../lib/toast';
+  import { api } from '../../lib/api';
+  import { loadCompanyOperationContext } from '../../features/operations/context';
+  import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
+  import { $companies } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
+  import { normalizeLegacyIsoRows, type LegacyIsoOption } from '../../features/operations/certificate-form';
 
   let cleanupFns: Array<() => void> = [];
 
@@ -326,6 +332,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
       return;
     }
 
+    if (els.generateButton.disabled) return;
     els.generateButton.disabled = true;
     const originalText = els.generateButton.textContent || 'Taslak Oluştur';
     els.generateButton.textContent = 'Oluşturuluyor...';
@@ -513,9 +520,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     void boot();
   }
 
-  // Initial load
-  initPage();
-  // Transition support
+  // Transition support & Initial load
   document.addEventListener('astro:page-load', initPage);
   // Cleanup away
   document.addEventListener('astro:before-preparation', runCleanups, { once: true });

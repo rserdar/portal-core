@@ -9,7 +9,7 @@ const DocumentService = {
   CONFIG: {
     SIGNATURE_ID:      "1gm13q_8COlPybuOrhWGP-H7LXfKIRoF1",
     DRAFT_BG_ID:       "1A--cr2pFxTBT5iVi5EeoQmMtR4Fgpk6a",
-    APP_FORM_MEDICERT: "1CYQgtEtpIeQMAZHtw6JmiR2shcBHM1L9wqX-MzyyzLw",
+    APP_FORM_MEDICERT: "1_Tg5xCBjB3Mo7wpi8gBLVgz5Ilaov9uFIPUPiGHtEUo",
     APP_FORM_INSPECT:  "1-s53ijssKJw9d5rtpm2BmRJOxkXbfWGCx2IjsBT_xdw",
     CONTRACT_TEMP:     "1bNlf4GOZFsDTzmYJrhTbmVrfZ17P4U_i8im5Vte2gM8",
     PROFORMA_TEMP:     "1mgAgm0T52UwFpeE1VDgCNWgVi7_tOmn60f5lCQUsRcU",
@@ -435,7 +435,8 @@ const DocumentService = {
         "{{obi}}":     info.obi     || "",
         "{{Ce}}":      info.ce      || "",
         "{{Oth}}":     info.oth     || "",
-        "{{Diger}}":   info.diger   || ""
+        "{{Diger}}":   info.diger   || "",
+        "{{OthKapsam}}": info.diger || ""
       });
 
       doc.saveAndClose();

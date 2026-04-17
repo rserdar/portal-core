@@ -168,6 +168,7 @@ export const api = {
       "bulkSyncMaster",
       "importBackup",
       "exportBackup",
+      "translate",
       "generateIso",
       "generateDraftCertificate",
       "generateContract",
@@ -231,6 +232,7 @@ export const api = {
   async getCertificateById(id: string | number) { return this.call("getCertificateById", { id }); },
   async addCertificate(certInfo: any) { return this.call("addCertificate", { certInfo }); },
   async updateCertificate(id: string | number, certInfo: any) { return this.call("updateCertificate", { id, certInfo }); },
+  async deleteCertificate(id: string | number) { return this.call("deleteCertificate", { id }); },
   async updateCertificateField(id: string | number, field: string, value: any) {
     return this.call("updateCertificateField", { id, field, value });
   },

@@ -125,6 +125,9 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
 </DashboardLayout>
 
 <script>
+  import { api } from '../../lib/api';
+  import { $companies } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
   import { toast } from '../../lib/toast';
 
   let selectedNickname = '';
@@ -348,7 +351,13 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
   }
 
   async function loadDocuments(forceFresh = false) {
-    if (!selectedNickname || !tableLoader || !emptyState || !resultsContainer || !fileCount) return;
+    if (!selectedFirmaNo || !tableLoader || !emptyState || !resultsContainer || !fileCount) {
+      if (forceFresh) {
+        toast.error('Lutfen once bir firma secin.');
+        setStatus('Yenilemek icin once firma secin.');
+      }
+      return;
+    }
     tableLoader.classList.remove('hidden');
     emptyState.classList.add('hidden');
     resultsContainer.classList.add('hidden');
@@ -356,7 +365,7 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
     setStatus(forceFresh ? `${selectedNickname} klasörü yeniden taranıyor...` : `${selectedNickname} klasörü taranıyor...`);
 
     const res = await api.call('getRecentFiles', {
-      nickname: selectedNickname,
+      id: selectedFirmaNo,
       mimeTypes: ['application/vnd.google-apps.document', 'application/pdf', 'application/vnd.google-apps.spreadsheet'],
       refreshToken: forceFresh ? Date.now() : undefined
     });
@@ -437,7 +446,28 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
       if (company) selectCompany(company);
     });
 
-    refreshBtn?.addEventListener('click', () => void loadDocuments(true));
+    refreshBtn?.addEventListener('click', async () => {
+      if (!selectedFirmaNo) {
+        toast.error('Lutfen once bir firma secin.');
+        setStatus('Yenilemek icin once firma secin.');
+        return;
+      }
+
+      const original = refreshBtn.innerHTML;
+      refreshBtn.disabled = true;
+      refreshBtn.innerHTML = `
+        <span class="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
+        Yenileniyor
+      `;
+
+      try {
+        await loadDocuments(true);
+        toast.success('Dosya listesi guncellendi.');
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = original;
+      }
+    });
 
     openFolderBtn?.addEventListener('click', async () => {
       if (!selectedFirmaNo) return;
@@ -459,5 +489,5 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
   // Transition support
   document.addEventListener('astro:page-load', initPage);
   // Cleanup away
-  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
+  document.addEventListener('astro:before-preparation', runCleanups);
 </script>
