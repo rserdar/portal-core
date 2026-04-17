@@ -14,12 +14,6 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button id="full-sync-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold">
-            Sheets'ten Tümünü Çek
-          </button>
-          <button id="sync-master-btn" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-bold">
-            Sheets'ten Senkronla
-          </button>
           <button id="refresh-btn" class="px-4 py-2 rounded-xl bg-surface-hover border border-border-main text-sm font-bold">
             Yenile
           </button>
@@ -295,7 +289,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     let res = await api.getMasterData(type);
     if (!res.success && (res.needsHydration || res.error === "KV_PRIMARY_MISS")) {
       setStatus("KV boş. Master data aktarımı başlatılıyor...");
-      const syncRes = await api.bulkSyncMaster();
+      const syncRes = await api.bulkSync({ scope: ["master"] });
       if (!syncRes.success) {
         setStatus("Master sync başarısız: " + (syncRes.error || "Bilinmeyen hata"), "error");
         return;
@@ -362,40 +356,6 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
 
     addEv("refresh-btn", "click", () => loadDataset(currentType));
 
-    addEv("sync-master-btn", "click", async () => {
-      setStatus("Sheets → KV master sync başlatıldı...");
-      toast.info("Master Veri senkronizasyonu başlatıldı (Standartlar, Denetçiler, Danışmanlar...)");
-      const res = await api.bulkSyncMaster();
-      if (!res.success) {
-        setStatus("Master sync başarısız: " + (res.error || "Bilinmeyen hata"), "error");
-        toast.error("Master sync başarısız: " + (res.error || "Bilinmeyen hata"));
-        return;
-      }
-      await loadDataset(currentType);
-      setStatus("Master sync tamamlandı.", "success");
-      toast.success("Master Veri başarıyla senkronize edildi!");
-    });
-
-    addEv("full-sync-btn", "click", async () => {
-      setStatus("Sheets → KV tam senkron başlatıldı...");
-      toast.info("Tüm sistem senkronizasyonu başlatıldı (Sertifikalar, Firmalar, Master...). Lütfen bekleyin...");
-      const coreRes = await api.bulkSync();
-      if (!coreRes.success) {
-        setStatus("Core sync başarısız: " + (coreRes.error || "Bilinmeyen hata"), "error");
-        toast.error("Sistem senkronizasyonu başarısız: " + (coreRes.error || "Bilinmeyen hata"));
-        return;
-      }
-      const masterRes = await api.bulkSyncMaster();
-      if (!masterRes.success) {
-        setStatus("Master sync başarısız: " + (masterRes.error || "Bilinmeyen hata"), "error");
-        toast.error("Master veri senkronizasyonu başarısız oldu.");
-        return;
-      }
-      await loadDataset(currentType);
-      setStatus("Sheets → KV tam senkron tamamlandı.", "success");
-      toast.success("Tüm sistem verileri başarıyla senkronize edildi!");
-    });
-
     addEv("ops-sync-btn", "click", async () => {
       const scopes = getSelectedScopes();
       if (!scopes.length) {
@@ -418,8 +378,8 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
           if (scope === "master") {
             setBackupStatus("Ana veriler çekiliyor...", "info");
             toast.info("Master veri senkronizasyonu başlatıldı...");
-            const res = await api.bulkSyncMaster();
-            if (!res.success) throw new Error("Master veri senkronizasyonu başarısız.");
+            const res = await api.bulkSync({ scope: ["master"] });
+            if (!res.success) throw new Error("Master veri senkronizasyonu başarısız: " + (res.error || "Bilinmeyen hata"));
             const checkbox = document.querySelector(`input[name="sync-scope"][value="master"]`) as HTMLInputElement | null;
             if (checkbox) checkbox.checked = false;
             toast.success("Master veriler başarıyla güncellendi.");

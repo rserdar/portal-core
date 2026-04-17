@@ -1340,83 +1340,61 @@ export default {
         const scope = Array.isArray(params?.scope) ? params.scope : [];
         if (!payload || !scope.length) return jsonResponse({ success: false, error: "INVALID_IMPORT_PAYLOAD" }, 400);
         const ws = [];
+        const stats = {};
+
         if (scope.includes("companies") && Array.isArray(payload.companies)) {
+          const companies = payload.companies.map(c => createCanonicalCompany(c)).filter(c => getCompanyId(c));
           const searchIdx = {};
-          payload.companies.forEach(c => {
-            const cid = getCompanyId(c);
-            if (!cid) return;
-            searchIdx[cid] = createSearchEntry(c);
-            ws.push(env.DB.put(`cache:company:${cid}`, JSON.stringify(c), { expirationTtl: CACHE_TTL }));
-          });
+          companies.forEach(c => { const cid = getCompanyId(c); if (cid) searchIdx[cid] = createSearchEntry(c); });
+          const nextId = companies.reduce((h, c) => Math.max(h, parseInt(getCompanyId(c)) || 0), 0) + 1;
           ws.push(env.DB.put(indexKeys.companySearch, JSON.stringify(searchIdx), { expirationTtl: CACHE_TTL }));
-          ws.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(payload.companies), { expirationTtl: CACHE_TTL }));
-          const companyNextId = payload.companies.reduce((h, c) => Math.max(h, parseInt(getCompanyId(c)) || 0), 0) + 1;
-          ws.push(env.DB.put(indexKeys.companyNextId, String(companyNextId), { expirationTtl: CACHE_TTL }));
+          ws.push(env.DB.put(indexKeys.companyNextId, String(nextId), { expirationTtl: CACHE_TTL }));
+          ws.push(env.DB.put(indexKeys.fullCompanies, JSON.stringify(companies), { expirationTtl: CACHE_TTL }));
+          stats.companies = companies.length;
         }
+
         if (scope.includes("certificates") && Array.isArray(payload.certificates)) {
+          const certs = payload.certificates.map(c => createCanonicalCertificate(c)).filter(c => getCertificateId(c));
+          const certById = buildCertificatesById(certs);
+          const dedupedCerts = Object.values(certById);
           const summaryIdx = {};
-          const certsByFirma = {};
-          payload.certificates.forEach(c => {
-            const cid = getCertificateId(c);
-            if (!cid) return;
-            summaryIdx[cid] = createCertificateSummary(c);
-            ws.push(env.DB.put(`cache:getCertificateById:${stableStringify({ id: cid })}`, JSON.stringify(c), { expirationTtl: CACHE_TTL }));
-            const fId = getCertificateFirmaId(c);
-            if (fId) { if (!certsByFirma[fId]) certsByFirma[fId] = []; certsByFirma[fId].push(c); }
-          });
-          Object.entries(certsByFirma).forEach(([fId, fCerts]) => {
-            ws.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(fCerts), { expirationTtl: CACHE_TTL }));
-          });
-          const certNextId = payload.certificates.reduce((h, c) => Math.max(h, parseInt(getCertificateId(c)) || 0), 0) + 1;
-          const recentIds = sortCertificatesByIdDesc(payload.certificates).slice(0, 50).map(c => getCertificateId(c));
+          dedupedCerts.forEach(c => { const cid = getCertificateId(c); if (cid) summaryIdx[cid] = createCertificateSummary(c); });
+          const nextId = dedupedCerts.reduce((h, c) => Math.max(h, parseInt(getCertificateId(c)) || 0), 0) + 1;
+          const recentIds = sortCertificatesByIdDesc(dedupedCerts).slice(0, 50).map(c => getCertificateId(c));
           ws.push(env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIdx), { expirationTtl: CACHE_TTL }));
-          ws.push(env.DB.put(indexKeys.certificateNextId, String(certNextId), { expirationTtl: CACHE_TTL }));
+          ws.push(env.DB.put(indexKeys.certificateNextId, String(nextId), { expirationTtl: CACHE_TTL }));
           ws.push(env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }));
-          ws.push(env.DB.put(indexKeys.fullCertificates, JSON.stringify(payload.certificates), { expirationTtl: CACHE_TTL }));
+          ws.push(env.DB.put(indexKeys.fullCertificates, JSON.stringify(dedupedCerts), { expirationTtl: CACHE_TTL }));
+          stats.certs = dedupedCerts.length;
         }
+
         if (scope.includes("audits") && Array.isArray(payload.audits)) {
-          const auditsByFirma = {};
-          payload.audits.forEach(a => {
-            const aid = getAuditId(a);
-            if (aid) ws.push(env.DB.put(`cache:getAuditById:${stableStringify({ id: aid })}`, JSON.stringify(a), { expirationTtl: CACHE_TTL }));
-            const fId = getAuditFirmaId(a);
-            if (fId) { if (!auditsByFirma[fId]) auditsByFirma[fId] = []; auditsByFirma[fId].push(a); }
-          });
-          Object.entries(auditsByFirma).forEach(([fId, as]) => {
-            ws.push(env.DB.put(`cache:getAuditsByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(as), { expirationTtl: CACHE_TTL }));
-          });
-          ws.push(env.DB.put(indexKeys.fullAudits, JSON.stringify(payload.audits), { expirationTtl: CACHE_TTL }));
+          const audits = payload.audits.map(a => createCanonicalAuditRow(a));
+          const nextId = audits.reduce((h, a) => Math.max(h, parseInt(getAuditId(a)) || 0), 0) + 1;
+          ws.push(env.DB.put(indexKeys.auditNextId, String(nextId), { expirationTtl: CACHE_TTL }));
+          ws.push(env.DB.put(indexKeys.fullAudits, JSON.stringify(audits), { expirationTtl: CACHE_TTL }));
+          stats.audits = audits.length;
         }
+
         if (scope.includes("tests") && Array.isArray(payload.tests)) {
-          const testsByFirma = {};
-          payload.tests.forEach(t => {
-            const tid = getTestId(t);
-            if (tid) ws.push(env.DB.put(`cache:getTestById:${stableStringify({ id: tid })}`, JSON.stringify(t), { expirationTtl: CACHE_TTL }));
-            const fId = getTestFirmaId(t);
-            if (fId) { if (!testsByFirma[fId]) testsByFirma[fId] = []; testsByFirma[fId].push(t); }
-          });
-          Object.entries(testsByFirma).forEach(([fId, ts]) => {
-            ws.push(env.DB.put(`cache:getTestsByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(ts), { expirationTtl: CACHE_TTL }));
-          });
-          ws.push(env.DB.put(indexKeys.fullTests, JSON.stringify(payload.tests), { expirationTtl: CACHE_TTL }));
+          const tests = payload.tests.map(t => createCanonicalTestRow(t));
+          const nextId = tests.reduce((h, t) => Math.max(h, parseInt(getTestId(t)) || 0), 0) + 1;
+          ws.push(env.DB.put(indexKeys.testNextId, String(nextId), { expirationTtl: CACHE_TTL }));
+          ws.push(env.DB.put(indexKeys.fullTests, JSON.stringify(tests), { expirationTtl: CACHE_TTL }));
+          stats.tests = tests.length;
         }
+
         if (scope.includes("proformas") && Array.isArray(payload.proformas)) {
-          const proformasByFirma = {};
-          payload.proformas.forEach(pr => {
-            const pid = getProformaId(pr);
-            if (pid) ws.push(env.DB.put(`cache:getProformaById:${stableStringify({ id: pid })}`, JSON.stringify(pr), { expirationTtl: CACHE_TTL }));
-            const fId = getProformaFirmaId(pr);
-            if (fId) { if (!proformasByFirma[fId]) proformasByFirma[fId] = []; proformasByFirma[fId].push(pr); }
-          });
-          Object.entries(proformasByFirma).forEach(([fId, prs]) => {
-            ws.push(env.DB.put(`cache:getProformasByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(prs), { expirationTtl: CACHE_TTL }));
-          });
-          ws.push(env.DB.put(indexKeys.fullProformas, JSON.stringify(payload.proformas), { expirationTtl: CACHE_TTL }));
+          const proformas = payload.proformas.map(p => createCanonicalProformaRow(p));
+          const nextId = proformas.reduce((h, p) => Math.max(h, parseInt(getProformaId(p)) || 0), 0) + 1;
+          ws.push(env.DB.put(indexKeys.proformaNextId, String(nextId), { expirationTtl: CACHE_TTL }));
+          ws.push(env.DB.put(indexKeys.fullProformas, JSON.stringify(proformas), { expirationTtl: CACHE_TTL }));
+          stats.proformas = proformas.length;
         }
 
         for (let i = 0; i < ws.length; i += 50) await Promise.all(ws.slice(i, i + 50));
         ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse({ success: true, message: "Import Successful" });
+        return jsonResponse({ success: true, message: "Import Successful", stats });
       },
       syncCheck: async (params, ctx, env) => {
         // Worker + KV sağlığını doğrular — GAS'a gitmez, kota tüketmez
