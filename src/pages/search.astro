@@ -173,6 +173,13 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]';
         if (textEl) textEl.textContent = 'HAZIR';
       }
+
+      // Sync status degisince loader/empty-state de guncellenmeli.
+      // Ancak veri varken her status degisiminde tam listeyi yeniden cizdirmiyoruz.
+      const hasData = Array.isArray($companies.get()) && $companies.get().length > 0;
+      if (!hasData || status !== 'syncing') {
+        refreshSearchView();
+      }
     });
     registerCleanup(unsubSync);
 
@@ -220,10 +227,10 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
   function mapCompany(company: any) {
     // Worker search index uses: id, nickname, unvan, city, kapsam, scope
-    const id = pickField(company, ['id', 'ID', 'Firma No', 'firmaNo']);
-    const nickname = pickField(company, ['nickname', 'nick', 'Markası', 'Marka Adı', 'Firma Adı', 'Nickname'], '-');
-    const unvan = pickField(company, ['unvan', 'Unvan', 'UNVAN'], '-');
-    const city = pickField(company, ['city', 'sehir', 'şehir', 'il', 'İl'], '-');
+    const id = pickField(company, ['id', 'ID', 'Firma No', 'FirmaNo', 'firmaNo', 'firma_no', 'no']);
+    const nickname = pickField(company, ['nickname', 'Nickname', 'nick', 'Nick', 'FirmaAdi', 'Firma Adı', 'Markası', 'Marka Adı'], '-');
+    const unvan = pickField(company, ['unvan', 'Unvan', 'UNVAN', 'firmaUnvan', 'firma_unvan'], '-');
+    const city = pickField(company, ['city', 'City', 'sehir', 'şehir', 'il', 'İl', 'Il', 'Şehir', 'Sehir'], '-');
     const searchStr = normalize(`${unvan} ${nickname} ${id}`);
     return { id, unvan, nickname, city, searchStr };
   }

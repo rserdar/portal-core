@@ -1277,6 +1277,7 @@ export default {
           const auditNextId = canonicalAudits.reduce((h, a) => Math.max(h, parseInt(getAuditId(a)) || 0), 0) + 1;
           writes.push(env.DB.put(indexKeys.auditNextId, String(auditNextId), { expirationTtl: CACHE_TTL }));
           writes.push(env.DB.put(indexKeys.fullAudits, JSON.stringify(canonicalAudits), { expirationTtl: CACHE_TTL }));
+          writes.push(env.DB.delete("cache:getAudits:{}"));
           stats.audits = canonicalAudits.length;
         }
 
@@ -1310,6 +1311,7 @@ export default {
             if (aid) writes.push(env.DB.put(`cache:getAuditorById:${stableStringify({ id: aid })}`, JSON.stringify(a), { expirationTtl: CACHE_TTL }));
           });
           writes.push(env.DB.put(`cache:getConsultants:{}`, JSON.stringify(consultants), { expirationTtl: CACHE_TTL }));
+          writes.push(env.DB.delete("cache:getMasterData:{}"));
         }
 
         for (let i = 0; i < writes.length; i += 50) {
@@ -1695,6 +1697,11 @@ export default {
            return jsonResponse({ success: true, data: rebuilt, rebuiltFromIndex: true });
         }
         return jsonResponse({ success: true, data: [] });
+      },
+      getTests: async (p, ctx, env) => {
+        const raw = await env.DB.get(indexKeys.fullTests);
+        const data = raw ? JSON.parse(raw) : [];
+        return jsonResponse({ success: true, data });
       },
       getAuditsByFirmaId: async (p, ctx, env) => {
         const id = String(p?.firmaId || "").trim();

@@ -929,13 +929,8 @@ import {
   } as const;
 
   // ─── URL Param & Identity ───────────────────────────────────────────────────────
-  const params = new URLSearchParams(location.search);
-  const firmaId = params.get('id') || params.get('firmaId') || '';
+  let firmaId = '';
   let currentCompanyNick = '';
-  
-  if (!firmaId) {
-    console.warn('[Profile] firmaId URL parametresi bulunamadı.');
-  }
 
   let currentCertRows: Array<{ id: string; status: string }> = [];
   const selectedCertIds = new Set<string>();
@@ -945,6 +940,23 @@ import {
   let certLang: 'TR' | 'EN' = 'EN';
   let certSign: 'S' | 'NS' = 'S';
   let certGenerationInFlight = false;
+
+  function readFirmaIdFromUrl() {
+    const params = new URLSearchParams(location.search);
+    return params.get('id') || params.get('firmaId') || '';
+  }
+
+  function resetPageState(nextFirmaId: string) {
+    firmaId = nextFirmaId;
+    currentCompanyNick = '';
+    currentCertRows = [];
+    selectedCertIds.clear();
+    allCertData = [];
+    certCurrentPage = 1;
+    certGenerationInFlight = false;
+    hasFullData = false;
+    hydratedSections.clear();
+  }
 
   const copySuccessMarkup = `
     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -2177,58 +2189,67 @@ import {
 
   // ─── Boot ─────────────────────────────────────────────────────────────────────
 
-  if (firmaId) {
-    function initPage() {
-      // 1. Run previous cleanups if any
-      runCleanups();
+  const initHandler = () => initPage();
 
-      setupOperationLinks();
-      setupCopyButtons();
-      setupCertificateActionBar();
-      
-      const onResize = () => refreshExpandableTexts();
-      const resizeHandler = () => {
-        let resizeTimer = 0;
-        window.clearTimeout(resizeTimer);
-        resizeTimer = window.setTimeout(onResize, 120);
-      };
-      window.addEventListener('resize', resizeHandler);
-      registerCleanup(() => window.removeEventListener('resize', resizeHandler));
+  function initPage() {
+    const nextFirmaId = readFirmaIdFromUrl();
 
-      // Auto-update when companies store changes
-      const unsubCompanies = $companies.subscribe(() => loadCompanyFromStore());
-      registerCleanup(unsubCompanies);
+    // 1. Run previous cleanups if any
+    runCleanups();
+    resetPageState(nextFirmaId);
 
-      // Timeout Guard: Reveal page no matter what after 3.5s
-      const guardTimer = setTimeout(() => {
-        if (!hydratedSections.has('hero')) {
-          console.warn('[Profile] Timeout guard triggered. Force unhiding page.');
-          hideAllSkeletons();
-        }
-      }, 3500);
-      registerCleanup(() => clearTimeout(guardTimer));
-
-      console.log('[Profile] Booting initial sequences...');
-      SyncManager.init().then(() => {
-        console.log('[Profile] Sync ready, refreshing store data...');
-        loadCompanyFromStore();
-      }).catch(e => {
-        console.warn('[Profile] Sync failed but continuing:', e);
-      });
-
-      console.log('[Profile] Loading data components...');
-      loadCompany();
-      loadTests();
-      loadCertificates();
-      console.log('[Profile] Boot sequence fired.');
+    if (!firmaId) {
+      console.warn('[Profile] firmaId URL parametresi bulunamadı.');
+      return;
     }
 
-    // Standard load
-    initPage();
-    // Astro ViewTransitions support
-    document.addEventListener('astro:page-load', initPage);
+    setupOperationLinks();
+    setupCopyButtons();
+    setupCertificateActionBar();
+    
+    const onResize = () => refreshExpandableTexts();
+    const resizeHandler = () => {
+      let resizeTimer = 0;
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(onResize, 120);
+    };
+    window.addEventListener('resize', resizeHandler);
+    registerCleanup(() => window.removeEventListener('resize', resizeHandler));
 
-    // Global cleanup on navigate away
-    document.addEventListener('astro:before-preparation', runCleanups, { once: true });
+    // Auto-update when companies store changes
+    const unsubCompanies = $companies.subscribe(() => loadCompanyFromStore());
+    registerCleanup(unsubCompanies);
+
+    // Timeout Guard: Reveal page no matter what after 3.5s
+    const guardTimer = setTimeout(() => {
+      if (!hydratedSections.has('hero')) {
+        console.warn('[Profile] Timeout guard triggered. Force unhiding page.');
+        hideAllSkeletons();
+      }
+    }, 3500);
+    registerCleanup(() => clearTimeout(guardTimer));
+
+    console.log(`[Profile] Booting initial sequences for firmaId=${firmaId}...`);
+    SyncManager.init().then(() => {
+      console.log('[Profile] Sync ready, refreshing store data...');
+      loadCompanyFromStore();
+    }).catch(e => {
+      console.warn('[Profile] Sync failed but continuing:', e);
+    });
+
+    console.log('[Profile] Loading data components...');
+    loadCompany();
+    loadTests();
+    loadCertificates();
+    console.log('[Profile] Boot sequence fired.');
   }
+
+  // Standard load
+  initPage();
+  // Astro ViewTransitions support
+  document.removeEventListener('astro:page-load', initHandler);
+  document.addEventListener('astro:page-load', initHandler);
+
+  // Global cleanup on navigate away
+  document.addEventListener('astro:before-preparation', runCleanups);
 </script>

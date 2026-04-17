@@ -2,28 +2,477 @@
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 ---
 
-<DashboardLayout title="Testler">
-  <div class="max-w-5xl mx-auto pb-24 space-y-6">
-    <section class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
-      <div class="p-6 sm:p-8 border-b border-border-main space-y-3">
-        <p class="text-[10px] font-black uppercase tracking-[0.24em] text-violet-400">Test Merkezi</p>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Test Akışları Toparlanıyor</h1>
-        <p class="text-sm leading-relaxed text-muted max-w-3xl">Test kayıtları artık ayrı bir ana başlık altında toplanıyor. Listeleme ve yeni kayıt akışları burada büyüyecek.</p>
+<DashboardLayout title="Test Yönetimi">
+  <div class="space-y-6">
+
+    <!-- 🎛️ Filtreleme Paneli -->
+    <div class="bg-surface border border-border-main shadow-xl p-3 sm:p-5 rounded-2xl sm:rounded-3xl space-y-3 sm:space-y-4">
+
+      <!-- Üst satır: Sync + Export + Navigation -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div id="sync-indicator" class="flex items-center gap-2 px-3 py-1.5 bg-surface border border-border-main rounded-lg text-[10px] uppercase tracking-wider text-muted font-bold shrink-0">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]"></span>
+          <span class="hidden xs:inline">Güncel</span>
+        </div>
+        <div class="flex items-center gap-2 ml-auto sm:ml-0">
+          <button id="export-csv-btn" class="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-border-main bg-surface text-[10px] font-black uppercase tracking-wider text-muted hover:text-primary transition-all whitespace-nowrap">
+            CSV
+          </button>
+          <button id="export-excel-btn" class="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-border-main bg-surface text-[10px] font-black uppercase tracking-wider text-muted hover:text-emerald-400 transition-all whitespace-nowrap">
+            Excel
+          </button>
+        </div>
+        
+        <a href="/tests/add" class="ml-auto flex items-center gap-1.5 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-black rounded-xl transition-all shadow-lg shadow-violet-500/20">
+          + Yeni Test
+        </a>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-6 sm:p-8">
-        <a href="/tests/add" class="group rounded-[1.5rem] border border-border-main bg-surface-hover p-5 sm:p-6 hover:border-violet-500/30 hover:bg-surface transition-colors">
-          <p class="text-[10px] font-black uppercase tracking-[0.24em] text-violet-400">Yeni Kayıt</p>
-          <h2 class="mt-2 text-lg font-black tracking-tight text-main">Test Ekle</h2>
-          <p class="mt-3 text-sm leading-relaxed text-muted">Firma bağlamlı ya da doğrudan girişle yeni test akışını başlatır.</p>
-        </a>
+      <!-- Arama + Filtreler -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+        <div class="sm:col-span-3 relative group">
+          <input
+            type="text"
+            id="global-search"
+            placeholder="Firma, Test Adı veya Rapor No ile ara..."
+            class="w-full bg-surface-hover border border-border-main rounded-xl px-10 sm:px-11 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-violet-500/50 outline-none transition-all text-main placeholder:text-muted"
+          />
+          <svg class="absolute left-3 sm:left-3.5 top-3 sm:top-3.5 text-muted group-focus-within:text-violet-400 transition-colors pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
 
-        <div class="rounded-[1.5rem] border border-border-main bg-surface-hover p-5 sm:p-6">
-          <p class="text-[10px] font-black uppercase tracking-[0.24em] text-muted">Yakında</p>
-          <h2 class="mt-2 text-lg font-black tracking-tight text-main">Test Listesi</h2>
-          <p class="mt-3 text-sm leading-relaxed text-muted">Filtrelenebilir test listesi, rapor erişimi ve test bazlı operasyonlar burada yer alacak.</p>
+        <select id="status-filter" class="bg-surface-hover border border-border-main rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 text-main appearance-none cursor-pointer transition-all">
+          <option value="">Tüm Sonuçlar</option>
+          <option value="success">Başarılı</option>
+          <option value="failed">Başarısız</option>
+        </select>
+      </div>
+
+      <!-- Meta + Sayfa boyutu -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 justify-between">
+        <div class="flex flex-wrap items-center gap-2 text-[11px] text-muted">
+          <span id="dataset-summary" class="rounded-lg border border-border-main bg-surface px-2.5 py-1.5 font-bold uppercase tracking-wider text-main">0 kayıt</span>
+          <span id="page-summary" class="rounded-lg border border-border-main bg-surface px-2.5 py-1.5 font-medium">Sayfa 1 / 1</span>
+          <span class="hidden sm:inline rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1.5 font-medium text-violet-300">En yeni üstte</span>
+        </div>
+
+        <label class="inline-flex items-center gap-2 rounded-lg border border-border-main bg-surface px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted">
+          Sayfa
+          <select id="page-size-select" class="rounded-md border border-border-main bg-surface px-1.5 py-0.5 text-[11px] text-main outline-none">
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </label>
+      </div>
+
+    </div>
+
+    <!-- 📊 Veri Tablosu -->
+    <div class="bg-surface border border-border-main shadow-2xl rounded-2xl sm:rounded-3xl overflow-hidden">
+      <div class="w-full overflow-x-auto">
+        <table class="w-full min-w-[480px] border-collapse text-center align-middle">
+          <thead>
+            <tr class="bg-surface-hover border-b border-border-main text-muted">
+              <th class="hidden sm:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Rapor Tarihi</th>
+              <th class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest">Firma Adı</th>
+              <th class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest">Test Adı</th>
+              <th class="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest">Marka</th>
+              <th class="hidden sm:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest">Ürün</th>
+              <th class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle text-[10px] font-bold uppercase tracking-widest">Detay</th>
+            </tr>
+          </thead>
+          <tbody id="test-table-body" class="divide-y divide-border-main">
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Yükleniyor -->
+      <div id="table-loader" class="px-8 py-32 flex flex-col items-center justify-center gap-4">
+        <div class="w-12 h-12 border-2 border-violet-500/20 border-t-violet-500 rounded-full animate-spin"></div>
+        <p class="text-sm text-muted animate-pulse font-medium">Test kayıtları yükleniyor...</p>
+      </div>
+
+      <!-- Boş Durum -->
+      <div id="empty-state" class="hidden px-8 py-32 flex flex-col items-center justify-center gap-4">
+        <div class="w-16 h-16 rounded-2xl bg-surface-hover flex items-center justify-center text-muted">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><path d="M12 12V8"/><path d="M12 16h.01"/></svg>
+        </div>
+        <p class="text-lg font-bold text-muted">Test kaydı bulunamadı</p>
+        <p class="text-xs text-muted">Filtre kriterlerinizi değiştirmeyi deneyin.</p>
+      </div>
+
+      <!-- Pagination -->
+      <div id="pagination-bar" class="hidden border-t border-border-main bg-surface-hover px-3 sm:px-4 py-3 sm:py-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div id="pagination-meta" class="text-xs text-muted">1 - 20 / 0 kayıt</div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="prev-page-btn" class="rounded-lg border border-border-main bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-main transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40">
+              Önceki
+            </button>
+            <div id="page-number-list" class="flex flex-wrap items-center gap-1.5"></div>
+            <button id="next-page-btn" class="rounded-lg border border-border-main bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-main transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40">
+              Sonraki
+            </button>
+          </div>
         </div>
       </div>
-    </section>
+    </div>
   </div>
 </DashboardLayout>
+
+<script>
+  import { api } from '../../lib/api';
+  import { $tests, $syncStatus } from '../../lib/store';
+  import { SyncManager } from '../../lib/sync';
+  import { toast } from '../../lib/toast';
+
+  let filters = { search: '', status: '' };
+  let currentPage = 1;
+  let pageSize = 20;
+  let testsLoaded = false;
+  let cleanupFns: Array<() => void> = [];
+
+  function registerCleanup(fn: () => void) {
+    cleanupFns.push(fn);
+  }
+
+  function runCleanups() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
+  }
+
+  function initPage() {
+    runCleanups();
+
+    const tableBody = document.getElementById('test-table-body');
+    const tableLoader = document.getElementById('table-loader');
+    const emptyState = document.getElementById('empty-state');
+    const globalSearch = document.getElementById('global-search') as HTMLInputElement;
+    const statusFilter = document.getElementById('status-filter') as HTMLSelectElement;
+    const syncIndicator = document.getElementById('sync-indicator');
+    const exportCsvBtn = document.getElementById('export-csv-btn') as HTMLButtonElement;
+    const exportExcelBtn = document.getElementById('export-excel-btn') as HTMLButtonElement;
+    const datasetSummary = document.getElementById('dataset-summary');
+    const pageSummary = document.getElementById('page-summary');
+    const pageSizeSelect = document.getElementById('page-size-select') as HTMLSelectElement;
+    const paginationBar = document.getElementById('pagination-bar');
+    const paginationMeta = document.getElementById('pagination-meta');
+    const pageNumberList = document.getElementById('page-number-list');
+    const prevPageBtn = document.getElementById('prev-page-btn') as HTMLButtonElement;
+    const nextPageBtn = document.getElementById('next-page-btn') as HTMLButtonElement;
+
+    function escHtml(v: any) {
+      return String(v ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function escAttr(v: any) {
+      return escHtml(v).replace(/"/g, "&quot;");
+    }
+
+    function parseDateValue(raw: string) {
+      const value = String(raw || '').trim();
+      if (!value) return null;
+      const trMatch = value.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+      if (trMatch) {
+        const [, dd, mm, yyyy] = trMatch;
+        return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+      }
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function getSortableTimestamp(item: any, originalIndex: number) {
+      const dateVal = item.raporTarihi || item.testBitis || item.testBaslangic;
+      const parsed = parseDateValue(dateVal);
+      if (parsed) return parsed.getTime();
+      return originalIndex;
+    }
+
+    function getVisiblePageNumbers(totalPages: number, page: number) {
+      const pages = new Set<number>([1, totalPages, page - 1, page, page + 1]);
+      return Array.from(pages).filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
+    }
+
+    function updatePagination(totalItems: number) {
+      const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+      const safePage = Math.min(currentPage, totalPages);
+      currentPage = safePage;
+
+      if (pageSummary) pageSummary.textContent = `Sayfa ${safePage} / ${totalPages}`;
+      if (datasetSummary) datasetSummary.textContent = `${totalItems} kayıt`;
+
+      if (!paginationBar || !paginationMeta || !pageNumberList || !prevPageBtn || !nextPageBtn) return;
+
+      if (totalItems === 0) {
+        paginationBar.classList.add('hidden');
+        pageNumberList.innerHTML = '';
+        paginationMeta.textContent = '0 kayıt';
+        return;
+      }
+
+      paginationBar.classList.remove('hidden');
+      const start = (safePage - 1) * pageSize + 1;
+      const end = Math.min(totalItems, safePage * pageSize);
+      paginationMeta.textContent = `${start} - ${end} / ${totalItems} kayıt`;
+
+      prevPageBtn.disabled = safePage <= 1;
+      nextPageBtn.disabled = safePage >= totalPages;
+
+      const pages = getVisiblePageNumbers(totalPages, safePage);
+      pageNumberList.innerHTML = '';
+      pages.forEach((pageNum, index) => {
+        if (index > 0 && pages[index - 1] !== pageNum - 1) {
+          const dots = document.createElement('span');
+          dots.className = 'px-1 text-xs text-muted';
+          dots.textContent = '...';
+          pageNumberList.appendChild(dots);
+        }
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = String(pageNum);
+        btn.className = `min-w-[38px] rounded-xl border px-3 py-2 text-[11px] font-bold transition-colors ${
+          pageNum === safePage
+            ? 'border-violet-500/50 bg-violet-500/15 text-violet-200'
+            : 'border-border-main bg-surface text-main hover:bg-surface-hover'
+        }`;
+        btn.addEventListener('click', () => {
+          currentPage = pageNum;
+          renderTable($tests.get());
+        });
+        pageNumberList.appendChild(btn);
+      });
+    }
+
+    function getFilteredData(data: readonly any[]) {
+      return data.filter((item: any) => {
+        const firma = String(item.firmaAdi || item.nick || "").toLowerCase();
+        const test = String(item.testAdi || "").toLowerCase();
+        const raporNo = String(item.raporNo || "").toLowerCase();
+        const search = filters.search.toLowerCase();
+        
+        const matchSearch = firma.includes(search) || test.includes(search) || raporNo.includes(search);
+        // Status filter logic can be expanded if test records have a clear status field
+        return matchSearch;
+      });
+    }
+
+    function renderTable(data: readonly any[]) {
+      if (!tableBody) return;
+      try {
+        const filtered = getFilteredData(data)
+          .map((item, originalIndex) => ({ item, originalIndex }))
+          .sort((a, b) => getSortableTimestamp(b.item, b.originalIndex) - getSortableTimestamp(a.item, a.originalIndex));
+
+        tableBody.innerHTML = '';
+
+        if (filtered.length === 0) {
+          emptyState?.classList.remove('hidden');
+          updatePagination(0);
+          return;
+        }
+        emptyState?.classList.add('hidden');
+
+        updatePagination(filtered.length);
+        const startIndex = (currentPage - 1) * pageSize;
+        const paged = filtered.slice(startIndex, startIndex + pageSize);
+
+        paged.forEach(({ item }: any) => {
+          const id = item.id || "-";
+          const idAttr = escAttr(id);
+          const raporTarihi = item.raporTarihi || "-";
+          const firma = item.firmaAdi || "-";
+          const firmaNo = item.firmaNo || "-";
+          const testAdi = item.testAdi || "-";
+          const marka = item.marka || "-";
+          const urun = item.urun || "-";
+          const detailRowId = `test-detail-${idAttr}`;
+
+          const tr = document.createElement('tr');
+          tr.className = 'border-b border-border-main hover:bg-surface-hover transition-colors';
+          tr.innerHTML = `
+            <td class="hidden sm:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs text-main whitespace-nowrap">${escHtml(raporTarihi)}</td>
+            <td class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle">
+              <div class="text-sm font-semibold text-main leading-tight">${escHtml(firma)}</div>
+              <div class="mt-0.5 text-[10px] font-mono text-muted hidden sm:block">Firma ID: ${escHtml(firmaNo)}</div>
+            </td>
+            <td class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs font-semibold text-violet-300">${escHtml(testAdi)}</td>
+            <td class="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs text-main">${escHtml(marka)}</td>
+            <td class="hidden sm:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs text-main">${escHtml(urun)}</td>
+            <td class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle">
+              <button
+                type="button"
+                class="detail-toggle-btn inline-flex items-center gap-1.5 rounded-lg border border-border-main bg-surface px-3 py-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-main transition-colors hover:bg-surface-hover"
+                data-target="${detailRowId}"
+              >
+                Detay
+              </button>
+            </td>
+          `;
+          tableBody.appendChild(tr);
+
+          const detailTr = document.createElement('tr');
+          detailTr.id = detailRowId;
+          detailTr.className = 'hidden border-b border-border-main bg-surface-hover';
+          detailTr.innerHTML = `
+            <td colspan="6" class="px-3 sm:px-6 pb-4 pt-1 align-middle">
+              <div class="rounded-xl border border-border-main bg-surface p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="space-y-1">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Test No / ID</p>
+                  <p class="text-xs font-mono text-main">${escHtml(id)}</p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Rapor No</p>
+                  <p class="text-xs text-main font-semibold">${escHtml(item.raporNo || "-")}</p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Ürün Kodu</p>
+                  <p class="text-xs text-main">${escHtml(item.urunKodu || "-")}</p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Lot / Seri No</p>
+                  <p class="text-xs text-main">${escHtml(item.lot || "-")}</p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Ürün Kabul</p>
+                  <p class="text-xs text-main">${escHtml(item.urunKabul || "-")} ${escHtml(item.kabulSaat || "")}</p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Test Dönemi</p>
+                  <p class="text-xs text-main">${escHtml(item.testBaslangic || "-")} — ${escHtml(item.testBitis || "-")}</p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Numune Sayısı</p>
+                  <p class="text-xs text-main">${escHtml(item.numuneSayisi || "-")}</p>
+                </div>
+                <div class="col-span-2 md:col-span-4 pt-2 border-t border-border-main mt-1">
+                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Ürün Bilgisi / Detay</p>
+                  <p class="text-xs text-muted leading-relaxed">${escHtml(item.urunBilgi || "-")} ${escHtml(item.detay || "")}</p>
+                </div>
+              </div>
+            </td>
+          `;
+          tableBody.appendChild(detailTr);
+        });
+
+        attachTableActions();
+      } catch (error) {
+        console.error('[tests] renderTable failed:', error);
+      }
+    }
+
+    function attachTableActions() {
+      document.querySelectorAll('.detail-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const btnEl = e.currentTarget as HTMLElement;
+          const targetId = btnEl.dataset.target;
+          if (!targetId) return;
+          const targetRow = document.getElementById(targetId);
+          if (!targetRow) return;
+          const isHidden = targetRow.classList.contains('hidden');
+          targetRow.classList.toggle('hidden');
+          btnEl.textContent = isHidden ? 'Kapat' : 'Detay';
+        });
+      });
+    }
+
+    const unsubTests = $tests.subscribe(data => {
+      tableLoader?.classList.add('hidden');
+      renderTable(data || []);
+    });
+    registerCleanup(unsubTests);
+
+    const unsubSync = $syncStatus.subscribe(status => {
+      if (!syncIndicator) return;
+      const dot = syncIndicator.querySelector('span');
+      const text = syncIndicator.lastChild;
+      if (status === 'syncing') {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
+        if (text) text.textContent = ' GÜNCELLENİYOR';
+      } else {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]';
+        if (text) text.textContent = ' GÜNCEL';
+      }
+    });
+    registerCleanup(unsubSync);
+
+    globalSearch?.addEventListener('input', (e) => {
+      filters.search = (e.target as HTMLInputElement).value;
+      currentPage = 1;
+      renderTable($tests.get());
+    });
+
+    pageSizeSelect?.addEventListener('change', (e) => {
+      pageSize = Number((e.target as HTMLSelectElement).value) || 20;
+      currentPage = 1;
+      renderTable($tests.get());
+    });
+
+    prevPageBtn?.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable($tests.get());
+      }
+    });
+
+    nextPageBtn?.addEventListener('click', () => {
+      currentPage++;
+      renderTable($tests.get());
+    });
+
+    // --- Export Logic ---
+    function getExportRows() {
+      return getFilteredData($tests.get()).map(t => ({
+        id: t.id,
+        raporTarihi: t.raporTarihi,
+        firma: t.firmaAdi,
+        test: t.testAdi,
+        marka: t.marka,
+        urun: t.urun,
+        raporNo: t.raporNo,
+        lot: t.lot
+      }));
+    }
+
+    function downloadFile(filename: string, content: string, typeSnapshot: string) {
+      const blob = new Blob([content], { type: typeSnapshot });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    exportCsvBtn.onclick = () => {
+      const rows = getExportRows();
+      const headers = ['ID', 'Tarih', 'Firma', 'Test', 'Marka', 'Ürün', 'Rapor No', 'Lot'];
+      const csv = [headers.join(','), ...rows.map(r => Object.values(r).map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\n');
+      downloadFile(`Testler_${new Date().toISOString().slice(0,10)}.csv`, '\uFEFF' + csv, 'text/csv;charset=utf-8;');
+    };
+
+    exportExcelBtn.onclick = () => {
+      const rows = getExportRows();
+      const tableHtml = `<table><thead><tr>${['ID', 'Tarih', 'Firma', 'Test', 'Marka', 'Ürün', 'Rapor No', 'Lot'].map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${Object.values(r).map(v => `<td>${v}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+      const html = `<html><head><meta charset="utf-8" /></head><body>${tableHtml}</body></html>`;
+      downloadFile(`Testler_${new Date().toISOString().slice(0,10)}.xls`, html, 'application/vnd.ms-excel;charset=utf-8;');
+    };
+
+    async function boot() {
+      await SyncManager.init();
+      if ($tests.get().length === 0) {
+        const res = await api.call('getTests');
+        if (res.success) $tests.set(res.data);
+      }
+    }
+
+    void boot();
+  }
+
+  initPage();
+  document.addEventListener('astro:page-load', initPage);
+  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
+</script>

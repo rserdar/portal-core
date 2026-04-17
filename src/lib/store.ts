@@ -13,6 +13,9 @@ export const $companies = atom<any[]>([]);
 // Sertifika Summary Listesi
 export const $certificates = atom<any[]>([]);
 
+// Test Listesi
+export const $tests = atom<any[]>([]);
+
 // Dashboard Aggregated Stats
 export const $dashboardStats = atom<any>(null);
 

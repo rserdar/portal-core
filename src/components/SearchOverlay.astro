@@ -101,6 +101,13 @@ import { Icon } from "astro-icon/components";
   let companies: any[] = [];
   let renderedResults: any[] = [];
   let activeIndex = -1;
+  let boundInput: ((e: Event) => void) | null = null;
+  let boundCloseClick: (() => void) | null = null;
+  let boundBackdropClick: (() => void) | null = null;
+  let boundDialogClose: (() => void) | null = null;
+  let boundHitsClick: ((e: Event) => void) | null = null;
+  let openButtons: Element[] = [];
+  let boundOpenSearch: (() => void) | null = null;
 
   // Search Logic
   function normalizeText(value: string): string {
@@ -126,10 +133,10 @@ import { Icon } from "astro-icon/components";
   }
 
   function buildCompanyModel(company: any) {
-    const idValue = pickField(company, ["id", "ID", "firmaNo", "firma_no", "Firma No", "no"], "");
+    const idValue = pickField(company, ["id", "ID", "Firma No", "FirmaNo", "firmaNo", "firma_no", "no"], "");
     const fullName = pickField(company, ["unvan", "Unvan", "UNVAN", "firmaUnvan", "firma_unvan"], "Bilinmeyen Firma");
-    const nicknameRaw = pickField(company, ["nickname", "nickName", "nick", "kisaAd", "Firma Adı", "firmaAdi"], "");
-    const city = pickField(company, ["city", "City", "il", "İl", "sehir", "şehir"], "Şehir Bilgisi Yok");
+    const nicknameRaw = pickField(company, ["nickname", "Nickname", "nickName", "nick", "Nick", "kisaAd", "Firma Adı", "FirmaAdi", "firmaAdi"], "");
+    const city = pickField(company, ["city", "City", "il", "İl", "Il", "sehir", "şehir", "Şehir", "Sehir"], "Şehir Bilgisi Yok");
     
     let nickname = nicknameRaw;
     if (!nickname) {
@@ -155,6 +162,7 @@ import { Icon } from "astro-icon/components";
 
     const scored = companies.map((company) => {
       const model = buildCompanyModel(company);
+      if (!model.idValue) return null;
       const searchStr = normalizeText(`${model.nickname} ${model.fullName} ${model.city} ${model.idValue}`);
 
       if (hasAtOperator) {
@@ -222,6 +230,7 @@ import { Icon } from "astro-icon/components";
       li.setAttribute("role", "option");
       li.setAttribute("aria-selected", "false");
       li.setAttribute("data-index", index.toString());
+      li.setAttribute("data-url", result.url);
       
       // Pure Tailwind Classes for the li
       li.className = "flex items-center gap-4 p-4 rounded-xl cursor-pointer border border-border-main bg-surface transition-all duration-200 group aria-selected:bg-primary/10 aria-selected:border-primary/50 aria-selected:shadow-lg aria-selected:shadow-primary/5 hover:bg-surface-hover hover:border-border-main/50";
@@ -253,10 +262,6 @@ import { Icon } from "astro-icon/components";
       fragment.append(li);
       
       li.addEventListener("mouseenter", () => setActiveIndex(index));
-      li.addEventListener("click", () => {
-        closeSearch();
-        navigate(result.url);
-      });
     });
     
     hitsEl.replaceChildren(fragment);
@@ -289,16 +294,47 @@ import { Icon } from "astro-icon/components";
     requestAnimationFrame(() => input?.focus());
   }
 
+  function resetSearchState() {
+    renderedResults = [];
+    activeIndex = -1;
+    if (input) input.value = "";
+    initialEl?.classList.remove("hidden");
+    hitsEl?.classList.add("hidden");
+    loadingEl?.classList.add("hidden");
+    noResultsEl?.classList.add("hidden");
+    if (hitsEl) hitsEl.innerHTML = "";
+  }
+
   function closeSearch() {
     dialog?.close();
     document.body.style.overflow = "";
     document.documentElement.style.overflow = "";
+    resetSearchState();
   }
 
   function cleanup() {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
     if (boundOnKey) document.removeEventListener("keydown", boundOnKey);
     if (unsubCompanies) unsubCompanies();
+    if (input && boundInput) input.removeEventListener("input", boundInput);
+    if (closeBtn && boundCloseClick) closeBtn.removeEventListener("click", boundCloseClick);
+    if (backdropEl && boundBackdropClick) backdropEl.removeEventListener("click", boundBackdropClick);
+    if (dialog && boundDialogClose) dialog.removeEventListener("close", boundDialogClose);
+    if (hitsEl && boundHitsClick) hitsEl.removeEventListener("click", boundHitsClick);
+    if (boundOpenSearch && openButtons.length) {
+      openButtons.forEach((button) => button.removeEventListener("click", boundOpenSearch!));
+    }
+    openButtons = [];
     boundOnKey = null;
+    boundInput = null;
+    boundCloseClick = null;
+    boundBackdropClick = null;
+    boundDialogClose = null;
+    boundHitsClick = null;
+    boundOpenSearch = null;
     unsubCompanies = null;
   }
 
@@ -323,7 +359,7 @@ import { Icon } from "astro-icon/components";
       }
     });
 
-    input.addEventListener("input", (e) => {
+    boundInput = (e: Event) => {
       if (debounceTimer) clearTimeout(debounceTimer);
       const val = (e.target as HTMLInputElement).value;
 
@@ -343,7 +379,18 @@ import { Icon } from "astro-icon/components";
           renderResults(filterCompanies(val));
         }
       }, 150);
-    });
+    };
+    input.addEventListener("input", boundInput);
+
+    boundHitsClick = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      const item = target?.closest('li[data-url]') as HTMLElement | null;
+      const url = item?.dataset.url;
+      if (!url) return;
+      closeSearch();
+      navigate(url);
+    };
+    hitsEl?.addEventListener("click", boundHitsClick);
 
     boundOnKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -356,22 +403,30 @@ import { Icon } from "astro-icon/components";
       if (e.key === "ArrowDown") { e.preventDefault(); setActiveIndex(activeIndex + 1); }
       if (e.key === "ArrowUp") { e.preventDefault(); setActiveIndex(activeIndex - 1); }
       if (e.key === "Enter" && activeIndex >= 0) {
+        const activeItem = hitsEl?.querySelector(`li[data-index="${activeIndex}"]`) as HTMLElement | null;
+        const targetUrl = activeItem?.dataset.url || renderedResults[activeIndex]?.url;
+        if (!targetUrl) return;
         closeSearch();
-        navigate(renderedResults[activeIndex].url);
+        navigate(targetUrl);
       }
     };
 
     document.addEventListener("keydown", boundOnKey);
 
-    document.querySelectorAll("[data-search-open], #search-open-btn")
-      .forEach(b => b.addEventListener("click", openSearch));
-    closeBtn?.addEventListener("click", closeSearch);
-    backdropEl?.addEventListener("click", closeSearch);
+    boundOpenSearch = openSearch;
+    openButtons = Array.from(document.querySelectorAll("[data-search-open], #search-open-btn"));
+    openButtons.forEach(b => b.addEventListener("click", boundOpenSearch!));
 
-    dialog.addEventListener("close", () => {
+    boundCloseClick = closeSearch;
+    boundBackdropClick = closeSearch;
+    closeBtn?.addEventListener("click", boundCloseClick);
+    backdropEl?.addEventListener("click", boundBackdropClick);
+
+    boundDialogClose = () => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
-    });
+    };
+    dialog.addEventListener("close", boundDialogClose);
   }
 
   document.addEventListener("astro:page-load", init);

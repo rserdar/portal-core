@@ -207,6 +207,7 @@ export const api = {
     }
     return result;
   },
+  async getTests() { return this.call("getTests"); },
   async getAuditsByFirmaId(firmaId: string | number) { 
     const result = await this.call("getAuditsByFirmaId", { firmaId });
     return result; 
