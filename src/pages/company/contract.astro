@@ -59,7 +59,10 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
           </div>
           <div>
             <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Telefon / Faks</p>
-            <p id="contract-preview-phones" class="font-bold text-sky-300 truncate">—</p>
+            <div class="flex flex-col gap-0.5">
+              <p id="contract-preview-tel" class="font-bold text-sky-300 truncate text-[13px]">—</p>
+              <p id="contract-preview-faks" class="font-bold text-sky-300/70 truncate text-[11px]">—</p>
+            </div>
           </div>
         </div>
         
@@ -178,7 +181,8 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
     setText('contract-preview-tax', [context.vergiD, context.vergiN].filter(Boolean).join(' / '));
     setText('contract-preview-auth', [context.yetkiliAdi, context.yetkiliUnvani].filter(Boolean).join(' / '));
-    setText('contract-preview-phones', [context.tel, context.faks].filter(Boolean).join(' / '));
+    setText('contract-preview-tel', context.tel ? `Tel: ${context.tel}` : '');
+    setText('contract-preview-faks', context.faks ? `Faks: ${context.faks}` : '');
 
     document.getElementById('contract-generate')?.addEventListener('click', generateContract);
     document.getElementById('contract-clear')?.addEventListener('click', () => {
