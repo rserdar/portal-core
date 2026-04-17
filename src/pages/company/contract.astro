@@ -111,6 +111,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
     try {
       const payload = {
+        id: firmaId,
         ...activeContext,
         contractDate: dateInput.value.split('-').reverse().join('.'),
         contractPrice: priceInput.value,

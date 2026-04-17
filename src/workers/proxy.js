@@ -1817,6 +1817,16 @@ export default {
           return jsonResponse({ success: false, error: e.message }, 500);
         }
       },
+      generateContract: async (p, ctx, env) => {
+        const id = String(p?.id || "").trim();
+        if(!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        try {
+          const gasResult = await fetchFromGas(env, { action: "generateContract", params: p });
+          return jsonResponse(gasResult);
+        } catch (e) {
+          return jsonResponse({ success: false, error: e.message }, 500);
+        }
+      },
       addTest: async (p, ctx, env) => {
         const nextId = await loadTestNextId();
         const created = createCanonicalTestRow(p?.testInfo || {}, { id: String(nextId) });

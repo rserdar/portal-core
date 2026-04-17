@@ -323,8 +323,8 @@ export const api = {
     return this.call("generateDraftCertificate", { certificate });
   },
 
-  async generateContract(companyInfo: any) {
-    return this.call("generateContract", { companyInfo });
+  async generateContract(params: any) {
+    return this.call("generateContract", params);
   },
 
   async sendSurveillanceEmail(payload: any) {
