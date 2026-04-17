@@ -413,22 +413,36 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     await loadProformas();
   }
 
-  async function printProforma(id: string) {
+  async function printProforma(id: string, btn?: HTMLButtonElement) {
     const row = currentRows.find((item) => String(item.id || '') === String(id));
     if (!row) {
       toast.error('Yazdirilacak proforma bulunamadi.');
       return;
     }
 
-    const res = await api.generateProforma(id);
-    if (!res.success) {
-      toast.error(res.error || 'Proforma dokumani olusturulamadi.');
-      return;
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
     }
 
-    const url = String((res.data as any)?.url || '');
-    toast.success('Proforma dokumani Google Docs uzerinde olusturuldu.');
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    toast.info('Proforma dokumani hazirlaniyor, lutfen bekleyin...');
+
+    try {
+      const res = await api.generateProforma(id);
+      if (!res.success) {
+        toast.error(res.error || 'Proforma dokumani olusturulamadi.');
+        return;
+      }
+
+      const url = String((res.data as any)?.url || '');
+      toast.success('Proforma dokumani Google Docs uzerinde olusturuldu.');
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
   }
 
   function bindListHandlers() {
@@ -438,7 +452,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
       const editButton = target?.closest('.proforma-edit') as HTMLButtonElement | null;
       const deleteButton = target?.closest('.proforma-delete') as HTMLButtonElement | null;
       if (printButton?.dataset.id) {
-        void printProforma(printButton.dataset.id);
+        void printProforma(printButton.dataset.id, printButton);
         return;
       }
       if (editButton?.dataset.id) {
