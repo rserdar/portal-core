@@ -750,7 +750,34 @@ export default {
       }
     };
     const createCanonicalTestRow = (source, options = {}) => {
-      const input = source && typeof source === "object" ? source : {};
+      const input = Array.isArray(source)
+        ? {
+            ID: source[0] ?? "",
+            firmaAdi: source[1] ?? "",
+            firmaNo: source[2] ?? "",
+            testAdi: source[3] ?? "",
+            marka: source[4] ?? "",
+            urun: source[5] ?? "",
+            urunKodu: source[6] ?? "",
+            urunNo: source[7] ?? "",
+            lot: source[8] ?? "",
+            urunKabul: source[9] ?? "",
+            kabulSaat: source[10] ?? "",
+            testBaslangic: source[11] ?? "",
+            testBitis: source[12] ?? "",
+            raporTarihi: source[13] ?? "",
+            raporNo: source[14] ?? "",
+            numuneSayisi: source[15] ?? "",
+            numuneUT: source[16] ?? "",
+            numuneSKT: source[17] ?? "",
+            urunBilgi: source[18] ?? "",
+            gorsel1: source[19] ?? "",
+            gorsel2: source[20] ?? "",
+            detay: source[21] ?? "",
+          }
+        : source && typeof source === "object"
+          ? source
+          : {};
       const pick = getPicker(input, options.explicit || null);
       const id = String(options.id ?? pick(["ID", "id"]) ?? "").trim();
       return {

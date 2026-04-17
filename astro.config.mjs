@@ -31,13 +31,20 @@ export default defineConfig({
       workbox: {
         // App shell ve statik dosyaları önbelleğe al
         globPatterns: ['**/*.{css,js,html,svg,png,ico,woff,woff2}'],
-        // API çağrıları önbelleklenmez — IndexedDB zaten hallediyor
+        // Sayfa navigasyonlarında son başarılı HTML'i kullan; gerçekten hiç cache yoksa offline fallback'e düş.
         navigateFallback: '/offline',
         navigateFallbackDenylist: [/^\/api\//, /^\/cdn-cgi\//],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkOnly',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages',
+              networkTimeoutSeconds: 3,
+              cacheableResponse: {
+                statuses: [200],
+              },
+            },
           },
           {
             urlPattern: /^\/api\/.*/i,

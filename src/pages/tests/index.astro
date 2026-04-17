@@ -464,7 +464,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     async function boot() {
       await SyncManager.init();
       if ($tests.get().length === 0) {
-        const res = await api.call('getTests');
+        const res = await api.getTests();
         if (res.success) $tests.set(res.data);
       }
     }

@@ -89,6 +89,45 @@ function hasUsableAuditDates(audits: any[]): boolean {
   });
 }
 
+function mapLegacyTestRow(row: any[]): any {
+  const r = Array.isArray(row) ? row : [];
+  return {
+    id: r[0] ?? "",
+    firmaAdi: r[1] ?? "",
+    firmaNo: r[2] ?? "",
+    testAdi: r[3] ?? "",
+    marka: r[4] ?? "",
+    urun: r[5] ?? "",
+    urunKodu: r[6] ?? "",
+    urunNo: r[7] ?? "",
+    lot: r[8] ?? "",
+    urunKabul: r[9] ?? "",
+    kabulSaat: r[10] ?? "",
+    testBaslangic: r[11] ?? "",
+    testBitis: r[12] ?? "",
+    raporTarihi: r[13] ?? "",
+    raporNo: r[14] ?? "",
+    numuneSayisi: r[15] ?? "",
+    numuneUT: r[16] ?? "",
+    numuneSKT: r[17] ?? "",
+    urunBilgi: r[18] ?? "",
+    gorsel1: r[19] ?? "",
+    gorsel2: r[20] ?? "",
+    detay: r[21] ?? "",
+  };
+}
+
+function normalizeTestList(data: any): any[] {
+  if (!Array.isArray(data)) return [];
+  if (data.length === 0) return [];
+
+  if (Array.isArray(data[0])) {
+    return data.map((row) => mapLegacyTestRow(row));
+  }
+
+  return data;
+}
+
 function stableStringify(value: any): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
@@ -207,7 +246,13 @@ export const api = {
     }
     return result;
   },
-  async getTests() { return this.call("getTests"); },
+  async getTests() {
+    let result = await this.call("getTests");
+    if (result.success) {
+      result = { ...result, data: normalizeTestList(result.data) };
+    }
+    return result;
+  },
   async getAuditsByFirmaId(firmaId: string | number) { 
     const result = await this.call("getAuditsByFirmaId", { firmaId });
     return result; 

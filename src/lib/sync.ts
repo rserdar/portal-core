@@ -55,7 +55,7 @@ export const SyncManager = {
           return Promise.all([
             api.call<any[]>('getCompanies'),
             api.call<any[]>('getCertificateSummaries'),
-            api.call<any[]>('getTests'),
+            api.getTests(),
             api.getDashboardSummary()
           ]);
         };
@@ -158,7 +158,7 @@ export const SyncManager = {
         const [compRes, certRes, testRes, dashRes] = await Promise.all([
           api.call<any[]>('getCompanies'),
           api.call<any[]>('getCertificateSummaries'),
-          api.call<any[]>('getTests'),
+          api.getTests(),
           api.getDashboardSummary()
         ]);
         if (!compRes.success || !certRes.success || !testRes.success || !dashRes.success) {
