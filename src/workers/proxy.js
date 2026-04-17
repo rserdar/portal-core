@@ -1135,7 +1135,13 @@ export default {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...body, apiKey: env.API_KEY }),
       });
-      return await res.json();
+      const text = await res.text();
+      if (!res.ok || !text.trimStart().startsWith('{')) {
+        const code = res.status;
+        if (code === 524 || text.includes('524')) throw new Error('GAS_TIMEOUT_524: Google Apps Script yanıt vermedi (süre aşımı). Daha küçük bir kapsam seçin veya GAS scriptini optimize edin.');
+        throw new Error(`GAS_HTTP_ERROR: ${code} — ${text.slice(0, 200)}`);
+      }
+      return JSON.parse(text);
     };
 
     const SyncHandlers = {
@@ -1144,10 +1150,36 @@ export default {
         const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
         const hasScope = (s) => scope.includes(s);
 
-        const fullData = await fetchFromGas(env, { action: "getFullSyncData", params: { ...params, scope } });
-        if (!fullData.success) return jsonResponse(fullData);
+        // Büyük veri setleri için sayfalı GAS okuma (her sayfa ~1500 satır, GAS timeout'u önlemek için)
+        const PAGE_SIZE = 1500;
+        const LARGE_SCOPES = new Set(["certificates", "audits", "tests"]);
+        const d = {};
 
-        const d = fullData.data;
+        for (const s of scope) {
+          if (!LARGE_SCOPES.has(s)) {
+            const res = await fetchFromGas(env, { action: "getFullSyncData", params: { scope: [s] } });
+            if (!res.success) return jsonResponse(res);
+            Object.assign(d, res.data);
+          } else {
+            let offset = 0;
+            let totalCount = null;
+            while (true) {
+              const res = await fetchFromGas(env, { action: "getFullSyncData", params: { scope: [s], offset, limit: PAGE_SIZE } });
+              if (!res.success) return jsonResponse(res);
+              const page = res.data;
+              if (totalCount === null) totalCount = (typeof page.totalCount === 'number') ? page.totalCount : 0;
+              for (const [key, val] of Object.entries(page)) {
+                if (Array.isArray(val)) {
+                  d[key] = d[key] ? d[key].concat(val) : val.slice();
+                } else {
+                  d[key] = val;
+                }
+              }
+              offset += PAGE_SIZE;
+              if (!totalCount || offset >= totalCount) break;
+            }
+          }
+        }
         const stats = {};
         const writes = [];
 

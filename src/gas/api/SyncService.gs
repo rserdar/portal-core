@@ -143,7 +143,7 @@ const SyncService = {
         a1EventId: r[31] || "",
         a2EventId: r[32] || ""
       };
-    }).reverse();
+    });
   },
 
   /**
@@ -171,7 +171,6 @@ const SyncService = {
       }
       if (has("certificates")) {
         data.certificates = BaseService.getDataAsObjects("Sertifika", offset, limit);
-        data.certificateRows = BaseService.getRawData("Sertifika", offset, limit);
         data.totalCount = BaseService.getTotalRows("Sertifika");
       }
       if (has("tests")) {
