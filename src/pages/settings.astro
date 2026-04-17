@@ -223,6 +223,28 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     else backupStatusBox.classList.add("bg-indigo-500/10", "text-indigo-400", "border-indigo-500/30");
   }
 
+  function getScopeLabel(scope: string) {
+    return scope === "companies" ? "Firmalar" :
+           scope === "certificates" ? "Sertifikalar" :
+           scope === "audits" ? "Denetimler" :
+           scope === "tests" ? "Testler" :
+           scope === "proformas" ? "Proformalar" :
+           "Ana Veri";
+  }
+
+  function setButtonBusy(
+    btn: HTMLButtonElement | null,
+    busy: boolean,
+    idleText: string,
+    busyText: string,
+  ) {
+    if (!btn) return;
+    btn.disabled = busy;
+    btn.textContent = busy ? busyText : idleText;
+    btn.classList.toggle("animate-pulse", busy);
+    btn.classList.toggle("opacity-80", busy);
+  }
+
   function downloadJson(filename: string, payload: any) {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -365,15 +387,13 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
       }
 
       const btn = document.getElementById("ops-sync-btn") as HTMLButtonElement | null;
-      if (btn) btn.disabled = true;
+      const idleText = "Seçili Verileri Sheets'ten Çek";
+      setButtonBusy(btn, true, idleText, "Senkronize Ediliyor...");
+      toast.info(`${scopes.map(getScopeLabel).join(", ")} için senkronizasyon başlatıldı...`);
 
       try {
         for (const scope of scopes) {
-          const label = scope === "companies" ? "Firmalar" :
-                        scope === "certificates" ? "Sertifikalar" :
-                        scope === "audits" ? "Denetimler" :
-                        scope === "tests" ? "Testler" :
-                        scope === "proformas" ? "Proformalar" : "Ana Veri";
+          const label = getScopeLabel(scope);
 
           if (scope === "master") {
             setBackupStatus("Ana veriler çekiliyor...", "info");
@@ -403,7 +423,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
         setBackupStatus("Hata: " + err.message, "error");
         toast.error("İşlem sırasında bir hata oluştu: " + err.message);
       } finally {
-        if (btn) btn.disabled = false;
+        setButtonBusy(btn, false, idleText, "Senkronize Ediliyor...");
       }
     });
 
@@ -550,5 +570,5 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   // ViewTransitions support
   document.addEventListener('astro:page-load', initPage);
   // Cleanup away
-  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
+  document.addEventListener('astro:before-preparation', runCleanups);
 </script>

@@ -12,107 +12,93 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 <DashboardLayout title="Denetim Takvimi">
   <div class="space-y-4 sm:space-y-6">
 
-    <!-- Header & Action -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-      <div>
-        <h1 class="text-xl sm:text-2xl font-black text-main tracking-tight">Denetim Takvimi</h1>
-        <p class="text-muted text-xs sm:text-sm mt-0.5">Planlanmış denetimleri ve denetçi atamalarını yönetin.</p>
+    <!-- 🔍 Premium Arama & Filtre Çubuğu -->
+    <div class="bg-surface border border-border-main shadow-lg p-3 sm:p-4 rounded-2xl flex flex-wrap items-center gap-3">
+      <div class="relative flex-1 min-w-[200px]">
+        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input
+          type="search"
+          id="audit-search"
+          placeholder="Firma veya denetçi ara..."
+          autocomplete="off"
+          class="w-full bg-surface-hover border border-border-main rounded-xl pl-10 pr-4 py-2.5 text-main placeholder:text-muted focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm"
+        />
       </div>
-      <a href="/audits/add" class="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold rounded-xl transition-all group shrink-0 whitespace-nowrap">
-        <svg class="group-hover:rotate-90 transition-transform shrink-0" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-        Yeni Denetim
-      </a>
-    </div>
 
-    <!-- Filtreler -->
-    <section class="bg-surface border border-border-main shadow-xl p-3 sm:p-5 rounded-2xl sm:rounded-3xl space-y-3">
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-        <div class="sm:col-span-2 relative group">
-          <input
-            type="text"
-            id="audit-search"
-            placeholder="Firma veya denetçi ara..."
-            class="w-full bg-surface-hover border border-border-main rounded-xl px-10 py-2.5 sm:py-3 text-sm text-main placeholder:text-muted focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
-          />
-          <svg class="absolute left-3 top-2.5 sm:top-3 text-muted group-focus-within:text-indigo-400 transition-colors pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        </div>
-
-        <select id="filter-type" class="bg-surface-hover border border-border-main rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-main outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none cursor-pointer">
-          <option value="">Tüm Denetim Tipleri</option>
-          <option value="Gözetim">Gözetim</option>
-          <option value="Yenileme">Yenileme</option>
-          <option value="İlk Belgelendirme">İlk Belgelendirme</option>
+      <div class="flex items-center gap-2 shrink-0">
+        <select id="filter-type" class="hidden md:block bg-surface-hover border border-border-main rounded-xl px-3 py-2.5 text-xs font-bold text-muted outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer uppercase">
+          <option value="">TÜM DENETİM TİPLERİ</option>
+          <option value="Gözetim">GÖZETİM</option>
+          <option value="Yenileme">YENİLEME</option>
+          <option value="İlk Belgelendirme">İLK BELGELENDİRME</option>
         </select>
 
-        <div class="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-border-main bg-surface-hover">
-          <span class="text-[10px] font-black text-muted uppercase tracking-widest">Toplam:</span>
-          <span id="audit-count" class="text-sm font-black text-main">0</span>
-        </div>
+        <span id="audit-count" class="text-xs font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-lg min-w-[2.75rem] text-center tabular-nums">0</span>
+        
+        <div class="h-8 w-px bg-border-main mx-1 hidden sm:block"></div>
+        
+        <a href="/audits/add" title="Yeni Denetim Ekle" class="w-9 h-9 flex items-center justify-center rounded-lg bg-primary text-white hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        </a>
       </div>
+    </div>
 
-      <div class="flex flex-wrap items-center gap-2 justify-between">
-        <div class="flex flex-wrap items-center gap-2 text-[11px] text-muted">
-          <span id="audit-summary" class="rounded-lg border border-border-main bg-surface px-2.5 py-1.5 font-bold uppercase tracking-wider text-main">0 kayıt</span>
-          <span id="audit-page-summary" class="rounded-lg border border-border-main bg-surface px-2.5 py-1.5 font-medium">Sayfa 1 / 1</span>
-          <span class="hidden sm:inline rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5 font-medium text-emerald-300">En yeni üstte</span>
-        </div>
-        <label class="inline-flex items-center gap-2 rounded-lg border border-border-main bg-surface px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-muted">
-          Sayfa
-          <select id="audit-page-size" class="rounded-md border border-border-main bg-surface px-1.5 py-0.5 text-[11px] text-main outline-none">
-            <option value="20" selected>20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-        </label>
-      </div>
-    </section>
-
-    <!-- Denetim Tablosu -->
-    <div class="bg-surface border border-border-main shadow-2xl rounded-2xl sm:rounded-3xl overflow-hidden">
+    <!-- 📊 Denetim Tablosu Kartı -->
+    <div class="bg-surface border border-border-main shadow-xl rounded-2xl overflow-hidden">
       <div class="w-full overflow-x-auto">
-        <table class="w-full min-w-[360px] border-collapse text-center align-middle">
+        <table class="w-full table-fixed border-collapse">
           <thead>
-            <tr class="bg-surface-hover border-b border-border-main text-muted">
-              <th class="hidden sm:table-cell w-8 sm:w-10 px-3 sm:px-6 py-3 sm:py-4 text-[10px] font-bold uppercase tracking-widest text-center align-middle">
-                <input type="checkbox" id="select-all-audits" class="w-4 h-4 rounded border-gray-700 text-indigo-600 bg-transparent cursor-pointer">
+            <tr class="bg-surface-hover border-b border-border-main">
+              <th class="w-10 px-3 py-3.5 text-center">
+                <input type="checkbox" id="select-all-audits" class="w-4 h-4 rounded border-gray-700 text-primary bg-transparent cursor-pointer focus:ring-offset-0 focus:ring-primary">
               </th>
-              <th class="px-3 sm:px-6 py-3 sm:py-4 text-[10px] font-bold uppercase tracking-widest text-center align-middle">Firma</th>
-              <th class="hidden sm:table-cell px-4 sm:px-6 py-3 sm:py-4 text-[10px] font-bold uppercase tracking-widest text-center align-middle">Standart</th>
-              <th class="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 text-[10px] font-bold uppercase tracking-widest text-center align-middle">Belgelendirme</th>
-              <th class="px-3 sm:px-6 py-3 sm:py-4 text-[10px] font-bold uppercase tracking-widest text-center align-middle">Detay</th>
+              <th class="w-64 px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left">Firma Adı</th>
+              <th class="w-32 pl-6 pr-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left">Standart</th>
+              <th class="w-28 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Denetçi(ler)</th>
+              <th class="w-32 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Aşama 1 Tarihi</th>
+              <th class="w-32 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Aşama 2 Tarihi</th>
+              <th class="w-28 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Denetim Tipi</th>
+              <th class="w-16 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Detay</th>
             </tr>
           </thead>
           <tbody id="audit-table-body" class="divide-y divide-border-main"></tbody>
         </table>
       </div>
 
-      <!-- Loader -->
-      <div id="table-loader" class="px-8 py-24 flex flex-col items-center justify-center gap-4">
-        <div class="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-        <p class="text-sm text-muted animate-pulse font-medium">Güncel denetimler alınıyor...</p>
+      <!-- Durum Mesajları -->
+      <div id="table-loader" class="py-24 flex flex-col items-center justify-center gap-3">
+        <div class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        <p class="text-xs font-bold text-muted tracking-widest uppercase animate-pulse">Takvim Alınıyor</p>
       </div>
 
-      <!-- Boş Durum -->
-      <div id="no-results" class="hidden px-8 py-24 flex flex-col items-center justify-center gap-3">
-        <div class="w-14 h-14 rounded-2xl bg-surface-hover flex items-center justify-center text-muted">
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+      <div id="no-results" class="hidden py-24 flex flex-col items-center justify-center gap-3 text-center px-6">
+        <div class="w-14 h-14 rounded-2xl bg-surface-hover border border-border-main flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
         </div>
-        <p class="text-base font-bold text-muted">Planlanmış denetim bulunamadı.</p>
+        <p class="text-sm font-bold text-muted uppercase tracking-widest">Planlanmış denetim bulunamadı</p>
       </div>
 
-      <!-- Pagination -->
-      <div id="audit-pagination-bar" class="hidden border-t border-border-main bg-surface-hover px-3 sm:px-4 py-3 sm:py-4">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div id="audit-pagination-meta" class="text-xs text-muted">1 - 20 / 0 kayıt</div>
-          <div class="flex flex-wrap items-center gap-1.5">
-            <button id="audit-prev-page" class="rounded-lg border border-border-main bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-main transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40">
-              Önceki
-            </button>
-            <div id="audit-page-number-list" class="flex flex-wrap items-center gap-1.5"></div>
-            <button id="audit-next-page" class="rounded-lg border border-border-main bg-surface px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-main transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40">
-              Sonraki
-            </button>
+      <!-- Sayfalama (Premium Layout) -->
+      <div id="audit-pagination-bar" class="hidden bg-surface-hover border-t border-border-main px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span id="audit-page-summary" class="text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 tabular-nums">1 / 1</span>
+          <div class="flex items-center gap-2 border-l border-border-main pl-3">
+            <span class="text-[10px] font-bold text-muted uppercase tracking-widest hidden sm:inline">Göster:</span>
+            <select id="audit-page-size" class="bg-surface border border-border-main rounded-lg px-2 py-1 text-[11px] font-bold text-main outline-none focus:ring-1 focus:ring-primary/40 transition-all cursor-pointer">
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
           </div>
+        </div>
+        <div class="flex items-center gap-2">
+           <button id="audit-prev-page" title="Önceki Sayfa" class="w-8 h-8 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+           </button>
+           <div id="audit-page-number-list" class="flex items-center gap-1.5"></div>
+           <button id="audit-next-page" title="Sonraki Sayfa" class="w-8 h-8 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+           </button>
         </div>
       </div>
     </div>
@@ -174,70 +160,79 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     return Array.from(pages).filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
   }
 
-  function updatePagination(totalItems: number) {
-    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-    currentPage = Math.min(currentPage, totalPages);
+    function updatePagination(totalItems: number) {
+      const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+      const safePage = Math.min(currentPage, totalPages);
+      currentPage = safePage;
 
-    if (auditSummary) auditSummary.textContent = `${totalItems} kayıt`;
-    if (auditPageSummary) auditPageSummary.textContent = `Sayfa ${currentPage} / ${totalPages}`;
-    if (!auditPaginationBar || !auditPaginationMeta || !auditPageNumberList || !auditPrevPage || !auditNextPage) return;
+      if (auditPageSummary) auditPageSummary.textContent = `${safePage} / ${totalPages}`;
+      if (auditCount) auditCount.textContent = totalItems.toString();
 
-    if (totalItems === 0) {
-      auditPaginationBar.classList.add('hidden');
-      auditPaginationMeta.textContent = '0 kayıt';
-      auditPageNumberList.innerHTML = '';
-      auditPrevPage.disabled = true;
-      auditNextPage.disabled = true;
-      return;
-    }
+      if (!auditPaginationBar || !auditPageNumberList || !auditPrevPage || !auditNextPage) return;
 
-    auditPaginationBar.classList.remove('hidden');
-    const start = (currentPage - 1) * pageSize + 1;
-    const end = Math.min(totalItems, currentPage * pageSize);
-    auditPaginationMeta.textContent = `${start} - ${end} / ${totalItems} kayıt`;
-    auditPrevPage.disabled = currentPage <= 1;
-    auditNextPage.disabled = currentPage >= totalPages;
-
-    const pages = getVisiblePageNumbers(totalPages, currentPage);
-    auditPageNumberList.innerHTML = '';
-    pages.forEach((pageNum, index) => {
-      if (index > 0 && pages[index - 1] !== pageNum - 1) {
-        const dots = document.createElement('span');
-        dots.className = 'px-1 text-xs text-muted';
-        dots.textContent = '...';
-        auditPageNumberList.appendChild(dots);
+      if (totalItems === 0) {
+        auditPaginationBar.classList.add('hidden');
+        auditPageNumberList.innerHTML = '';
+        return;
       }
 
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.textContent = String(pageNum);
-      btn.className = `min-w-[38px] rounded-xl border px-3 py-2 text-[11px] font-bold transition-colors ${
-        pageNum === currentPage
-          ? 'border-indigo-500/50 bg-indigo-500/15 text-indigo-200'
-          : 'border-border-main bg-surface text-main hover:bg-surface-hover'
-      }`;
-      btn.addEventListener('click', () => {
-        currentPage = pageNum;
-        renderTable(allAudits);
-      });
-      auditPageNumberList.appendChild(btn);
-    });
-  }
+      auditPaginationBar.classList.remove('hidden');
+      auditPrevPage.disabled = safePage <= 1;
+      auditNextPage.disabled = safePage >= totalPages;
 
-  function attachTableActions() {
-    document.querySelectorAll('.audit-detail-toggle').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const button = e.currentTarget as HTMLElement;
-        const targetId = button.dataset.target;
-        if (!targetId) return;
-        const row = document.getElementById(targetId);
-        if (!row) return;
-        const isHidden = row.classList.contains('hidden');
-        row.classList.toggle('hidden');
-        button.textContent = isHidden ? 'Kapat' : 'Detay';
+      const pages = getVisiblePageNumbers(totalPages, safePage);
+      auditPageNumberList.innerHTML = '';
+      pages.forEach((pageNum, index) => {
+        if (index > 0 && pages[index - 1] !== pageNum - 1) {
+          const dots = document.createElement('span');
+          dots.className = 'px-1.5 text-xs text-muted';
+          dots.textContent = '…';
+          auditPageNumberList.appendChild(dots);
+        }
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = String(pageNum);
+        btn.className = `w-8 h-8 rounded-lg border text-xs font-black transition-all ${
+          pageNum === currentPage
+            ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
+            : 'border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30'
+        }`;
+        btn.addEventListener('click', () => {
+          currentPage = pageNum;
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          renderTable(allAudits);
+        });
+        auditPageNumberList.appendChild(btn);
       });
-    });
-  }
+    }
+
+    function getInitials(name: string): string {
+      return String(name || '').trim().split(/\s+/).filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
+    }
+
+    function attachTableActions() {
+      document.querySelectorAll('.audit-detail-toggle').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const button = e.currentTarget as HTMLElement;
+          const targetId = button.dataset.target;
+          if (!targetId) return;
+          const row = document.getElementById(targetId);
+          if (!row) return;
+          const isHidden = row.classList.contains('hidden');
+          row.classList.toggle('hidden');
+          
+          // Animate icon rotation instead of wiping it
+          const icon = button.querySelector('svg');
+          if (icon) {
+            icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+          }
+          button.classList.toggle('bg-primary/20', isHidden);
+          button.classList.toggle('text-primary', isHidden);
+          button.classList.toggle('border-primary/30', isHidden);
+        });
+      });
+    }
 
   // 📡 Verileri Yükle
   async function loadAudits() {
@@ -294,39 +289,56 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       const denetimTipi = pickAuditValue(audit, ['denetimTipi', 'denetim'], '-');
       const a1Tarih = pickAuditValue(audit, ['a1Basla', 'a1Tarih'], '-');
       const a2Tarih = pickAuditValue(audit, ['a2Basla', 'a2Tarih'], '-');
-      const denetci1 = pickAuditValue(audit, ['a1Auditor', 'denetci1'], 'Atanmadı');
-      const denetci2 = pickAuditValue(audit, ['a2Auditor', 'denetci2'], 'Atanmadı');
+      const denetci1 = pickAuditValue(audit, ['a1Auditor', 'denetci1'], '');
+      const denetci2 = pickAuditValue(audit, ['a2Auditor', 'denetci2'], '');
       const a1Lead = pickAuditValue(audit, ['a1Lead', 'a1La'], '');
       const a2Lead = pickAuditValue(audit, ['a2Lead', 'a2La'], '');
+      const denetciler = [denetci1, denetci2].filter(v => v && v !== 'Atanmadı').join(', ') || '-';
+      
+      const initials = getInitials(nick);
       const auditId = pickAuditValue(audit, ['id', 'ID'], String(originalIndex + 1));
       const detailRowId = `audit-detail-${auditId}`;
 
       const tr = document.createElement('tr');
-      tr.className = 'hover:bg-surface-hover transition-colors group border-b border-border-main';
+      tr.className = 'hover:bg-surface-hover transition-colors group/row text-[11px]';
 
       tr.innerHTML = `
-        <td class="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 text-center align-middle">
-          <input type="checkbox" class="audit-checkbox w-4 h-4 rounded border-gray-700 text-indigo-600 bg-transparent cursor-pointer" data-id="${auditId}">
+        <td class="px-3 py-4 text-center align-middle">
+          <input type="checkbox" class="audit-checkbox w-4 h-4 rounded border-gray-700 text-primary bg-transparent cursor-pointer focus:ring-offset-0 focus:ring-primary" data-id="${auditId}">
         </td>
-        <td class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle">
-          <div class="text-sm font-bold text-main group-hover:text-indigo-400 transition-colors leading-tight">${nick}</div>
-          <div class="mt-0.5 text-[10px] text-muted font-mono hidden sm:block">ID: ${firmaNo}</div>
+        <td class="px-6 py-3">
+           <div class="flex items-center gap-3">
+             <div class="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+               <span class="text-[10px] font-black text-primary uppercase">${initials}</span>
+             </div>
+             <div class="min-w-0 flex-1">
+               <div class="font-bold text-main truncate uppercase tracking-tight leading-tight">${nick}</div>
+               <div class="text-[9px] text-muted font-bold mt-0.5 leading-tight truncate uppercase tracking-tight italic">ID: ${firmaNo}</div>
+             </div>
+           </div>
         </td>
-        <td class="hidden sm:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle">
-          <span class="text-indigo-400 font-bold text-[11px] uppercase tracking-tight">ISO ${standart}</span>
-        </td>
-        <td class="hidden md:table-cell px-4 sm:px-6 py-3 sm:py-4 text-center align-middle text-xs text-main">${denetimTipi}</td>
-        <td class="px-3 sm:px-6 py-3 sm:py-4 text-center align-middle">
-          <div class="inline-flex items-center gap-2">
+        <td class="pl-6 pr-4 py-4 text-left font-bold text-primary/70">${standart.length > 25 ? standart.slice(0, 25) + '...' : standart}</td>
+        <td class="px-4 py-4 text-center text-muted font-medium">${denetciler.length > 25 ? denetciler.slice(0, 25) + '...' : denetciler}</td>
+        <td class="px-4 py-4 text-center text-muted italic">${a1Tarih}</td>
+        <td class="px-4 py-4 text-center font-bold text-main italic underline underline-offset-2 decoration-primary/30">${a2Tarih}</td>
+        <td class="px-4 py-4 text-center font-black uppercase tracking-widest text-muted">${denetimTipi}</td>
+        <td class="px-3 py-4 text-center">
+          <div class="flex items-center justify-center gap-1.5">
             <a
               href="/audits/add?firmaId=${encodeURIComponent(firmaNo)}&edit=${encodeURIComponent(auditId)}"
-              class="inline-flex items-center rounded-lg sm:rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-indigo-300 transition-colors hover:bg-indigo-500/15"
-            >Düzenle</a>
+              class="w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-emerald-400 hover:bg-emerald-500/10 transition-all duration-300"
+              title="Düzenle"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+            </a>
             <button
               type="button"
-              class="audit-detail-toggle inline-flex items-center rounded-lg sm:rounded-xl border border-border-main bg-surface px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-main transition-colors hover:bg-surface-hover"
+              class="audit-detail-toggle w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-surface-hover transition-all duration-300"
               data-target="${detailRowId}"
-            >Detay</button>
+              title="Detaylar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-300"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
           </div>
         </td>
       `;
@@ -336,8 +348,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       detailTr.id = detailRowId;
       detailTr.className = 'hidden border-b border-border-main bg-surface-hover';
       detailTr.innerHTML = `
-        <td colspan="5" class="px-3 sm:px-6 pb-4 pt-1 align-middle overflow-hidden max-w-0">
-          <div class="rounded-xl border border-border-main bg-surface p-3">
+        <td colspan="8" class="px-3 sm:px-6 pb-4 pt-1 align-middle">
+          <div class="rounded-xl border border-border-main bg-surface p-3 shadow-inner">
             <div class="grid grid-cols-2 xl:grid-cols-4 gap-2">
               <div class="rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
                 <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Aşama 1 Tarihi</div>
