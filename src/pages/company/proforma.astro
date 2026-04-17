@@ -535,13 +535,18 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
       if (definition) link.href = buildOperationHref(definition.href, firmaId);
     });
 
-    document.getElementById('op-company-id')!.textContent = `M${context.firmaId}`;
-    document.getElementById('op-company-nick')!.textContent = context.nick || 'Firma';
-    document.getElementById('op-company-dan')!.textContent = context.danisman || 'Danisman atanamamis';
-    document.getElementById('op-company-unvan')!.textContent = context.unvan || context.nick || `Firma #${context.firmaId}`;
-    document.getElementById('op-company-address')!.textContent = [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
-    document.getElementById('op-company-kapsam')!.textContent = context.scope || context.kapsam || 'Kapsam bulunamadi.';
-    document.getElementById('op-company-stats')!.textContent = `${context.certificates.length} sertifika, ${context.tests.length} test kaydi uzerinden fiyatlandirma baglanabilir.`;
+    const setText = (id: string, text: string) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+    
+    setText('op-company-id', `M${context.firmaId}`);
+    setText('op-company-nick', context.nick || 'Firma');
+    setText('op-company-dan', context.danisman || 'Danisman atanamamis');
+    setText('op-company-unvan', context.unvan || context.nick || `Firma #${context.firmaId}`);
+    setText('op-company-address', [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—');
+    setText('op-company-kapsam', context.scope || context.kapsam || 'Kapsam bulunamadi.');
+    setText('op-company-stats', `${context.certificates.length} sertifika, ${context.tests.length} test kaydi uzerinden fiyatlandirma baglanabilir.`);
 
     fillAmountDefaults();
     bindFormHandlers();
