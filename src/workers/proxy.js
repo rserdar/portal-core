@@ -1616,22 +1616,26 @@ export default {
         const created = createCanonicalCertificate(p?.certInfo || {}, { id: newId });
         const fId = getCertificateFirmaId(created);
 
-        const [summaryRaw, recentRaw, firmaListRaw] = await Promise.all([
+        const [summaryRaw, recentRaw, firmaListRaw, fullRaw] = await Promise.all([
           env.DB.get(indexKeys.certificateSummary),
           env.DB.get(indexKeys.certificateRecent),
           fId ? env.DB.get(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`) : Promise.resolve(null),
+          env.DB.get(indexKeys.fullCertificates),
         ]);
         const summaryIdx = summaryRaw ? JSON.parse(summaryRaw) : {};
         summaryIdx[newId] = createCertificateSummary(created);
         const recentIds = mergeRecentCertificateIds(recentRaw ? JSON.parse(recentRaw) : [], [newId]);
         const firmaList = firmaListRaw ? JSON.parse(firmaListRaw) : [];
         firmaList.push(created);
+        const fullList = fullRaw ? JSON.parse(fullRaw) : [];
+        fullList.push(created);
 
         const writes = [
           env.DB.put(`cache:getCertificateById:${stableStringify({ id: newId })}`, JSON.stringify(created), { expirationTtl: CACHE_TTL }),
           env.DB.put(indexKeys.certificateNextId, String(parseInt(newId) + 1), { expirationTtl: CACHE_TTL }),
           env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIdx), { expirationTtl: CACHE_TTL }),
           env.DB.put(indexKeys.certificateRecent, JSON.stringify(recentIds), { expirationTtl: CACHE_TTL }),
+          env.DB.put(indexKeys.fullCertificates, JSON.stringify(fullList), { expirationTtl: CACHE_TTL }),
         ];
         if (fId) writes.push(env.DB.put(`cache:getCertificatesByFirmaId:${stableStringify({ firmaId: fId })}`, JSON.stringify(firmaList), { expirationTtl: CACHE_TTL }));
         await Promise.all(writes);
@@ -1654,13 +1658,21 @@ export default {
         const updated = createCanonicalCertificate(existing, { id, explicit: p?.certInfo || {} });
         const nextFirmaId = getCertificateFirmaId(updated);
 
-        const summaryRaw = await env.DB.get(indexKeys.certificateSummary);
+        const [summaryRaw, fullRaw] = await Promise.all([
+          env.DB.get(indexKeys.certificateSummary),
+          env.DB.get(indexKeys.fullCertificates),
+        ]);
         const summaryIdx = summaryRaw ? JSON.parse(summaryRaw) : {};
         summaryIdx[id] = createCertificateSummary(updated);
+        const fullList = fullRaw ? JSON.parse(fullRaw) : [];
+        const fullIdx = fullList.findIndex(c => String(getCertificateId(c)) === id);
+        if (fullIdx > -1) fullList[fullIdx] = updated;
+        else fullList.push(updated);
 
         const writes = [
           env.DB.put(`cache:getCertificateById:${stableStringify({ id })}`, JSON.stringify(updated), { expirationTtl: CACHE_TTL }),
           env.DB.put(indexKeys.certificateSummary, JSON.stringify(summaryIdx), { expirationTtl: CACHE_TTL }),
+          env.DB.put(indexKeys.fullCertificates, JSON.stringify(fullList), { expirationTtl: CACHE_TTL }),
         ];
 
         if (prevFirmaId && prevFirmaId !== nextFirmaId) {

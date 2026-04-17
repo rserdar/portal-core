@@ -1078,19 +1078,25 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       if (els.scope) els.scope.value = els.scope.value.toLocaleUpperCase('en-US');
     });
 
-    document.getElementById('cert-kapsam-translate')?.addEventListener('click', async () => {
-      if (!els.kapsam || !els.scope || !els.kapsam.value.trim()) return;
-      const res = await api.translate(els.kapsam.value, true);
-      if (res.success && els.scope) els.scope.value = String(res.data || '');
-      else toast.error(`Ceviri hatasi: ${res.error}`);
-    });
+    const kapsamTranslateBtn = document.getElementById('cert-kapsam-translate') as HTMLButtonElement | null;
+    if (kapsamTranslateBtn) {
+      kapsamTranslateBtn.onclick = async () => {
+        if (!els.kapsam || !els.scope || !els.kapsam.value.trim()) return;
+        const res = await api.translate(els.kapsam.value, true);
+        if (res.success && els.scope) els.scope.value = String(res.data || '');
+        else toast.error(`Ceviri hatasi: ${res.error}`);
+      };
+    }
 
-    document.getElementById('cert-scope-translate')?.addEventListener('click', async () => {
-      if (!els.scope || !els.kapsam || !els.scope.value.trim()) return;
-      const res = await api.translate(els.scope.value, false);
-      if (res.success && els.kapsam) els.kapsam.value = String(res.data || '');
-      else toast.error(`Ceviri hatasi: ${res.error}`);
-    });
+    const scopeTranslateBtn = document.getElementById('cert-scope-translate') as HTMLButtonElement | null;
+    if (scopeTranslateBtn) {
+      scopeTranslateBtn.onclick = async () => {
+        if (!els.scope || !els.kapsam || !els.scope.value.trim()) return;
+        const res = await api.translate(els.scope.value, false);
+        if (res.success && els.kapsam) els.kapsam.value = String(res.data || '');
+        else toast.error(`Ceviri hatasi: ${res.error}`);
+      };
+    }
 
     document.getElementById('cert-clear')?.addEventListener('click', () => {
       els.form?.reset();
@@ -1110,30 +1116,32 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       }
     });
 
-    els.deleteBtn?.addEventListener('click', async () => {
-      if (!editId || !companyContext || !els.deleteBtn) return;
-      if (!confirm(`Bu sertifika kaydini silmek istediginizden emin misiniz? (#${editId})`)) return;
+    if (els.deleteBtn) {
+      els.deleteBtn.onclick = async () => {
+        if (!editId || !companyContext || !els.deleteBtn) return;
+        if (!confirm(`Bu sertifika kaydini silmek istediginizden emin misiniz? (#${editId})`)) return;
 
-      const original = els.deleteBtn.innerHTML;
-      els.deleteBtn.disabled = true;
-      els.deleteBtn.innerHTML = 'Siliniyor...';
+        const original = els.deleteBtn.innerHTML;
+        els.deleteBtn.disabled = true;
+        els.deleteBtn.innerHTML = 'Siliniyor...';
 
-      const response = await api.deleteCertificate(editId);
-      if (response.success) {
-        await SyncManager.checkAndSync();
-        toast.success('Sertifika kaydi silindi. Firma profiline yonlendiriliyorsunuz.', { duration: 2500 });
-        setTimeout(() => {
-          window.location.href = `/company?id=${encodeURIComponent(companyContext.firmaId)}`;
-        }, 1400);
-        return;
-      }
+        const response = await api.deleteCertificate(editId);
+        if (response.success) {
+          await SyncManager.checkAndSync();
+          toast.success('Sertifika kaydi silindi. Firma profiline yonlendiriliyorsunuz.', { duration: 2500 });
+          setTimeout(() => {
+            window.location.href = `/company?id=${encodeURIComponent(companyContext.firmaId)}`;
+          }, 1400);
+          return;
+        }
 
-      toast.error(`Silme hatasi: ${response.error}`);
-      els.deleteBtn.disabled = false;
-      els.deleteBtn.innerHTML = original;
-    });
+        toast.error(`Silme hatasi: ${response.error}`);
+        els.deleteBtn.disabled = false;
+        els.deleteBtn.innerHTML = original;
+      };
+    }
 
-    els.form?.addEventListener('submit', async (event) => {
+    if (els.form) els.form.onsubmit = async (event) => {
       event.preventDefault();
       if (!companyContext || !els.standSelect || !els.submit) return;
 
@@ -1195,7 +1203,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       toast.error(`Hata: ${response.error}`);
       els.submit.disabled = false;
       els.submit.innerHTML = originalText;
-    });
+    };
   }
 
   async function prepareCompanyPicker() {
@@ -1210,21 +1218,25 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       }
     }
 
-    els.companySearch?.addEventListener('input', () => {
-      selectedCompany = resolveCompanyFromInput();
-      setSelectStatus(selectedCompany ? 'Firma seçildi. Devam edebilirsin.' : 'Listeden geçerli bir firma seç.');
-    });
+    if (els.companySearch) {
+      els.companySearch.oninput = () => {
+        selectedCompany = resolveCompanyFromInput();
+        setSelectStatus(selectedCompany ? 'Firma seçildi. Devam edebilirsin.' : 'Listeden geçerli bir firma seç.');
+      };
+    }
 
-    els.companyContinue?.addEventListener('click', async () => {
-      selectedCompany = resolveCompanyFromInput();
-      const selectedId = selectedCompany ? getCompanyId(selectedCompany) : '';
-      if (!selectedId) {
-        setSelectStatus('Devam etmek için listeden geçerli bir firma seç.', true);
-        return;
-      }
-      activeFirmaId = selectedId;
-      await loadScreen();
-    });
+    if (els.companyContinue) {
+      els.companyContinue.onclick = async () => {
+        selectedCompany = resolveCompanyFromInput();
+        const selectedId = selectedCompany ? getCompanyId(selectedCompany) : '';
+        if (!selectedId) {
+          setSelectStatus('Devam etmek için listeden geçerli bir firma seç.', true);
+          return;
+        }
+        activeFirmaId = selectedId;
+        await loadScreen();
+      };
+    }
   }
 
   async function loadScreen() {
@@ -1289,5 +1301,5 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
   // Transition support
   document.addEventListener('astro:page-load', initPage);
   // Cleanup away
-  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
+  document.addEventListener('astro:before-preparation', runCleanups);
 </script>
