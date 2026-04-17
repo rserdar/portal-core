@@ -181,8 +181,8 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
     setText('contract-preview-tax', [context.vergiD, context.vergiN].filter(Boolean).join(' / '));
     setText('contract-preview-auth', [context.yetkiliAdi, context.yetkiliUnvani].filter(Boolean).join(' / '));
-    setText('contract-preview-tel', context.tel ? `Tel: ${context.tel}` : '');
-    setText('contract-preview-faks', context.faks ? `Faks: ${context.faks}` : '');
+    setText('contract-preview-tel', context.tel || '');
+    setText('contract-preview-faks', context.faks || '');
 
     document.getElementById('contract-generate')?.addEventListener('click', generateContract);
     document.getElementById('contract-clear')?.addEventListener('click', () => {
