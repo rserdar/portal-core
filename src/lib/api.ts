@@ -164,6 +164,7 @@ export const api = {
     const controller = new AbortController();
     const longRunningActions = new Set([
       "bulkSync",
+      "smartSync",
       "importBackup",
       "exportBackup",
       "translate",
@@ -361,6 +362,7 @@ export const api = {
   async syncFromSheets(scope?: string[]) {
     return this.bulkSync(scope ? { scope } : undefined);
   },
+  async smartSync() { return this.call("smartSync"); },
   async exportBackup() { return this.call("exportBackup"); },
   async exportData(
     scope: string[],

@@ -201,6 +201,11 @@ function doPost(e) {
         result.success = true;
         break;
 
+      case "getDeltaExport":
+        result.data = DeltaSyncService.getDeltaExport(params.since);
+        result.success = true;
+        break;
+
       case "returnAstandards":
         result.data = MasterDataService.getLegacyAuditors();
         result.success = true;

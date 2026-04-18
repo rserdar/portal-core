@@ -16,3 +16,6 @@ binding = "DB_D1"
 database_name = "medicert-portal"
 database_id = "94b188bb-1ea8-4b84-ba00-8f7bf91bb265"
 migrations_dir = "src/workers/migrations"
+
+[triggers]
+crons = ["0 4 * * SUN"]

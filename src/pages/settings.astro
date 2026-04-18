@@ -120,6 +120,9 @@ const MASTER_SYNC_OPTIONS = [
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
+          <button id="smart-sync-btn" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-sm font-bold shadow-lg shadow-teal-600/20 active:scale-95 transition-all">
+            ⚡ Hızlı Sync
+          </button>
           <button id="ops-sync-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/20 active:scale-95 transition-all">
             Seçili Verileri Sheets'ten Çek
           </button>
@@ -537,6 +540,40 @@ const MASTER_SYNC_OPTIONS = [
     syncMasterParentState();
 
     addEv("refresh-btn", "click", () => loadDataset(currentType));
+
+    addEv("smart-sync-btn", "click", async () => {
+      const btn = document.getElementById("smart-sync-btn") as HTMLButtonElement | null;
+      const idleText = "⚡ Hızlı Sync";
+      setButtonBusy(btn, true, idleText, "Kontrol ediliyor...");
+      setBackupStatus("Hızlı sync başlatıldı — sadece değişen veriler çekiliyor...", "info");
+
+      try {
+        const res = await api.smartSync();
+        if (!res.success) throw new Error(res.error || "Hızlı sync başarısız");
+
+        if (res.isDelta) {
+          const { companies = 0, certificates = 0, audits = 0, tests = 0, proformas = 0 } = res.written || {};
+          const total = companies + certificates + audits + tests + proformas;
+          if (total === 0) {
+            setBackupStatus("Değişiklik bulunamadı — D1 zaten güncel.", "success");
+            toast.success("Sistem zaten güncel, yazılacak değişiklik yok.");
+          } else {
+            setBackupStatus(`Hızlı sync tamamlandı: ${total} satır güncellendi (firma: ${companies}, sertifika: ${certificates}, denetim: ${audits}, test: ${tests}, proforma: ${proformas}).`, "success");
+            toast.success(`${total} satır güncellendi.`);
+          }
+        } else {
+          setBackupStatus("Tam senkronizasyon tamamlandı (fallback).", "success");
+          toast.success("Tam senkronizasyon tamamlandı.");
+        }
+
+        await SyncManager.forceSync();
+      } catch (e: any) {
+        setBackupStatus("Hızlı sync hatası: " + e.message, "error");
+        toast.error("Hızlı sync başarısız: " + e.message);
+      } finally {
+        setButtonBusy(btn, false, idleText);
+      }
+    });
 
     addEv("ops-sync-btn", "click", async () => {
       const { scopes, masterTypes } = getSyncSelection();

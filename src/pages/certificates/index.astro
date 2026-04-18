@@ -260,7 +260,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
   function normalizeStandard(item: any) {
     const mainStandart = pickValue(item, ["Standart", "standard"], "-");
-    const otherStandart = pickValue(item, ["Other Standard", "Other", "other", "Diğer", "diger", "Diger", "diğer", "Diğer Standart", "digerStandart"], "");
+    const otherStandart = pickValue(item, ["other_standart", "Other Standard", "Other", "other", "Diğer", "diger", "Diger", "diğer", "Diğer Standart", "digerStandart"], "");
     const sLow = mainStandart.toLowerCase().trim();
     const isOther = sLow === 'diğer' || sLow === 'diger' || sLow === 'other';
     return (isOther && otherStandart) ? otherStandart : mainStandart;
@@ -271,7 +271,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   }
 
   function getOtherStandard(item: any) {
-    return pickValue(item, ["Other Standard", "Other", "other", "Diğer", "diger", "Diger", "diğer", "Diğer Standart", "digerStandart"], "-");
+    return pickValue(item, ["other_standart", "Other Standard", "Other", "other", "Diğer", "diger", "Diger", "diğer", "Diğer Standart", "digerStandart"], "-");
   }
 
   function getStatusLabel(item: any) {
@@ -506,7 +506,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           const detailRowId = `cert-detail-${idAttr}`;
           
           const denetim = getDenetim(item);
-          const akreditasyon = pickValue(item, ["akreditasyon", "Akreditasyon", "akredite", "Akredite", "akrn"], "-");
+          const akrBody = pickValue(item, ["akreditasyon", "Akreditasyon", "akrn"], "");
+          const akrMark = pickValue(item, ["akredite", "Akredite"], "");
+          const akreditasyon = [akrBody, akrMark].filter(Boolean).join(' / ') || '-';
           const danisman = pickValue(item, ["Danışman", "Danisman", "danisman", "dan", "consultant"], "-");
 
           // Robust data picking for detail view
