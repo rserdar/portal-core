@@ -1,4 +1,4 @@
-# Medicert Portal (v6.1.0)
+# Medicert Portal (v6.2.0)
 
 Cloudflare Workers + Google Apps Script + Astro 6.x mimarisiyle çalışan kurumsal ISO belgelendirme yönetim portalı. 1.600+ firma ve 5.000+ sertifika kaydını yönetir.
 
@@ -11,8 +11,8 @@ Browser (IndexedDB + UI)
     │
     ▼
 Cloudflare Worker (proxy.js)   ◄──────────────────────┐
-    │  WRITE: Worker → GAS → D1                        │
-    │  READ:  Worker → D1 → (miss) → GAS → D1          │
+    │  WRITE: Worker → GAS → D1 (senkron write-through) │
+    │  READ:  Worker → D1 → miss → boş sonuç dön        │
     ▼                                                  │
 Cloudflare D1 (SQLite cache)         Google Sheets (Source of Truth)
                                            ▲
@@ -35,8 +35,8 @@ Cloudflare D1 (SQLite cache)         Google Sheets (Source of Truth)
 ```
 Source of Truth:  Google Sheets   ──► tüm kalıcı veri
 Cache / Index:    Cloudflare D1   ──► tüm okuma (<10ms), SQL sorguları
-Write Path:       Worker → GAS → D1  (Sheets'e yaz, sonra D1 güncelle)
-Read Path:        D1 hit → dön; miss → GAS → D1 cache → dön
+Write Path:       Worker → GAS → D1  (GAS başarısız → D1'e dokunulmaz)
+Read Path:        D1 hit → dön; miss → boş sonuç (GAS fallback yok)
 Offline Cache:    Browser IndexedDB ──► sıfır gecikmeli UI açılışı
 ```
 
@@ -138,6 +138,7 @@ PUBLIC_WORKER_URL=https://portalapi.medicert.com.tr
 
 **Worker Secrets (`wrangler secret put`):**
 - `GAS_API_URL` — GAS exec URL
+- `API_KEY` — ⚠️ Henüz `wrangler.toml [vars]`'da düz metin; `wrangler secret put API_KEY` ile secret'a taşınması gerekiyor
 
 **İlk deploy sonrası:** Settings sayfasından "SİSTEMİ SENKRONİZE ET" butonu çalıştırılarak Sheets → D1 aktarımı yapılmalıdır.
 
@@ -156,4 +157,4 @@ PUBLIC_WORKER_URL=https://portalapi.medicert.com.tr
 
 **Geliştirici:** Antigravity AI
 **Müşteri:** Medicert Ürün ve Sistem Belgelendirme
-**Sürüm:** 6.1.0 — Sheets-Primary + D1-Cache Architecture
+**Sürüm:** 6.2.0 — Sheets-Primary + D1-Cache Architecture (Migration tamamlandı)

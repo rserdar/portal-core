@@ -891,3 +891,61 @@ Tüm sayfalar değişmez; veri kaynağı Worker üzerinden D1'e yönlendirilecek
 - **Worker Secrets:** `API_KEY`, `GAS_API_URL` — Dashboard'dan yönetilir, `wrangler.toml`'a yazılmaz. ⚠️ `API_KEY` hâlâ `wrangler.toml [vars]` içinde düz metin olarak duruyor — `wrangler secret put API_KEY` ile secret'a taşınması ve `wrangler.toml`'dan kaldırılması gerekiyor.
 - **GAS URL:** `https://script.google.com/macros/s/AKfycby...LL4/exec`
 - **Custom Domain:** `https://portalapi.medicert.com.tr`
+
+---
+
+## 🔮 İlerideki Hedefler (Ürünleşme Vizyonu)
+
+> [!CAUTION]
+> **Bu hedefler ana proje tamamlanmadan başlanmayacak.** Ana projenin tamamlanması; tüm v6.x migration maddelerinin ✅ durumuna gelmesi, mevcut Medicert portalının kararlı ve operasyonel çalışması anlamına gelir. Aşağıdaki hiçbir madde aktif geliştirme kapsamında değildir.
+
+Bu vizyon, Medicert portalının tamamlanmasının ardından sistemin **"Platform Bağımsız, Tekrar Kullanılabilir Bir Ürün Çekirdeği"** haline getirilmesini hedefler. Sıralama kasıtlıdır — her adım bir sonrakinin ön koşuludur.
+
+---
+
+### Öncelik Sırası
+
+#### Aşama 1 — Auth & RBAC (Temel Güvenlik)
+
+**Neden önce bu?** Şu an sistemde kullanıcı kimlik doğrulama yoktur; `API_KEY` bile `wrangler.toml`'da düz metin durmaktadır. Güvenlik altyapısı kurulmadan hiçbir ürünleştirme adımı anlamlı değildir — çok kiracılı (multi-tenant) bir sisteme güvensiz bir temel üzerine inşa edilemez.
+
+- Admin / Danışman / Firma Yetkilisi rol ayrımı (RBAC)
+- Worker katmanında JWT veya session token doğrulaması
+- `API_KEY` → `wrangler secret` geçişi (zaten ⚠️ bekliyor)
+- Veri erişim sınırları: her rol yalnızca yetkili veriye erişebilir
+- GAS ve Worker katmanlarında işlem logları (audit trail)
+
+#### Aşama 2 — Tenant Config Merkezi (Whitelabel Altyapısı)
+
+**Neden ikinci?** RBAC olmadan kiracı (tenant) kavramı güvenli kurulamaz. Tenant yapısı kurulmadan Whitelabel, Data Siloing ve "2-Day Launch" hedefleri hepsi havada kalır — birbirinin ön koşuludur.
+
+- Logo, marka adı, domain, sheet-id, db bilgisi, feature flag ve tema ayarlarının tek merkezden yönetimi
+- Her kiracının kendi konfigürasyonunun izole tutulması (Data Siloing)
+- Konfigürasyonun koddan değil, merkezi bir yapıdan okunması (whitelabel)
+- `Medicert` ismi kodun derinliklerinden temizlenerek marka-bağımsız hale getirilmesi
+
+#### Aşama 3 — Schema Contract Resmileştirme
+
+**Neden üçüncü?** Zaten inşa edilmiş olan şeyin (D1 şema + Sheets kolon yapısı) korunmasını garanti eden guardrail'lar kurulmadan, çok kiracılı sisteme ölçeklenmek şema kaymasına (schema drift) yol açar.
+
+- D1 tabloları ile Sheets sayfaları arasında 1:1 kolon sözleşmesi belgelenmesi
+- Versioned migration disiplini: her şema değişikliği için migration dosyası zorunlu
+- Tip ve zorunlu alan kurallarının uygulama detayı olmaktan çıkarılıp resmi contract haline getirilmesi
+- Şema uyumsuzluklarını erken yakalayan doğrulama katmanı
+
+#### Aşama 4 — Provisioning Otomasyonu ("2-Day Launch")
+
+**Neden dördüncü?** Auth, tenant config ve schema contract olmadan yeni müşteri kurulumu tekrar eden manuel iş demektir. Yukarıdaki üç aşama tamamlandığında provisioning otomasyonu anlam kazanır.
+
+- Yeni müşteri açılışında: başlangıç verisi, roller, branding, env ayarları ve gerekli kaynakların tek akışla kurulması
+- GAS Library çekirdeği: backend servislerinin farklı firmalar tarafından referans alınabilen paylaşımlı bir kütüphane olarak yönetilmesi
+- Hedef: yeni müşteri kurulum süresi maksimum 2 güne indirilmesi
+
+#### Aşama 5 — Platform Adaptörleri (Zero Lock-in)
+
+**Neden en son?** Worker içinde birikmiş iş mantığı önceden temizlenmezse adaptör katmanı yeni bir lock-in üretir. Bu aşama en uzun vadeli hedeftir; ilk dört aşamanın olgunlaşmasına bağlıdır.
+
+- `api.ts` Adapter Pattern: ortama göre `fetch` (Cloudflare) veya `google.script.run` (GAS) kullanımı
+- MySQL/PHP veya Node.js runtime için ikinci adaptör — mevcut çekirdek sözleşmeleri bozulmadan
+- Cloudflare'e özgü iş mantığının Worker'dan soyutlanması
+- Hedef: platform değişiminin uygulama katmanında hissedilmemesi
