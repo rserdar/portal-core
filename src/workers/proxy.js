@@ -1718,7 +1718,7 @@ export default {
         return jsonResponse({ success: true, data: results || [] });
       },
       getCertificates: async (p, ctx, env) => {
-        const { results } = await env.DB_D1.prepare(`SELECT * FROM certificates ORDER BY id DESC`).all();
+        const { results } = await env.DB_D1.prepare(`SELECT c.*, co.nickname, co.city FROM certificates c LEFT JOIN companies co ON co.id = c.firma_no ORDER BY c.id DESC`).all();
         return jsonResponse({ success: true, data: results || [] });
       },
       getRecentCertificates: async (p, ctx, env) => {

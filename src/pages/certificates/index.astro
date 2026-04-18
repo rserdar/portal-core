@@ -197,6 +197,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       .replace(/[şŞ]/g, 's')
       .replace(/[öÖ]/g, 'o')
       .replace(/[çÇ]/g, 'c')
+      .replace(/_/g, '') // Ensure snake_case matches compressed aliases
       .replace(/[^a-z0-9]+/g, '');
   }
 
@@ -223,11 +224,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
   function hasFullCertificateDataset(data: readonly any[]) {
     if (!Array.isArray(data) || data.length === 0) return false;
-    return data.some((item: any) =>
-      Object.prototype.hasOwnProperty.call(item || {}, 'Akreditasyon') ||
-      Object.prototype.hasOwnProperty.call(item || {}, 'Kapsam') ||
-      Object.prototype.hasOwnProperty.call(item || {}, 'Durum')
-    );
+    const checkKeys = ['akreditasyon', 'kapsam', 'durum'];
+    return data.some((item: any) => {
+      if (!item || typeof item !== 'object') return false;
+      const keys = Object.keys(item).map(k => k.toLowerCase());
+      return checkKeys.some(ck => keys.includes(ck));
+    });
   }
 
   function pickExistingField(item: any, aliases: string[], fallback: string) {
@@ -265,7 +267,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   }
 
   function getDenetim(item: any) {
-    return pickValue(item, ["Denetim Tipi", "Denetim", "denetim", "denetimTipi"], "-");
+    return pickValue(item, ["Denetim Tipi", "Denetim", "denetim", "denetimTipi", "denetim_tipi", "denetimtipi"], "-");
   }
 
   function getOtherStandard(item: any) {
@@ -455,13 +457,13 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
   function getFilteredData(data: readonly any[]) {
     return data.filter((item: any) => {
-      const firma = pickValue(item, ["Firma Adı", "Nickname", "nick"]);
+      const firma = pickValue(item, ["Firma Adı", "Nickname", "nick", "nickname"]);
       const id = getCertificateId(item, "");
-      const certNo = pickValue(item, ["Sertifika No", "sNo", "SNo", "sno"]);
+      const certNo = pickValue(item, ["Sertifika No", "sNo", "SNo", "sno", "sertifika_no"]);
       const standart = normalizeStandard(item);
       const denetim = getDenetim(item);
-      const danisman = pickValue(item, ["Danışman", "Danisman", "dan", "danisman"]);
-      const gozetim = pickValue(item, ["Gözetim", "Gözetim Conf.", "gozetimConfirmed"], "FALSE").toUpperCase();
+      const danisman = pickValue(item, ["Danışman", "Danisman", "dan", "danisman", "consultant"]);
+      const gozetim = pickValue(item, ["Gözetim", "Gözetim Conf.", "gozetimConfirmed", "gozetim_confirmed"], "FALSE").toUpperCase();
       const matchSearch = `${firma}${id}${certNo}${standart}${denetim}${danisman}`.toLowerCase().includes(filters.search.toLowerCase());
       const matchStd = !filters.standard || standart.includes(filters.standard);
       const matchStatus = !filters.status || gozetim === filters.status;
@@ -492,21 +494,20 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
         paged.forEach(({ item, originalIndex }: any) => {
           const id = getCertificateId(item, String(originalIndex + 1));
-          const firmaId = pickValue(item, ["Firma No", "firmaNo", "firmano"], "-");
+          const firmaId = pickValue(item, ["Firma No", "firmaNo", "firmano", "firma_no"], "-");
           const idAttr = escAttr(id || String(originalIndex));
-          const sertifikaTarihi = pickValue(item, ["Sertifika Tarihi", "gst", "GST"], "-");
-          const firma = pickValue(item, ["Firma Adı", "Nickname", "nick"], "-");
+          const sertifikaTarihi = pickValue(item, ["Sertifika Tarihi", "gst", "GST", "sertifika_tarihi"], "-");
+          const firma = pickValue(item, ["Firma Adı", "Nickname", "nick", "nickname"], "-");
           const standart = normalizeStandard(item);
-          const certNo = pickValue(item, ["Sertifika No", "sNo", "SNo", "sno"], "-");
-          const gozetimTarihi = pickValue(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ"], "-");
+          const certNo = pickValue(item, ["Sertifika No", "sNo", "SNo", "sno", "sertifika_no"], "-");
+          const gozetimTarihi = pickValue(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ", "gozetim_tarihi"], "-");
           const durum = getStatusLabel(item);
           const initials = getInitials(firma);
           const detailRowId = `cert-detail-${idAttr}`;
           
-          // Original Fields Restoration
           const denetim = getDenetim(item);
-          const akreditasyon = pickValue(item, ["Akreditasyon", "akredite", "Akredite"], "-");
-          const danisman = pickValue(item, ["Danışman", "Danisman", "danisman", "dan"], "-");
+          const akreditasyon = pickValue(item, ["akreditasyon", "Akreditasyon", "akredite", "Akredite", "akrn"], "-");
+          const danisman = pickValue(item, ["Danışman", "Danisman", "danisman", "dan", "consultant"], "-");
 
           // Robust data picking for detail view
           const notlar = pickValue(item, ["Notlar", "Not", "not", "notes"], "-");
@@ -565,12 +566,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                   <div class="text-xs font-mono text-main break-all">${escHtml(id || '-')}</div>
                 </div>
                 <div class="rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
-                  <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Durum</div>
-                  <div class="text-xs text-main">${escHtml(durum)}</div>
-                </div>
-                <div class="col-span-2 md:col-span-1 rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
                   <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Notlar</div>
-                  <div class="text-xs text-main break-words">${escHtml(notlar)}</div>
+                  <div class="text-xs text-main break-words">${escHtml(pickValue(item, ["Notlar", "Not", "not", "notes", "sertifika_not"], "-"))}</div>
                 </div>
                 <div class="col-span-2 md:col-span-1 xl:col-span-1 rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
                   <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Sorgulama Linki</div>

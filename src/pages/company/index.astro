@@ -942,8 +942,15 @@ import {
   let certGenerationInFlight = false;
 
   function readFirmaIdFromUrl() {
-    const params = new URLSearchParams(location.search);
-    return params.get('id') || params.get('firmaId') || '';
+    // location.search is better than Astro.url for client-side routing persistence
+    const params = new URLSearchParams(window.location.search);
+    let id = params.get('id') || params.get('firmaId') || '';
+    if (!id) {
+      // Fallback: check if id is in current window state or session cache
+      id = (window as any)._currentFirmaId || '';
+    }
+    if (id) (window as any)._currentFirmaId = id;
+    return String(id).trim();
   }
 
   function resetPageState(nextFirmaId: string) {
@@ -1503,10 +1510,16 @@ import {
     if (!c || (Array.isArray(c) && c.length === 0)) return;
 
     // Check if this is "Full Data" (contains contact fields) or just search metadata
-    const isFull = !!(g(c, 'Telefon', 'Tel') || g(c, 'Mail', 'E-Posta') || g(c, 'Vergi Dairesi'));
-    if (isFull) hasFullData = true;
+    // D1 returns lowercase keys; check both casing versions
+    const hasContactInfo = !!(
+      g(c, 'Telefon', 'Tel', 'tel') || 
+      g(c, 'Mail', 'mail', 'E-Posta') || 
+      g(c, 'Vergi Dairesi', 'vergid', 'vergiD', 'VergiDairesi')
+    );
+    
+    if (hasContactInfo) hasFullData = true;
 
-    console.log(`[Profile] Rendering data (isFull: ${isFull})`);
+    console.log(`[Profile] Rendering data (isFull: ${hasContactInfo})`);
 
     const nick    = g(c, 'nickname', 'Firma Adı', 'Nick', 'nick', 'FirmaAdi');
     const unvan   = g(c, 'unvan', 'Unvan');
