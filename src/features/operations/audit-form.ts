@@ -15,11 +15,29 @@ export function uniqueColumnValues(rows: AuditRows, index: number) {
 }
 
 export function filterAuditorsByStandard(rows: AuditRows, standard: string) {
-  return rows.filter((row) => String(row?.[0] || '') === standard);
+  const stdMap: Record<string, number> = {
+    '9001': 4,
+    '13485': 5,
+    '14001': 6,
+    '22000': 7,
+    '27001': 8,
+    '45001': 9,
+    '50001': 10,
+    'GMP': 11
+  };
+  const colIdx = stdMap[standard];
+  if (colIdx === undefined) return [];
+  return rows.filter((row) => {
+    const val = String(row?.[colIdx] || '').trim().toUpperCase();
+    return val === '1' || val === 'TRUE' || val === 'true';
+  });
 }
 
 export function getAuditorShortName(rows: AuditRows, name: string) {
-  const match = rows.find((row) => String(row?.[1] || '') === name);
+  const match = rows.find((row) => {
+    const fullName = `${row?.[1] || ''} ${row?.[2] || ''}`.trim();
+    return fullName === name || String(row?.[1] || '').trim() === name;
+  });
   return match?.[3] ? String(match[3]) : '';
 }
 

@@ -326,9 +326,9 @@ const quickActions = [
           Pro Tip
         </h3>
         <p class="text-xs text-muted relative z-10 leading-relaxed font-medium">
-          KV Cache altyapısı devrede. Bu buton sadece mevcut KV verisini
-          tarayıcıyla eşitler. Sheets'ten veri çekme ve yedekleme işlemleri
-          Ayarlar ekranından ayrı yönetilir.
+          D1/IndexedDB senkronizasyonu devrede. Bu buton mevcut görünümü
+          sunucudaki güncel veriyle yeniden eşitler. Sheets'ten veri çekme ve
+          yedekleme işlemleri Ayarlar ekranından ayrı yönetilir.
         </p>
       </div>
 
@@ -346,7 +346,7 @@ const quickActions = [
             <div
               class="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest"
             >
-              <span class="text-muted">KV Backend</span>
+              <span class="text-muted">D1 Cache</span>
               <span id="status-kv" class="text-muted flex items-center gap-2">
                 <span class="w-1.5 h-1.5 rounded-full bg-muted opacity-40"
                 ></span> Kontrol...
@@ -388,7 +388,7 @@ const quickActions = [
             id="sync-icon"
             class="group-hover:rotate-180 transition-transform duration-700"
           />
-          <span id="sync-label">GÖRÜNÜMÜ YENİLE (KV CACHE)</span>
+          <span id="sync-label">GÖRÜNÜMÜ YENİLE (D1 CACHE)</span>
         </button>
 
         <button
@@ -762,12 +762,12 @@ const quickActions = [
           if (syncIcon) syncIcon.classList.add("animate-spin");
 
           await SyncManager.checkAndSync();
-          toast.success("Mevcut KV verisi tarayıcıyla yeniden eşitlendi.");
+          toast.success("Mevcut görünüm güncel D1 verisiyle yeniden eşitlendi.");
         } catch (err: any) {
           toast.error("Beklenmeyen hata: " + (err?.message || err));
         } finally {
           if (btnSync) btnSync.disabled = false;
-          if (syncLabel) syncLabel.textContent = "GÖRÜNÜMÜ YENİLE (KV CACHE)";
+          if (syncLabel) syncLabel.textContent = "GÖRÜNÜMÜ YENİLE (D1 CACHE)";
           if (syncIcon) syncIcon.classList.remove("animate-spin");
         }
       };

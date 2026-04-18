@@ -4,7 +4,7 @@ import { atom } from 'nanostores';
  * 🔋 Nano Stores: Global Application State
  *
  * Uygulama çapında reaktif state.
- * Veri kaynağı önceliği: IndexedDB (anlık açılış) -> KV (arka plan tazeleme).
+ * Veri kaynağı önceliği: IndexedDB (anlık açılış) → Worker/D1 (arka plan tazeleme).
  */
 
 // Firma Listesi (Sync Data: ID, Nickname, Unvan, City)

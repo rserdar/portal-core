@@ -668,7 +668,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
   }
 
   async function loadConsultants() {
-    const res = await api.call('getConsultants');
+    const res = await api.getConsultants();
     const consultants: string[] = Array.isArray(res?.data) ? res.data : [];
     if (!els.consultantList) return;
     els.consultantList.innerHTML = '';

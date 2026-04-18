@@ -39,7 +39,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
         <button id="proforma-refresh" type="button" class="rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-bold text-main hover:border-indigo-500/40 hover:text-indigo-300 transition-colors">Getir / Yenile</button>
       </div>
       <div class="rounded-2xl border border-dashed border-border-main p-5 text-sm text-muted" id="proforma-list-placeholder">
-        Kayıtlar bu firma seçildiğinde Cloudflare KV üzerinden yüklenecek.
+        Kayıtlar bu firma seçildiğinde D1 üzerinden yüklenecek.
       </div>
       <p id="proforma-counter" class="text-xs font-semibold text-muted">Kayıtlar yüklenmedi.</p>
       <div id="proforma-list" class="hidden overflow-hidden rounded-2xl border border-border-main"></div>
@@ -372,7 +372,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     toast.success(
       editingProformaId
         ? `${payload.proInfo.nick} için proforma güncellendi.`
-        : `${payload.proInfo.nick} için proforma Cloudflare KV'ye kaydedildi.`
+        : `${payload.proInfo.nick} için proforma kaydedildi.`
     );
     clearForm();
     await loadProformas();
@@ -550,7 +550,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
     fillAmountDefaults();
     bindFormHandlers();
-    setListLoading(`Bu firma için ${context.certificates.length} sertifika ve ${context.tests.length} test kaydı bulundu. Proforma listesi KV üzerinden yükleniyor.`);
+    setListLoading(`Bu firma için ${context.certificates.length} sertifika ve ${context.tests.length} test kaydı bulundu. Proforma listesi yükleniyor.`);
 
     document.getElementById('op-select')?.classList.add('hidden');
     document.getElementById('op-skeleton')?.classList.add('hidden');

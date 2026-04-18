@@ -4,13 +4,12 @@ import { toast } from './toast';
 import { $companies, $certificates, $tests, $dashboardStats, $syncStatus, $lastSyncTime } from './store';
 
 /**
- * 🔄 SyncManager: KV-Primary Senkronizasyon Yöneticisi
+ * 🔄 SyncManager: D1-Primary Senkronizasyon Yöneticisi
  *
  * Akış:
  * 1) İlk açılışta IndexedDB'den anında render
- * 2) Arka planda KV tazeleme
- * 3) KV miss olursa yalnızca manuel hydration beklenir (otomatik GAS fallback yok)
- * 4) bulkSync, günlük CRUD akışından ayrı tutulur
+ * 2) Arka planda Worker → D1 üzerinden tazeleme
+ * 3) bulkSync, günlük CRUD akışından ayrı tutulur (Ayarlar → Sistemi Senkronize Et)
  */
 
 export const SyncManager = {
@@ -42,44 +41,29 @@ export const SyncManager = {
   },
 
   /**
-   * Sunucudaki veriyle yerel veriyi karşılaştırır.
+   * Sunucudaki veriyle yerel veriyi karşılaştırır ve IndexedDB'yi günceller.
    */
   checkAndSync: async function() {
     if (this._syncPromise) return this._syncPromise;
 
     this._syncPromise = (async () => {
       $syncStatus.set('syncing');
-      
+
       try {
-        const fetchCore = async () => {
-          return Promise.all([
-            api.call<any[]>('getCompanies'),
-            api.call<any[]>('getCertificateSummaries'),
-            api.getTests(),
-            api.getDashboardSummary()
-          ]);
-        };
+        const [compRes, certRes, testRes, dashRes] = await Promise.all([
+          api.call<any[]>('getCompanies'),
+          api.call<any[]>('getCertificateSummaries'),
+          api.getTests(),
+          api.getDashboardSummary()
+        ]);
 
-        const [compRes, certRes, testRes, dashRes] = await fetchCore();
-        const needsHydration = [compRes, certRes, testRes, dashRes].some((r: any) => !r.success && (r.needsHydration || r.error === 'KV_PRIMARY_MISS'));
         const corsBlocked = [compRes, certRes, testRes, dashRes].some((r: any) => !r.success && (r.status === 403 || r.error === 'CORS_ORIGIN_NOT_ALLOWED'));
-
         if (corsBlocked) {
           throw new Error('Worker origin izni reddetti. CORS allowlist veya PUBLIC_WORKER_URL ayarını kontrol edin.');
         }
 
-        if (needsHydration) {
-          console.warn('[Sync] KV miss detected. Automatic hydration is disabled; waiting for manual sync.');
-          throw new Error('KV verisi hazır değil. Lütfen Ayarlar veya ana ekrandaki senkronizasyonu manuel başlatın.');
-        }
-
         if (!compRes.success || !certRes.success || !testRes.success || !dashRes.success) {
-          throw new Error(compRes.error || certRes.error || testRes.error || dashRes.error || "One or more fetch requests failed.");
-        }
-
-        const masterProbe = await api.getMasterData('standards');
-        if (!masterProbe.success && (masterProbe.needsHydration || masterProbe.error === 'KV_PRIMARY_MISS')) {
-          console.warn('[Sync] Master KV miss detected. Automatic master hydration is disabled.');
+          throw new Error(compRes.error || certRes.error || testRes.error || dashRes.error || 'Bir veya daha fazla istek başarısız oldu.');
         }
 
         const localCertCount = ($certificates.get() || []).length;
@@ -91,12 +75,12 @@ export const SyncManager = {
         if (localCertCount > 10 && serverCertCount < (localCertCount * 0.5)) {
           console.error(`[Sync] Safety Guard Triggered! Local certs: ${localCertCount}, Server certs: ${serverCertCount}. Potential data loss prevented.`);
           toast.warning(`Veri kaybı önlendi: Sunucudan ${serverCertCount} sertifika geldi, yerelde ${localCertCount} var. Mevcut veriniz korundu.`, { duration: 8000 });
-          throw new Error(`Veri bütünlüğü riski: Sertifikalar — sunucu %${Math.round((serverCertCount/localCertCount)*100)} döndürdü. Sheets → KV senkronizasyonunu kontrol edin.`);
+          throw new Error(`Veri bütünlüğü riski: Sertifikalar — sunucu %${Math.round((serverCertCount/localCertCount)*100)} döndürdü. Sheets → D1 senkronizasyonunu kontrol edin.`);
         }
         if (localCompCount > 10 && serverCompCount < (localCompCount * 0.5)) {
           console.error(`[Sync] Safety Guard Triggered! Local companies: ${localCompCount}, Server companies: ${serverCompCount}. Potential data loss prevented.`);
           toast.warning(`Veri kaybı önlendi: Sunucudan ${serverCompCount} firma geldi, yerelde ${localCompCount} var. Mevcut veriniz korundu.`, { duration: 8000 });
-          throw new Error(`Veri bütünlüğü riski: Firmalar — sunucu %${Math.round((serverCompCount/localCompCount)*100)} döndürdü. Sheets → KV senkronizasyonunu kontrol edin.`);
+          throw new Error(`Veri bütünlüğü riski: Firmalar — sunucu %${Math.round((serverCompCount/localCompCount)*100)} döndürdü. Sheets → D1 senkronizasyonunu kontrol edin.`);
         }
 
         const now = Date.now();
@@ -113,20 +97,16 @@ export const SyncManager = {
           DB.save(DB.DASHBOARD_STATS, dashRes.data || null),
           DB.save(DB.LAST_SYNC, now)
         ]);
-        
+
         if (compRes.data?.length === 0) {
-          console.warn('[Sync] API returned 0 firms. Check KV indices on Worker.');
+          console.warn('[Sync] API returned 0 firms. Check D1 sync on Worker.');
         }
 
         $syncStatus.set('idle');
       } catch (e: any) {
         console.error('[Sync] Sync failed:', e);
         $syncStatus.set('error');
-        if (String(e.message).includes('KV verisi hazır değil')) {
-           toast.error('Veritabanı (KV) henüz hazır değil. Lütfen "Şablonları Eşitle" işlemini manuel başlatın.', { duration: 10000 });
-        } else {
-           toast.error(`Senkronizasyon hatası: ${e.message || 'Bilinmeyen hata'}`);
-        }
+        toast.error(`Senkronizasyon hatası: ${e.message || 'Bilinmeyen hata'}`);
       } finally {
         this._syncPromise = null;
       }
@@ -144,16 +124,16 @@ export const SyncManager = {
   },
 
   /**
-   * Operasyonel tam yenileme:
-   * Sheets -> KV hydration tetikler, ardından local cache'i yeniden doldurur.
+   * Sheets → D1 → IndexedDB tam senkronizasyon:
+   * bulkSync ile Sheets verisi D1'e aktarılır, ardından local cache yenilenir.
    */
   syncFromSheets: async function() {
     if (this._syncPromise) return this._syncPromise;
     this._syncPromise = (async () => {
       $syncStatus.set('syncing');
       try {
-        const res = await api.pullFromSheetsToKv();
-        if (!res.success) throw new Error(res.error || 'Sheets -> KV sync başarısız');
+        const res = await api.bulkSync();
+        if (!res.success) throw new Error(res.error || 'Sheets → D1 sync başarısız');
         await DB.clearAll();
         const [compRes, certRes, testRes, dashRes] = await Promise.all([
           api.call<any[]>('getCompanies'),
@@ -162,7 +142,7 @@ export const SyncManager = {
           api.getDashboardSummary()
         ]);
         if (!compRes.success || !certRes.success || !testRes.success || !dashRes.success) {
-          throw new Error(compRes.error || certRes.error || testRes.error || dashRes.error || 'KV yeniden okuma başarısız');
+          throw new Error(compRes.error || certRes.error || testRes.error || dashRes.error || 'D1 yeniden okuma başarısız');
         }
         const now = Date.now();
         await Promise.all([

@@ -404,7 +404,7 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
     hydratedFromUrl = true;
     setStatus(`Firma #${firmaId} yükleniyor...`);
 
-    const res = await api.call('getCompanyById', { id: firmaId });
+    const res = await api.getCompanyById(firmaId);
     const company = res?.data;
 
     if (!res?.success || !company) {

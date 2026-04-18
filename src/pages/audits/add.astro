@@ -459,7 +459,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
     function refreshAuditorDropdowns() {
       const rows = filterAuditorsByStandard(auditorRows, xstandartInput?.value || '');
-      const names = uniqueColumnValues(rows, 1);
+      const names = Array.from(new Set(rows.map(r => `${r[1] || ''} ${r[2] || ''}`.trim()).filter(Boolean)));
       ['leadAuditorInput1','secondAuditorInput1','thirdAuditorInput1','leadAuditorInput2','secondAuditorInput2','thirdAuditorInput2'].forEach(id => {
         const sel = document.getElementById(id) as HTMLSelectElement | null;
         if (!sel) return;
@@ -523,7 +523,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         a2La: val('leadAuditorInput2'), a2Fa: val('secondAuditorInput2'), a2Sa: val('thirdAuditorInput2'), a2Md: val('a2Md'), a2Denetci: val('a2Denetciler'), a2kDenet: val('a2KDenetci')
       };
 
-      const res = isEditMode() ? await api.updateAudit(editAuditId, info) : await api.call('scheduleAudit', { data: info });
+      const res = isEditMode() ? await api.updateAudit(editAuditId, info) : await api.scheduleAudit(info);
       if (res.success) {
         toast.success(isEditMode() ? 'Başarıyla güncellendi.' : 'Başarıyla kaydedildi.');
         await SyncManager.checkAndSync();
@@ -608,7 +608,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     api.getMasterData('auditors').then(res => {
       auditorRows = res.data?.rows || res.data?.dataset?.rows || [];
       if (xstandartInput) {
-        const stds = uniqueColumnValues(auditorRows, 0);
+        const stds = ['9001', '13485', '14001', '22000', '27001', '45001', '50001', 'GMP'];
         xstandartInput.innerHTML = '<option value="">Standart Seçiniz...</option>' + stds.map(s => `<option value="${s}">${s}</option>`).join('');
       }
       refreshAuditorDropdowns();

@@ -1147,7 +1147,7 @@ import {
   }
 
   async function refreshCertificates() {
-    const res = await api.call('getCertificatesByFirmaId', { firmaId });
+    const res = await api.getCertificatesByFirmaId(firmaId);
     renderCerts(res?.data || []);
   }
 
@@ -1159,7 +1159,7 @@ import {
     if (button) button.disabled = true;
 
     try {
-      const res = await api.call('updateSurveillance', { ids: Array.from(selectedCertIds), status, firmaId });
+      const res = await api.updateSurveillance(Array.from(selectedCertIds), status, firmaId);
       if (!res?.success) {
         toast.error(res?.error || res?.message || 'Gözetim durumu güncellenemedi.');
         return;
@@ -1459,7 +1459,7 @@ import {
       // ⚡ ZERO-LATENCY: Render immediately if data exists in store
       loadCompanyFromStore();
 
-      const res = await api.call('getCompanyById', { id: firmaId });
+      const res = await api.getCompanyById(firmaId);
       const c = res?.data;
       
       if (!c) {
@@ -2057,7 +2057,7 @@ import {
     }
 
     try {
-      const res = await api.call('getTestsByFirmaId', { firmaId });
+      const res = await api.getTestsByFirmaId(firmaId);
       const empty    = document.getElementById('test-empty');
       const count    = document.getElementById('test-count');
 
@@ -2138,7 +2138,7 @@ import {
           const id = btn.dataset.id || '';
           if (!id || !confirm('Bu test kaydını silmek istediğinizden emin misiniz?')) return;
           btn.disabled = true;
-          const res = await api.call('deleteTest', { id });
+          const res = await api.deleteTest(id);
           if (res?.success) {
             await loadTests();
           } else {
@@ -2169,7 +2169,7 @@ import {
     }
 
     try {
-      const res = await api.call('getCertificatesByFirmaId', { firmaId });
+      const res = await api.getCertificatesByFirmaId(firmaId);
       renderCerts(res?.data || []);
       revealSection('cert');
     } catch (e) {

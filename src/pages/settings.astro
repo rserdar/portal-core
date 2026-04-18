@@ -1,5 +1,21 @@
 ---
 import DashboardLayout from "../layouts/DashboardLayout.astro";
+
+const SYNC_SCOPE_OPTIONS = [
+  { value: "companies", label: "Firmalar" },
+  { value: "certificates", label: "Sertifikalar" },
+  { value: "audits", label: "Denetimler" },
+  { value: "tests", label: "Testler" },
+  { value: "proformas", label: "Proformalar" },
+];
+
+const MASTER_SYNC_OPTIONS = [
+  { value: "standards", label: "Standartlar" },
+  { value: "auditors", label: "Denetçiler" },
+  { value: "consultants", label: "Danışmanlar" },
+  { value: "testdocs", label: "TestDoc" },
+  { value: "sysdocs", label: "SysDoc" },
+];
 ---
 
 <DashboardLayout title="Ayarlar">
@@ -67,20 +83,30 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
           </p>
         </div>
       </div>
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {["companies", "certificates", "audits", "tests", "proformas", "master"].map((scope) => (
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {SYNC_SCOPE_OPTIONS.map((scope) => (
           <label class="flex items-center gap-2 p-3 rounded-xl bg-surface-hover border border-border-main cursor-pointer hover:border-indigo-500 transition-colors">
-            <input type="checkbox" name="sync-scope" value={scope} checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
-            <span class="text-sm font-medium capitalize">
-              {scope === "companies" ? "Firmalar" :
-               scope === "certificates" ? "Sertifikalar" :
-               scope === "audits" ? "Denetimler" :
-               scope === "tests" ? "Testler" :
-               scope === "proformas" ? "Proformalar" :
-               "Ana Veri"}
-            </span>
+            <input type="checkbox" name="sync-scope" value={scope.value} checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+            <span class="text-sm font-medium">{scope.label}</span>
           </label>
         ))}
+      </div>
+      <div class="rounded-2xl border border-border-main bg-surface-hover/70 p-4 space-y-4">
+        <label class="flex items-center gap-2 font-semibold text-sm">
+          <input id="master-sync-all" type="checkbox" name="sync-scope" value="master" checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+          <span>Ana Veri</span>
+        </label>
+        <p class="text-xs text-muted">
+          Ana Veri kutusu tüm alt başlıkları birlikte seçer. İstersen sadece belirli ana veri tablolarını güncelleyip gereksiz D1 yazımını azaltabilirsin.
+        </p>
+        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+          {MASTER_SYNC_OPTIONS.map((scope) => (
+            <label class="flex items-center gap-2 p-3 rounded-xl bg-surface border border-border-main cursor-pointer hover:border-indigo-500 transition-colors">
+              <input type="checkbox" name="master-sync-scope" value={scope.value} checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+              <span class="text-sm font-medium">{scope.label}</span>
+            </label>
+          ))}
+        </div>
       </div>
     </div>
 
@@ -109,7 +135,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button id="export-kv-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-600/20 active:scale-95 transition-all">
+          <button id="export-backup-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-600/20 active:scale-95 transition-all">
             Seçili Verileri .json Olarak Yedekle
           </button>
         </div>
@@ -120,7 +146,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
       <div class="rounded-xl border border-border-main bg-surface-hover p-4 space-y-3">
         <div class="flex flex-col md:flex-row md:items-center gap-3">
           <input id="import-file-input" type="file" accept=".json,application/json" class="block w-full text-sm text-muted file:mr-4 file:rounded-lg file:border-0 file:bg-surface file:px-3 file:py-2 file:text-sm file:font-bold file:text-main cursor-pointer" />
-          <button id="import-kv-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-rose-600/20 active:scale-95 transition-all whitespace-nowrap" disabled>
+          <button id="import-backup-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-rose-600/20 active:scale-95 transition-all whitespace-nowrap" disabled>
             Yedeği İçeri Aktar (Replace)
           </button>
         </div>
@@ -129,7 +155,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
           </svg>
           <p>
-            <b>DİKKAT:</b> İçeri aktarma işlemi, seçtiğiniz kapsamdaki mevcut D1 verilerini tamamen <u>siler</u> ve yedektekilerle değiştirir. Diğer kapsamlar korunur.
+            <b>DİKKAT:</b> İçeri aktarma işlemi <u>tüm tabloları</u> (firmalar, sertifikalar, testler, denetimler, proformalar) yedekteki veriyle değiştirir. Kısmi geri yükleme desteklenmez.
           </p>
         </div>
       </div>
@@ -164,8 +190,6 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   import { DB } from "../lib/db";
 
   const selectEl = document.getElementById("dataset-select") as HTMLSelectElement | null;
-  const syncBtn = document.getElementById("sync-master-btn") as HTMLButtonElement | null;
-  const fullSyncBtn = document.getElementById("full-sync-btn") as HTMLButtonElement | null;
   const refreshBtn = document.getElementById("refresh-btn") as HTMLButtonElement | null;
   const addRowBtn = document.getElementById("add-row-btn") as HTMLButtonElement | null;
   const saveBtn = document.getElementById("save-btn") as HTMLButtonElement | null;
@@ -174,10 +198,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   const thead = document.getElementById("master-thead") as HTMLElement | null;
   const tbody = document.getElementById("master-tbody") as HTMLElement | null;
   const statusBox = document.getElementById("status-box") as HTMLElement | null;
-  const opsSyncBtn = document.getElementById("ops-sync-btn") as HTMLButtonElement | null;
-  const exportKvBtn = document.getElementById("export-kv-btn") as HTMLButtonElement | null;
   const importFileInput = document.getElementById("import-file-input") as HTMLInputElement | null;
-  const importKvBtn = document.getElementById("import-kv-btn") as HTMLButtonElement | null;
   const backupStatusBox = document.getElementById("backup-status-box") as HTMLElement | null;
 
   // ─── Lifecycle & Cleanup ─────────────────────────────────────────────────────
@@ -198,10 +219,26 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
   let currentHeaders: string[] = [];
   let currentRows: any[][] = [];
   let selectedBackupPayload: any = null;
+  const MASTER_SCOPE_OPTIONS = ["standards", "auditors", "consultants", "testdocs", "sysdocs"] as const;
+  type MasterScopeType = typeof MASTER_SCOPE_OPTIONS[number];
 
   function getSelectedScopes(): string[] {
     const checkboxes = document.querySelectorAll('input[name="sync-scope"]:checked');
     return Array.from(checkboxes).map(el => (el as HTMLInputElement).value);
+  }
+
+  function getSelectedMasterTypes(): MasterScopeType[] {
+    const checkboxes = document.querySelectorAll('input[name="master-sync-scope"]:checked');
+    return Array.from(checkboxes)
+      .map(el => (el as HTMLInputElement).value)
+      .filter((value): value is MasterScopeType => MASTER_SCOPE_OPTIONS.includes(value as MasterScopeType));
+  }
+
+  function getSyncSelection() {
+    const scopes = getSelectedScopes().filter((scope) => scope !== "master");
+    const masterTypes = getSelectedMasterTypes();
+    if (masterTypes.length) scopes.push("master");
+    return { scopes, masterTypes };
   }
 
   function setStatus(message: string, type: "info" | "error" | "success" = "info") {
@@ -230,6 +267,31 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
            scope === "tests" ? "Testler" :
            scope === "proformas" ? "Proformalar" :
            "Ana Veri";
+  }
+
+  function getMasterScopeLabel(scope: MasterScopeType) {
+    return scope === "standards" ? "Standartlar" :
+           scope === "auditors" ? "Denetçiler" :
+           scope === "consultants" ? "Danışmanlar" :
+           scope === "testdocs" ? "TestDoc" :
+           "SysDoc";
+  }
+
+  function syncMasterParentState() {
+    const parent = document.getElementById("master-sync-all") as HTMLInputElement | null;
+    if (!parent) return;
+    const children = Array.from(document.querySelectorAll('input[name="master-sync-scope"]')) as HTMLInputElement[];
+    const checkedCount = children.filter((child) => child.checked).length;
+    parent.checked = checkedCount > 0;
+    parent.indeterminate = checkedCount > 0 && checkedCount < children.length;
+  }
+
+  function setMasterChildrenChecked(checked: boolean) {
+    const children = Array.from(document.querySelectorAll('input[name="master-sync-scope"]')) as HTMLInputElement[];
+    children.forEach((child) => {
+      child.checked = checked;
+    });
+    syncMasterParentState();
   }
 
   function setButtonBusy(
@@ -304,27 +366,114 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     });
   }
 
+  function normalizeMasterPayload(raw: any, type: string) {
+    if (!raw) return null;
+    
+    // Case 1: Already relational structure { dataset: { headers, rows, sheetName }, version, updatedAt }
+    if (raw.dataset && typeof raw.dataset === "object" && Array.isArray(raw.dataset.rows)) {
+      return raw;
+    }
+
+    // Case 2: Wrapped in a data property (standard api.ts wrapper)
+    if (raw.data && typeof raw.data === "object" && raw.data.dataset) {
+      return raw.data;
+    }
+
+    // Case 3: Raw array of objects (legacy or direct D1 results)
+    if (Array.isArray(raw)) {
+      if (raw.length === 0) {
+        return {
+          dataset: { headers: [], rows: [], sheetName: type },
+          version: null,
+          updatedAt: null
+        };
+      }
+      
+      const first = raw[0];
+      const headers = first && typeof first === "object" ? Object.keys(first) : [];
+      return {
+        dataset: {
+          headers,
+          rows: raw.map(r => headers.map(h => r[h] ?? "")),
+          sheetName: type
+        },
+        version: null,
+        updatedAt: null
+      };
+    }
+
+    // Case 4: Legacy structure { [type]: rowArray }
+    const combinedRows = raw[type];
+    if (Array.isArray(combinedRows)) {
+      return {
+        dataset: { 
+          headers: combinedRows.length > 0 && typeof combinedRows[0] === 'object' && !Array.isArray(combinedRows[0]) ? Object.keys(combinedRows[0]) : [],
+          rows: combinedRows.map(r => Array.isArray(r) ? r : (typeof r === 'object' ? Object.values(r) : [r])), 
+          sheetName: type 
+        },
+        version: raw.version ?? null,
+        updatedAt: raw.updatedAt ?? null
+      };
+    }
+
+    return null;
+  }
+
+  function describeMasterResponse(res: any, type: string) {
+    const data = res?.data;
+    const topLevelKeys = data && typeof data === "object" ? Object.keys(data).slice(0, 10) : [];
+    const normalized = normalizeMasterPayload(data, type);
+    return {
+      success: Boolean(res?.success),
+      status: res?.status ?? null,
+      error: res?.error ?? null,
+      hasData: Boolean(data),
+      topLevelKeys,
+      normalized,
+    };
+  }
+
   async function loadDataset(type: string) {
     currentType = type;
     setStatus("Veri yükleniyor...");
 
     let res = await api.getMasterData(type);
-    if (!res.success && (res.needsHydration || res.error === "KV_PRIMARY_MISS")) {
-      setStatus("KV boş. Master data aktarımı başlatılıyor...");
-      const syncRes = await api.bulkSync({ scope: ["master"] });
+    let payload = normalizeMasterPayload(res.data, type);
+    console.log("[Settings][MasterData] initial response", type, describeMasterResponse(res, type));
+
+    if (!res.success || !payload?.dataset) {
+      setStatus("D1 boş. Master data aktarımı başlatılıyor...");
+      const syncRes = await api.syncMasterData([type as MasterScopeType]);
+      console.log("[Settings][MasterData] sync attempt", type, {
+        success: syncRes?.success,
+        status: syncRes?.status ?? null,
+        error: syncRes?.error ?? null,
+        data: syncRes?.data ?? null
+      });
       if (!syncRes.success) {
         setStatus("Master sync başarısız: " + (syncRes.error || "Bilinmeyen hata"), "error");
         return;
       }
       res = await api.getMasterData(type);
+      payload = normalizeMasterPayload(res.data, type);
+      console.log("[Settings][MasterData] post-sync response", type, describeMasterResponse(res, type));
     }
 
-    if (!res.success || !res.data || !res.data.dataset) {
-      setStatus("Veri alınamadı: " + (res.error || "Geçersiz yanıt"), "error");
+    if (!res.success || !payload?.dataset) {
+      const debug = describeMasterResponse(res, type);
+      const detailParts = [
+        `success=${res.success}`,
+        res.status ? `status=${res.status}` : null,
+        res.error ? `error=${res.error}` : null,
+        `hasPayload=${!!payload}`,
+        `hasDataset=${!!payload?.dataset}`,
+        debug.topLevelKeys.length ? `keys=${debug.topLevelKeys.join(",")}` : "keys=none"
+      ].filter(Boolean);
+      console.error("[Settings][MasterData] invalid response", type, debug);
+      setStatus("Veri alınamadı veya yapı geçersiz: " + detailParts.join(" | "), "error");
       return;
     }
 
-    const payload = res.data;
     const ds = payload.dataset;
     currentVersion = payload.version ?? null;
     currentHeaders = Array.isArray(ds.headers) ? ds.headers : [];
@@ -376,10 +525,21 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
       });
     }
 
+    addEv("master-sync-all", "change", (e: Event) => {
+      setMasterChildrenChecked((e.target as HTMLInputElement).checked);
+    });
+
+    const masterCheckboxes = Array.from(document.querySelectorAll('input[name="master-sync-scope"]')) as HTMLInputElement[];
+    masterCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", syncMasterParentState);
+      registerCleanup(() => checkbox.removeEventListener("change", syncMasterParentState));
+    });
+    syncMasterParentState();
+
     addEv("refresh-btn", "click", () => loadDataset(currentType));
 
     addEv("ops-sync-btn", "click", async () => {
-      const scopes = getSelectedScopes();
+      const { scopes, masterTypes } = getSyncSelection();
       if (!scopes.length) {
         setBackupStatus("Lütfen en az bir kapsam seçin.", "error");
         toast.warning("Lütfen senkronize edilecek en az bir kapsam seçin.");
@@ -389,20 +549,26 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
       const btn = document.getElementById("ops-sync-btn") as HTMLButtonElement | null;
       const idleText = "Seçili Verileri Sheets'ten Çek";
       setButtonBusy(btn, true, idleText, "Senkronize Ediliyor...");
-      toast.info(`${scopes.map(getScopeLabel).join(", ")} için senkronizasyon başlatıldı...`);
+      const selectionLabels = scopes.flatMap((scope) => {
+        if (scope !== "master") return [getScopeLabel(scope)];
+        return masterTypes.map((type) => `Ana Veri / ${getMasterScopeLabel(type)}`);
+      });
+      toast.info(`${selectionLabels.join(", ")} için senkronizasyon başlatıldı...`);
 
       try {
         for (const scope of scopes) {
           const label = getScopeLabel(scope);
 
           if (scope === "master") {
-            setBackupStatus("Ana veriler çekiliyor...", "info");
-            toast.info("Master veri senkronizasyonu başlatıldı...");
-            const res = await api.bulkSync({ scope: ["master"] });
+            const masterLabel = masterTypes.map(getMasterScopeLabel).join(", ");
+            setBackupStatus(`Ana veri alt başlıkları çekiliyor: ${masterLabel}`, "info");
+            toast.info(`Ana veri senkronizasyonu başlatıldı: ${masterLabel}`);
+            const res = await api.syncMasterData(masterTypes);
             if (!res.success) throw new Error("Master veri senkronizasyonu başarısız: " + (res.error || "Bilinmeyen hata"));
             const checkbox = document.querySelector(`input[name="sync-scope"][value="master"]`) as HTMLInputElement | null;
             if (checkbox) checkbox.checked = false;
-            toast.success("Master veriler başarıyla güncellendi.");
+            setMasterChildrenChecked(false);
+            toast.success(`Ana veri güncellendi: ${masterLabel}`);
             continue;
           }
 
@@ -428,25 +594,27 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     });
 
 
-    addEv("export-kv-btn", "click", async () => {
-      const scope = getSelectedScopes();
+    addEv("export-backup-btn", "click", async () => {
+      const topLevelScopes = getSelectedScopes().filter((scope) => scope !== "master");
+      const masterTypes = getSelectedMasterTypes();
+      const scope = masterTypes.length ? [...topLevelScopes, "master"] : topLevelScopes;
       if (!scope.length) {
         setBackupStatus("Lütfen yedeklemek istediğiniz kapsamları seçin.", "error");
         return;
       }
-      setBackupStatus("[" + scope.join(", ") + "] kapsamı için KV yedek paketi hazırlanıyor...");
-      const res = await api.exportKvData(scope);
+      setBackupStatus("[" + scope.join(", ") + "] kapsamı için D1 yedek paketi hazırlanıyor...");
+      const res = await api.exportData(scope, masterTypes);
       if (!res.success || !res.exportData) {
         setBackupStatus("Dışa aktarma başarısız: " + (res.error || "Bilinmeyen hata"), "error");
         return;
       }
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-      downloadJson("mc-kv-backup-" + stamp + ".json", res.exportData);
-      setBackupStatus("KV yedeği indirildi (" + scope.length + " kategori).", "success");
+      downloadJson("mc-d1-backup-" + stamp + ".json", res.exportData);
+      setBackupStatus("D1 yedeği indirildi (" + scope.length + " kategori).", "success");
     });
 
     const fileInput = document.getElementById("import-file-input") as HTMLInputElement | null;
-    const iBtn = document.getElementById("import-kv-btn") as HTMLButtonElement | null;
+    const iBtn = document.getElementById("import-backup-btn") as HTMLButtonElement | null;
 
     if (fileInput) {
       addEv("import-file-input", "change", async (event: Event) => {
@@ -468,21 +636,16 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
       });
     }
 
-    addEv("import-kv-btn", "click", async () => {
-      const scope = getSelectedScopes();
+    addEv("import-backup-btn", "click", async () => {
       if (!selectedBackupPayload) {
         setBackupStatus("Önce geçerli bir yedek JSON dosyası seçin.", "error");
         return;
       }
-      if (!scope.length) {
-        setBackupStatus("Lütfen geri yüklemek istediğiniz kapsamları (Seçim Paneli) belirleyin.", "error");
-        return;
-      }
-      if (!confirm("DİKKAT! Seçilen kapsamlardaki (" + scope.join(", ") + ") MEVCUT KV verileri tamamen SİLİNECEK ve yedektekilerle değiştirilecektir. Devam etmek istiyor musun?")) {
+      if (!confirm("DİKKAT! Bu işlem TÜM tabloları (firmalar, sertifikalar, testler, denetimler, proformalar) yedekteki veriyle değiştirecektir. Devam etmek istiyor musun?")) {
         return;
       }
 
-      console.log("[Backup] Geri yükleme başlatıldı. Kapsam:", scope);
+      console.log("[Backup] Geri yükleme başlatıldı (tam kapsam).");
       const originalText = iBtn ? iBtn.textContent : "Geri Yükle";
       if (iBtn) {
         iBtn.disabled = true;
@@ -490,11 +653,11 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
         iBtn.classList.add("animate-pulse");
       }
 
-      setBackupStatus("[" + scope.join(", ") + "] kapsamı geri yükleniyor (Replace)... Bu işlem verinin boyutuna göre biraz zaman alabilir.", "info");
-      toast.info(`[${scope.join(", ")}] kapsamı geri yükleniyor...`);
+      setBackupStatus("Tüm tablolar geri yükleniyor... Bu işlem verinin boyutuna göre biraz zaman alabilir.", "info");
+      toast.info("Yedekten geri yükleme başlatıldı (tam kapsam)...");
 
       try {
-        const res = await api.importKvData(selectedBackupPayload, scope);
+        const res = await api.importBackup(selectedBackupPayload);
         console.log("[Backup] Sunucu yanıtı:", res);
 
         if (!res.success) {
@@ -533,7 +696,7 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
     addEv("save-btn", "click", saveDataset);
 
     addEv("deep-repair-btn", "click", async () => {
-      if (!confirm("İndeks onarımı başlatılacak. Bu işlem ana sayfa istatistiklerini ve sertifika listelerini KV verisine göre yeniden düzenler. Devam etmek istiyor musun?")) return;
+      if (!confirm("İndeks onarımı başlatılacak. Bu işlem ana sayfa istatistiklerini ve sertifika listelerini D1 verisine göre yeniden düzenler. Devam etmek istiyor musun?")) return;
 
       const btn = document.getElementById("deep-repair-btn") as HTMLButtonElement | null;
       if (btn) {
@@ -550,14 +713,14 @@ import DashboardLayout from "../layouts/DashboardLayout.astro";
           await SyncManager.forceSync();
           if (btn) {
             btn.disabled = false;
-            btn.textContent = "İndeksleri KV'den Onar";
+            btn.textContent = "İndeksleri D1'den Onar";
           }
         }, 3000);
       } else {
         toast.error("Hata: " + (res.error || "Bilinmeyen hata"));
         if (btn) {
           btn.disabled = false;
-          btn.textContent = "İndeksleri KV'den Onar";
+          btn.textContent = "İndeksleri D1'den Onar";
         }
       }
     });

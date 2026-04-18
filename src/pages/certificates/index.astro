@@ -632,7 +632,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       .map(cb => (cb as HTMLElement).dataset.id);
     if (checked.length === 0) return;
     if (!confirm(`${checked.length} adet belgenin gözetim durumunu güncellemek istediğinizden emin misiniz?`)) return;
-    const res = await api.call('updateSurveillance', { ids: checked, status });
+    const res = await api.updateSurveillance(checked, status);
     if (res.success) {
       toast.success('İşlem başarılı!');
       window.location.reload();
@@ -682,8 +682,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         if (res.success && Array.isArray(res.data)) {
           fullCertificatesLoaded = true;
           $certificates.set(res.data);
-        } else if (res.needsHydration || res.error === 'KV_PRIMARY_MISS') {
-          console.warn('[certificates] KV miss detected. Manual sync is required before certificates can be loaded.');
+        } else if (!res.success) {
+          console.warn('[certificates] getCertificates failed:', res.error);
         }
       } catch (error) {
         console.error('[certificates] ensureCertificatesLoaded failed:', error);

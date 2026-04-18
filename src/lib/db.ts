@@ -3,8 +3,8 @@ import { get, set, del, keys } from 'idb-keyval';
 /**
  * 🗄️ Database Manager: IndexedDB Wrapper
  *
- * KV-primary mimaride tarayıcı tarafı kısa süreli okuma cache'i.
- * Bu katman kalıcı ana veri kaynağı değil, hızlandırma katmanıdır.
+ * D1-primary mimaride tarayıcı tarafı IndexedDB cache katmanı.
+ * İlk açılışta anlık render sağlar; arka planda Worker/D1 ile tazelenir.
  */
 
 export const DB = {

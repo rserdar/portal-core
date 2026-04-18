@@ -461,7 +461,7 @@ import { ArrowLeft, Save } from 'lucide-astro';
   // ─── Load Consultants ─────────────────────────────────────────────────────────
 
   async function loadConsultants(currentDan: string) {
-    const res = await api.call('getConsultants');
+    const res = await api.getConsultants();
     const list = document.getElementById('consultant-list') as HTMLDataListElement | null;
     if (!list || !Array.isArray(res?.data)) return;
     list.innerHTML = '';
@@ -481,31 +481,12 @@ import { ArrowLeft, Save } from 'lucide-astro';
       return;
     }
 
-    const res = await api.call('getCompanyById', { id: firmaId });
+    const res = await api.getCompanyById(firmaId);
     const c = res?.data;
     if (!c) {
-      const isKvMiss = res?.error === 'KV_PRIMARY_MISS' || res?.needsHydration;
       const skelEl = document.getElementById('form-skeleton');
       if (skelEl) {
-        skelEl.innerHTML = isKvMiss
-          ? `<div class="bg-surface border border-amber-500/30 rounded-3xl p-8 space-y-3">
-               <p class="text-sm font-bold text-amber-400">KV verisi bulunamadı — senkronizasyon gerekiyor.</p>
-               <p class="text-xs text-muted">Ayarlar &rsaquo; Sistemi Senkronize Et düğmesini çalıştırıp tekrar deneyin.</p>
-               <button id="btn-retry-sync" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all">Senkronize Et ve Aç</button>
-             </div>`
-          : `<p class="text-sm text-rose-400 font-bold p-8">Firma bulunamadı (ID: ${firmaId})</p>`;
-      }
-      if (isKvMiss) {
-        document.getElementById('btn-retry-sync')?.addEventListener('click', async () => {
-          const btn = document.getElementById('btn-retry-sync') as HTMLButtonElement | null;
-          if (btn) { btn.disabled = true; btn.textContent = 'Senkronize ediliyor...'; }
-          try {
-            await api.bulkSync(['companies']);
-            location.reload();
-          } catch {
-            if (btn) { btn.disabled = false; btn.textContent = 'Tekrar Dene'; }
-          }
-        });
+        skelEl.innerHTML = `<p class="text-sm text-rose-400 font-bold p-8">Firma bulunamadı (ID: ${firmaId})</p>`;
       }
       return;
     }

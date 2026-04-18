@@ -426,7 +426,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         if (submitIcon) submitIcon.classList.add('hidden');
         if (loadingIcon) loadingIcon.classList.remove('hidden');
 
-        const response = await api.call('addCompany', { companyInfo });
+        const response = await api.addCompany(companyInfo);
         
         if (response.success) {
           const createdId = String((response as any)?.data?.id || (response as any)?.id || '').trim();

@@ -3,9 +3,6 @@ main = "src/workers/proxy.js"
 compatibility_date = "2025-01-01"
 account_id = "e2d6828ee7890229a51772bae6c27aae"
 
-[vars]
-API_KEY = "mc-portal-3.0_8a2d7f9e4c1b5a6c3d2e1f0b9a8c7d6e"
-
 [[routes]]
 pattern = "portalapi.medicert.com.tr"
 custom_domain = true

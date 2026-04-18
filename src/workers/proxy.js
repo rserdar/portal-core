@@ -6,7 +6,7 @@
  * - Cache / Index: Cloudflare D1 (env.DB_D1) — SQL destekli, KV'nin yerini aldı.
  * - KV (env.DB): Yalnızca auth token ve mutex lock için korunur.
  * - Write path: Worker → GAS (Sheets write) → D1 güncelle.
- * - Read path:  Worker → D1 hit → dön; miss → GAS → D1 cache → dön.
+ * - Read path:  Worker → D1 okur; self-healing fallback uygulanmaz (miss = boş sonuç).
  * - Google Native (Drive/Calendar/Docs/Gmail): Doğrudan GAS, D1 bypass.
  *
  * Bindings:
@@ -910,6 +910,104 @@ export default {
     };
 
 
+    const upsertMasterTypeToD1 = async (type, rows, env) => {
+      const batchInsert = async (stmts) => {
+        for (let i = 0; i < stmts.length; i += 100) await env.DB_D1.batch(stmts.slice(i, i + 100));
+      };
+      if (type === "standards") {
+        const normalized = rows.map(r => ({
+          kod: pickMasterField(r, ["kod", "id", "standard code", "standart kodu", "standart"]),
+          kisaltma: pickMasterField(r, ["kisaltma", "kısaltma", "short code", "kisaltma kodu"]),
+          tam_ad: pickMasterField(r, ["tam_ad", "tam adı", "tam adi", "tamad", "ad", "standart adı", "standart adi", "full"]),
+          tanim_tr: pickMasterField(r, ["tanim_tr", "tanım (tr)", "tanim tr", "türkçe tanım", "turkce tanim"]),
+          tanim_en: pickMasterField(r, ["tanim_en", "tanım (en)", "tanim en", "english description", "ingilizce tanım", "ingilizce tanim"]),
+          tema_id_en: pickMasterField(r, ["tema_id_en", "tema id (en)", "english theme id", "themeid", "en tema", "ingilizce tema id"]),
+          tema_id_tr: pickMasterField(r, ["tema_id_tr", "tema id (tr)", "turkish theme id", "temaid", "tr tema", "türkçe tema id", "turkce tema id"]),
+        })).filter(r => r.kod || r.kisaltma || r.tam_ad);
+        if (normalized.length) {
+          await env.DB_D1.prepare(`DELETE FROM standards`).run();
+          const s = env.DB_D1.prepare(`INSERT OR REPLACE INTO standards (kod,kisaltma,tam_ad,tanim_tr,tanim_en,tema_id_en,tema_id_tr) VALUES (?,?,?,?,?,?,?)`);
+          await batchInsert(normalized.map(r => s.bind(String(r.kod||""),r.kisaltma||null,r.tam_ad||null,r.tanim_tr||null,r.tanim_en||null,r.tema_id_en||null,r.tema_id_tr||null)));
+        }
+      } else if (type === "auditors") {
+        const isChecked = (val) => String(val).trim().toUpperCase() === "TRUE" || val === true || val === "true" || val === 1 || String(val) === '1';
+        const normalizedAuditors = rows.map((r, idx) => {
+          const isArr = Array.isArray(r);
+          return {
+            id: parseInt(isArr ? r[0] : r.id) || idx + 1,
+            ad: String((isArr ? r[1] : r.ad) || "").trim(),
+            soyad: String((isArr ? r[2] : r.soyad) || "").trim(),
+            imza: String((isArr ? r[3] : r.imza) || "").trim(),
+            std_9001: isChecked(isArr ? r[4] : r.std_9001) ? 1 : 0,
+            std_13485: isChecked(isArr ? r[5] : r.std_13485) ? 1 : 0,
+            std_14001: isChecked(isArr ? r[6] : r.std_14001) ? 1 : 0,
+            std_22000: isChecked(isArr ? r[7] : r.std_22000) ? 1 : 0,
+            std_27001: isChecked(isArr ? r[8] : r.std_27001) ? 1 : 0,
+            std_45001: isChecked(isArr ? r[9] : r.std_45001) ? 1 : 0,
+            std_50001: isChecked(isArr ? r[10] : r.std_50001) ? 1 : 0,
+            std_gmp: isChecked(isArr ? r[11] : r.std_gmp) ? 1 : 0
+          };
+        }).filter(a => a.ad || a.soyad);
+        if (normalizedAuditors.length) {
+          await env.DB_D1.prepare(`DELETE FROM auditors`).run();
+          const a = env.DB_D1.prepare(`INSERT INTO auditors (id,ad,soyad,imza,std_9001,std_13485,std_14001,std_22000,std_27001,std_45001,std_50001,std_gmp,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`);
+          await batchInsert(normalizedAuditors.map(r => a.bind(r.id,r.ad,r.soyad,r.imza,r.std_9001,r.std_13485,r.std_14001,r.std_22000,r.std_27001,r.std_45001,r.std_50001,r.std_gmp)));
+        }
+      } else if (type === "consultants") {
+        const normalized = rows.map(r => ({
+          id: pickMasterField(r, ["id","consultant id","danisman id"]),
+          ad: pickMasterField(r, ["ad","adı","adi","isim","danışman","danisman","danışmanlar","name"]),
+          adres: pickMasterField(r, ["adres","address"]),
+          tel: pickMasterField(r, ["tel","telefon","gsm"]),
+          mail: pickMasterField(r, ["mail","email","e-posta","eposta"]),
+          yetkili_adi: pickMasterField(r, ["yetkili_adi","yetkili adı","yetkili adi","yetkili","ilgili kişi","ilgili kisi"]),
+          yetkili_soyad: pickMasterField(r, ["yetkili_soyad","yetkili soyadı","yetkili soyadi"]),
+          hitabet: pickMasterField(r, ["hitabet","unvan","ünvan","title"]),
+        })).filter(r => r.id || r.ad || r.adres || r.tel || r.mail);
+        if (normalized.length) {
+          await env.DB_D1.prepare(`DELETE FROM consultants`).run();
+          const c = env.DB_D1.prepare(`INSERT OR REPLACE INTO consultants (id,ad,adres,tel,mail,yetkili_adi,yetkili_soyad,hitabet,updated_at) VALUES (?,?,?,?,?,?,?,?,unixepoch())`);
+          await batchInsert(normalized.map(r => c.bind(parseInt(r.id)||null,r.ad||null,r.adres||null,r.tel||null,r.mail||null,r.yetkili_adi||null,r.yetkili_soyad||null,r.hitabet||null)));
+        }
+      } else if (type === "testdocs") {
+        const normalized = rows.map(r => ({
+          id: pickMasterField(r, ["id","testdoc id"]),
+          kategori: pickMasterField(r, ["kategori","category"]),
+          aciklama: pickMasterField(r, ["aciklama","açıklama","description","testin açıklaması","testin aciklamasi"]),
+          dokuman_adi: pickMasterField(r, ["dokuman_adi","doküman adı","dokuman adi","document name"]),
+          test_adi_tr: pickMasterField(r, ["test_adi_tr","test adı","test adı (tr)","türkçe test adı","turkce test adi"]),
+          test_adi_en: pickMasterField(r, ["test_adi_en","test adı (en)","ingilizce test adı","ingilizce test adi","english test name"]),
+          standart: pickMasterField(r, ["standart","standard","test standardı","test standardi"]),
+          tema_tr: pickMasterField(r, ["tema_tr","türkçe tema","turkce tema","tema tr"]),
+          tema_en: pickMasterField(r, ["tema_en","ingilizce tema","tema en","english theme"]),
+          gun_sayisi: pickMasterField(r, ["gun_sayisi","gün sayısı","gun sayisi","days"]),
+          kisaltma: pickMasterField(r, ["kisaltma","kısaltma"]),
+          kisaltma2: pickMasterField(r, ["kisaltma2","kısaltma 2","kisaltma 2"]),
+          notlar: pickMasterField(r, ["notlar","not","notes"]),
+        })).filter(r => r.id || r.kategori || r.test_adi_tr || r.standart);
+        if (normalized.length) {
+          await env.DB_D1.prepare(`DELETE FROM testdocs`).run();
+          const t = env.DB_D1.prepare(`INSERT OR REPLACE INTO testdocs (id,kategori,aciklama,dokuman_adi,test_adi_tr,test_adi_en,standart,tema_tr,tema_en,gun_sayisi,kisaltma,kisaltma2,notlar,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`);
+          await batchInsert(normalized.map(r => t.bind(parseInt(r.id)||null,r.kategori||null,r.aciklama||null,r.dokuman_adi||null,r.test_adi_tr||null,r.test_adi_en||null,r.standart||null,r.tema_tr||null,r.tema_en||null,parseInt(r.gun_sayisi)||null,r.kisaltma||null,r.kisaltma2||null,r.notlar||null)));
+        }
+      } else if (type === "sysdocs") {
+        const normalized = rows.map(r => ({
+          id: pickMasterField(r, ["id","sysdoc id"]),
+          set_adi: pickMasterField(r, ["set_adi","set adı","set adi","set","setin adı","setin adi"]),
+          dosya_turu: pickMasterField(r, ["dosya_turu","dosya türü","dosya turu","tür","tur"]),
+          klasor_adi: pickMasterField(r, ["klasor_adi","klasör adı","klasor adi","klasör","folder"]),
+          dokuman_kodu: pickMasterField(r, ["dokuman_kodu","doküman kodu","dokuman kodu","kod"]),
+          dokuman_adi: pickMasterField(r, ["dokuman_adi","doküman adı","dokuman adi","ad"]),
+          dokuman_id: pickMasterField(r, ["dokuman_id","doküman id","dokuman id","drive id","file id"]),
+        })).filter(r => r.id || r.set_adi || r.dokuman_kodu || r.dokuman_adi);
+        if (normalized.length) {
+          await env.DB_D1.prepare(`DELETE FROM sysdocs`).run();
+          const s = env.DB_D1.prepare(`INSERT OR REPLACE INTO sysdocs (id,set_adi,dosya_turu,klasor_adi,dokuman_kodu,dokuman_adi,dokuman_id,updated_at) VALUES (?,?,?,?,?,?,?,unixepoch())`);
+          await batchInsert(normalized.map(r => s.bind(parseInt(r.id)||null,r.set_adi||null,r.dosya_turu||null,r.klasor_adi||null,r.dokuman_kodu||null,r.dokuman_adi||null,r.dokuman_id||null)));
+        }
+      }
+    };
+
     const fetchFromGasViaGet = async (env, body) => {
       if (body?.action !== "translate") return null;
 
@@ -952,26 +1050,52 @@ export default {
         if (!env.DB_D1) return jsonResponse({ success: false, error: "NO_D1_BINDING" }, 500);
         const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
         const hasScope = (s) => scope.includes(s);
+        const validMasterTypes = ["standards", "auditors", "consultants", "testdocs", "sysdocs"];
+        const requestedMasterTypes = Array.isArray(params?.masterTypes)
+          ? params.masterTypes.map((type) => String(type || "").trim().toLowerCase()).filter((type) => validMasterTypes.includes(type))
+          : [];
+        const masterTypes = requestedMasterTypes.length ? requestedMasterTypes : validMasterTypes;
+        const hasMasterType = (type) => hasScope("master") && masterTypes.includes(type);
 
         // === GAS OKUMA (değişmez — sayfalı, GAS timeout korumalı) ===
         const PAGE_SIZE = 1500;
         const LARGE_SCOPES = new Set(["companies", "certificates", "audits", "tests", "proformas"]);
-        const d = {};
+        const d = { masterMeta: {} };
 
         for (const s of scope) {
           if (s === "master") {
-            const res = await fetchFromGas(env, { action: "getMasterSyncData" });
-            if (!res.success) return jsonResponse(res);
-            const master = res.data || {};
-            const datasets = master.datasets || {};
+            if (masterTypes.length === validMasterTypes.length) {
+              const res = await fetchFromGas(env, { action: "getMasterSyncData" });
+              if (!res.success) return jsonResponse(res);
+              const master = res.data || {};
+              const datasets = master.datasets || {};
 
-            d.masterVersion = master.version || null;
-            d.masterUpdatedAt = master.updatedAt || null;
-            d.standards = datasetRowsToObjects(datasets.standards);
-            d.auditors = datasetRowsToObjects(datasets.auditors);
-            d.consultants = datasetRowsToObjects(datasets.consultants);
-            d.testdocs = datasetRowsToObjects(datasets.testdocs);
-            d.sysdocs = datasetRowsToObjects(datasets.sysdocs);
+              d.masterVersion = master.version || null;
+              d.masterUpdatedAt = master.updatedAt || null;
+              d.standards = datasetRowsToObjects(datasets.standards);
+              d.auditors = datasetRowsToObjects(datasets.auditors);
+              d.consultants = datasetRowsToObjects(datasets.consultants);
+              d.testdocs = datasetRowsToObjects(datasets.testdocs);
+              d.sysdocs = datasetRowsToObjects(datasets.sysdocs);
+              for (const type of validMasterTypes) {
+                d.masterMeta[type] = {
+                  version: master.version || null,
+                  updatedAt: master.updatedAt || null
+                };
+              }
+            } else {
+              for (const type of masterTypes) {
+                const res = await fetchFromGas(env, { action: "getMasterData", params: { type } });
+                if (!res.success) return jsonResponse(res);
+                const dataset = res.data?.dataset;
+                if (!dataset) return jsonResponse({ success: false, error: `MASTER_DATASET_MISSING: ${type}` }, 502);
+                d[type] = datasetRowsToObjects(dataset);
+                d.masterMeta[type] = {
+                  version: res.data?.version || null,
+                  updatedAt: res.data?.updatedAt || null
+                };
+              }
+            }
             continue;
           }
 
@@ -1021,6 +1145,7 @@ export default {
             return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: companies (current: ${currentCount}, incoming: ${canonicalCompanies.length})` }, 400);
           }
 
+          await env.DB_D1.prepare(`DELETE FROM companies`).run();
           const stmt = env.DB_D1.prepare(
             `INSERT OR REPLACE INTO companies
               (id, nickname, unvan, adres, city, ulke, yazisma, vergi_dairesi, vergi_no,
@@ -1086,6 +1211,7 @@ export default {
             return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: certificates (current: ${currentCount}, incoming: ${dedupedCerts.length})` }, 400);
           }
 
+          await env.DB_D1.prepare(`DELETE FROM certificates`).run();
           const stmt = env.DB_D1.prepare(
             `INSERT OR REPLACE INTO certificates
               (id, firma_no, standart, denetim_tipi, sertifika_no, sertifika_tarihi,
@@ -1110,7 +1236,7 @@ export default {
             c.scope || null,
             c.akreditasyon || c.akrn || null,
             c.akredite ? 1 : 0,
-            null,                              // ea — certificates tablosunda yok, sütun kaldırıldı
+            null,                              // ea — GAS canonical objesinde gelmediğinden null; sütun D1'de var
             c.kod || c.nace || null,
             c.dan || c.danisman || null,
             c.other || null,
@@ -1136,6 +1262,7 @@ export default {
             return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: tests (current: ${currentCount}, incoming: ${canonicalTests.length})` }, 400);
           }
 
+          await env.DB_D1.prepare(`DELETE FROM tests`).run();
           const stmt = env.DB_D1.prepare(
             `INSERT OR REPLACE INTO tests
               (id, firma_no, test_adi, marka, urun, urun_kodu, urun_no, lot,
@@ -1181,6 +1308,7 @@ export default {
             return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: audits (current: ${currentCount}, incoming: ${canonicalAudits.length})` }, 400);
           }
 
+          await env.DB_D1.prepare(`DELETE FROM audits`).run();
           const stmt = env.DB_D1.prepare(
             `INSERT OR REPLACE INTO audits
               (id, firma_no, standart, denetim_tipi,
@@ -1222,6 +1350,7 @@ export default {
             return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: proformas (current: ${currentCount}, incoming: ${canonicalProformas.length})` }, 400);
           }
 
+          await env.DB_D1.prepare(`DELETE FROM proformas`).run();
           const stmt = env.DB_D1.prepare(
             `INSERT OR REPLACE INTO proformas
               (id, firma_no, kdvsiz, kdv_oran, kdv, toplam, birim, tarih, konu, updated_at)
@@ -1253,7 +1382,7 @@ export default {
           let normalizedTestDocs = [];
           let normalizedSysDocs = [];
 
-          if (stdList.length) {
+          if (hasMasterType("standards")) {
             normalizedStandards = stdList
               .map((r) => ({
                 kod: pickMasterField(r, ["kod", "id", "standard code", "standart kodu", "standart"]),
@@ -1266,8 +1395,8 @@ export default {
               }))
           .filter((r) => r.kod || r.kisaltma || r.tam_ad || r.tanim_tr || r.tanim_en || r.tema_id_en || r.tema_id_tr);
 
+            await env.DB_D1.prepare(`DELETE FROM standards`).run();
             if (normalizedStandards.length) {
-              await env.DB_D1.prepare(`DELETE FROM standards`).run();
               const s = env.DB_D1.prepare(
                 `INSERT OR REPLACE INTO standards (kod, kisaltma, tam_ad, tanim_tr, tanim_en, tema_id_en, tema_id_tr) VALUES (?,?,?,?,?,?,?)`
               );
@@ -1284,70 +1413,41 @@ export default {
           }
 
 
-          const uniqueAuditorsSet = new Set();
-          audList.forEach(r => {
-            const nameG = pickMasterField(r, ["denetçiler", "denetciler"]);
-            if (nameG) uniqueAuditorsSet.add(nameG.trim());
-          });
-
-          if (uniqueAuditorsSet.size === 0) {
-            audList.forEach(r => {
-              const nameB = pickMasterField(r, ["denetçi", "denetci", "ad", "adı", "isim"]);
-              if (nameB) uniqueAuditorsSet.add(nameB.trim());
-            });
-          }
-
-          const normalizedAuditorsList = Array.from(uniqueAuditorsSet).map((fullName, idx) => {
-            const cleanName = fullName.trim();
-            const parts = cleanName.split(/\s+/);
-            const soyad = parts.length > 1 ? parts.pop() : "";
-            const ad = parts.join(" ");
+                    let normalizedAuditorsList = [];
+          if (hasMasterType("auditors")) {
+            const isChecked = (val) => String(val).trim().toUpperCase() === "TRUE" || val === true || val === "true" || val === 1 || String(val) === '1';
+            normalizedAuditorsList = audList.map((r, idx) => {
+              const isArr = Array.isArray(r);
+              return {
+                id: parseInt(isArr ? r[0] : r.id) || idx + 1,
+                ad: String((isArr ? r[1] : r.ad) || "").trim(),
+                soyad: String((isArr ? r[2] : r.soyad) || "").trim(),
+                imza: String((isArr ? r[3] : r.imza) || "").trim(),
+                std_9001: isChecked(isArr ? r[4] : r.std_9001) ? 1 : 0,
+                std_13485: isChecked(isArr ? r[5] : r.std_13485) ? 1 : 0,
+                std_14001: isChecked(isArr ? r[6] : r.std_14001) ? 1 : 0,
+                std_22000: isChecked(isArr ? r[7] : r.std_22000) ? 1 : 0,
+                std_27001: isChecked(isArr ? r[8] : r.std_27001) ? 1 : 0,
+                std_45001: isChecked(isArr ? r[9] : r.std_45001) ? 1 : 0,
+                std_50001: isChecked(isArr ? r[10] : r.std_50001) ? 1 : 0,
+                std_gmp: isChecked(isArr ? r[11] : r.std_gmp) ? 1 : 0
+              };
+            }).filter(a => a.ad || a.soyad);
             
-            let imza = null;
-            const stds = new Set();
-            
-            audList.forEach(r => {
-              const dName = pickMasterField(r, ["denetçi", "denetci", "ad", "adı", "isim"]);
-              if (dName && dName.toLowerCase().trim() === cleanName.toLowerCase()) {
-                const imzaVal = pickMasterField(r, ["imza", "signature"]);
-                if (imzaVal && !imza) imza = imzaVal;
-                
-                const std = pickMasterField(r, ["standart", "standard"]);
-                if (std) stds.add(String(std).trim().toUpperCase());
-              }
-            });
-
-            return {
-              id: idx + 1,
-              ad: ad,
-              soyad: soyad,
-              imza: imza,
-              std_9001: stds.has("9001") ? 1 : 0,
-              std_13485: stds.has("13485") ? 1 : 0,
-              std_14001: stds.has("14001") ? 1 : 0,
-              std_22000: stds.has("22000") ? 1 : 0,
-              std_27001: stds.has("27001") ? 1 : 0,
-              std_45001: stds.has("45001") ? 1 : 0,
-              std_50001: stds.has("50001") ? 1 : 0,
-              std_gmp: stds.has("GMP") ? 1 : 0
-            };
-          });
-
-          if (normalizedAuditorsList.length) {
             await env.DB_D1.prepare(`DELETE FROM auditors`).run();
-            const a = env.DB_D1.prepare(
-              `INSERT INTO auditors (id, ad, soyad, imza, std_9001, std_13485, std_14001, std_22000, std_27001, std_45001, std_50001, std_gmp, updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
-            );
-            await batchInsert(normalizedAuditorsList.map(r => a.bind(
-              null, r.ad, r.soyad, r.imza,
-              r.std_9001, r.std_13485, r.std_14001, r.std_22000,
-              r.std_27001, r.std_45001, r.std_50001, r.std_gmp
-            )));
+            if (normalizedAuditorsList.length) {
+              const a = env.DB_D1.prepare(
+                `INSERT INTO auditors (id, ad, soyad, imza, std_9001, std_13485, std_14001, std_22000, std_27001, std_45001, std_50001, std_gmp, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
+              );
+              await batchInsert(normalizedAuditorsList.map(r => a.bind(
+                r.id, r.ad, r.soyad, r.imza,
+                r.std_9001, r.std_13485, r.std_14001, r.std_22000,
+                r.std_27001, r.std_45001, r.std_50001, r.std_gmp
+              )));
+            }
           }
 
-
-          if (conList.length) {
+          if (hasMasterType("consultants")) {
             normalizedConsultants = conList
               .map((r) => ({
                 id: pickMasterField(r, ["id", "consultant id", "danisman id"]),
@@ -1361,8 +1461,8 @@ export default {
               }))
               .filter((r) => r.id || r.ad || r.adres || r.tel || r.mail || r.yetkili_adi || r.yetkili_soyad || r.hitabet);
 
+            await env.DB_D1.prepare(`DELETE FROM consultants`).run();
             if (normalizedConsultants.length) {
-              await env.DB_D1.prepare(`DELETE FROM consultants`).run();
               const c = env.DB_D1.prepare(
                 `INSERT OR REPLACE INTO consultants (id, ad, adres, tel, mail, yetkili_adi, yetkili_soyad, hitabet, updated_at)
                  VALUES (?,?,?,?,?,?,?,?,unixepoch())`
@@ -1380,7 +1480,7 @@ export default {
             }
           }
 
-          if (tdList.length) {
+          if (hasMasterType("testdocs")) {
             normalizedTestDocs = tdList
               .map((r) => ({
                 id: pickMasterField(r, ["id", "testdoc id"]),
@@ -1399,8 +1499,8 @@ export default {
               }))
               .filter((r) => r.id || r.kategori || r.aciklama || r.dokuman_adi || r.test_adi_tr || r.test_adi_en || r.standart || r.tema_tr || r.tema_en || r.gun_sayisi || r.kisaltma || r.kisaltma2 || r.notlar);
 
+            await env.DB_D1.prepare(`DELETE FROM testdocs`).run();
             if (normalizedTestDocs.length) {
-              await env.DB_D1.prepare(`DELETE FROM testdocs`).run();
               const t = env.DB_D1.prepare(
                 `INSERT OR REPLACE INTO testdocs (id, kategori, aciklama, dokuman_adi, test_adi_tr, test_adi_en, standart, tema_tr, tema_en, gun_sayisi, kisaltma, kisaltma2, notlar, updated_at)
                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
@@ -1416,7 +1516,7 @@ export default {
             }
           }
 
-          if (sdList.length) {
+          if (hasMasterType("sysdocs")) {
             normalizedSysDocs = sdList
               .map((r) => ({
                 id: pickMasterField(r, ["id", "sysdoc id"]),
@@ -1429,8 +1529,8 @@ export default {
               }))
               .filter((r) => r.id || r.set_adi || r.dosya_turu || r.klasor_adi || r.dokuman_kodu || r.dokuman_adi || r.dokuman_id);
 
+            await env.DB_D1.prepare(`DELETE FROM sysdocs`).run();
             if (normalizedSysDocs.length) {
-              await env.DB_D1.prepare(`DELETE FROM sysdocs`).run();
               const s = env.DB_D1.prepare(
                 `INSERT OR REPLACE INTO sysdocs (id, set_adi, dosya_turu, klasor_adi, dokuman_kodu, dokuman_adi, dokuman_id, updated_at)
                  VALUES (?,?,?,?,?,?,?,unixepoch())`
@@ -1443,25 +1543,37 @@ export default {
             }
           }
 
-          stats.master = {
-            standards: normalizedStandards.length,
-            auditors: filteredAudList.length,
-            consultants: normalizedConsultants.length,
-            testdocs: normalizedTestDocs.length,
-            sysdocs: normalizedSysDocs.length
-          };
+          stats.master = {};
+          if (hasMasterType("standards")) stats.master.standards = normalizedStandards.length;
+          if (hasMasterType("auditors")) stats.master.auditors = normalizedAuditorsList.length;
+          if (hasMasterType("consultants")) stats.master.consultants = normalizedConsultants.length;
+          if (hasMasterType("testdocs")) stats.master.testdocs = normalizedTestDocs.length;
+          if (hasMasterType("sysdocs")) stats.master.sysdocs = normalizedSysDocs.length;
         }
 
         // sync_meta güncelle
-        await env.DB_D1.prepare(
-          `INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES ('last_sync', ?, unixepoch())`
-        ).bind(new Date().toISOString()).run();
+        const syncMetaStmts = [
+          env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES ('last_sync', ?, unixepoch())`).bind(new Date().toISOString())
+        ];
+        if (hasScope("master")) {
+          for (const t of masterTypes) {
+            const meta = d.masterMeta?.[t] || { version: d.masterVersion || null, updatedAt: d.masterUpdatedAt || null };
+            if (meta.version) syncMetaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_version_${t}`, String(meta.version)));
+            if (meta.updatedAt) syncMetaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_updated_${t}`, String(meta.updatedAt)));
+          }
+        }
+        await env.DB_D1.batch(syncMetaStmts);
 
         ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse({ success: true, message: "Sync Completed", stats, scope });
+        return jsonResponse({ success: true, message: "Sync Completed", stats, scope, masterTypes });
       },
-      exportKvData: async (params, ctx, env) => {
+      exportData: async (params, ctx, env) => {
         const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
+        const validMasterTypes = ["standards", "auditors", "consultants", "testdocs", "sysdocs"];
+        const requestedMasterTypes = Array.isArray(params?.masterTypes)
+          ? params.masterTypes.map((type) => String(type || "").trim().toLowerCase()).filter((type) => validMasterTypes.includes(type))
+          : [];
+        const masterTypes = requestedMasterTypes.length ? requestedMasterTypes : validMasterTypes;
         const exportData = { version: "2.0", timestamp: new Date().toISOString(), scope, data: {} };
         const ps = [];
         if (scope.includes("companies")) ps.push(env.DB_D1.prepare(`SELECT * FROM companies`).all().then(r => { exportData.data.companies = r.results || []; }));
@@ -1470,22 +1582,30 @@ export default {
         if (scope.includes("audits")) ps.push(env.DB_D1.prepare(`SELECT * FROM audits`).all().then(r => { exportData.data.audits = r.results || []; }));
         if (scope.includes("proformas")) ps.push(env.DB_D1.prepare(`SELECT * FROM proformas`).all().then(r => { exportData.data.proformas = r.results || []; }));
         if (scope.includes("master")) {
-          ps.push(Promise.all([
-            env.DB_D1.prepare(`SELECT * FROM standards`).all(),
-            env.DB_D1.prepare(`SELECT * FROM auditors`).all(),
-            env.DB_D1.prepare(`SELECT * FROM consultants`).all(),
-            env.DB_D1.prepare(`SELECT * FROM testdocs`).all(),
-            env.DB_D1.prepare(`SELECT * FROM sysdocs`).all(),
-          ]).then(([std, aud, con, td, sd]) => {
-            exportData.data.standards = std.results || [];
-            exportData.data.auditors = aud.results || [];
-            exportData.data.consultants = con.results || [];
-            exportData.data.testdocs = td.results || [];
-            exportData.data.sysdocs = sd.results || [];
-          }));
+          exportData.masterTypes = masterTypes;
+          if (masterTypes.includes("standards")) ps.push(env.DB_D1.prepare(`SELECT * FROM standards`).all().then(r => { exportData.data.standards = r.results || []; }));
+          if (masterTypes.includes("auditors")) ps.push(env.DB_D1.prepare(`SELECT * FROM auditors`).all().then(r => { exportData.data.auditors = r.results || []; }));
+          if (masterTypes.includes("consultants")) ps.push(env.DB_D1.prepare(`SELECT * FROM consultants`).all().then(r => { exportData.data.consultants = r.results || []; }));
+          if (masterTypes.includes("testdocs")) ps.push(env.DB_D1.prepare(`SELECT * FROM testdocs`).all().then(r => { exportData.data.testdocs = r.results || []; }));
+          if (masterTypes.includes("sysdocs")) ps.push(env.DB_D1.prepare(`SELECT * FROM sysdocs`).all().then(r => { exportData.data.sysdocs = r.results || []; }));
         }
         await Promise.all(ps);
         return jsonResponse({ success: true, exportData });
+      },
+      exportBackup: async (params, ctx, env) => {
+        return SyncHandlers.exportData(
+          { scope: ["companies", "certificates", "audits", "tests", "proformas", "master"] },
+          ctx, env
+        );
+      },
+      importBackup: async (params, ctx, env) => {
+        const gasResult = await fetchFromGas(env, {
+          action: "importBackup",
+          params: { payload: params?.payload, options: params?.options }
+        });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        await SyncHandlers.bulkSync({}, ctx, env);
+        return jsonResponse(gasResult);
       },
       importKvData: async (params, ctx, env) => {
         return jsonResponse({ success: false, error: "DEPRECATED: importKvData is superseded by bulkSync. Use bulkSync action instead." }, 410);
@@ -1535,7 +1655,7 @@ export default {
           if (page.keys.length) await Promise.all(page.keys.map(k => env.DB.delete(k.name)));
           cursor = page.list_complete ? undefined : page.cursor;
         } while (cursor);
-        return jsonResponse({ success: true, message: "KV Cache Cleared" });
+        return jsonResponse({ success: true, message: "Drive cache cleared" });
       }
     };
 
@@ -1809,6 +1929,32 @@ export default {
         const canonical = createCanonicalAuditRow(gasResult.data || p?.data || p?.auditInfo || {}, { id });
         await upsertAuditD1(canonical, parseInt(id));
         return jsonResponse(gasResult);
+      },
+      deleteTest: async (p, ctx, env) => {
+        const id = String(p?.id || "").trim();
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        const gasResult = await fetchFromGas(env, { action: "deleteTest", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        await env.DB_D1.prepare(`DELETE FROM tests WHERE id=?`).bind(parseInt(id)).run();
+        return jsonResponse(gasResult);
+      },
+      deleteProforma: async (p, ctx, env) => {
+        const id = String(p?.id || "").trim();
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        const gasResult = await fetchFromGas(env, { action: "deleteProforma", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        await env.DB_D1.prepare(`DELETE FROM proformas WHERE id=?`).bind(parseInt(id)).run();
+        return jsonResponse(gasResult);
+      },
+      updateCertificateField: async (p, ctx, env) => {
+        const id = String(p?.id || "").trim();
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        const gasResult = await fetchFromGas(env, { action: "updateCertificateField", params: p });
+        if (!gasResult.success) return jsonResponse(gasResult);
+        const canonical = createCanonicalCertificate(gasResult.data || p?.certInfo || {}, { id });
+        await upsertCertificateD1(canonical, parseInt(id));
+        ctx.waitUntil(rebuildDashboardStats());
+        return jsonResponse(gasResult);
       }
     };
 
@@ -1877,8 +2023,18 @@ export default {
         const type = String(p?.type || "").trim().toLowerCase();
         const tableMap = { standards: "standards", auditors: "auditors", consultants: "consultants", testdocs: "testdocs", sysdocs: "sysdocs" };
         if (type && tableMap[type]) {
-          const { results } = await env.DB_D1.prepare(`SELECT * FROM ${tableMap[type]}`).all();
-          return jsonResponse({ success: true, data: results || [] });
+          const [{ results }, metaRow, metaUpdatedRow] = await Promise.all([
+            env.DB_D1.prepare(`SELECT * FROM ${tableMap[type]}`).all(),
+            env.DB_D1.prepare(`SELECT value FROM sync_meta WHERE key=?`).bind(`master_version_${type}`).first(),
+            env.DB_D1.prepare(`SELECT value FROM sync_meta WHERE key=?`).bind(`master_updated_${type}`).first()
+          ]);
+          const rows = results || [];
+          const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+          return jsonResponse({ success: true, data: {
+            dataset: { headers, rows: rows.map(r => headers.map(h => r[h])), sheetName: type },
+            version: metaRow?.value || null,
+            updatedAt: metaUpdatedRow?.value || null
+          }});
         }
         // Return all tables combined
         const [std, aud, con, td, sd] = await Promise.all([
@@ -1915,8 +2071,16 @@ export default {
         const gasResult = await fetchFromGas(env, { action: "updateMasterData", params });
         if (!gasResult.success) return jsonResponse(gasResult);
 
-        // GAS Sheets'e yazdıktan sonra D1'i güncelle (async, fire-and-forget)
-        ctx.waitUntil(SyncHandlers.bulkSync({ scope: ["master"] }, ctx, env));
+        // Synchronous D1 write-through: only refresh the updated type
+        const fetchResult = await fetchFromGas(env, { action: "getMasterData", params: { type } });
+        if (fetchResult.success && fetchResult.data?.dataset) {
+          await upsertMasterTypeToD1(type, datasetRowsToObjects(fetchResult.data.dataset), env);
+          const metaStmts = [];
+          if (fetchResult.data.version) metaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_version_${type}`, String(fetchResult.data.version)));
+          const updatedAt = fetchResult.data.updatedAt || new Date().toISOString();
+          metaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_updated_${type}`, updatedAt));
+          if (metaStmts.length) await env.DB_D1.batch(metaStmts);
+        }
 
         return jsonResponse(gasResult);
       }

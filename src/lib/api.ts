@@ -3,10 +3,10 @@ import { CONFIG } from './config';
 /**
  * 📡 Astro Portal: API Client
  *
- * Yeni mimaride tüm istekler Cloudflare Worker üzerinden gider.
- * - Okuma: KV-primary (miss durumunda needsHydration dönebilir)
- * - Yazma: KV-primary (Google native side-effect'ler haric)
- * - İstemci tarafı full rebuild tetiklemez; bulk hydration yalnızca sync akışında yapılır
+ * Tüm istekler Cloudflare Worker üzerinden gider.
+ * - Okuma: D1-primary (Worker → D1)
+ * - Yazma: write-through (Worker → GAS → Sheets → D1 sync)
+ * - Bulk sync: Sheets → D1 tam yenileme (SyncManager üzerinden)
  */
 
 interface ApiResponse<T = any> {
@@ -16,7 +16,6 @@ interface ApiResponse<T = any> {
   status?: number;
   fromCache?: boolean;
   stats?: any;
-  needsHydration?: boolean;
   requiresConfirmation?: boolean;
   confirmation?: {
     token: string;
@@ -165,7 +164,6 @@ export const api = {
     const controller = new AbortController();
     const longRunningActions = new Set([
       "bulkSync",
-      "bulkSyncMaster",
       "importBackup",
       "exportBackup",
       "translate",
@@ -225,6 +223,7 @@ export const api = {
 
   async getCompanies() { return this.call("getCompanies"); },
   async getCompanyById(id: string | number) { return this.call("getCompanyById", { id }); },
+  async addCompany(companyInfo: any) { return this.call("addCompany", { companyInfo }); },
   async updateCompany(id: string | number, companyInfo: any) { return this.call("updateCompany", { id, companyInfo }); },
   async getDashboardSummary() { return this.call("getDashboardSummary"); },
   async getCertificateSummaries() { return this.call("getCertificateSummaries"); },
@@ -260,6 +259,7 @@ export const api = {
     const result = await this.call("getAuditsByFirmaId", { firmaId });
     return result; 
   },
+  async scheduleAudit(data: any) { return this.call("scheduleAudit", { data }); },
   async updateAudit(id: string | number, data: any) {
     return this.call("updateAudit", { id, data });
   },
@@ -281,6 +281,11 @@ export const api = {
   async deleteProforma(id: string | number) {
     return this.call("deleteProforma", { id });
   },
+  async deleteTest(id: string | number) { return this.call("deleteTest", { id }); },
+  async updateSurveillance(ids: (string | number)[], status: boolean | string, firmaId?: string | number) {
+    return this.call("updateSurveillance", { ids, status, ...(firmaId !== undefined ? { firmaId } : {}) });
+  },
+  async getConsultants() { return this.call("getConsultants"); },
   async generateProforma(id: string | number) {
     return this.call("generateProforma", { id });
   },
@@ -342,29 +347,29 @@ export const api = {
   },
 
   // 🏁 Sistem Yönetimi
-  async bulkSync(params?: { scope?: string[], offset?: number, limit?: number }) {
+  async bulkSync(params?: {
+    scope?: string[],
+    offset?: number,
+    limit?: number,
+    masterTypes?: Array<"standards" | "auditors" | "consultants" | "testdocs" | "sysdocs">
+  }) {
     return this.call("bulkSync", params || {});
   },
-  async bulkSyncMaster() { return this.call("bulkSyncMaster"); },
-  async pullFromSheetsToKv(scope?: string[]) {
-    const core = await this.bulkSync(scope ? { scope } : undefined);
-    if (!core.success) return core;
-    if (!scope || scope.includes("master")) {
-      const master = await this.bulkSyncMaster();
-      if (!master.success) return master;
-      return { success: true, data: { core: core.data, master: master.data }, error: null };
-    }
-    return core;
+  async syncMasterData(masterTypes?: Array<"standards" | "auditors" | "consultants" | "testdocs" | "sysdocs">) {
+    return this.bulkSync(masterTypes?.length ? { scope: ["master"], masterTypes } : { scope: ["master"] });
+  },
+  async syncFromSheets(scope?: string[]) {
+    return this.bulkSync(scope ? { scope } : undefined);
   },
   async exportBackup() { return this.call("exportBackup"); },
-  async exportKvData(scope: string[]) {
-    return this.call("exportKvData", { scope });
+  async exportData(
+    scope: string[],
+    masterTypes?: Array<"standards" | "auditors" | "consultants" | "testdocs" | "sysdocs">
+  ) {
+    return this.call("exportData", masterTypes?.length ? { scope, masterTypes } : { scope });
   },
   async importBackup(payload: any, options: any = { replace: true }) {
     return this.call("importBackup", { payload, options });
-  },
-  async importKvData(exportData: any, scope: string[]) {
-    return this.call("importKvData", { exportData, scope });
   },
   async importBackupPreflight(payload: any) {
     return this.call("importBackup", { payload, options: { replace: true } });
