@@ -48,6 +48,7 @@ const CertificateService = {
       if (n === "calendarid" || n === "eventid") return this._valueFromInfo(certInfo, ["cal", "calendar", "eventId"]);
       if (n === "qrcode" || n === "qr") return this._valueFromInfo(certInfo, ["qr"]);
       if (n === "certlink" || n === "certilink") return this._valueFromInfo(certInfo, ["certLink", "certiLink"]);
+      if (n === "_updated_at") return new Date().getTime();
 
       return this._valueFromInfo(certInfo, [header], "");
     });
@@ -122,6 +123,10 @@ const CertificateService = {
         if (gozetimCol < 1) throw new Error('"Gözetim Conf." sütunu bulunamadı.');
 
         ws.getRange(realRow, gozetimCol).setValue(status === "TRUE" || status === true ? "TRUE" : "FALSE");
+        
+        const tsCol = BaseService.findHeaderIndex(headers, ["_updated_at"]);
+        if (tsCol > 0) ws.getRange(realRow, tsCol).setValue(new Date().getTime());
+        
         return { success: true };
       }, 30000, "CertificateService.updateGozetim");
     } catch (e) {
@@ -238,6 +243,9 @@ const CertificateService = {
         } else {
           ws.getRange(rowNum, fieldCol).setValue(value);
         }
+
+        const tsCol = BaseService.findHeaderIndex(headers, ["_updated_at"]);
+        if (tsCol > 0) ws.getRange(rowNum, tsCol).setValue(new Date().getTime());
 
         return { success: true };
       }, 30000, "CertificateService.updateField");

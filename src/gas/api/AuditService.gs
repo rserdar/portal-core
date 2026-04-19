@@ -73,6 +73,7 @@ const AuditService = {
       if (n === "a2kdenet" || n === "a2kapsam") return this._valueFromInfo(auditInfo, ["a2kDenet"], "");
       if (n === "a1eventid") return a1EventId || "";
       if (n === "a2eventid") return a2EventId || "";
+      if (n === "_updated_at") return new Date().getTime();
 
       return this._valueFromInfo(auditInfo, [header], "");
     });
@@ -459,6 +460,11 @@ const AuditService = {
           const eventId = eventCol > 0 ? data[rowIndex][eventCol - 1] : "";
 
           ws.getRange(rowNum, gozetimCol).setValue(status ? "TRUE" : "FALSE");
+
+          const tsCol = BaseService.findHeaderIndex(headers, ["_updated_at"]);
+          if (tsCol > 0) {
+            ws.getRange(rowNum, tsCol).setValue(new Date().getTime());
+          }
 
           if (eventId && eventCol > 0) {
             const newEventId = this._moveCalendarEvent(eventId, status, sourceCal, archiveCal);

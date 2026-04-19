@@ -40,6 +40,7 @@ const TestService = {
       if (n === "gorsel1") return this._valueFromInfo(testInfo, ["gorsel1"]);
       if (n === "gorsel2") return this._valueFromInfo(testInfo, ["gorsel2"]);
       if (n === "detay") return this._valueFromInfo(testInfo, ["detay"]);
+      if (n === "_updated_at") return new Date().getTime();
 
       return this._valueFromInfo(testInfo, [header], "");
     });

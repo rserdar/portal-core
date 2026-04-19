@@ -58,6 +58,7 @@ const CompanyService = {
       if (n === "ea") return this._valueFromInfo(companyInfo, ["ea"]);
       if (n === "nace") return this._valueFromInfo(companyInfo, ["nace"]);
       if (n === "firmanot") return this._valueFromInfo(companyInfo, ["not"]);
+      if (n === "_updated_at") return new Date().getTime();
 
       return this._valueFromInfo(companyInfo, [header], "");
     });

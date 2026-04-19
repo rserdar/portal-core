@@ -13,6 +13,38 @@ const DeltaSyncService = {
   TS_HEADER: "_updated_at",
 
   /**
+   * Bir kereliğine çalıştırılarak tüm listelerdeki _updated_at 
+   * sütunlarını anlık tarih ile doldurur. (Geçmiş veriler için)
+   */
+  initializeAllTimestamps: function() {
+    const ss = BaseService.openSS();
+    const now = new Date().getTime();
+    
+    this.TRACKED_SHEETS.forEach(function(sheetName) {
+      try {
+        const sheet = ss.getSheetByName(sheetName);
+        if (!sheet || sheet.getLastRow() < 2) return;
+        
+        const tsCol = DeltaSyncService._ensureTsColumn(sheet);
+        if (tsCol === -1) return;
+        
+        const rowCount = sheet.getLastRow() - 1;
+        
+        // Optimize writing: create a 2D array and set them all at once
+        const values = [];
+        for (let i = 0; i < rowCount; i++) {
+          values.push([now]);
+        }
+        
+        sheet.getRange(2, tsCol, rowCount, 1).setValues(values);
+        Logger.log("[DeltaSync] " + sheetName + " damgalandı: " + rowCount + " satır.");
+      } catch (err) {
+        Logger.log("[DeltaSync] " + sheetName + " başlatılamadı: " + err.message);
+      }
+    });
+  },
+
+  /**
    * Bir sayfada _updated_at kolon indexini bulur, yoksa sonuna ekler.
    * @returns {number} 1-indexed kolon numarası
    */

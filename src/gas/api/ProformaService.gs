@@ -28,6 +28,7 @@ const ProformaService = {
       if (n === "birim" || n === "lira") return this._valueFromInfo(proInfo, ["birim", "lira"], "TL");
       if (n === "tarih") return this._valueFromInfo(proInfo, ["tarih"]);
       if (n === "konu") return this._valueFromInfo(proInfo, ["konu"]);
+      if (n === "_updated_at") return new Date().getTime();
 
       return this._valueFromInfo(proInfo, [header], "");
     });
