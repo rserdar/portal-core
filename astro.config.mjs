@@ -29,22 +29,13 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // App shell ve statik dosyaları önbelleğe al
-        globPatterns: ['**/*.{css,js,html,svg,png,ico,woff,woff2}'],
-        // Sayfa navigasyonlarında son başarılı HTML'i kullan; gerçekten hiç cache yoksa offline fallback'e düş.
-        navigateFallback: '/offline',
-        navigateFallbackDenylist: [/^\/api\//, /^\/cdn-cgi\//],
+        // HTML sayfaları cache'lenmez — CF Access session redirect'lerini bloke etmesin
+        globPatterns: ['**/*.{css,js,svg,png,ico,woff,woff2}'],
+        // navigateFallback kapalı: tüm navigasyonlar ağa gider, CF Access her zaman devreye girebilir
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'pages',
-              networkTimeoutSeconds: 3,
-              cacheableResponse: {
-                statuses: [200],
-              },
-            },
+            handler: 'NetworkOnly',
           },
           {
             urlPattern: /^\/api\/.*/i,

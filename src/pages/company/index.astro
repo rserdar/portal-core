@@ -1030,6 +1030,7 @@ import {
           flashCopyState(button);
         } catch (error) {
           console.error('Copy failed:', error);
+          toast.error('Kopyalama başarısız.');
         }
       });
     });
@@ -1411,7 +1412,6 @@ import {
   }
 
   function runCleanups() {
-    console.log(`[Profile] Cleaning up ${cleanupTasks.length} tasks...`);
     cleanupTasks.forEach(fn => { try { fn(); } catch(e) { console.error('Cleanup error:', e); } });
     cleanupTasks = [];
   }
@@ -1470,7 +1470,6 @@ import {
       const c = res?.data;
       
       if (!c) {
-        console.warn(`[Profile] Company not found (ID: ${firmaId})`);
         // If not found in API and not rendered from store yet, show error
         if (!hydratedSections.has('hero')) {
           const skeleton = document.getElementById('hero-skeleton');
@@ -1492,6 +1491,7 @@ import {
       renderCompany(c);
     } catch (e) {
       console.error('[Profile] loadCompany failed:', e);
+      toast.error('Firma verisi yüklenemedi.');
       hideAllSkeletons();
     }
   }
@@ -1519,7 +1519,6 @@ import {
     
     if (hasContactInfo) hasFullData = true;
 
-    console.log(`[Profile] Rendering data (isFull: ${hasContactInfo})`);
 
     const nick    = g(c, 'nickname', 'Firma Adı', 'Nick', 'nick', 'FirmaAdi');
     const unvan   = g(c, 'unvan', 'Unvan');
@@ -1542,7 +1541,6 @@ import {
     const irtU    = g(c, 'İrtibat Ünvanı', 'IrtibatUnvani', 'irtU');
     const irtN    = g(c, 'İrtibat Tel', 'IrtibatKisiNumarasi', 'irtN');
     const irtM    = g(c, 'İrtibat Mail', 'IrtibatKisisMail', 'irtM');
-    const dan     = g(c, 'Danışman', 'Danisman', 'dan', 'danisman');
     const nace    = g(c, 'NACE', 'nace');
     const ea      = g(c, 'EA', 'ea');
     const tcs     = g(c, 'Toplam Çalışan Sayısı', 'Toplam Calisan', 'TCS', 'tcs');
@@ -1570,7 +1568,6 @@ import {
     if (badgesEl) {
       let html = badge(`M${firmaId}`, 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20');
       if (il) html += badge(il, 'bg-surface-hover text-muted border-border-main');
-      if (dan) html += badge(dan, 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20');
       badgesEl.innerHTML = html;
     }
 
@@ -1637,7 +1634,6 @@ import {
     setLinkedField('info-irtibat-mail', irtM, 'info-irtibat-mail-block', 'mail');
 
     // Kayıtlar
-    setField('info-dan', dan, 'info-dan-block');
     setField('info-not', not_, 'info-not-block');
     setLinkedField('info-logo', logo, 'info-logo-block', 'drive');
     setLinkedField('info-kase', kase, 'info-kase-block', 'drive');
@@ -1755,7 +1751,84 @@ import {
     certCurrentPage = 1;
     if (count) count.textContent = String(allCertData.length);
     renderCertPage();
+    updateHeroKapsamFromCerts();
+    updateDanismanFromCerts();
+  }
 
+  const STANDART_PRIORITY = ['9001', '13485', '14001', '22000', '45001', '27001', '50001', 'GMP'];
+
+function getStandartPriority(standart: string): number {
+    const s = (standart || '').toUpperCase();
+    const idx = STANDART_PRIORITY.findIndex(p => s.includes(p));
+    return idx === -1 ? STANDART_PRIORITY.length : idx;
+  }
+
+  function updateDanismanFromCerts() {
+    if (!allCertData.length) return;
+    const isRaw = Array.isArray(allCertData[0]);
+
+    const last25 = allCertData.slice(0, 25);
+    const freq: Record<string, number> = {};
+    for (const c of last25) {
+      const val = (isRaw ? String(c[16] || '') : g(c, 'consultant', 'danisman', 'Danışman', 'Danisman', 'dan')).trim();
+      if (val) freq[val] = (freq[val] || 0) + 1;
+    }
+
+    const top = Object.entries(freq).sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (!top) return;
+
+    const danEl = document.getElementById('info-dan');
+    const danBlock = document.getElementById('info-dan-block');
+    if (danEl) danEl.textContent = top;
+    if (danBlock) danBlock.classList.remove('hidden');
+
+    const badgeEl = document.getElementById('hero-badge-dan');
+    if (badgeEl) {
+      badgeEl.textContent = top;
+    } else {
+      const badgesEl = document.getElementById('hero-badges');
+      if (badgesEl) {
+        const span = document.createElement('span');
+        span.id = 'hero-badge-dan';
+        span.className = 'text-[10px] font-bold px-2.5 py-1 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+        span.textContent = top;
+        badgesEl.appendChild(span);
+      }
+    }
+  }
+
+  function updateHeroKapsamFromCerts() {
+    if (!allCertData.length) return;
+    const isRaw = Array.isArray(allCertData[0]);
+
+    const mapped = allCertData.map(c => ({
+      standart: isRaw ? String(c[3] || '') : g(c, 'standart', 'Standart', 'standard'),
+      kapsam:   isRaw ? String(c[10] || '') : g(c, 'kapsam', 'Kapsam'),
+      scope:    isRaw ? String(c[11] || '') : g(c, 'scope', 'Scope'),
+      date:     parseCertDate(getCertDateStr(c)),
+    }));
+
+    const isCE    = (s: string) => { const u = s.trim().toUpperCase(); return u === 'CE' || u.startsWith('CE '); };
+    const isOther = (s: string) => { const u = s.trim().toUpperCase(); return u === 'DİĞER' || u === 'DIGER' || u === 'OTHER'; };
+
+    const byPriority = (arr: typeof mapped) => {
+      const sorted = [...arr].sort((a, b) => {
+        const diff = getStandartPriority(a.standart) - getStandartPriority(b.standart);
+        return diff !== 0 ? diff : b.date - a.date;
+      });
+      return sorted.find(c => c.kapsam || c.scope) ?? null;
+    };
+
+    const best =
+      byPriority(mapped.filter(c => !isCE(c.standart) && !isOther(c.standart))) ??
+      byPriority(mapped.filter(c => isOther(c.standart))) ??
+      byPriority(mapped.filter(c => isCE(c.standart)));
+
+    if (best) {
+      renderExpandableText('hero-kapsam', best.kapsam);
+      renderExpandableText('hero-scope', best.scope);
+      setupExpandableTextButtons();
+    }
   }
 
   function renderCertPage() {
@@ -1803,7 +1876,7 @@ import {
         gozT         = g(c, 'gozetimTarihi', 'Gözetim Tarihi', 'Sertifika Gözetim Tarihi', 'goz', 'GOZ', 'sGozetimT', 'GözetimTarihi');
         akreditasyon = g(c, 'akreditasyon', 'Akreditasyon', 'akrn');
         akredite     = g(c, 'akredite', 'Akredite');
-        danisman     = g(c, 'danisman', 'Danışman', 'Danisman', 'dan');
+        danisman     = g(c, 'consultant', 'danisman', 'Danışman', 'Danisman', 'dan');
         durum        = g(c, 'durum', 'Durum');
         note         = g(c, 'not', 'Not');
         denetim      = g(c, 'denetimTipi', 'Denetim Tipi', 'denetim');
@@ -1819,7 +1892,6 @@ import {
       const isOther = sLow === 'diğer' || sLow === 'diger' || sLow === 'other';
 
       if (isOther && !otherStandart && !isRaw && id === (allCertData[0] as any)?.ID) {
-        console.log('[DEBUG cert keys]', Object.keys(c));
       }
 
       // Eğer bilinen key'lerle bulunamadıysa obje içinde normalize eşleşme ara
@@ -2162,6 +2234,7 @@ import {
       });
     } catch (e) {
       console.error('[Tests] loadTests failed:', e);
+      toast.error('Test verileri yüklenemedi.');
       document.getElementById('test-skeleton')?.classList.add('hidden');
       document.getElementById('test-list-wrapper')?.classList.remove('hidden');
       document.getElementById('test-empty')?.classList.remove('hidden');
@@ -2187,6 +2260,7 @@ import {
       revealSection('cert');
     } catch (e) {
       console.error('[Certificates] Load failed:', e);
+      toast.error('Sertifika verileri yüklenemedi.');
       revealSection('cert');
       renderCerts([]);
     }
@@ -2213,6 +2287,7 @@ import {
 
     if (!firmaId) {
       console.warn('[Profile] firmaId URL parametresi bulunamadı.');
+      toast.error('Firma ID bulunamadı.');
       return;
     }
 
@@ -2237,24 +2312,21 @@ import {
     const guardTimer = setTimeout(() => {
       if (!hydratedSections.has('hero')) {
         console.warn('[Profile] Timeout guard triggered. Force unhiding page.');
+        toast.error('Sayfa yüklenemedi, lütfen yenileyin.');
         hideAllSkeletons();
       }
     }, 3500);
     registerCleanup(() => clearTimeout(guardTimer));
 
-    console.log(`[Profile] Booting initial sequences for firmaId=${firmaId}...`);
     SyncManager.init().then(() => {
-      console.log('[Profile] Sync ready, refreshing store data...');
       loadCompanyFromStore();
     }).catch(e => {
       console.warn('[Profile] Sync failed but continuing:', e);
     });
 
-    console.log('[Profile] Loading data components...');
     loadCompany();
     loadTests();
     loadCertificates();
-    console.log('[Profile] Boot sequence fired.');
   }
 
   // Standard load
