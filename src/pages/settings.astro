@@ -426,11 +426,15 @@ const MASTER_SYNC_OPTIONS = [
     const data = res?.data;
     const topLevelKeys = data && typeof data === "object" ? Object.keys(data).slice(0, 10) : [];
     const normalized = normalizeMasterPayload(data, type);
+    const rowCount = Array.isArray(normalized?.dataset?.rows) ? normalized.dataset.rows.length : 0;
+    const sheetName = normalized?.dataset?.sheetName ?? null;
     return {
       success: Boolean(res?.success),
       status: res?.status ?? null,
       error: res?.error ?? null,
       hasData: Boolean(data),
+      rowCount,
+      sheetName,
       topLevelKeys,
       normalized,
     };

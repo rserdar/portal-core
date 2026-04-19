@@ -631,11 +631,11 @@ export default {
       const id = String(options.id ?? pick(["ID", "id", "faturaNo"]) ?? "").trim();
       return {
         id,
-        nick: pick(["nick", "nickname", "firmaAdi"], ""),
-        firmaNo: pick(["firmaNo", "firmano", "fno"], ""),
-        kdvsiz: pick(["kdvsiz", "haric"], "0"),
-        kdvOran: pick(["kdvOran", "oran"], "20"),
-        kdv: pick(["kdv"], "0"),
+        nick: pick(["nick", "nickname", "firmaAdi", "firma_adi", "Firma Adı"], ""),
+        firmaNo: pick(["firmaNo", "firma_no", "firmano", "fno", "Firma No"], ""),
+        kdvsiz: pick(["kdvsiz", "haric", "Kdv Yok", "KDV Yok", "Kdv Hariç", "KDV Hariç"], "0"),
+        kdvOran: pick(["kdvOran", "kdv_oran", "oran", "Kdv Oranı", "KDV Oranı"], "20"),
+        kdv: pick(["kdv", "Kdv Tutarı", "KDV Tutarı", "tutar"], "0"),
         toplam: pick(["toplam"], "0"),
         birim: pick(["birim", "paraBirimi"], "TL"),
         tarih: pick(["tarih"], ""),
@@ -1373,9 +1373,48 @@ export default {
 
         // --- 💰 PROFORMAS ---
         if (hasScope("proformas")) {
-          const canonicalProformas = (Array.isArray(d.proformas) ? d.proformas : [])
-            .map(p => createCanonicalProformaRow(Array.isArray(p) ? rowToObject(d.proformaHeaders, p) : p))
-            .filter(p => getProformaId(p) && validFirmaIds.has(parseInt(getProformaFirmaId(p))));
+          const incomingProformas = (Array.isArray(d.proformas) ? d.proformas : [])
+            .map(p => createCanonicalProformaRow(Array.isArray(p) ? rowToObject(d.proformaHeaders, p) : p));
+          const proformasWithId = incomingProformas.filter(p => getProformaId(p));
+          const droppedMissingId = incomingProformas.length - proformasWithId.length;
+          const canonicalProformas = proformasWithId
+            .filter(p => validFirmaIds.has(parseInt(getProformaFirmaId(p))));
+          const droppedByFirmaRef = proformasWithId.length - canonicalProformas.length;
+          const invalidFirmaSamples = proformasWithId
+            .filter(p => !validFirmaIds.has(parseInt(getProformaFirmaId(p))))
+            .slice(0, 5)
+            .map((p) => ({
+              id: getProformaId(p),
+              firmaNo: getProformaFirmaId(p),
+              nick: p.nick || null,
+              konu: p.konu || null,
+            }));
+          const missingIdSamples = incomingProformas
+            .filter(p => !getProformaId(p))
+            .slice(0, 5)
+            .map((p) => ({
+              id: getProformaId(p) || null,
+              firmaNo: getProformaFirmaId(p) || null,
+              nick: p.nick || null,
+              konu: p.konu || null,
+            }));
+          const proformaDebug = {
+            rawCount: Array.isArray(d.proformas) ? d.proformas.length : 0,
+            normalizedCount: incomingProformas.length,
+            withIdCount: proformasWithId.length,
+            insertedCount: canonicalProformas.length,
+            droppedMissingId,
+            droppedByFirmaRef,
+            validFirmaIdCount: validFirmaIds.size,
+            sampleMissingId: missingIdSamples,
+            sampleInvalidFirmaRef: invalidFirmaSamples,
+          };
+          if (proformasWithId.length > 0 && canonicalProformas.length === 0 && validFirmaIds.size === 0) {
+            throw new Error(`PROFORMA_SYNC_BLOCKED: Companies tablosu D1'de boş olduğu için proformalar yazılamadı. Önce firmaları senkronize edin. DEBUG=${JSON.stringify(proformaDebug)}`);
+          }
+          if (proformasWithId.length > 0 && canonicalProformas.length === 0 && droppedByFirmaRef > 0) {
+            throw new Error(`PROFORMA_SYNC_BLOCKED: ${droppedByFirmaRef} proforma kaydı geçersiz veya eşleşmeyen firma_no nedeniyle yazılamadı. DEBUG=${JSON.stringify(proformaDebug)}`);
+          }
           const stmt = env.DB_D1.prepare(
             `INSERT OR REPLACE INTO proformas
               (id, firma_no, kdvsiz, kdv_oran, kdv, toplam, birim, tarih, konu, updated_at)
@@ -1393,6 +1432,7 @@ export default {
             p.konu || null
           ))));
           stats.proformas = canonicalProformas.length;
+          stats.proformasDebug = proformaDebug;
         }
 
         // --- 📚 MASTER DATA ---
@@ -1585,7 +1625,8 @@ export default {
           for (const t of masterTypes) {
             const meta = d.masterMeta?.[t] || { version: d.masterVersion || null, updatedAt: d.masterUpdatedAt || null };
             if (meta.version) syncMetaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_version_${t}`, String(meta.version)));
-            if (meta.updatedAt) syncMetaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_updated_${t}`, String(meta.updatedAt)));
+            const resolvedUpdatedAt = meta.updatedAt || new Date().toISOString();
+            syncMetaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_updated_${t}`, String(resolvedUpdatedAt)));
           }
         }
         await env.DB_D1.batch(syncMetaStmts);
@@ -1625,9 +1666,32 @@ export default {
         );
       },
       importBackup: async (params, ctx, env) => {
+        // Step 1: preflight — GAS onay token'ı üretir
+        const preflight = await fetchFromGas(env, {
+          action: "importBackup",
+          params: { payload: params?.payload, options: { replace: true } }
+        });
+
+        let confirmToken = null;
+        if (!preflight.success && preflight.requiresConfirmation) {
+          confirmToken = preflight.confirmation?.token;
+          if (!confirmToken) return jsonResponse({ success: false, error: "GAS_CONFIRM_TOKEN_MISSING" }, 502);
+        } else if (!preflight.success) {
+          return jsonResponse(preflight);
+        }
+
+        // Step 2: confirm — token ile gerçek yazma işlemi
         const gasResult = await fetchFromGas(env, {
           action: "importBackup",
-          params: { payload: params?.payload, options: params?.options }
+          params: {
+            payload: params?.payload,
+            options: {
+              replace: true,
+              confirm: true,
+              confirmText: "GOOGLE_SHEETS_BACKUP_ONAY",
+              confirmToken
+            }
+          }
         });
         if (!gasResult.success) return jsonResponse(gasResult);
 
@@ -1714,7 +1778,7 @@ export default {
 
         if (Array.isArray(delta.proformas) && delta.proformas.length > 0) {
           await env.DB_D1.batch(delta.proformas.map(p => {
-            const canonical = createCanonicalProforma ? createCanonicalProforma(p) : p;
+            const canonical = createCanonicalProformaRow ? createCanonicalProformaRow(p) : p;
             return upsertProformaD1 ? upsertProformaD1(canonical) : null;
           }).filter(Boolean));
           written.proformas = delta.proformas.length;
@@ -1741,12 +1805,17 @@ export default {
         return jsonResponse({ success: !!result, data: result });
       },
       kvDiagnostic: async (params, ctx, env) => {
-        const [companies, certs, audits, tests, proformas, syncMeta] = await Promise.all([
+        const [companies, certs, audits, tests, proformas, standards, auditors, consultants, testdocs, sysdocs, syncMeta] = await Promise.all([
           env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM companies`).first(),
           env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM certificates`).first(),
           env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM audits`).first(),
           env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM tests`).first(),
           env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM proformas`).first(),
+          env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM standards`).first(),
+          env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM auditors`).first(),
+          env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM consultants`).first(),
+          env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM testdocs`).first(),
+          env.DB_D1.prepare(`SELECT COUNT(*) as cnt FROM sysdocs`).first(),
           env.DB_D1.prepare(`SELECT value FROM sync_meta WHERE key='last_sync'`).first(),
         ]);
         return jsonResponse({
@@ -1757,6 +1826,11 @@ export default {
             audits: audits?.cnt || 0,
             tests: tests?.cnt || 0,
             proformas: proformas?.cnt || 0,
+            standards: standards?.cnt || 0,
+            auditors: auditors?.cnt || 0,
+            consultants: consultants?.cnt || 0,
+            testdocs: testdocs?.cnt || 0,
+            sysdocs: sysdocs?.cnt || 0,
             lastSync: syncMeta?.value || null,
           }
         });
