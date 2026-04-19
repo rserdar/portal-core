@@ -264,7 +264,7 @@ function isPathActive(target: string) {
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <a href="/settings" class="rounded-xl border border-border-main bg-surface-hover p-2.5 text-muted hover:text-primary transition-colors" title="Ayarlar">
-          <Icon name="mdi:cog-outline" class="w-5 h-5" />
+          <Icon name="mdi:cog-outline" class="w-6 h-6" />
         </a>
         <div class="rounded-xl border border-border-main bg-surface-hover px-2 py-1">
           <ThemeToggle direction="up" />
@@ -278,6 +278,7 @@ function isPathActive(target: string) {
 
 <script>
   const HEADER_IDENTITY_CACHE_KEY = 'medicert.header.identity.v1';
+  const HEADER_IDENTITY_REAUTH_KEY = 'medicert.header.identity.reauth.v1';
 
   interface HeaderIdentity {
     name?: string;
@@ -300,6 +301,27 @@ function isPathActive(target: string) {
 
   function roleFromEmail(email: string): string {
     return email === 'r.serdar@gmail.com' ? 'Admin' : 'Personel';
+  }
+
+  function clearCachedHeaderIdentity() {
+    try {
+      sessionStorage.removeItem(HEADER_IDENTITY_CACHE_KEY);
+    } catch {}
+  }
+
+  function triggerAccessReauth() {
+    clearCachedHeaderIdentity();
+
+    try {
+      const alreadyRetried = sessionStorage.getItem(HEADER_IDENTITY_REAUTH_KEY) === '1';
+      if (alreadyRetried) {
+        sessionStorage.removeItem(HEADER_IDENTITY_REAUTH_KEY);
+        return;
+      }
+      sessionStorage.setItem(HEADER_IDENTITY_REAUTH_KEY, '1');
+    } catch {}
+
+    window.location.reload();
   }
 
   function updateHeaderIdentity(identity: HeaderIdentity) {
@@ -362,7 +384,6 @@ function isPathActive(target: string) {
         const parsed = JSON.parse(cached);
         if (parsed && typeof parsed === 'object') {
           updateHeaderIdentity(parsed);
-          return;
         }
       }
     } catch {}
@@ -378,6 +399,9 @@ function isPathActive(target: string) {
 
       if (!response.ok) {
         if (response.status === 404) return; // Suppress 404 noise on local/unsupported environments
+        if (response.status === 401 || response.status === 403) {
+          triggerAccessReauth();
+        }
         return;
       }
 
@@ -421,8 +445,10 @@ function isPathActive(target: string) {
 
       updateHeaderIdentity(identity);
       sessionStorage.setItem(HEADER_IDENTITY_CACHE_KEY, JSON.stringify(identity));
+      sessionStorage.removeItem(HEADER_IDENTITY_REAUTH_KEY);
     } catch (error) {
       console.warn('[Header] Access identity could not be loaded:', error);
+      triggerAccessReauth();
     }
   }
 
