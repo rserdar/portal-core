@@ -204,3 +204,11 @@ function onSheetEdit(e) {
 function onEdit(e) {
   DeltaSyncService.handleEdit(e);
 }
+
+/**
+ * Üst seviye (top-level) fonksiyon: GAS editöründe "Çlıştır" menüsünde görünmesi için.
+ * Geçmiş verileri bir kez damgalamak için bunu seçip "Çalıştır" deyin.
+ */
+function runInitialTimestampSync() {
+  DeltaSyncService.initializeAllTimestamps();
+}
