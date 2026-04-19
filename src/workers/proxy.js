@@ -643,7 +643,7 @@ export default {
       };
     };
     const getProformaId = (p) => String(p?.id ?? p?.ID ?? p?.faturaNo ?? "").trim();
-    const getProformaFirmaId = (p) => String(p?.firmaNo ?? p?.fno ?? "").trim();
+    const getProformaFirmaId = (p) => String(p?.firmaNo ?? p?.firma_no ?? p?.fno ?? "").trim();
     const getAuditId = (a) => String(a?.id ?? a?.ID ?? "").trim();
     const getAuditFirmaId = (a) => String(a?.firmaNo ?? a?.firmano ?? "").trim();
     const createCanonicalAuditRow = (source, options = {}) => {
@@ -1630,7 +1630,9 @@ export default {
           params: { payload: params?.payload, options: params?.options }
         });
         if (!gasResult.success) return jsonResponse(gasResult);
+
         await SyncHandlers.bulkSync({}, ctx, env);
+        ctx.waitUntil(rebuildDashboardStats());
         return jsonResponse(gasResult);
       },
       importKvData: async (params, ctx, env) => {

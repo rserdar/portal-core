@@ -96,9 +96,58 @@ const SyncService = {
     if (!rows.length) return 0;
 
     const normalized = rows.map(row => {
-      const arr = Array.isArray(row) ? row.slice(0, headers.length) : [];
-      while (arr.length < headers.length) arr.push("");
-      return arr;
+      if (Array.isArray(row)) {
+        const arr = row.slice(0, headers.length);
+        while (arr.length < headers.length) arr.push("");
+        return arr;
+      }
+
+      if (sheetName === "Proforma") {
+        const src = row && typeof row === "object" ? row : {};
+        const normalizedKeyMap = new Map();
+        for (const [key, value] of Object.entries(src)) {
+          normalizedKeyMap.set(BaseService.normalizeHeader(key), value);
+        }
+        const pick = (aliases, fallback) => {
+          const list = Array.isArray(aliases) ? aliases : [aliases];
+          for (const alias of list) {
+            if (src[alias] !== undefined && src[alias] !== null && src[alias] !== "") {
+              return src[alias];
+            }
+            const normalizedAlias = BaseService.normalizeHeader(alias);
+            if (normalizedKeyMap.has(normalizedAlias)) {
+              const value = normalizedKeyMap.get(normalizedAlias);
+              if (value !== undefined && value !== null && value !== "") return value;
+            }
+          }
+          return fallback !== undefined ? fallback : "";
+        };
+
+        const proformaInfo = {
+          nick: pick(["nick", "nickname", "firmaAdi", "Firma Adı", "FirmaAdi"], ""),
+          firmaNo: pick(["firmaNo", "firma_no", "fno", "Firma No", "FirmaNo", "FNo"], ""),
+          kdvsiz: pick(["kdvsiz", "haric"], 0),
+          kdvOran: pick(["kdvOran", "kdv_oran", "oran"], 20),
+          kdv: pick(["kdv"], 0),
+          toplam: pick(["toplam"], 0),
+          birim: pick(["birim", "paraBirimi", "lira"], "TL"),
+          tarih: pick(["tarih"], ""),
+          konu: pick(["konu"], "")
+        };
+        const idValue = pick(["ID", "id", "faturaNo", "Fatura No", "FaturaNo"], "");
+        return ProformaService._buildRowByHeaders(headers, proformaInfo, idValue);
+      }
+
+      // Object row (D1 backup format): map each sheet header to the matching object key
+      const src = row && typeof row === "object" ? row : {};
+      return headers.map(h => {
+        if (src[h] !== undefined && src[h] !== null && src[h] !== "") return src[h];
+        const normH = BaseService.normalizeHeader(h);
+        for (const k in src) {
+          if (BaseService.normalizeHeader(k) === normH && src[k] !== undefined && src[k] !== null && src[k] !== "") return src[k];
+        }
+        return "";
+      });
     });
     sheet.getRange(2, 1, normalized.length, headers.length).setValues(normalized);
     return normalized.length;

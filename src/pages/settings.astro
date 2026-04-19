@@ -599,24 +599,20 @@ const MASTER_SYNC_OPTIONS = [
           if (scope === "master") {
             const masterLabel = masterTypes.map(getMasterScopeLabel).join(", ");
             setBackupStatus(`Ana veri alt başlıkları çekiliyor: ${masterLabel}`, "info");
-            toast.info(`Ana veri senkronizasyonu başlatıldı: ${masterLabel}`);
             const res = await api.syncMasterData(masterTypes);
             if (!res.success) throw new Error("Master veri senkronizasyonu başarısız: " + (res.error || "Bilinmeyen hata"));
             const checkbox = document.querySelector(`input[name="sync-scope"][value="master"]`) as HTMLInputElement | null;
             if (checkbox) checkbox.checked = false;
             setMasterChildrenChecked(false);
-            toast.success(`Ana veri güncellendi: ${masterLabel}`);
             continue;
           }
 
           setBackupStatus(`${label} çekiliyor...`, "info");
-          toast.info(`${label} senkronizasyonu başlatıldı...`);
           const res = await api.bulkSync({ scope: [scope] });
           if (!res.success) throw new Error(`${label} senkronizasyonu başarısız: ${res.error || "Bilinmeyen hata"}`);
 
           const checkbox = document.querySelector(`input[name="sync-scope"][value="${scope}"]`) as HTMLInputElement | null;
           if (checkbox) checkbox.checked = false;
-          toast.success(`${label} başarıyla senkronize edildi.`);
         }
 
         await loadDataset(currentType);

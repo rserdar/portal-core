@@ -1,5 +1,14 @@
 # 🤖 Project Intelligence & Context (AI_CONTEXT.md v6.2.0)
 
+> [!TIP]
+> **GAS URL değiştiğinde yapılacaklar:**
+> 1. `.dev.vars` → `GAS_API_URL=https://script.google.com/.../exec` güncelle (local)
+> 2. Terminalde çalıştır (production):
+>    ```
+>    npx wrangler secret put GAS_API_URL
+>    ```
+>    Komut URL'yi interaktif olarak sorar — yapıştır, Enter'a bas.
+
 > [!IMPORTANT]
 > **Mevcut Mimari — Sheets-Primary + D1-Cache (v6.2.0):**
 > - **Source of Truth:** **Google Sheets** — tüm kalıcı verinin nihai kaynağı.
@@ -875,12 +884,27 @@ Tüm sayfalar değişmez; veri kaynağı Worker üzerinden D1'e yönlendirilecek
 
 ---
 
+## ⚠️ D1 Migration Kuralları (değişmez — ihlali tüm veriyi siler)
+
+> [!CAUTION]
+> **Bu kurallar daha önce tüm production verisinin silinmesine yol açan bir olaydan sonra eklenmiştir.**
+
+- **`003_relational_schema.sql` ASLA yeniden çalıştırılmaz.** Bu dosya tüm tabloları DROP edip sıfırdan oluşturur. `wrangler d1 execute --file` ile doğrudan çalıştırılması tüm veriyi siler.
+- **Schema değişikliği = yeni migration dosyası.** Mevcut migration dosyaları (001, 002, 003...) düzenlenmez; her değişiklik için sıradaki numarayla yeni bir `00X_açıklama.sql` dosyası oluşturulur.
+- **Migration uygulamak için tek komut:** `wrangler d1 migrations apply` — bu komut hangi migration'ların zaten uygulandığını takip eder ve sadece yenileri çalıştırır.
+- **`wrangler d1 execute --file <migration>.sql` yasaktır** — bu komut migration geçmişini kontrol etmez, her çalıştırmada dosyayı tekrar uygular.
+- **Schema değişikliği öncesi:** Mevcut verileri `Seçili Verileri .json Olarak Yedekle` ile yedekle.
+- **Yeni migration sadece `ALTER TABLE`, `CREATE INDEX`, `CREATE TABLE IF NOT EXISTS` içerebilir** — `DROP TABLE` veya `DELETE FROM` içeren migration yazılmaz.
+
+---
+
 ## 🎨 UI Standartları (değişmez)
 
 - **Framework:** Astro 6.x + **Tailwind CSS (Pure Tailwind)**
 - **Opaque Surfaces:** Şeffaf (glass) arka planlar yasaktır. `bg-surface` (solid) + `border-border-main`.
 - **Data Density:** `p-2`, `leading-tight`, yüksek kontrast — veri yoğunluğu maksimize edilir.
 - **Legacy Reference:** Bootstrap 5.3 + Tabulator v6.3 seviyesinde bilgi yoğunluğu hedeflenir.
+- **Mobil Tasarım Standartları:** Tüm mobil UI bileşenleri Apple Human Interface Guidelines ve Google Material Design standartlarına uygun olacaktır. Dokunma hedefleri minimum **44×44px** olmalıdır (`h-6 w-6` ikon + `p-2.5` padding = 44px). Daha küçük dokunma alanı kullanılmaz.
 
 ---
 

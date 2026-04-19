@@ -179,7 +179,7 @@ function isPathActive(target: string) {
         <!-- Mobil butonlar -->
         <div class="lg:hidden flex items-center gap-2">
           <button data-search-open class="p-2.5 bg-surface border border-border-main shadow-sm rounded-xl text-muted hover:text-primary">
-            <Icon name="mdi:magnify" class="h-5 w-5" />
+            <Icon name="mdi:magnify" class="h-6 w-6" />
           </button>
           <button id="mobile-menu-button" class="p-2.5 bg-surface border border-border-main shadow-sm rounded-xl text-muted">
             <Icon name="mdi:menu" class="h-6 w-6" id="menu-icon-open" />
@@ -262,8 +262,13 @@ function isPathActive(target: string) {
           <p id="header-user-role-mobile" class="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-muted">{user.role}</p>
         </div>
       </div>
-      <div class="shrink-0 rounded-xl border border-border-main bg-surface-hover px-2 py-1">
-        <ThemeToggle direction="up" />
+      <div class="flex items-center gap-2 shrink-0">
+        <a href="/settings" class="rounded-xl border border-border-main bg-surface-hover p-2.5 text-muted hover:text-primary transition-colors" title="Ayarlar">
+          <Icon name="mdi:cog-outline" class="w-5 h-5" />
+        </a>
+        <div class="rounded-xl border border-border-main bg-surface-hover px-2 py-1">
+          <ThemeToggle direction="up" />
+        </div>
       </div>
     </div>
   </div>

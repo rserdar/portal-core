@@ -1,6 +1,12 @@
 -- Medicert Portal — D1 Migration 003: Relational Schema Reset (v6.1.0)
 -- 001 + 002 geçici şemalarını tamamen değiştirir.
 -- Tüm tablolar drop edilip onaylı relational yapıyla yeniden oluşturulur.
+--
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- UYARI: BU DOSYA ASLA "wrangler d1 execute --file" İLE ÇALIŞTIRILMAZ.
+-- TÜM TABLOLARI DROP EDER — ÇALIŞTIRILIRSA TÜM VERİ SİLİNİR.
+-- Migration uygulamak için SADECE: wrangler d1 migrations apply
+-- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 -- ─────────────────────────────────────────
 -- DROP (temizlik)
