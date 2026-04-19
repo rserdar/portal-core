@@ -1,4 +1,4 @@
-# Medicert Portal (v6.2.0)
+# Medicert Portal (v6.2.1)
 
 Cloudflare Workers + Google Apps Script + Astro 6.x mimarisiyle çalışan kurumsal ISO belgelendirme yönetim portalı. 1.600+ firma ve 5.000+ sertifika kaydını yönetir.
 
@@ -157,4 +157,4 @@ PUBLIC_WORKER_URL=https://portalapi.medicert.com.tr
 
 **Geliştirici:** Antigravity AI
 **Müşteri:** Medicert Ürün ve Sistem Belgelendirme
-**Sürüm:** 6.2.0 — Sheets-Primary + D1-Cache Architecture (Migration tamamlandı)
+**Sürüm:** 6.2.1 — Sheets-Primary + D1-Cache Architecture (Son Güncelleme: 19.04.2026)
