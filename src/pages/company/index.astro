@@ -1700,6 +1700,14 @@ import {
     }
   }
 
+  function getCertDateStr(c: Record<string, unknown>): string {
+    return pickValue(c, ['sertifika_tarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi'], '');
+  }
+
+  function parseCertDate(str: string): number {
+    return parseDateValue(str)?.getTime() ?? 0;
+  }
+
   function updateHeroKapsamFromCerts() {
     if (!allCertData.length) return;
     const mapped = allCertData.map(c => ({
