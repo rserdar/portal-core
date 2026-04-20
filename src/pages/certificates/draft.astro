@@ -103,6 +103,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   import { loadCompanyOperationContext } from '../../features/operations/context';
   import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
   import { $companies } from '../../lib/store';
+  import { normalizeKey } from '../../lib/utils';
   import { SyncManager } from '../../lib/sync';
   import { normalizeStandards, type StandardOption } from '../../features/operations/certificate-form';
 
@@ -175,16 +176,6 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
         return String(value).trim();
       }
     }
-    const normalizeKey = (value: any) => String(value || '')
-      .trim()
-      .toLocaleLowerCase('tr-TR')
-      .replace(/[ıİ]/g, 'i')
-      .replace(/[ğĞ]/g, 'g')
-      .replace(/[üÜ]/g, 'u')
-      .replace(/[şŞ]/g, 's')
-      .replace(/[öÖ]/g, 'o')
-      .replace(/[çÇ]/g, 'c')
-      .replace(/[^a-z0-9]/g, '');
     const normalizedAliases = aliases.map((alias) => normalizeKey(alias));
     for (const [rawKey, rawValue] of Object.entries(record || {})) {
       if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') continue;

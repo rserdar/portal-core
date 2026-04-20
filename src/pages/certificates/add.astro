@@ -384,6 +384,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
   import { toast } from '../../lib/toast';
+  import { normalizeKey } from '../../lib/utils';
   import { loadCompanyOperationContext } from '../../features/operations/context';
   import {
     normalizeStandards,
@@ -687,16 +688,6 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       }
     }
     if (record && typeof record === 'object') {
-      const normalizeKey = (value: any) => String(value || '')
-        .trim()
-        .toLocaleLowerCase('tr-TR')
-        .replace(/[ıİ]/g, 'i')
-        .replace(/[ğĞ]/g, 'g')
-        .replace(/[üÜ]/g, 'u')
-        .replace(/[şŞ]/g, 's')
-        .replace(/[öÖ]/g, 'o')
-        .replace(/[çÇ]/g, 'c')
-        .replace(/[^a-z0-9]/g, '');
       const normalizedAliases = aliases.map((alias) => normalizeKey(alias));
       for (const [rawKey, rawValue] of Object.entries(record)) {
         if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') continue;

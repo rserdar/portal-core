@@ -446,24 +446,16 @@ const MASTER_SYNC_OPTIONS = [
 
     let res = await api.getMasterData(type);
     let payload = normalizeMasterPayload(res.data, type);
-    console.log("[Settings][MasterData] initial response", type, describeMasterResponse(res, type));
 
     if (!res.success || !payload?.dataset) {
       setStatus("D1 boş. Master data aktarımı başlatılıyor...");
       const syncRes = await api.syncMasterData([type as MasterScopeType]);
-      console.log("[Settings][MasterData] sync attempt", type, {
-        success: syncRes?.success,
-        status: syncRes?.status ?? null,
-        error: syncRes?.error ?? null,
-        data: syncRes?.data ?? null
-      });
       if (!syncRes.success) {
         setStatus("Master sync başarısız: " + (syncRes.error || "Bilinmeyen hata"), "error");
         return;
       }
       res = await api.getMasterData(type);
       payload = normalizeMasterPayload(res.data, type);
-      console.log("[Settings][MasterData] post-sync response", type, describeMasterResponse(res, type));
     }
 
     if (!res.success || !payload?.dataset) {
@@ -682,7 +674,6 @@ const MASTER_SYNC_OPTIONS = [
         return;
       }
 
-      console.log("[Backup] Geri yükleme başlatıldı (tam kapsam).");
       const originalText = iBtn ? iBtn.textContent : "Geri Yükle";
       if (iBtn) {
         iBtn.disabled = true;
@@ -695,7 +686,6 @@ const MASTER_SYNC_OPTIONS = [
 
       try {
         const res = await api.importBackup(selectedBackupPayload);
-        console.log("[Backup] Sunucu yanıtı:", res);
 
         if (!res.success) {
           toast.error("Geri yükleme başarısız: " + (res.error || "Bilinmeyen hata"));
@@ -703,7 +693,6 @@ const MASTER_SYNC_OPTIONS = [
           return;
         }
 
-        console.log("[Backup] Başarılı. Veri setleri tazeleniyor...");
         setBackupStatus("Veriler yüklendi. Yerel veritabanı senkronize ediliyor...", "info");
         toast.info("Sunucu verileri yenilendi. Yerel senkronizasyon başlatılıyor...");
 

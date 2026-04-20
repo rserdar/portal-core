@@ -355,7 +355,6 @@ import { ArrowLeft, Save } from 'lucide-astro';
   }
 
   function runCleanups() {
-    console.log(`[Edit] Cleaning up ${cleanupTasks.length} tasks...`);
     cleanupTasks.forEach(fn => { try { fn(); } catch(e) { console.error('Cleanup error:', e); } });
     cleanupTasks = [];
   }
