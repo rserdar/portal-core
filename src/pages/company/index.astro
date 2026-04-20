@@ -1659,7 +1659,7 @@ import {
     }
 
     // Sertifika tarihine göre en yeniden en eskiye sırala
-    allCertData = [...certData].sort((a, b) => parseDateValue(pickValue(b, ['sertifika_tarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi'], ''))?.getTime() || 0) - (parseDateValue(pickValue(a, ['sertifika_tarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi'], ''))?.getTime() || 0));
+    allCertData = [...certData].sort((a, b) => (parseDateValue(pickValue(b, ['sertifika_tarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi'], ''))?.getTime() || 0) - (parseDateValue(pickValue(a, ['sertifika_tarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi'], ''))?.getTime() || 0));
     certCurrentPage = 1;
     if (count) count.textContent = String(allCertData.length);
     renderCertPage();

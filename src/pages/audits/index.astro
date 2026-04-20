@@ -131,7 +131,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   let allAudits: any[] = [];
   let currentPage = 1;
   let pageSize = 20;
-  }
 
   function getSortableAuditValue(audit: any, originalIndex: number) {
     const id = Number(pickValue(audit, ['id', 'ID'], ''));
