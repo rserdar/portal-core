@@ -485,8 +485,6 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
   }
 
   // Initial load
-  initPage();
-  // Transition support
   document.addEventListener('astro:page-load', initPage);
   // Cleanup away
   document.addEventListener('astro:before-preparation', runCleanups);

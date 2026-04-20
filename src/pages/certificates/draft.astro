@@ -104,7 +104,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
-  import { normalizeLegacyIsoRows, type LegacyIsoOption } from '../../features/operations/certificate-form';
+  import { normalizeStandards, type StandardOption } from '../../features/operations/certificate-form';
 
   let cleanupFns: Array<() => void> = [];
 
@@ -123,7 +123,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     const params = new URLSearchParams(location.search);
     let activeFirmaId = params.get('firmaId') || params.get('id') || '';
     let companyContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
-    let standards: LegacyIsoOption[] = [];
+    let standards: StandardOption[] = [];
 
     const els = {
       standard: document.getElementById('draft-standard') as HTMLSelectElement | null,
@@ -242,7 +242,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   async function loadStandards() {
     const res = await api.getMasterData('standards');
     const rows = res?.data?.dataset?.rows || [];
-    standards = normalizeLegacyIsoRows(rows);
+    standards = normalizeStandards(rows);
     if (standards.length === 0) {
       standards = [
         { id: '9001', prefix: 'ISO', fullName: 'ISO 9001:2015' },

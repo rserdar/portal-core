@@ -1,4 +1,4 @@
-export type AuditRows = any[][];
+export type AuditRows = any[];
 
 export function uniqueColumnValues(rows: AuditRows, index: number) {
   const seen = new Set<string>();
@@ -15,30 +15,30 @@ export function uniqueColumnValues(rows: AuditRows, index: number) {
 }
 
 export function filterAuditorsByStandard(rows: AuditRows, standard: string) {
-  const stdMap: Record<string, number> = {
-    '9001': 4,
-    '13485': 5,
-    '14001': 6,
-    '22000': 7,
-    '27001': 8,
-    '45001': 9,
-    '50001': 10,
-    'GMP': 11
+  const stdMap: Record<string, string> = {
+    '9001': 'std_9001',
+    '13485': 'std_13485',
+    '14001': 'std_14001',
+    '22000': 'std_22000',
+    '27001': 'std_27001',
+    '45001': 'std_45001',
+    '50001': 'std_50001',
+    'GMP': 'std_gmp'
   };
-  const colIdx = stdMap[standard];
-  if (colIdx === undefined) return [];
+  const field = stdMap[standard];
+  if (!field) return [];
   return rows.filter((row) => {
-    const val = String(row?.[colIdx] || '').trim().toUpperCase();
-    return val === '1' || val === 'TRUE' || val === 'true';
+    const val = row?.[field];
+    return val === 1 || val === '1' || String(val).toUpperCase() === 'TRUE';
   });
 }
 
 export function getAuditorShortName(rows: AuditRows, name: string) {
   const match = rows.find((row) => {
-    const fullName = `${row?.[1] || ''} ${row?.[2] || ''}`.trim();
-    return fullName === name || String(row?.[1] || '').trim() === name;
+    const fullName = `${row?.ad || row?.[1] || ''} ${row?.soyad || row?.[2] || ''}`.trim();
+    return fullName === name || String(row?.ad || row?.[1] || '').trim() === name;
   });
-  return match?.[3] ? String(match[3]) : '';
+  return match?.imza || match?.[3] || '';
 }
 
 export function formatDateToDots(dateString: string) {

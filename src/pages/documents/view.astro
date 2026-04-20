@@ -233,8 +233,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   }
 
   // Initial load
-  initPage();
-  // Transition support
   document.addEventListener('astro:page-load', initPage);
   // Cleanup away
   document.addEventListener('astro:before-preparation', runCleanups, { once: true });

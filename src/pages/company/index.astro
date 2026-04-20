@@ -1722,8 +1722,7 @@ import {
   }
 
   function getCertDateStr(c: any): string {
-    if (Array.isArray(c)) return String(c[6] || '');
-    return g(c, 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi');
+    return g(c, 'sertifika_tarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi');
   }
 
   function renderCerts(certData: any[]) {
@@ -1765,12 +1764,10 @@ function getStandartPriority(standart: string): number {
 
   function updateDanismanFromCerts() {
     if (!allCertData.length) return;
-    const isRaw = Array.isArray(allCertData[0]);
-
     const last25 = allCertData.slice(0, 25);
     const freq: Record<string, number> = {};
     for (const c of last25) {
-      const val = (isRaw ? String(c[16] || '') : g(c, 'consultant', 'danisman', 'Danışman', 'Danisman', 'dan')).trim();
+      const val = g(c, 'consultant', 'danisman', 'Danışman', 'Danisman', 'dan').trim();
       if (val) freq[val] = (freq[val] || 0) + 1;
     }
 
@@ -1799,12 +1796,10 @@ function getStandartPriority(standart: string): number {
 
   function updateHeroKapsamFromCerts() {
     if (!allCertData.length) return;
-    const isRaw = Array.isArray(allCertData[0]);
-
     const mapped = allCertData.map(c => ({
-      standart: isRaw ? String(c[3] || '') : g(c, 'standart', 'Standart', 'standard'),
-      kapsam:   isRaw ? String(c[10] || '') : g(c, 'kapsam', 'Kapsam'),
-      scope:    isRaw ? String(c[11] || '') : g(c, 'scope', 'Scope'),
+      standart: g(c, 'standart', 'Standart', 'standard'),
+      kapsam:   g(c, 'kapsam', 'Kapsam'),
+      scope:    g(c, 'scope', 'Scope'),
       date:     parseCertDate(getCertDateStr(c)),
     }));
 
@@ -1842,60 +1837,33 @@ function getStandartPriority(standart: string): number {
     const start = (certCurrentPage - 1) * CERT_PAGE_SIZE;
     const pageData = allCertData.slice(start, start + CERT_PAGE_SIZE);
 
-    const isRaw = Array.isArray(allCertData[0]);
-
     const nextRows: Array<{ id: string; status: string }> = [];
 
     const rows = pageData.map((c, rowIdx) => {
-      let id, standart, otherStandart, sertNo, belgeTarihi, gozT, akredite, danisman, durum, akreditasyon, note, denetim, kapsam, scope, certLink, qr, eventId, gozetimConf;
-      if (isRaw) {
-        id           = String(c[0] || '').trim();
-        standart     = String(c[3] || '').trim();
-        denetim      = String(c[4] || '').trim();
-        sertNo       = String(c[5] || '').trim();
-        belgeTarihi  = String(c[6] || '').trim();
-        gozT         = String(c[7] || '').trim();
-        kapsam       = String(c[10] || '').trim();
-        scope        = String(c[11] || '').trim();
-        akreditasyon = String(c[14] || '').trim();
-        akredite     = String(c[15] || '').trim();
-        danisman     = String(c[16] || '').trim();
-        durum        = String(c[17] || '').trim();
-        note         = String(c[18] || '').trim();
-        gozetimConf  = isTruthyFlag(c[19]);
-        otherStandart= String(c[20] || '').trim();
-        eventId      = String(c[21] || '').trim();
-        qr           = String(c[22] || '').trim();
-        certLink     = String(c[23] || '').trim();
-      } else {
-        id           = getCertificateRecordId(c);
-        standart     = g(c, 'standart', 'Standart');
-        otherStandart= g(c, 'Other Standard', 'Other', 'other', 'Diğer', 'diger', 'Diger', 'diğer', 'Diğer Standart', 'digerStandart');
-        sertNo       = g(c, 'sertifikaNo', 'Sertifika No', 'sertNo', 'SertifikaNo');
-        belgeTarihi  = g(c, 'sertifikaTarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi');
-        gozT         = g(c, 'gozetimTarihi', 'Gözetim Tarihi', 'Sertifika Gözetim Tarihi', 'goz', 'GOZ', 'sGozetimT', 'GözetimTarihi');
-        akreditasyon = g(c, 'akreditasyon', 'Akreditasyon', 'akrn');
-        akredite     = g(c, 'akredite', 'Akredite');
-        danisman     = g(c, 'consultant', 'danisman', 'Danışman', 'Danisman', 'dan');
-        durum        = g(c, 'durum', 'Durum');
-        note         = g(c, 'not', 'Not');
-        denetim      = g(c, 'denetimTipi', 'Denetim Tipi', 'denetim');
-        kapsam       = g(c, 'kapsam', 'Kapsam');
-        scope        = g(c, 'scope', 'Scope');
-        eventId      = g(c, 'eventId', 'Calendar ID');
-        qr           = g(c, 'qr', 'QR Code');
-        certLink     = g(c, 'certLink', 'Cert Link');
-        gozetimConf  = isTruthyFlag(g(c, 'gozetimConfirmed', 'Gözetim Conf.', 'gozetimConf', 'gozetim'));
-      }
+      const id           = getCertificateRecordId(c);
+      const standart     = g(c, 'standart', 'Standart');
+      let otherStandart = g(c, 'other_standart', 'Other Standard', 'Other', 'other', 'Diğer', 'diger', 'Diger', 'diğer', 'Diğer Standart', 'digerStandart');
+      const sertNo       = g(c, 'sertifika_no', 'sertifikaNo', 'Sertifika No', 'sertNo');
+      const belgeTarihi  = g(c, 'sertifika_tarihi', 'sertifikaTarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst');
+      const gozT         = g(c, 'gozetim_tarihi', 'gozetimTarihi', 'Gözetim Tarihi', 'goz');
+      const akreditasyon = g(c, 'akreditasyon', 'Akreditasyon', 'akrn');
+      const akredite     = g(c, 'akredite', 'Akredite');
+      const danisman     = g(c, 'consultant', 'danisman', 'Danışman', 'Danisman', 'dan');
+      const durum        = g(c, 'durum', 'Durum');
+      const note         = g(c, 'sertifika_not', 'not', 'Not');
+      const denetim      = g(c, 'denetim_tipi', 'denetimTipi', 'Denetim Tipi', 'denetim');
+      const kapsam       = g(c, 'kapsam', 'Kapsam');
+      const scope        = g(c, 'scope', 'Scope');
+      const eventId      = g(c, 'calendar_id', 'eventId', 'Calendar ID');
+      const qr           = g(c, 'qr', 'QR Code');
+      const certLink     = g(c, 'cert_link', 'certLink', 'Cert Link');
+      const gozetimConf  = isTruthyFlag(g(c, 'gozetim_confirmed', 'gozetimConfirmed', 'Gözetim Conf.', 'gozetimConf'));
 
       const sLow = standart.toLowerCase();
       const isOther = sLow === 'diğer' || sLow === 'diger' || sLow === 'other';
 
-      if (isOther && !otherStandart && !isRaw && id === (allCertData[0] as any)?.ID) {
-      }
-
       // Eğer bilinen key'lerle bulunamadıysa obje içinde normalize eşleşme ara
-      if (isOther && !otherStandart && !isRaw) {
+      if (isOther && !otherStandart) {
         const normKey = (s: string) => s.trim().toLowerCase()
           .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')
           .replace(/ö/g,'o').replace(/ç/g,'c').replace(/ı/g,'i')
@@ -2157,23 +2125,13 @@ function getStandartPriority(standart: string): number {
 
       if (count) count.textContent = String(tests.length);
 
-      const isRaw = Array.isArray(tests[0]);
-
       const rows = tests.map((t, rowIdx) => {
-        let testAdi, urun, marka, raporTarihi;
-        if (isRaw) {
-          testAdi     = t[3]  || '';
-          marka       = t[4]  || '';
-          urun        = t[5]  || '';
-          raporTarihi = t[13] || '';
-        } else {
-          testAdi     = g(t, 'Test Adı', 'testAdi');
-          marka       = g(t, 'Marka', 'marka');
-          urun        = g(t, 'Ürün', 'urun');
-          raporTarihi = g(t, 'Rapor Tarihi', 'raporTarihi');
-        }
+        const testAdi     = g(t, 'test_adi', 'Test Adı', 'testAdi');
+        const marka       = g(t, 'marka', 'Marka');
+        const urun        = g(t, 'urun', 'Ürün');
+        const raporTarihi = g(t, 'rapor_tarihi', 'Rapor Tarihi', 'raporTarihi');
 
-        const testId = String(isRaw ? (t[0] || rowIdx) : (g(t, 'ID', 'id') || rowIdx));
+        const testId = String(g(t, 'ID', 'id') || rowIdx);
         const zebraClass = rowIdx % 2 !== 0 ? 'bg-surface-hover' : '';
 
         return `<tr class="border-b border-border-main hover:bg-primary/5 transition-colors ${zebraClass}">
@@ -2329,9 +2287,6 @@ function getStandartPriority(standart: string): number {
     loadCertificates();
   }
 
-  // Standard load
-  initPage();
-  // Astro ViewTransitions support
   document.removeEventListener('astro:page-load', initHandler);
   document.addEventListener('astro:page-load', initHandler);
 

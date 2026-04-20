@@ -364,9 +364,6 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     void boot();
   }
 
-  // Initial load
-  initPage();
-  // Transition support
   document.addEventListener('astro:page-load', initPage);
   // Cleanup away
   document.addEventListener('astro:before-preparation', runCleanups, { once: true });

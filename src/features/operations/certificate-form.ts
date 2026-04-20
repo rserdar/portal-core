@@ -1,15 +1,15 @@
-export interface LegacyIsoOption {
+export interface StandardOption {
   id: string;
   prefix: string;
   fullName: string;
 }
 
-export function normalizeLegacyIsoRows(rows: any[][]): LegacyIsoOption[] {
+export function normalizeStandards(rows: any[]): StandardOption[] {
   return (Array.isArray(rows) ? rows : [])
     .map((row) => ({
-      id: String(row?.[0] || '').trim(),
-      prefix: String(row?.[1] || '').trim(),
-      fullName: String(row?.[2] || '').trim(),
+      id: String(row?.kod || row?.[0] || '').trim(),
+      prefix: String(row?.kisaltma || row?.[1] || '').trim(),
+      fullName: String(row?.tam_ad || row?.[2] || '').trim(),
     }))
     .filter((item) => item.id);
 }

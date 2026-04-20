@@ -70,55 +70,6 @@ export default {
       const keys = Object.keys(value).sort();
       return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
     };
-    const mapLegacyCompanyRow = (row) => {
-      const r = Array.isArray(row) ? row : [];
-      return {
-        "Firma No": String(r[0] ?? "").trim(),
-        "Firma Adı": String(r[1] ?? "").trim(),
-        Unvan: String(r[2] ?? "").trim(),
-        Adres: String(r[3] ?? "").trim(),
-        "İl": String(r[4] ?? "").trim(),
-        "Ülke": String(r[5] ?? "").trim(),
-        "Yazışma Adresi": String(r[6] ?? "").trim(),
-        "Vergi Dairesi": String(r[7] ?? "").trim(),
-        "Vergi Numarası": String(r[8] ?? "").trim(),
-        Telefon: String(r[9] ?? "").trim(),
-        Faks: String(r[10] ?? "").trim(),
-        "İnternet": String(r[11] ?? "").trim(),
-        Mail: String(r[12] ?? "").trim(),
-        "Yetkili Adı": String(r[13] ?? "").trim(),
-        "Yetkili Ünvanı": String(r[14] ?? "").trim(),
-        KYT: String(r[15] ?? "").trim(),
-        "İrtibat Kişisi": String(r[16] ?? "").trim(),
-        "İrtibat Ünvanı": String(r[17] ?? "").trim(),
-        "İrtibat Tel": String(r[18] ?? "").trim(),
-        "İrtibat Mail": String(r[19] ?? "").trim(),
-        "Türkçe Kapsam": String(r[20] ?? "").trim(),
-        "İngilizce Kapsam": String(r[21] ?? "").trim(),
-        "Yapılan İş": String(r[22] ?? "").trim(),
-        "Toplam Çalışan Sayısı": String(r[23] ?? "0").trim(),
-        "Yönetim Çalışan Sayısı": String(r[24] ?? "0").trim(),
-        "Üretim Çalışan Sayısı": String(r[25] ?? "0").trim(),
-        "Aynı İş Çalışan Sayısı": String(r[26] ?? "0").trim(),
-        "Yarı Zamanlı Çalışan Sayısı": String(r[27] ?? "0").trim(),
-        "Taşeron Çalışan Sayısı": String(r[28] ?? "0").trim(),
-        Alan: String(r[29] ?? "").trim(),
-        Departman: String(r[30] ?? "").trim(),
-        Vardiya: String(r[31] ?? "1").trim(),
-        "Firma Logosu": String(r[32] ?? "").trim(),
-        "Kaşe İmza": String(r[33] ?? "").trim(),
-        "Danışman": String(r[34] ?? "").trim(),
-        "Doküman": String(r[35] ?? "").trim(),
-        "Teknik Dosya": String(r[36] ?? "").trim(),
-        "Teknik Dosya Kapsamı": String(r[37] ?? "").trim(),
-        "Firma Sınıfı": String(r[38] ?? "").trim(),
-        "Firma Not": String(r[39] ?? "").trim(),
-        EA: String(r[40] ?? "").trim(),
-        NACE: String(r[41] ?? "").trim(),
-        "Medikal Sektör": String(r[42] ?? "").trim(),
-        "Gıda Sektörü": String(r[43] ?? "").trim(),
-      };
-    };
     const headerCache = new Map();
     const normalizeHeader = (value) => {
       const s = String(value || "");
@@ -232,91 +183,59 @@ export default {
         const bId = parseInt(getCertificateId(b), 10);
         return (isNaN(bId) ? 0 : bId) - (isNaN(aId) ? 0 : aId);
       });
-    const mapLegacyCertificateRow = (row) => {
-      const r = Array.isArray(row) ? row : [];
-      return {
-        ID: String(r[0] ?? "").trim(),
-        "Firma Adı": String(r[1] ?? "").trim(),
-        "Firma No": String(r[2] ?? "").trim(),
-        Standart: String(r[3] ?? "").trim(),
-        "Denetim Tipi": String(r[4] ?? "").trim(),
-        "Sertifika No": String(r[5] ?? "").trim(),
-        "Sertifika Tarihi": String(r[6] ?? "").trim(),
-        "Gözetim Tarihi": String(r[7] ?? "").trim(),
-        "Tescil Tarihi": String(r[8] ?? "").trim(),
-        "Sertifika Geçerlilik Tarihi": String(r[9] ?? "").trim(),
-        Kapsam: String(r[10] ?? "").trim(),
-        Scope: String(r[11] ?? "").trim(),
-        Logo: String(r[12] ?? "").trim(),
-        Kod: String(r[13] ?? "").trim(),
-        Akreditasyon: String(r[14] ?? "").trim(),
-        Akredite: String(r[15] ?? "").trim(),
-        "Danışman": String(r[16] ?? "").trim(),
-        Durum: String(r[17] ?? "").trim(),
-        Not: String(r[18] ?? "").trim(),
-        "Gözetim Conf.": String(r[19] ?? "").trim(),
-        "Other Standard": String(r[20] ?? "").trim(),
-        "Calendar ID": String(r[21] ?? "").trim(),
-        "QR Code": String(r[22] ?? "").trim(),
-        "Cert Link": String(r[23] ?? "").trim(),
-      };
-    };
-    const normalizeCertificateSource = (source) => Array.isArray(source) ? mapLegacyCertificateRow(source) : source;
     const createCanonicalCertificate = (source, options = {}) => {
-      const normalizedSource = normalizeCertificateSource(source);
-      const input = normalizedSource && typeof normalizedSource === "object" ? normalizedSource : {};
+      const input = source && typeof source === "object" && !Array.isArray(source) ? source : {};
       const pick = getPicker(input, options.explicit || null);
       const id = String(options.id ?? getCertificateId(input) ?? "").trim();
-      const nick = pick(["nick", "nickname", "Nickname", "Firma Adı", "isim", "FirmaAdi"]);
-      const firmaNo = pick(["firmano", "firmaNo", "Firma No", "fno", "FirmaNo"]);
-      const standart = pick(["standart", "standard", "Standart", "Standard"]);
-      const denetim = pick(["denetim", "Denetim Tipi", "Denetim", "denetimTipi", "DenetimTipi"]);
-      const sno = pick(["sno", "sNo", "Sertifika No", "sertNo", "SertifikaNo", "Belge No", "BelgeNo"]);
-      const gst = pick(["gst", "sTarihi", "Sertifika Tarihi", "Belge Tarihi", "BelgeTarihi"]);
-      const goz = pick(["goz", "sGozetimT", "Gözetim Tarihi", "Sertifika Gözetim Tarihi"]);
-      const stt = pick(["stt", "sTT", "Tescil Tarihi", "Sertifika Tescil Tarihi", "Son Tetkik Tarihi"]);
-      const sgt = pick(["sgt", "sGT", "Sertifika Geçerlilik Tarihi"]);
+      const nick = pick(["nick", "nickname", "Firma Adı", "isim"]);
+      const firmaNo = pick(["firma_no", "firmaNo", "firmano", "Firma No"]);
+      const standart = pick(["standart", "standard"]);
+      const denetimTipi = pick(["denetim_tipi", "denetim", "Denetim Tipi"]);
+      const sertifikaNo = pick(["sertifika_no", "sno", "sNo", "Sertifika No"]);
+      const sertifikaTarihi = pick(["sertifika_tarihi", "gst", "sTarihi", "Sertifika Tarihi"]);
+      const gozetimTarihi = pick(["gozetim_tarihi", "goz", "Gözetim Tarihi"]);
+      const tescilTarihi = pick(["tescil_tarihi", "stt", "sTT", "Tescil Tarihi", "Son Tetkik Tarihi"]);
+      const gecerlilikTarihi = pick(["gecerlilik_tarihi", "sgt", "sGT", "Sertifika Geçerlilik Tarihi"]);
       const kapsam = pick(["kapsam", "Kapsam"]);
       const scope = pick(["scope", "Scope"]);
-      const akreditasyon = pick(["akreditasyon", "Akreditasyon", "akrn"]);
-      const akredite = pick(["akredite", "Akredite"]);
-      const dan = pick(["dan", "danisman", "Danışman", "Danisman"]);
-      const other = pick(["other", "Other Standard", "Other", "Diğer", "Diger", "Diğer Standart"]);
+      const akreditasyon = pick(["akreditasyon", "akrn"]);
+      const akredite = pick(["akredite"]);
+      const consultant = pick(["consultant", "danisman", "dan", "Danışman"]);
+      const otherStandart = pick(["other_standart", "other", "Other Standard", "Diğer"]);
       const durum = pick(["durum", "Durum"]);
-      const not = pick(["not", "Not"]);
-      const gozetimConf = pick(["gozetimConfirmed", "gozetimConf", "Gözetim Conf.", "gozetim"]);
-      const calendar = pick(["calendar", "Calendar ID", "eventId"]);
+      const sertifikaNot = pick(["sertifika_not", "not", "Not"]);
+      const gozetimConfirmed = pick(["gozetim_confirmed", "gozetimConfirmed", "Gözetim Conf.", "gozetim"]);
+      const calendarId = pick(["calendar_id", "calendar", "eventId"]);
       const qr = pick(["qr", "QR Code"]);
-      const certLink = pick(["certLink", "certiLink", "Cert Link"]);
+      const certLink = pick(["cert_link", "certLink", "Cert Link"]);
       const logo = pick(["logo", "Logo"]);
-      const kod = pick(["kod", "Kod", "NACE", "nace"]);
+      const nace = pick(["nace", "kod", "NACE"]);
 
       const canonical = {
-        // ...(input || {}), // [DÜZELTME] Veri tekrarını önlemek için ham input spread'i kaldırıldı
-        ...(id ? { ID: id, id, certId: id } : {}),
-        "Firma Adı": nick, Nickname: nick, nick, isim: nick,
-        "Firma No": firmaNo, firmaNo, firmano: firmaNo,
-        Standart: standart, standart,
-        "Denetim Tipi": denetim, denetim, denetimTipi: denetim,
-        "Sertifika No": sno, sno, sNo: sno,
-        "Sertifika Tarihi": gst, gst, sTarihi: gst,
-        "Gözetim Tarihi": goz, "Sertifika Gözetim Tarihi": goz, goz, sGozetimT: goz,
-        "Tescil Tarihi": stt, "Sertifika Tescil Tarihi": stt, "Son Tetkik Tarihi": stt, stt, sTT: stt,
-        "Sertifika Geçerlilik Tarihi": sgt, sgt, sGT: sgt,
-        Kapsam: kapsam, kapsam,
-        Scope: scope, scope,
-        Akreditasyon: akreditasyon, akreditasyon, akrn: akreditasyon,
-        Akredite: akredite, akredite,
-        "Danışman": dan, Danisman: dan, dan, danisman: dan,
-        "Other Standard": other, Other: other, other,
-        Durum: durum, durum,
-        Not: not, not,
-        "Gözetim Conf.": gozetimConf, gozetimConfirmed: gozetimConf, gozetimConf, gozetim: gozetimConf,
-        "Calendar ID": calendar, calendar, eventId: calendar,
-        "QR Code": qr, qr,
-        "Cert Link": certLink, certLink, certiLink: certLink,
-        Logo: logo, logo,
-        Kod: kod, kod, NACE: kod, nace: kod,
+        ...(id ? { id } : {}),
+        nick,
+        firma_no: firmaNo,
+        standart,
+        denetim_tipi: denetimTipi,
+        sertifika_no: sertifikaNo,
+        sertifika_tarihi: sertifikaTarihi,
+        gozetim_tarihi: gozetimTarihi,
+        tescil_tarihi: tescilTarihi,
+        gecerlilik_tarihi: gecerlilikTarihi,
+        kapsam,
+        scope,
+        akreditasyon,
+        akredite,
+        consultant,
+        other_standart: otherStandart,
+        durum,
+        sertifika_not: sertifikaNot,
+        gozetim_confirmed: gozetimConfirmed,
+        calendar_id: calendarId,
+        qr,
+        cert_link: certLink,
+        logo,
+        nace,
       };
       return canonical;
     };
@@ -329,35 +248,31 @@ export default {
     const createEtag = (value) => stableStringify(stripMeta(value));
     const pickRowValue = (record, aliases, fallback = "") => pickObjectValue(record, aliases, fallback);
     const pickCompanyValue = (record, aliases, fallback = "") => pickObjectValue(record, aliases, fallback);
-    const getCompanyId = (record) => pickCompanyValue(record, ["Firma No", "FirmaNo", "firmaNo", "id", "ID"]);
-    const normalizeCompanySource = (source) => Array.isArray(source) ? mapLegacyCompanyRow(source) : source;
+    const getCompanyId = (record) => pickCompanyValue(record, ["id", "ID", "firmaNo", "FirmaNo", "Firma No"]);
     const createCanonicalCompany = (source, options = {}) => {
-      const normalizedSource = normalizeCompanySource(source);
-      const input = normalizedSource && typeof normalizedSource === "object" ? normalizedSource : {};
+      const input = source && typeof source === "object" && !Array.isArray(source) ? source : {};
       const pick = getPicker(input, options.explicit || null);
       const id = String(options.id ?? getCompanyId(input) ?? "").trim();
       const nick = pick(["nickname", "nick", "Nick", "FirmaAdi", "Firma Adı"]);
       const unvan = pick(["unvan", "Unvan"]);
       const adres = pick(["adres", "Adres"]);
-      const sehir = pick(["sehir", "il", "İl", "Il", "Şehir", "Sehir"]);
+      const sehir = pick(["city", "sehir", "il"]);
       const ulke = pick(["ulke", "Ülke", "Ulke"], "TÜRKİYE");
       const yazisma = pick(["yazisma", "YazismaAdresi", "Yazışma Adresi", "Şube Adresi"]);
-      const vergiD = pick(["vergiD", "VergiDairesi", "Vergi Dairesi"]);
-      const vergiN = pick(["vergiN", "VergiNumarasi", "Vergi Numarası"]);
+      const vergiD = pick(["vergi_dairesi", "vergiD"]);
+      const vergiN = pick(["vergi_no", "vergiN"]);
       const tel = pick(["tel", "Tel", "Telefon"]);
       const faks = pick(["faks", "Faks"]);
       const www = pick(["www", "web", "İnternet", "Internet", "Web"]);
       const mail = pick(["mail", "Mail", "E-Posta"]);
-      const yetA = pick(["yetA", "YetkiliAdi", "Yetkili Adı"]);
-      const yetU = pick(["yetU", "YetkiliUnvani", "Yetkili Ünvanı", "Yetkili Unvani"]);
-      const kyt = pick(["kyt", "KYT", "Kalite Yönetim Temsilcisi"]);
-      const irtA = pick(["irtA", "IrtibatKisi", "İrtibat Kişisi"]);
-      const irtU = pick(["irtU", "IrtibatUnvani", "İrtibat Ünvanı"]);
-      const irtN = pick(["irtN", "IrtibatKisiNumarasi", "İrtibat Tel"]);
-      const irtM = pick(["irtM", "IrtibatKisisMail", "İrtibat Mail"]);
-      const kapsam = pick(["kapsam", "Kapsam", "Sertifika Kapsamı (TR)", "Türkçe Kapsam"]);
-      const scope = pick(["scope", "Scope", "Sertifika Kapsamı (EN)", "İngilizce Kapsam"]);
-      const yapis = pick(["yapis", "YapilanIs", "Yapılan İş"]);
+      const yetA = pick(["yetkili_adi", "yetA"]);
+      const yetU = pick(["yetkili_unvani", "yetU"]);
+      const kyt = pick(["kyt"]);
+      const irtA = pick(["irtibat_kisi", "irtA"]);
+      const irtU = pick(["irtibat_unvani", "irtU"]);
+      const irtN = pick(["irtibat_tel", "irtN"]);
+      const irtM = pick(["irtibat_mail", "irtM"]);
+      const yapis = pick(["yapilan_is", "yapis"]);
       const tcs = pick(["tcs", "TCS", "Toplam Çalışan Sayısı"], "0");
       const ycs = pick(["ycs", "YCS", "Yönetim Çalışan Sayısı"], "0");
       const ucs = pick(["ucs", "UCS", "Üretim Çalışan Sayısı"], "0");
@@ -369,63 +284,51 @@ export default {
       const vardiya = pick(["vardiya", "Vardiya"], "1");
       const logo = pick(["logo", "logoK", "Firma Logosu", "LogoKaşe", "LogoKase"]);
       const kase = pick(["kase", "Kaşe İmza", "Kase Imza", "Kaşe&İmza"]);
-      const dan = pick(["dan", "danisman", "Danisman", "Danışman"]);
-      const ea = pick(["ea", "EA"]);
-      const nace = pick(["nace", "NACE"]);
-      const not = pick(["not", "Not", "Firma Not"]);
+      const not = pick(["firma_not", "not"]);
       const sinif = pick(["sinif", "Firma Sınıfı", "Firma Sinifi"]);
       const dokuman = pick(["dokuman", "Dokuman", "Doküman"]);
       const teknik = pick(["teknik", "Teknik Dosya"]);
       const tkapsam = pick(["tkapsam", "Teknik Dosya Kapsamı", "Teknik Dosya Kaspamı"]);
-      const medikal = pick(["medikal", "Medikal Sektör"]);
-      const gida = pick(["gida", "Gıda Sektörü", "Gida Sektoru"]);
 
       const canonical = {
         // ...(input || {}), // [DÜZELTME] Veri tekrarını önlemek için ham input spread'i kaldırıldı
-        ...(id ? { "Firma No": id, FirmaNo: id, firmaNo: id, id, ID: id } : {}),
-        "Firma Adı": nick, FirmaAdi: nick, nickname: nick, Nick: nick, nick,
-        Unvan: unvan, unvan,
-        Adres: adres, adres,
-        "İl": sehir, Il: sehir, "Şehir": sehir, Sehir: sehir, sehir, il: sehir,
-        "Ülke": ulke, Ulke: ulke, ulke,
-        "Yazışma Adresi": yazisma, YazismaAdresi: yazisma, yazisma,
-        "Vergi Dairesi": vergiD, VergiDairesi: vergiD, vergiD,
-        "Vergi Numarası": vergiN, VergiNumarasi: vergiN, vergiN,
-        Telefon: tel, Tel: tel, tel,
-        Faks: faks, faks,
-        "İnternet": www, Internet: www, Web: www, www,
-        Mail: mail, mail,
-        "Yetkili Adı": yetA, YetkiliAdi: yetA, yetA,
-        "Yetkili Ünvanı": yetU, "Yetkili Unvani": yetU, YetkiliUnvani: yetU, yetU,
-        KYT: kyt, kyt,
-        "İrtibat Kişisi": irtA, IrtibatKisi: irtA, irtA,
-        "İrtibat Ünvanı": irtU, IrtibatUnvani: irtU, irtU,
-        "İrtibat Tel": irtN, IrtibatKisiNumarasi: irtN, irtN,
-        "İrtibat Mail": irtM, IrtibatKisisMail: irtM, irtM,
-        "Türkçe Kapsam": kapsam, "Sertifika Kapsamı (TR)": kapsam, Kapsam: kapsam, kapsam,
-        "İngilizce Kapsam": scope, "Sertifika Kapsamı (EN)": scope, Scope: scope, scope,
-        "Yapılan İş": yapis, YapilanIs: yapis, yapis,
-        "Toplam Çalışan Sayısı": tcs, TCS: tcs, tcs,
-        "Yönetim Çalışan Sayısı": ycs, YCS: ycs, ycs,
-        "Üretim Çalışan Sayısı": ucs, UCS: ucs, ucs,
-        "Yarı Zamanlı Çalışan Sayısı": yzcs, YZCS: yzcs, yzcs,
-        "Taşeron Çalışan Sayısı": tascs, TASCS: tascs, tascs,
-        "Aynı İşte Çalışan Sayısı": acs, ACS: acs, acs,
-        Alan: alan, alan,
-        Departman: dept, departman: dept, dept,
-        Vardiya: vardiya, vardiya,
-        "Firma Logosu": logo, LogoKase: logo, logoK: logo, logo,
-        "Kaşe İmza": kase, "Kase Imza": kase, kase,
-        "Danışman": dan, Danisman: dan, dan, danisman: dan,
-        EA: ea, ea,
-        NACE: nace, nace,
-        "Firma Not": not, Not: not, not,
-        "Firma Sınıfı": sinif, "Firma Sinifi": sinif, sinif,
-        "Doküman": dokuman, Dokuman: dokuman, dokuman,
-        "Teknik Dosya": teknik, teknik,
-        "Teknik Dosya Kapsamı": tkapsam, "Teknik Dosya Kaspamı": tkapsam, tkapsam,
-        "Medikal Sektör": medikal, medikal,
-        "Gıda Sektörü": gida, "Gida Sektoru": gida, gida,
+        ...(id ? { id, ID: id } : {}),
+        nickname: nick, nick,
+        unvan,
+        adres,
+        city: sehir, sehir,
+        ulke,
+        yazisma,
+        vergi_dairesi: vergiD, vergiD,
+        vergi_no: vergiN, vergiN,
+        tel,
+        faks,
+        www,
+        mail,
+        yetkili_adi: yetA, yetA,
+        yetkili_unvani: yetU, yetU,
+        kyt,
+        irtibat_kisi: irtA, irtA,
+        irtibat_unvani: irtU, irtU,
+        irtibat_tel: irtN, irtN,
+        irtibat_mail: irtM, irtM,
+        yapilan_is: yapis, yapis,
+        tcs,
+        ycs,
+        ucs,
+        yzcs,
+        tascs,
+        acs,
+        alan,
+        departman: dept,
+        vardiya,
+        logo,
+        kase,
+        firma_not: not, not,
+        sinif,
+        dokuman,
+        teknik,
+        tkapsam,
       };
       canonical.__etag = createEtag(canonical);
       return canonical;
@@ -568,110 +471,86 @@ export default {
       }
     };
     const createCanonicalTestRow = (source, options = {}) => {
-      const input = Array.isArray(source)
-        ? {
-          ID: source[0] ?? "",
-          firmaAdi: source[1] ?? "",
-          firmaNo: source[2] ?? "",
-          testAdi: source[3] ?? "",
-          marka: source[4] ?? "",
-          urun: source[5] ?? "",
-          urunKodu: source[6] ?? "",
-          urunNo: source[7] ?? "",
-          lot: source[8] ?? "",
-          urunKabul: source[9] ?? "",
-          kabulSaat: source[10] ?? "",
-          testBaslangic: source[11] ?? "",
-          testBitis: source[12] ?? "",
-          raporTarihi: source[13] ?? "",
-          raporNo: source[14] ?? "",
-          numuneSayisi: source[15] ?? "",
-          numuneUT: source[16] ?? "",
-          numuneSKT: source[17] ?? "",
-          urunBilgi: source[18] ?? "",
-          gorsel1: source[19] ?? "",
-          gorsel2: source[20] ?? "",
-          detay: source[21] ?? "",
-        }
-        : source && typeof source === "object"
-          ? source
-          : {};
+      const input = source && typeof source === "object" ? source : {};
       const pick = getPicker(input, options.explicit || null);
-      const id = String(options.id ?? pick(["ID", "id"]) ?? "").trim();
+      const id = String(options.id ?? pick(["id", "ID"]) ?? "").trim();
       return {
         id,
-        firmaAdi: pick(["firmaAdi", "fname", "nick"]) ?? "",
-        firmaNo: pick(["firmaNo", "fno"]) ?? "",
-        testAdi: pick(["testAdi"]) ?? "",
+        firma_no: pick(["firma_no"]) ?? "",
+        test_adi: pick(["test_adi"]) ?? "",
         marka: pick(["marka"]) ?? "",
         urun: pick(["urun"]) ?? "",
-        urunKodu: pick(["urunKodu"]) ?? "",
-        urunNo: pick(["urunNo"]) ?? "",
+        urun_kodu: pick(["urun_kodu"]) ?? "",
+        urun_no: pick(["urun_no"]) ?? "",
         lot: pick(["lot"]) ?? "",
-        urunKabul: pick(["urunKabul"]) ?? "",
-        kabulSaat: pick(["kabulSaat"]) ?? "",
-        testBaslangic: pick(["testBaslangic"]) ?? "",
-        testBitis: pick(["testBitis"]) ?? "",
-        raporTarihi: pick(["raporTarihi"]) ?? "",
-        raporNo: pick(["raporNo"]) ?? "",
-        numuneSayisi: pick(["numuneSayisi"]) ?? "",
-        numuneUT: pick(["numuneUT"]) ?? "",
-        numuneSKT: pick(["numuneSKT"]) ?? "",
-        urunBilgi: pick(["urunBilgi"]) ?? "",
+        urun_kabul: pick(["urun_kabul"]) ?? "",
+        kabul_saat: pick(["kabul_saat"]) ?? "",
+        test_baslangic: pick(["test_baslangic"]) ?? "",
+        test_bitis: pick(["test_bitis"]) ?? "",
+        rapor_tarihi: pick(["rapor_tarihi"]) ?? "",
+        rapor_no: pick(["rapor_no"]) ?? "",
+        numune_sayisi: pick(["numune_sayisi"]) ?? "",
+        numune_ut: pick(["numune_ut"]) ?? "",
+        numune_skt: pick(["numune_skt"]) ?? "",
+        urun_bilgi: pick(["urun_bilgi"]) ?? "",
         gorsel1: pick(["gorsel1"]) ?? "",
         gorsel2: pick(["gorsel2"]) ?? "",
         detay: pick(["detay"]) ?? "",
+        gizle: pick(["gizle"]) === true || pick(["gizle"]) === "true" || pick(["gizle"]) === 1 ? 1 : 0,
       };
     };
     const getTestId = (t) => String(t?.id ?? t?.ID ?? "").trim();
-    const getTestFirmaId = (t) => String(t?.firmaNo ?? t?.fno ?? "").trim();
+    const getTestFirmaId = (t) => String(t?.firma_no ?? "").trim();
     const createCanonicalProformaRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
       const pick = getPicker(input);
-      const id = String(options.id ?? pick(["ID", "id", "faturaNo"]) ?? "").trim();
+      const id = String(options.id ?? pick(["id", "ID"]) ?? "").trim();
       return {
         id,
-        nick: pick(["nick", "nickname", "firmaAdi", "firma_adi", "Firma Adı"], ""),
-        firmaNo: pick(["firmaNo", "firma_no", "firmano", "fno", "Firma No"], ""),
-        kdvsiz: pick(["kdvsiz", "haric", "Kdv Yok", "KDV Yok", "Kdv Hariç", "KDV Hariç"], "0"),
-        kdvOran: pick(["kdvOran", "kdv_oran", "oran", "Kdv Oranı", "KDV Oranı"], "20"),
-        kdv: pick(["kdv", "Kdv Tutarı", "KDV Tutarı", "tutar"], "0"),
+        firma_no: pick(["firma_no"]),
+        kdvsiz: pick(["kdvsiz"], "0"),
+        kdv_oran: pick(["kdv_oran", "kdvOran"], "20"),
+        kdv: pick(["kdv"], "0"),
         toplam: pick(["toplam"], "0"),
-        birim: pick(["birim", "paraBirimi"], "TL"),
+        birim: pick(["birim"], "TL"),
         tarih: pick(["tarih"], ""),
         konu: pick(["konu"], ""),
       };
     };
-    const getProformaId = (p) => String(p?.id ?? p?.ID ?? p?.faturaNo ?? "").trim();
-    const getProformaFirmaId = (p) => String(p?.firmaNo ?? p?.firma_no ?? p?.fno ?? "").trim();
+    const getProformaId = (p) => String(p?.id ?? p?.ID ?? "").trim();
+    const getProformaFirmaId = (p) => String(p?.firma_no ?? "").trim();
     const getAuditId = (a) => String(a?.id ?? a?.ID ?? "").trim();
-    const getAuditFirmaId = (a) => String(a?.firmaNo ?? a?.firmano ?? "").trim();
+    const getAuditFirmaId = (a) => String(a?.firma_no ?? a?.firmaNo ?? a?.firmano ?? "").trim();
     const createCanonicalAuditRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
       const pick = getPicker(input, options.explicit || null);
       const id = String(options.id ?? getAuditId(input) ?? "").trim();
       return {
         id,
-        nick: pick(["nick", "nickname"]) ?? "",
-        firmaNo: pick(["firmaNo", "firmano"]) ?? "",
+        firma_no: pick(["firma_no", "firmaNo", "firmano"]) ?? "",
+        sertifika_id: pick(["sertifika_id", "certId", "sertifikaId"]) ?? "",
         standart: pick(["standart"]) ?? "",
-        denetimTipi: pick(["denetimTipi", "denetim"]) ?? "",
-        a1Full: pick(["a1Full", "a1Denetci"]) ?? "",
-        a1Auditor: pick(["a1Auditor", "a1Denetci", "a1Full"]) ?? "",
-        a2Full: pick(["a2Full", "a2Denetci"]) ?? "",
-        a2Auditor: pick(["a2Auditor", "a2Denetci", "a2Full"]) ?? "",
-        a1Basla: pick(["a1Basla", "a1Baslav2"]) ?? "",
-        a1Bitis: pick(["a1Bitis", "a1Bitisv2"]) ?? "",
-        a1Md: pick(["a1Md"]) ?? "",
-        a1La: pick(["a1La", "a1Lead"]) ?? "",
-        a1Fa: pick(["a1Fa"]) ?? "",
-        a1Sa: pick(["a1Sa"]) ?? "",
-        a2Basla: pick(["a2Basla", "a2Baslav2"]) ?? "",
-        a2Bitis: pick(["a2Bitis", "a2Bitisv2"]) ?? "",
-        a2Md: pick(["a2Md"]) ?? "",
-        a2La: pick(["a2La", "a2Lead"]) ?? "",
-        a2Fa: pick(["a2Fa"]) ?? "",
-        a2Sa: pick(["a2Sa"]) ?? "",
+        denetim_tipi: pick(["denetim_tipi", "denetimTipi", "denetim"]) ?? "",
+        a1_baslangic: pick(["a1_baslangic", "a1Basla", "a1Baslav2"]) ?? "",
+        a1_bitis: pick(["a1_bitis", "a1Bitis", "a1Bitisv2"]) ?? "",
+        a1_manday: pick(["a1_manday", "a1Md"]) ?? "",
+        a1_bas_denetci: pick(["a1_bas_denetci", "a1La", "a1Lead"]) ?? "",
+        a1_denetci_2: pick(["a1_denetci_2", "a1Fa", "a1Auditor"]) ?? "",
+        a1_denetci_3: pick(["a1_denetci_3", "a1Sa"]) ?? "",
+        a1_kapsam: pick(["a1_kapsam", "a1kDenet", "a1KDenet"]) ?? "",
+        a1_event_id: pick(["a1_event_id", "a1EventId"]) ?? "",
+        a1_auditor: pick(["a1_auditor", "a1Denetci"]) ?? "",
+        a1_lead: pick(["a1_lead", "a1Lead"]) ?? "",
+        a2_baslangic: pick(["a2_baslangic", "a2Basla", "a2Baslav2"]) ?? "",
+        a2_bitis: pick(["a2_bitis", "a2Bitis", "a2Bitisv2"]) ?? "",
+        a2_manday: pick(["a2_manday", "a2Md"]) ?? "",
+        a2_bas_denetci: pick(["a2_bas_denetci", "a2La", "a2Lead"]) ?? "",
+        a2_denetci_2: pick(["a2_denetci_2", "a2Fa", "a2Auditor"]) ?? "",
+        a2_denetci_3: pick(["a2_denetci_3", "a2Sa"]) ?? "",
+        a2_kapsam: pick(["a2_kapsam", "a2kDenet", "a2KDenet"]) ?? "",
+        a2_event_id: pick(["a2_event_id", "a2EventId"]) ?? "",
+        a2_auditor: pick(["a2_auditor", "a2Denetci"]) ?? "",
+        a2_lead: pick(["a2_lead", "a2Lead"]) ?? "",
         qms: pick(["qms"]) ?? "",
         mdd: pick(["mdd"]) ?? "",
         ems: pick(["ems"]) ?? "",
@@ -680,10 +559,6 @@ export default {
         isms: pick(["isms"]) ?? "",
         engy: pick(["engy"]) ?? "",
         gmp: pick(["gmp"]) ?? "",
-        a1kDenet: pick(["a1kDenet"]) ?? "",
-        a2kDenet: pick(["a2kDenet"]) ?? "",
-        a1EventId: pick(["a1EventId"]) ?? "",
-        a2EventId: pick(["a2EventId"]) ?? "",
       };
     };
     const rowToObject = (headers, row) => {
@@ -844,12 +719,12 @@ export default {
     const upsertCompanyD1 = (c, idOverride) => {
       const id = idOverride || parseInt(getCompanyId(c)) || null;
       return env.DB_D1.prepare(_D1_COMPANY_SQL).bind(
-        id, c.nickname || c.nick || null, c.unvan || null, c.adres || null, c.sehir || c.il || null, c.ulke || null,
-        c.yazisma || null, c.vergiD || null, c.vergiN || null, c.tel || null, c.faks || null, c.www || null, c.mail || null,
-        c.yetA || null, c.yetU || null, c.kyt || null, c.irtA || null, c.irtU || null, c.irtN || null, c.irtM || null,
-        c.yapis || null, c.tcs || null, c.ycs || null, c.ucs || null, c.yzcs || null, c.tascs || null, c.acs || null,
-        c.alan || null, c.dept || c.departman || null, c.vardiya || null, c.logo || null, c.kase || null,
-        c.dokuman || null, c.teknik || null, c.tkapsam || null, c.sinif || null, c.not || null
+        id, c.nickname || null, c.unvan || null, c.adres || null, c.city || null, c.ulke || null,
+        c.yazisma || null, c.vergi_dairesi || null, c.vergi_no || null, c.tel || null, c.faks || null, c.www || null, c.mail || null,
+        c.yetkili_adi || null, c.yetkili_unvani || null, c.kyt || null, c.irtibat_kisi || null, c.irtibat_unvani || null, c.irtibat_tel || null, c.irtibat_mail || null,
+        c.yapilan_is || null, c.tcs || null, c.ycs || null, c.ucs || null, c.yzcs || null, c.tascs || null, c.acs || null,
+        c.alan || null, c.departman || null, c.vardiya || null, c.logo || null, c.kase || null,
+        c.dokuman || null, c.teknik || null, c.tkapsam || null, c.sinif || null, c.firma_not || null
       ).run();
     };
     const _D1_CERT_SQL = `INSERT OR REPLACE INTO certificates
@@ -859,28 +734,29 @@ export default {
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`;
     const upsertCertificateD1 = (c, idOverride) => {
       const id = idOverride || parseInt(getCertificateId(c)) || null;
+      const tGozConf = c.gozetim_confirmed;
       return env.DB_D1.prepare(_D1_CERT_SQL).bind(
-        id, parseInt(c.firmaNo || c.firmano) || null, c.standart || null, c.denetim || c.denetimTipi || null,
-        c.sno || null, c.gst || null, c.goz || null, c.stt || null, c.sgt || null,
-        c.kapsam || null, c.scope || null, c.akreditasyon || c.akrn || null, c.akredite || null, null,
-        c.kod || c.nace || null, c.dan || c.danisman || null, c.other || null, c.durum || null, c.not || null,
-        c.gozetimConfirmed === 'TRUE' || c.gozetimConf === 'TRUE' ? 1 : 0,
-        c.calendar || c.eventId || null, c.qr || null, c.certLink || c.certiLink || null, c.logo || null
+        id, parseInt(c.firma_no) || null, c.standart || null, c.denetim_tipi || null,
+        c.sertifika_no || null, c.sertifika_tarihi || null, c.gozetim_tarihi || null, c.tescil_tarihi || null, c.gecerlilik_tarihi || null,
+        c.kapsam || null, c.scope || null, c.akreditasyon || null, c.akredite || null, null,
+        c.nace || null, c.consultant || null, c.other_standart || null, c.durum || null, c.sertifika_not || null,
+        tGozConf === "TRUE" || tGozConf === true || tGozConf === "1" ? 1 : 0,
+        c.calendar_id || null, c.qr || null, c.cert_link || null, c.logo || null
       ).run();
     };
     const _D1_TEST_SQL = `INSERT OR REPLACE INTO tests
       (id,firma_no,test_adi,marka,urun,urun_kodu,urun_no,lot,urun_kabul,kabul_saat,
        test_baslangic,test_bitis,rapor_tarihi,rapor_no,numune_sayisi,numune_ut,numune_skt,
-       urun_bilgi,gorsel1,gorsel2,detay,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`;
+       urun_bilgi,gorsel1,gorsel2,detay,gizle,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`;
     const upsertTestD1 = (t, idOverride) => {
       const id = idOverride || parseInt(getTestId(t)) || null;
       return env.DB_D1.prepare(_D1_TEST_SQL).bind(
-        id, parseInt(getTestFirmaId(t)) || null, t.testAdi || null, t.marka || null, t.urun || null,
-        t.urunKodu || null, t.urunNo || null, t.lot || null, t.urunKabul || null, t.kabulSaat || null,
-        t.testBaslangic || null, t.testBitis || null, t.raporTarihi || null, t.raporNo || null,
-        parseInt(t.numuneSayisi) || null, t.numuneUT || null, t.numuneSKT || null,
-        t.urunBilgi || null, t.gorsel1 || null, t.gorsel2 || null, t.detay || null
+        id, parseInt(getTestFirmaId(t)) || null, t.test_adi || null, t.marka || null, t.urun || null,
+        t.urun_kodu || null, t.urun_no || null, t.lot || null, t.urun_kabul || null, t.kabul_saat || null,
+        t.test_baslangic || null, t.test_bitis || null, t.rapor_tarihi || null, t.rapor_no || null,
+        parseInt(t.numune_sayisi) || null, t.numune_ut || null, t.numune_skt || null,
+        t.urun_bilgi || null, t.gorsel1 || null, t.gorsel2 || null, t.detay || null, t.gizle || 0
       ).run();
     };
     const _D1_PROFORMA_SQL = `INSERT OR REPLACE INTO proformas
@@ -890,23 +766,29 @@ export default {
       const id = idOverride || parseInt(getProformaId(p)) || null;
       return env.DB_D1.prepare(_D1_PROFORMA_SQL).bind(
         id, parseInt(getProformaFirmaId(p)) || null, parseFloat(p.kdvsiz) || null,
-        parseInt(p.kdvOran) || null, parseFloat(p.kdv) || null, parseFloat(p.toplam) || null,
+        parseInt(p.kdv_oran) || null, parseFloat(p.kdv) || null, parseFloat(p.toplam) || null,
         p.birim || null, p.tarih || null, p.konu || null
       ).run();
     };
     const _D1_AUDIT_SQL = `INSERT OR REPLACE INTO audits
       (id,firma_no,sertifika_id,standart,denetim_tipi,
        a1_baslangic,a1_bitis,a1_manday,a1_bas_denetci,a1_denetci_2,a1_denetci_3,
-       a2_baslangic,a2_bitis,a2_manday,a2_bas_denetci,a2_denetci_2,a2_denetci_3,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`;
+       a1_kapsam,a1_event_id,a1_auditor,a1_lead,
+       a2_baslangic,a2_bitis,a2_manday,a2_bas_denetci,a2_denetci_2,a2_denetci_3,
+       a2_kapsam,a2_event_id,a2_auditor,a2_lead,
+       qms,mdd,ems,ohs,fsms,isms,engy,gmp,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`;
     const upsertAuditD1 = (a, idOverride) => {
       const id = idOverride || parseInt(getAuditId(a)) || null;
       return env.DB_D1.prepare(_D1_AUDIT_SQL).bind(
-        id, parseInt(getAuditFirmaId(a)) || null, parseInt(a.sertifikaId || a.certId) || null,
-        a.standart || null, a.denetimTipi || null,
-        a.a1Basla || null, a.a1Bitis || null, parseFloat(a.a1Md) || null, a.a1La || null, a.a1Fa || null, a.a1Sa || null,
-        a.a2Basla || null, a.a2Bitis || null, parseFloat(a.a2Md) || null, a.a2La || null, a.a2Fa || null, a.a2Sa || null
-      ).run();
+        id, parseInt(getAuditFirmaId(a)) || null, parseInt(a.sertifika_id) || null,
+        a.standart || null, a.denetim_tipi || null,
+        a.a1_baslangic || null, a.a1_bitis || null, parseFloat(a.a1_manday) || null, a.a1_bas_denetci || null, a.a1_denetci_2 || null, a.a1_denetci_3 || null,
+        a.a1_kapsam || null, a.a1_event_id || null, a.a1_auditor || null, a.a1_lead || null,
+        a.a2_baslangic || null, a.a2_bitis || null, parseFloat(a.a2_manday) || null, a.a2_bas_denetci || null, a.a2_denetci_2 || null, a.a2_denetci_3 || null,
+        a.a2_kapsam || null, a.a2_event_id || null, a.a2_auditor || null, a.a2_lead || null,
+        a.qms || null, a.mdd || null, a.ems || null, a.ohs || null, a.fsms || null, a.isms || null, a.engy || null, a.gmp || null
+      );
     };
 
 
@@ -916,13 +798,13 @@ export default {
       };
       if (type === "standards") {
         const normalized = rows.map(r => ({
-          kod: pickMasterField(r, ["kod", "id", "standard code", "standart kodu", "standart"]),
-          kisaltma: pickMasterField(r, ["kisaltma", "kısaltma", "short code", "kisaltma kodu"]),
-          tam_ad: pickMasterField(r, ["tam_ad", "tam adı", "tam adi", "tamad", "ad", "standart adı", "standart adi", "full"]),
-          tanim_tr: pickMasterField(r, ["tanim_tr", "tanım (tr)", "tanim tr", "türkçe tanım", "turkce tanim"]),
-          tanim_en: pickMasterField(r, ["tanim_en", "tanım (en)", "tanim en", "english description", "ingilizce tanım", "ingilizce tanim"]),
-          tema_id_en: pickMasterField(r, ["tema_id_en", "tema id (en)", "english theme id", "themeid", "en tema", "ingilizce tema id"]),
-          tema_id_tr: pickMasterField(r, ["tema_id_tr", "tema id (tr)", "turkish theme id", "temaid", "tr tema", "türkçe tema id", "turkce tema id"]),
+          kod: r.kod,
+          kisaltma: r.kisaltma,
+          tam_ad: r.tam_ad,
+          tanim_tr: r.tanim_tr,
+          tanim_en: r.tanim_en,
+          tema_id_en: r.tema_id_en,
+          tema_id_tr: r.tema_id_tr,
         })).filter(r => r.kod || r.kisaltma || r.tam_ad);
         if (normalized.length) {
           await env.DB_D1.prepare(`DELETE FROM standards`).run();
@@ -931,23 +813,20 @@ export default {
         }
       } else if (type === "auditors") {
         const isChecked = (val) => String(val).trim().toUpperCase() === "TRUE" || val === true || val === "true" || val === 1 || String(val) === '1';
-        const normalizedAuditors = rows.map((r, idx) => {
-          const isArr = Array.isArray(r);
-          return {
-            id: parseInt(isArr ? r[0] : r.id) || idx + 1,
-            ad: String((isArr ? r[1] : r.ad) || "").trim(),
-            soyad: String((isArr ? r[2] : r.soyad) || "").trim(),
-            imza: String((isArr ? r[3] : r.imza) || "").trim(),
-            std_9001: isChecked(isArr ? r[4] : r.std_9001) ? 1 : 0,
-            std_13485: isChecked(isArr ? r[5] : r.std_13485) ? 1 : 0,
-            std_14001: isChecked(isArr ? r[6] : r.std_14001) ? 1 : 0,
-            std_22000: isChecked(isArr ? r[7] : r.std_22000) ? 1 : 0,
-            std_27001: isChecked(isArr ? r[8] : r.std_27001) ? 1 : 0,
-            std_45001: isChecked(isArr ? r[9] : r.std_45001) ? 1 : 0,
-            std_50001: isChecked(isArr ? r[10] : r.std_50001) ? 1 : 0,
-            std_gmp: isChecked(isArr ? r[11] : r.std_gmp) ? 1 : 0
-          };
-        }).filter(a => a.ad || a.soyad);
+        const normalizedAuditors = rows.map((r, idx) => ({
+          id: parseInt(r.id) || idx + 1,
+          ad: String(r.ad || "").trim(),
+          soyad: String(r.soyad || "").trim(),
+          imza: String(r.imza || "").trim(),
+          std_9001: isChecked(r.std_9001) ? 1 : 0,
+          std_13485: isChecked(r.std_13485) ? 1 : 0,
+          std_14001: isChecked(r.std_14001) ? 1 : 0,
+          std_22000: isChecked(r.std_22000) ? 1 : 0,
+          std_27001: isChecked(r.std_27001) ? 1 : 0,
+          std_45001: isChecked(r.std_45001) ? 1 : 0,
+          std_50001: isChecked(r.std_50001) ? 1 : 0,
+          std_gmp: isChecked(r.std_gmp) ? 1 : 0
+        })).filter(a => a.ad || a.soyad);
         if (normalizedAuditors.length) {
           await env.DB_D1.prepare(`DELETE FROM auditors`).run();
           const a = env.DB_D1.prepare(`INSERT INTO auditors (id,ad,soyad,imza,std_9001,std_13485,std_14001,std_22000,std_27001,std_45001,std_50001,std_gmp,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`);
@@ -955,14 +834,14 @@ export default {
         }
       } else if (type === "consultants") {
         const normalized = rows.map(r => ({
-          id: pickMasterField(r, ["id", "consultant id", "danisman id"]),
-          ad: pickMasterField(r, ["ad", "adı", "adi", "isim", "danışman", "danisman", "danışmanlar", "name"]),
-          adres: pickMasterField(r, ["adres", "address"]),
-          tel: pickMasterField(r, ["tel", "telefon", "gsm"]),
-          mail: pickMasterField(r, ["mail", "email", "e-posta", "eposta"]),
-          yetkili_adi: pickMasterField(r, ["yetkili_adi", "yetkili adı", "yetkili adi", "yetkili", "ilgili kişi", "ilgili kisi"]),
-          yetkili_soyad: pickMasterField(r, ["yetkili_soyad", "yetkili soyadı", "yetkili soyadi"]),
-          hitabet: pickMasterField(r, ["hitabet", "unvan", "ünvan", "title"]),
+          id: r.id,
+          ad: r.ad,
+          adres: r.adres,
+          tel: r.tel,
+          mail: r.mail,
+          yetkili_adi: r.yetkili_adi,
+          yetkili_soyad: r.yetkili_soyad,
+          hitabet: r.hitabet,
         })).filter(r => r.id || r.ad || r.adres || r.tel || r.mail);
         if (normalized.length) {
           await env.DB_D1.prepare(`DELETE FROM consultants`).run();
@@ -971,19 +850,19 @@ export default {
         }
       } else if (type === "testdocs") {
         const normalized = rows.map(r => ({
-          id: pickMasterField(r, ["id", "testdoc id"]),
-          kategori: pickMasterField(r, ["kategori", "category"]),
-          aciklama: pickMasterField(r, ["aciklama", "açıklama", "description", "testin açıklaması", "testin aciklamasi"]),
-          dokuman_adi: pickMasterField(r, ["dokuman_adi", "doküman adı", "dokuman adi", "document name"]),
-          test_adi_tr: pickMasterField(r, ["test_adi_tr", "test adı", "test adı (tr)", "türkçe test adı", "turkce test adi"]),
-          test_adi_en: pickMasterField(r, ["test_adi_en", "test adı (en)", "ingilizce test adı", "ingilizce test adi", "english test name"]),
-          standart: pickMasterField(r, ["standart", "standard", "test standardı", "test standardi"]),
-          tema_tr: pickMasterField(r, ["tema_tr", "türkçe tema", "turkce tema", "tema tr"]),
-          tema_en: pickMasterField(r, ["tema_en", "ingilizce tema", "tema en", "english theme"]),
-          gun_sayisi: pickMasterField(r, ["gun_sayisi", "gün sayısı", "gun sayisi", "days"]),
-          kisaltma: pickMasterField(r, ["kisaltma", "kısaltma"]),
-          kisaltma2: pickMasterField(r, ["kisaltma2", "kısaltma 2", "kisaltma 2"]),
-          notlar: pickMasterField(r, ["notlar", "not", "notes"]),
+          id: r.id,
+          kategori: r.kategori,
+          aciklama: r.aciklama,
+          dokuman_adi: r.dokuman_adi,
+          test_adi_tr: r.test_adi_tr,
+          test_adi_en: r.test_adi_en,
+          standart: r.standart,
+          tema_tr: r.tema_tr,
+          tema_en: r.tema_en,
+          gun_sayisi: r.gun_sayisi,
+          kisaltma: r.kisaltma,
+          kisaltma2: r.kisaltma2,
+          notlar: r.notlar,
         })).filter(r => r.id || r.kategori || r.test_adi_tr || r.standart);
         if (normalized.length) {
           await env.DB_D1.prepare(`DELETE FROM testdocs`).run();
@@ -992,13 +871,13 @@ export default {
         }
       } else if (type === "sysdocs") {
         const normalized = rows.map(r => ({
-          id: pickMasterField(r, ["id", "sysdoc id"]),
-          set_adi: pickMasterField(r, ["set_adi", "set adı", "set adi", "set", "setin adı", "setin adi"]),
-          dosya_turu: pickMasterField(r, ["dosya_turu", "dosya türü", "dosya turu", "tür", "tur"]),
-          klasor_adi: pickMasterField(r, ["klasor_adi", "klasör adı", "klasor adi", "klasör", "folder"]),
-          dokuman_kodu: pickMasterField(r, ["dokuman_kodu", "doküman kodu", "dokuman kodu", "kod"]),
-          dokuman_adi: pickMasterField(r, ["dokuman_adi", "doküman adı", "dokuman adi", "ad"]),
-          dokuman_id: pickMasterField(r, ["dokuman_id", "doküman id", "dokuman id", "drive id", "file id"]),
+          id: r.id,
+          set_adi: r.set_adi,
+          dosya_turu: r.dosya_turu,
+          klasor_adi: r.klasor_adi,
+          dokuman_kodu: r.dokuman_kodu,
+          dokuman_adi: r.dokuman_adi,
+          dokuman_id: r.dokuman_id,
         })).filter(r => r.id || r.set_adi || r.dokuman_kodu || r.dokuman_adi);
         if (normalized.length) {
           await env.DB_D1.prepare(`DELETE FROM sysdocs`).run();
@@ -1176,7 +1055,7 @@ export default {
         }
         if (hasScope("proformas")) {
           const _cc = await env.DB_D1.prepare('SELECT COUNT(*) as cnt FROM proformas').all();
-          const _canonicalCount = (Array.isArray(d.proformas) ? d.proformas : []).map(p => createCanonicalProformaRow(Array.isArray(p) ? rowToObject(d.proformaHeaders, p) : p)).filter(p => getProformaId(p)).length;
+          const _canonicalCount = (Array.isArray(d.proformas) ? d.proformas : []).map(p => createCanonicalProformaRow(p)).filter(p => getProformaId(p)).length;
           const _cur = _cc.results[0]?.cnt ?? 0;
           if (_cur > 10 && _canonicalCount < _cur * 0.2) {
             return jsonResponse({ success: false, error: `MASS_DELETION_PROTECTION: proformas (current: ${_cur}, incoming: ${_canonicalCount})` }, 400);
@@ -1211,26 +1090,26 @@ export default {
           );
           await safeRun('INSERT companies', () => batchInsert(canonicalCompanies.map(c => stmt.bind(
             parseInt(getCompanyId(c)) || null,
-            c.nickname || c.nick || null,
+            c.nickname || null,
             c.unvan || null,
             c.adres || null,
-            c.sehir || c.il || null,
+            c.city || null,
             c.ulke || null,
             c.yazisma || null,
-            c.vergiD || null,
-            c.vergiN || null,
+            c.vergi_dairesi || null,
+            c.vergi_no || null,
             c.tel || null,
             c.faks || null,
             c.www || null,
             c.mail || null,
-            c.yetA || null,
-            c.yetU || null,
+            c.yetkili_adi || null,
+            c.yetkili_unvani || null,
             c.kyt || null,
-            c.irtA || null,
-            c.irtU || null,
-            c.irtN || null,
-            c.irtM || null,
-            c.yapis || null,
+            c.irtibat_kisi || null,
+            c.irtibat_unvani || null,
+            c.irtibat_tel || null,
+            c.irtibat_mail || null,
+            c.yapilan_is || null,
             c.tcs || null,
             c.ycs || null,
             c.ucs || null,
@@ -1238,7 +1117,7 @@ export default {
             c.tascs || null,
             c.acs || null,
             c.alan || null,
-            c.dept || c.departman || null,
+            c.departman || null,
             c.vardiya || null,
             c.logo || null,
             c.kase || null,
@@ -1246,7 +1125,7 @@ export default {
             c.teknik || null,
             c.tkapsam || null,
             c.sinif || null,
-            c.not || null
+            c.firma_not || null
           ))));
           stats.companies = canonicalCompanies.length;
         }
@@ -1309,72 +1188,48 @@ export default {
               (id, firma_no, test_adi, marka, urun, urun_kodu, urun_no, lot,
                urun_kabul, kabul_saat, test_baslangic, test_bitis,
                rapor_tarihi, rapor_no, numune_sayisi, numune_ut, numune_skt,
-               urun_bilgi, gorsel1, gorsel2, detay, updated_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
+               urun_bilgi, gorsel1, gorsel2, detay, gizle, updated_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
           );
           await safeRun('INSERT tests', () => batchInsert(canonicalTests.map(t => stmt.bind(
             parseInt(getTestId(t)) || null,
             parseInt(getTestFirmaId(t)) || null,
-            t.testAdi || null,
+            t.test_adi || null,
             t.marka || null,
             t.urun || null,
-            t.urunKodu || null,
-            t.urunNo || null,
+            t.urun_kodu || null,
+            t.urun_no || null,
             t.lot || null,
-            t.urunKabul || null,
-            t.kabulSaat || null,
-            t.testBaslangic || null,
-            t.testBitis || null,
-            t.raporTarihi || null,
-            t.raporNo || null,
-            parseInt(t.numuneSayisi) || null,
-            t.numuneUT || null,
-            t.numuneSKT || null,
-            t.urunBilgi || null,
+            t.urun_kabul || null,
+            t.kabul_saat || null,
+            t.test_baslangic || null,
+            t.test_bitis || null,
+            t.rapor_tarihi || null,
+            t.rapor_no || null,
+            parseInt(t.numune_sayisi) || null,
+            t.numune_ut || null,
+            t.numune_skt || null,
+            t.urun_bilgi || null,
             t.gorsel1 || null,
             t.gorsel2 || null,
-            t.detay || null
+            t.detay || null,
+            t.gizle || 0
           ))));
           stats.tests = canonicalTests.length;
         }
 
         // --- 📋 AUDITS ---
         if (hasScope("audits")) {
-          const canonicalAudits = (Array.isArray(d.auditObjects) ? d.auditObjects : (Array.isArray(d.audits) ? d.audits : []))
+          const canonicalAudits = (Array.isArray(d.audits) ? d.audits : [])
             .map(a => createCanonicalAuditRow(a)).filter(a => getAuditId(a) && validFirmaIds.has(parseInt(getAuditFirmaId(a))));
-          const stmt = env.DB_D1.prepare(
-            `INSERT OR REPLACE INTO audits
-              (id, firma_no, standart, denetim_tipi,
-               a1_baslangic, a1_bitis, a1_manday, a1_bas_denetci, a1_denetci_2, a1_denetci_3,
-               a2_baslangic, a2_bitis, a2_manday, a2_bas_denetci, a2_denetci_2, a2_denetci_3,
-               updated_at)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`
-          );
-          await safeRun('INSERT audits', () => batchInsert(canonicalAudits.map(a => stmt.bind(
-            parseInt(getAuditId(a)) || null,
-            parseInt(getAuditFirmaId(a)) || null,
-            a.standart || null,
-            a.denetimTipi || null,
-            a.a1Basla || null,
-            a.a1Bitis || null,
-            parseFloat(a.a1Md) || null,
-            a.a1La || null,
-            a.a1Fa || null,
-            a.a1Sa || null,
-            a.a2Basla || null,
-            a.a2Bitis || null,
-            parseFloat(a.a2Md) || null,
-            a.a2La || null,
-            a.a2Fa || null,
-            a.a2Sa || null
-          ))));
+          await safeRun('INSERT audits', () => batchInsert(canonicalAudits.map(a => upsertAuditD1(a, parseInt(getAuditId(a)) || null))));
           stats.audits = canonicalAudits.length;
         }
 
         // --- 💰 PROFORMAS ---
         if (hasScope("proformas")) {
           const incomingProformas = (Array.isArray(d.proformas) ? d.proformas : [])
-            .map(p => createCanonicalProformaRow(Array.isArray(p) ? rowToObject(d.proformaHeaders, p) : p));
+            .map(p => createCanonicalProformaRow(p));
           const proformasWithId = incomingProformas.filter(p => getProformaId(p));
           const droppedMissingId = incomingProformas.length - proformasWithId.length;
           const canonicalProformas = proformasWithId
@@ -1424,7 +1279,7 @@ export default {
             parseInt(getProformaId(p)) || null,
             parseInt(getProformaFirmaId(p)) || null,
             parseFloat(p.kdvsiz) || null,
-            parseInt(p.kdvOran) || null,
+            parseInt(p.kdv_oran) || null,
             parseFloat(p.kdv) || null,
             parseFloat(p.toplam) || null,
             p.birim || null,
@@ -1450,13 +1305,13 @@ export default {
           if (hasMasterType("standards")) {
             normalizedStandards = stdList
               .map((r) => ({
-                kod: pickMasterField(r, ["kod", "id", "standard code", "standart kodu", "standart"]),
-                kisaltma: pickMasterField(r, ["kisaltma", "kısaltma", "short code", "kisaltma kodu"]),
-                tam_ad: pickMasterField(r, ["tam_ad", "tam adı", "tam adi", "tamad", "ad", "standart adı", "standart adi", "full"]),
-                tanim_tr: pickMasterField(r, ["tanim_tr", "tanım (tr)", "tanim tr", "türkçe tanım", "turkce tanim"]),
-                tanim_en: pickMasterField(r, ["tanim_en", "tanım (en)", "tanim en", "english description", "ingilizce tanım", "ingilizce tanim"]),
-                tema_id_en: pickMasterField(r, ["tema_id_en", "tema id (en)", "english theme id", "themeid", "en tema", "ingilizce tema id"]),
-                tema_id_tr: pickMasterField(r, ["tema_id_tr", "tema id (tr)", "turkish theme id", "temaid", "tr tema", "türkçe tema id", "turkce tema id"]),
+                kod: r.kod,
+                kisaltma: r.kisaltma,
+                tam_ad: r.tam_ad,
+                tanim_tr: r.tanim_tr,
+                tanim_en: r.tanim_en,
+                tema_id_en: r.tema_id_en,
+                tema_id_tr: r.tema_id_tr,
               }))
               .filter((r) => r.kod || r.kisaltma || r.tam_ad || r.tanim_tr || r.tanim_en || r.tema_id_en || r.tema_id_tr);
 
@@ -1481,23 +1336,20 @@ export default {
           let normalizedAuditorsList = [];
           if (hasMasterType("auditors")) {
             const isChecked = (val) => String(val).trim().toUpperCase() === "TRUE" || val === true || val === "true" || val === 1 || String(val) === '1';
-            normalizedAuditorsList = audList.map((r, idx) => {
-              const isArr = Array.isArray(r);
-              return {
-                id: parseInt(isArr ? r[0] : r.id) || idx + 1,
-                ad: String((isArr ? r[1] : r.ad) || "").trim(),
-                soyad: String((isArr ? r[2] : r.soyad) || "").trim(),
-                imza: String((isArr ? r[3] : r.imza) || "").trim(),
-                std_9001: isChecked(isArr ? r[4] : r.std_9001) ? 1 : 0,
-                std_13485: isChecked(isArr ? r[5] : r.std_13485) ? 1 : 0,
-                std_14001: isChecked(isArr ? r[6] : r.std_14001) ? 1 : 0,
-                std_22000: isChecked(isArr ? r[7] : r.std_22000) ? 1 : 0,
-                std_27001: isChecked(isArr ? r[8] : r.std_27001) ? 1 : 0,
-                std_45001: isChecked(isArr ? r[9] : r.std_45001) ? 1 : 0,
-                std_50001: isChecked(isArr ? r[10] : r.std_50001) ? 1 : 0,
-                std_gmp: isChecked(isArr ? r[11] : r.std_gmp) ? 1 : 0
-              };
-            }).filter(a => a.ad || a.soyad);
+            normalizedAuditorsList = audList.map((r, idx) => ({
+              id: parseInt(r.id) || idx + 1,
+              ad: String(r.ad || "").trim(),
+              soyad: String(r.soyad || "").trim(),
+              imza: String(r.imza || "").trim(),
+              std_9001: isChecked(r.std_9001) ? 1 : 0,
+              std_13485: isChecked(r.std_13485) ? 1 : 0,
+              std_14001: isChecked(r.std_14001) ? 1 : 0,
+              std_22000: isChecked(r.std_22000) ? 1 : 0,
+              std_27001: isChecked(r.std_27001) ? 1 : 0,
+              std_45001: isChecked(r.std_45001) ? 1 : 0,
+              std_50001: isChecked(r.std_50001) ? 1 : 0,
+              std_gmp: isChecked(r.std_gmp) ? 1 : 0
+            })).filter(a => a.ad || a.soyad);
 
             await env.DB_D1.prepare(`DELETE FROM auditors`).run();
             if (normalizedAuditorsList.length) {
@@ -1730,20 +1582,17 @@ export default {
 
         // Delta UPSERT — sadece değişen satırlar
         if (Array.isArray(delta.companies) && delta.companies.length > 0) {
-          const stmt = env.DB_D1.prepare(`INSERT OR REPLACE INTO companies (id,nickname,unvan,adres,city,ulke,tel,fax,email,web,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,unixepoch())`);
+          const stmt = env.DB_D1.prepare(_D1_COMPANY_SQL);
           await env.DB_D1.batch(delta.companies.map(c => {
-            const getC = getPicker(c, null);
+            const canonical = createCanonicalCompany(c);
+            const id = parseInt(getCompanyId(canonical)) || null;
             return stmt.bind(
-              parseInt(getC(["Firma No","firmaNo","id"])) || null,
-              getC(["Nickname","nick","Firma Adı"]) || null,
-              getC(["Unvan","unvan"]) || null,
-              getC(["Adres","adres"]) || null,
-              getC(["Şehir","sehir","city"]) || null,
-              getC(["Ülke","ulke","country"]) || null,
-              getC(["Tel","tel"]) || null,
-              getC(["Fax","fax"]) || null,
-              getC(["E-Posta","email","Email"]) || null,
-              getC(["Web","web"]) || null
+              id, canonical.nickname || null, canonical.unvan || null, canonical.adres || null, canonical.city || null, canonical.ulke || null,
+              canonical.yazisma || null, canonical.vergi_dairesi || null, canonical.vergi_no || null, canonical.tel || null, canonical.faks || null, canonical.www || null, canonical.mail || null,
+              canonical.yetkili_adi || null, canonical.yetkili_unvani || null, canonical.kyt || null, canonical.irtibat_kisi || null, canonical.irtibat_unvani || null, canonical.irtibat_tel || null, canonical.irtibat_mail || null,
+              canonical.yapilan_is || null, canonical.tcs || null, canonical.ycs || null, canonical.ucs || null, canonical.yzcs || null, canonical.tascs || null, canonical.acs || null,
+              canonical.alan || null, canonical.departman || null, canonical.vardiya || null, canonical.logo || null, canonical.kase || null,
+              canonical.dokuman || null, canonical.teknik || null, canonical.tkapsam || null, canonical.sinif || null, canonical.firma_not || null
             );
           }));
           written.companies = delta.companies.length;
@@ -1758,8 +1607,7 @@ export default {
         }
 
         if (Array.isArray(delta.audits) && delta.audits.length > 0) {
-          const auditObjects = SyncService_mapAuditRows ? SyncService_mapAuditRows(delta.audits) : delta.audits;
-          await env.DB_D1.batch(auditObjects.map(a => {
+          await env.DB_D1.batch(delta.audits.map(a => {
             const canonical = createCanonicalAuditRow(a);
             return upsertAuditD1(canonical, parseInt(getAuditId(canonical)) || null);
           }));
@@ -1767,28 +1615,47 @@ export default {
         }
 
         if (Array.isArray(delta.tests) && delta.tests.length > 0) {
+          await env.DB_D1.batch(delta.tests.map(t => {
+            const canonical = createCanonicalTestRow(t);
+            return upsertTestD1(canonical, parseInt(getTestId(canonical)) || null);
+          }).filter(Boolean));
           written.tests = delta.tests.length;
-          // tests raw array — upsert via existing test stmt
-          const testStmt = env.DB_D1.prepare(`INSERT OR REPLACE INTO tests (id,firma_no,standart,tip,baslangic,bitis,durum,updated_at) VALUES (?,?,?,?,?,?,?,unixepoch())`);
-          const getTestFirmaIdLocal = (t) => t[2] || t.firmaNo || t.firma_no || null;
-          await env.DB_D1.batch(delta.tests.filter(t => Array.isArray(t) && t[0]).map(t =>
-            testStmt.bind(parseInt(t[0])||null, parseInt(getTestFirmaIdLocal(t))||null, t[3]||null, t[4]||null, t[5]||null, t[6]||null, t[7]||null)
-          ));
         }
 
         if (Array.isArray(delta.proformas) && delta.proformas.length > 0) {
           await env.DB_D1.batch(delta.proformas.map(p => {
-            const canonical = createCanonicalProformaRow ? createCanonicalProformaRow(p) : p;
-            return upsertProformaD1 ? upsertProformaD1(canonical) : null;
+            const canonical = createCanonicalProformaRow(p);
+            return upsertProformaD1(canonical);
           }).filter(Boolean));
           written.proformas = delta.proformas.length;
+        }
+
+        // Master data değiştiyse D1'e yaz
+        let masterWritten = false;
+        if (delta.masterData && delta.masterData.datasets) {
+          const datasets = delta.masterData.datasets;
+          const masterTypes = ["standards", "auditors", "consultants", "testdocs", "sysdocs"];
+          for (const type of masterTypes) {
+            if (datasets[type]) {
+              await upsertMasterTypeToD1(type, datasetRowsToObjects(datasets[type]), env);
+            }
+          }
+          const masterVersion = delta.masterData.version;
+          const masterUpdatedAt = delta.masterData.updatedAt || new Date().toISOString();
+          const metaStmts = [];
+          for (const type of masterTypes) {
+            if (masterVersion) metaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_version_${type}`, String(masterVersion)));
+            metaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_updated_${type}`, String(masterUpdatedAt)));
+          }
+          if (metaStmts.length) await env.DB_D1.batch(metaStmts);
+          masterWritten = true;
         }
 
         // last_sync_at güncelle
         await env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key,value) VALUES ('last_sync_at',?)`).bind(String(Date.now())).run();
 
         ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse({ success: true, isDelta: true, written, since: lastSyncAt, now });
+        return jsonResponse({ success: true, isDelta: true, written, masterWritten, since: lastSyncAt, now });
       },
 
       syncCheck: async (params, ctx, env) => {
@@ -2110,7 +1977,7 @@ export default {
         if (!gasResult.success) return jsonResponse(gasResult);
         const canonical = createCanonicalAuditRow(gasResult.data || p?.data || {});
         const newId = parseInt(gasResult.id || getAuditId(canonical)) || null;
-        if (newId) await upsertAuditD1(canonical, newId);
+        if (newId) await upsertAuditD1(canonical, newId).run();
         return jsonResponse(gasResult);
       },
       updateAudit: async (p, ctx, env) => {
@@ -2119,7 +1986,7 @@ export default {
         const gasResult = await fetchFromGas(env, { action: "updateAudit", params: p });
         if (!gasResult.success) return jsonResponse(gasResult);
         const canonical = createCanonicalAuditRow(gasResult.data || p?.data || p?.auditInfo || {}, { id });
-        await upsertAuditD1(canonical, parseInt(id));
+        await upsertAuditD1(canonical, parseInt(id)).run();
         return jsonResponse(gasResult);
       },
       deleteTest: async (p, ctx, env) => {

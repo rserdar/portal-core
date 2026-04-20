@@ -102,42 +102,6 @@ const SyncService = {
         return arr;
       }
 
-      if (sheetName === "Proforma") {
-        const src = row && typeof row === "object" ? row : {};
-        const normalizedKeyMap = new Map();
-        for (const [key, value] of Object.entries(src)) {
-          normalizedKeyMap.set(BaseService.normalizeHeader(key), value);
-        }
-        const pick = (aliases, fallback) => {
-          const list = Array.isArray(aliases) ? aliases : [aliases];
-          for (const alias of list) {
-            if (src[alias] !== undefined && src[alias] !== null && src[alias] !== "") {
-              return src[alias];
-            }
-            const normalizedAlias = BaseService.normalizeHeader(alias);
-            if (normalizedKeyMap.has(normalizedAlias)) {
-              const value = normalizedKeyMap.get(normalizedAlias);
-              if (value !== undefined && value !== null && value !== "") return value;
-            }
-          }
-          return fallback !== undefined ? fallback : "";
-        };
-
-        const proformaInfo = {
-          nick: pick(["nick", "nickname", "firmaAdi", "Firma Adı", "FirmaAdi"], ""),
-          firmaNo: pick(["firmaNo", "firma_no", "fno", "Firma No", "FirmaNo", "FNo"], ""),
-          kdvsiz: pick(["kdvsiz", "haric"], 0),
-          kdvOran: pick(["kdvOran", "kdv_oran", "oran"], 20),
-          kdv: pick(["kdv"], 0),
-          toplam: pick(["toplam"], 0),
-          birim: pick(["birim", "paraBirimi", "lira"], "TL"),
-          tarih: pick(["tarih"], ""),
-          konu: pick(["konu"], "")
-        };
-        const idValue = pick(["ID", "id", "faturaNo", "Fatura No", "FaturaNo"], "");
-        return ProformaService._buildRowByHeaders(headers, proformaInfo, idValue);
-      }
-
       // Object row (D1 backup format): map each sheet header to the matching object key
       const src = row && typeof row === "object" ? row : {};
       return headers.map(h => {
@@ -153,47 +117,6 @@ const SyncService = {
     return normalized.length;
   },
 
-  _mapAuditRows: function(rows) {
-    const list = Array.isArray(rows) ? rows : [];
-    return list.map(function(row) {
-      const r = Array.isArray(row) ? row : [];
-      return {
-        id: r[0] || "",
-        nick: r[1] || "",
-        firmaNo: r[2] || "",
-        standart: r[3] || "",
-        denetimTipi: r[4] || "",
-        a1Full: r[5] || "",
-        a1Auditor: r[6] || "",
-        a2Full: r[7] || "",
-        a2Auditor: r[8] || "",
-        a1Basla: r[9] || "",
-        a1Bitis: r[10] || "",
-        a1Md: r[11] || "",
-        a1La: r[12] || "",
-        a1Fa: r[13] || "",
-        a1Sa: r[14] || "",
-        a2Basla: r[15] || "",
-        a2Bitis: r[16] || "",
-        a2Md: r[17] || "",
-        a2La: r[18] || "",
-        a2Fa: r[19] || "",
-        a2Sa: r[20] || "",
-        qms: r[21] || "",
-        mdd: r[22] || "",
-        ems: r[23] || "",
-        ohs: r[24] || "",
-        fsms: r[25] || "",
-        isms: r[26] || "",
-        engy: r[27] || "",
-        gmp: r[28] || "",
-        a1kDenet: r[29] || "",
-        a2kDenet: r[30] || "",
-        a1EventId: r[31] || "",
-        a2EventId: r[32] || ""
-      };
-    });
-  },
 
   /**
    * Tüm sistem verilerini (veya seçili kapsamı) dışa aktarır.
@@ -215,33 +138,31 @@ const SyncService = {
       };
 
       if (has("companies")) {
-        data.companies = BaseService.getDataAsObjects("Firmalar", offset, limit);
-        data.totalCount = BaseService.getTotalRows("Firmalar");
+        data.companies = BaseService.getDataAsObjects("companies", offset, limit);
+        data.totalCount = BaseService.getTotalRows("companies");
       }
       if (has("certificates")) {
-        data.certificates = BaseService.getDataAsObjects("Sertifika", offset, limit);
-        data.totalCount = BaseService.getTotalRows("Sertifika");
+        data.certificates = BaseService.getDataAsObjects("certificates", offset, limit);
+        data.totalCount = BaseService.getTotalRows("certificates");
       }
       if (has("tests")) {
-        data.tests = BaseService.getRawData("Testler", offset, limit);
-        data.totalCount = BaseService.getTotalRows("Testler");
+        data.tests = BaseService.getDataAsObjects("tests", offset, limit);
+        data.totalCount = BaseService.getTotalRows("tests");
       }
       if (has("audits")) {
-        const audits = BaseService.getRawData("Denetim", offset, limit);
-        data.audits = audits;
-        data.auditObjects = this._mapAuditRows(audits);
-        data.totalCount = BaseService.getTotalRows("Denetim");
+        data.audits = BaseService.getDataAsObjects("audits", offset, limit);
+        data.totalCount = BaseService.getTotalRows("audits");
       }
       if (has("proformas")) {
-        data.proformas = BaseService.getDataAsObjects("Proforma", offset, limit);
-        data.totalCount = BaseService.getTotalRows("Proforma");
+        data.proformas = BaseService.getDataAsObjects("proformas", offset, limit);
+        data.totalCount = BaseService.getTotalRows("proformas");
       }
       if (has("master")) {
-        data.consultants = CompanyService.getConsultants();
-        data.standards = BaseService.getDataAsObjects("Standarts");
-        data.auditors = BaseService.getDataAsObjects("Auditors");
-        data.testdocs = BaseService.getRawData("TestDoc");
-        data.sysdocs = BaseService.getRawData("SysDoc");
+        data.standards = BaseService.getDataAsObjects("standards");
+        data.auditors = BaseService.getDataAsObjects("auditors");
+        data.consultants = BaseService.getDataAsObjects("consultants");
+        data.testdocs = BaseService.getDataAsObjects("testdocs");
+        data.sysdocs = BaseService.getDataAsObjects("sysdocs");
         data.totalCount = 1; // Master data genellikle paging gerektirmez
       }
 
@@ -311,34 +232,31 @@ const SyncService = {
       const tests = Array.isArray(backup.tests) ? backup.tests : [];
       const audits = Array.isArray(backup.audits) ? backup.audits : [];
       const proformas = Array.isArray(backup.proformas) ? backup.proformas : [];
-      const standards = Array.isArray(backup.standards) ? backup.standards : [];
+
+      // Master data: yeni format (masterData.datasets.*) önce, eski flat format fallback
       const masterData = backup.masterData && backup.masterData.datasets ? backup.masterData : null;
       const masterSets = masterData ? masterData.datasets : {};
-      const masterStandardsRows = Array.isArray(masterSets.standards && masterSets.standards.rows) ? masterSets.standards.rows : [];
-      const masterAuditorsRows = Array.isArray(masterSets.auditors && masterSets.auditors.rows) ? masterSets.auditors.rows : (Array.isArray(backup.auditors) ? backup.auditors : []);
-      const masterConsultantsRows = Array.isArray(masterSets.consultants && masterSets.consultants.rows) ? masterSets.consultants.rows : (Array.isArray(backup.consultantsRows) ? backup.consultantsRows : []);
-      const masterTestDocsRows = Array.isArray(masterSets.testdocs && masterSets.testdocs.rows) ? masterSets.testdocs.rows : (Array.isArray(backup.testdocs) ? backup.testdocs : []);
-      const masterSysDocsRows = Array.isArray(masterSets.sysdocs && masterSets.sysdocs.rows) ? masterSets.sysdocs.rows : (Array.isArray(backup.sysdocs) ? backup.sysdocs : []);
+      const masterStandards = Array.isArray(masterSets.standards && masterSets.standards.rows) ? masterSets.standards.rows : (Array.isArray(backup.standards) ? backup.standards : []);
+      const masterAuditors = Array.isArray(masterSets.auditors && masterSets.auditors.rows) ? masterSets.auditors.rows : (Array.isArray(backup.auditors) ? backup.auditors : []);
+      const masterConsultants = Array.isArray(masterSets.consultants && masterSets.consultants.rows) ? masterSets.consultants.rows : (Array.isArray(backup.consultants) ? backup.consultants : []);
+      const masterTestDocs = Array.isArray(masterSets.testdocs && masterSets.testdocs.rows) ? masterSets.testdocs.rows : (Array.isArray(backup.testdocs) ? backup.testdocs : []);
+      const masterSysDocs = Array.isArray(masterSets.sysdocs && masterSets.sysdocs.rows) ? masterSets.sysdocs.rows : (Array.isArray(backup.sysdocs) ? backup.sysdocs : []);
 
       const stats = {};
-      stats.companies = this._writeObjects("Firmalar", companies, replace);
+      stats.companies = this._writeObjects("companies", companies, replace);
       if (certificates.length > 0) {
-        stats.certificates = this._writeObjects("Sertifika", certificates, replace);
+        stats.certificates = this._writeObjects("certificates", certificates, replace);
       } else {
-        stats.certificates = this._writeRawRows("Sertifika", certificateRows, replace);
+        stats.certificates = this._writeRawRows("certificates", certificateRows, replace);
       }
-      stats.tests = this._writeRawRows("Testler", tests, replace);
-      stats.audits = this._writeRawRows("Denetim", audits, replace);
-      stats.proformas = this._writeRawRows("Proforma", proformas, replace);
-      if (masterStandardsRows.length > 0) {
-        stats.standards = this._writeRawRows("Standarts", masterStandardsRows, replace);
-      } else {
-        stats.standards = this._writeObjects("Standarts", standards, replace);
-      }
-      stats.auditors = this._writeRawRows("Auditors", masterAuditorsRows, replace);
-      stats.consultantsRows = this._writeRawRows("Consultants", masterConsultantsRows, replace);
-      stats.testdocs = this._writeRawRows("TestDoc", masterTestDocsRows, replace);
-      stats.sysdocs = this._writeRawRows("SysDoc", masterSysDocsRows, replace);
+      stats.tests = this._writeObjects("tests", tests, replace);
+      stats.audits = this._writeObjects("audits", audits, replace);
+      stats.proformas = this._writeObjects("proformas", proformas, replace);
+      stats.standards = this._writeRawRows("standards", masterStandards, replace);
+      stats.auditors = this._writeRawRows("auditors", masterAuditors, replace);
+      stats.consultants = this._writeRawRows("consultants", masterConsultants, replace);
+      stats.testdocs = this._writeRawRows("testdocs", masterTestDocs, replace);
+      stats.sysdocs = this._writeRawRows("sysdocs", masterSysDocs, replace);
 
         const now = new Date().getTime().toString();
         const props = PropertiesService.getScriptProperties();

@@ -267,15 +267,15 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   }
 
   function getDenetim(item: any) {
-    return pickValue(item, ["Denetim Tipi", "Denetim", "denetim", "denetimTipi", "denetim_tipi", "denetimtipi"], "-");
+    return pickValue(item, ["denetim_tipi", "denetim", "Denetim Tipi", "denetimTipi"], "-");
   }
 
   function getOtherStandard(item: any) {
-    return pickValue(item, ["other_standart", "Other Standard", "Other", "other", "Diğer", "diger", "Diger", "diğer", "Diğer Standart", "digerStandart"], "-");
+    return pickValue(item, ["other_standart", "other", "Other Standard", "Other", "Diğer"], "-");
   }
 
   function getStatusLabel(item: any) {
-    const raw = pickValue(item, ["Durum", "durum", "Gözetim", "Gözetim Conf.", "gozetimConfirmed"], "");
+    const raw = pickValue(item, ["durum", "Durum", "gozetim_confirmed", "gozetimConfirmed", "Gözetim Conf."], "");
     const normalized = String(raw).trim().toUpperCase();
     if (normalized === "TRUE") return "Aktif";
     if (normalized === "FALSE") return "Bekliyor";
@@ -283,11 +283,11 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   }
 
   function getQueryLink(item: any) {
-    return pickValue(item, ["Sorgulama Linki", "Sorgu Linki", "Query Link", "queryLink", "qr", "QR Code"], "");
+    return pickValue(item, ["qr", "QR Code", "Sorgulama Linki"], "");
   }
 
   function getCertificateLink(item: any) {
-    return pickValue(item, ["Sertifika Linki", "Cert Link", "certLink", "certiLink"], "");
+    return pickValue(item, ["cert_link", "certLink", "Sertifika Linki"], "");
   }
 
   function normalizeLink(value: string) {
@@ -334,16 +334,16 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
   function getCreatedAt(item: any) {
     return pickValue(item, [
-      "Kayıt Tarihi", "Kayit Tarihi", "Created At", "createdAt", "created_at",
-      "Timestamp", "timestamp", "Eklenme Tarihi", "Eklenme", "Date Created"
+      "updated_at", "Kayıt Tarihi", "createdAt", "created_at",
+      "Timestamp", "timestamp"
     ], "");
   }
 
   function getSortableTimestamp(item: any, originalIndex: number) {
     const candidates = [
       getCreatedAt(item),
-      pickValue(item, ["Sertifika Tarihi", "gst", "GST"], ""),
-      pickValue(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ"], "")
+      pickValue(item, ["sertifika_tarihi", "gst", "Sertifika Tarihi"], ""),
+      pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], "")
     ];
 
     for (const candidate of candidates) {
@@ -457,13 +457,13 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
   function getFilteredData(data: readonly any[]) {
     return data.filter((item: any) => {
-      const firma = pickValue(item, ["Firma Adı", "Nickname", "nick", "nickname"]);
+      const firma = pickValue(item, ["nick", "nickname", "Firma Adı"]);
       const id = getCertificateId(item, "");
-      const certNo = pickValue(item, ["Sertifika No", "sNo", "SNo", "sno", "sertifika_no"]);
+      const certNo = pickValue(item, ["sertifika_no", "sno", "Sertifika No"]);
       const standart = normalizeStandard(item);
       const denetim = getDenetim(item);
-      const danisman = pickValue(item, ["Danışman", "Danisman", "dan", "danisman", "consultant"]);
-      const gozetim = pickValue(item, ["Gözetim", "Gözetim Conf.", "gozetimConfirmed", "gozetim_confirmed"], "FALSE").toUpperCase();
+      const danisman = pickValue(item, ["consultant", "danisman", "dan", "Danışman"]);
+      const gozetim = pickValue(item, ["gozetim_confirmed", "gozetimConfirmed", "Gözetim"], "FALSE").toUpperCase();
       const matchSearch = `${firma}${id}${certNo}${standart}${denetim}${danisman}`.toLowerCase().includes(filters.search.toLowerCase());
       const matchStd = !filters.standard || standart.includes(filters.standard);
       const matchStatus = !filters.status || gozetim === filters.status;
@@ -494,25 +494,25 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
         paged.forEach(({ item, originalIndex }: any) => {
           const id = getCertificateId(item, String(originalIndex + 1));
-          const firmaId = pickValue(item, ["Firma No", "firmaNo", "firmano", "firma_no"], "-");
+          const firmaId = pickValue(item, ["firma_no", "firmaNo", "Firma No"], "-");
           const idAttr = escAttr(id || String(originalIndex));
-          const sertifikaTarihi = pickValue(item, ["Sertifika Tarihi", "gst", "GST", "sertifika_tarihi"], "-");
-          const firma = pickValue(item, ["Firma Adı", "Nickname", "nick", "nickname"], "-");
+          const sertifikaTarihi = pickValue(item, ["sertifika_tarihi", "gst", "Sertifika Tarihi"], "-");
+          const firma = pickValue(item, ["nick", "nickname", "Firma Adı"], "-");
           const standart = normalizeStandard(item);
-          const certNo = pickValue(item, ["Sertifika No", "sNo", "SNo", "sno", "sertifika_no"], "-");
-          const gozetimTarihi = pickValue(item, ["Sertifika Gözetim Tarihi", "goz", "GOZ", "gozetim_tarihi"], "-");
+          const certNo = pickValue(item, ["sertifika_no", "sno", "Sertifika No"], "-");
+          const gozetimTarihi = pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], "-");
           const durum = getStatusLabel(item);
           const initials = getInitials(firma);
           const detailRowId = `cert-detail-${idAttr}`;
           
           const denetim = getDenetim(item);
-          const akrBody = pickValue(item, ["akreditasyon", "Akreditasyon", "akrn"], "");
-          const akrMark = pickValue(item, ["akredite", "Akredite"], "");
+          const akrBody = pickValue(item, ["akreditasyon", "akrn"], "");
+          const akrMark = pickValue(item, ["akredite"], "");
           const akreditasyon = [akrBody, akrMark].filter(Boolean).join(' / ') || '-';
-          const danisman = pickValue(item, ["Danışman", "Danisman", "danisman", "dan", "consultant"], "-");
+          const danisman = pickValue(item, ["consultant", "danisman", "dan", "Danışman"], "-");
 
           // Robust data picking for detail view
-          const notlar = pickValue(item, ["Notlar", "Not", "not", "notes"], "-");
+          const notlar = pickValue(item, ["sertifika_not", "not", "Notlar"], "-");
           const sorgulamaLinki = normalizeLink(getQueryLink(item));
           const sertifikaLinki = normalizeLink(getCertificateLink(item));
 
@@ -569,7 +569,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                 </div>
                 <div class="rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
                   <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Notlar</div>
-                  <div class="text-xs text-main break-words">${escHtml(pickValue(item, ["Notlar", "Not", "not", "notes", "sertifika_not"], "-"))}</div>
+                  <div class="text-xs text-main break-words">${escHtml(pickValue(item, ["sertifika_not", "not", "Notlar"], "-"))}</div>
                 </div>
                 <div class="col-span-2 md:col-span-1 xl:col-span-1 rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
                   <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Sorgulama Linki</div>
@@ -771,8 +771,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   }
 
   // Initial load
-  initPage();
-  // Transition support
   document.addEventListener('astro:page-load', initPage);
   // Cleanup away
   document.addEventListener('astro:before-preparation', runCleanups);

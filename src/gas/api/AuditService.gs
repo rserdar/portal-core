@@ -5,6 +5,7 @@
  * ve sertifika gözetim durumlarının (Arşiv/Ana Takvim) yönetimi.
  */
 const AuditService = {
+  sheetName: "audits",
   CALENDAR_MAIN:    "ukqd4fqmgujdhemc4slhmebgcc@group.calendar.google.com",
   CALENDAR_SOURCE:  "d43d3fe59ccf1ff2e9ef23eb1fcbec9e8caf68568b733e3f9e8c8bc53d91c09e@group.calendar.google.com",
   CALENDAR_ARCHIVE: "b5768ed3d388c17023448785350956fd1dbe2987eaaf4362d2e1c7d5f5627746@group.calendar.google.com",
@@ -33,30 +34,31 @@ const AuditService = {
       const n = BaseService.normalizeHeader(header);
 
       if (n === "id") return idValue;
-      if (n === "nickname" || n === "nick") return this._valueFromInfo(auditInfo, ["nick", "nickname"]);
-      if (n === "firmano") return this._valueFromInfo(auditInfo, ["firmano", "firmaNo"]);
+      if (n === "nickname" || n === "nick") return this._valueFromInfo(auditInfo, ["nickname", "nick"]);
+      if (n === "firmano") return this._valueFromInfo(auditInfo, ["firma_no", "firmaNo", "firmano"]);
+      if (n === "sertifikaid") return this._valueFromInfo(auditInfo, ["sertifika_id", "sertifikaId", "certId"]);
       if (n === "standart") return this._valueFromInfo(auditInfo, ["standart"]);
-      if (n === "denetimtipi" || n === "denetim") return this._valueFromInfo(auditInfo, ["denetim"]);
-      
+      if (n === "denetimtipi") return this._valueFromInfo(auditInfo, ["denetim_tipi", "denetimTipi", "denetim"]);
+
       // Aşama 1
-      if (n === "a1auditors" || n === "a1denetci") return this._valueFromInfo(auditInfo, ["a1Denetci", "a1Full"]);
-      if (n === "a1lead" || n === "a1basdenetci") return this._valueFromInfo(auditInfo, ["a1Lead", "a1Denetci"]);
-      if (n === "a1basla") return this._valueFromInfo(auditInfo, ["a1Basla", "a1Baslav2"]);
-      if (n === "a1bitis") return this._valueFromInfo(auditInfo, ["a1Bitis", "a1Bitisv2"]);
-      if (n === "a1md" || n === "a1adamgun") return this._valueFromInfo(auditInfo, ["a1Md"], "");
-      if (n === "a1la") return this._valueFromInfo(auditInfo, ["a1La"], "");
-      if (n === "a1fa") return this._valueFromInfo(auditInfo, ["a1Fa"], "");
-      if (n === "a1sa") return this._valueFromInfo(auditInfo, ["a1Sa"], "");
+      if (n === "a1auditor") return this._valueFromInfo(auditInfo, ["a1_auditor", "a1Auditor", "a1Denetci"]);
+      if (n === "a1lead") return this._valueFromInfo(auditInfo, ["a1_lead", "a1Lead", "a1Basdenetci"]);
+      if (n === "a1baslangic") return this._valueFromInfo(auditInfo, ["a1_baslangic", "a1Basla"]);
+      if (n === "a1bitis") return this._valueFromInfo(auditInfo, ["a1_bitis", "a1Bitis"]);
+      if (n === "a1manday") return this._valueFromInfo(auditInfo, ["a1_manday", "a1Md"], "");
+      if (n === "a1basdenetci") return this._valueFromInfo(auditInfo, ["a1_bas_denetci", "a1La"], "");
+      if (n === "a1denetci2") return this._valueFromInfo(auditInfo, ["a1_denetci_2", "a1Fa"], "");
+      if (n === "a1denetci3") return this._valueFromInfo(auditInfo, ["a1_denetci_3", "a1Sa"], "");
 
       // Aşama 2
-      if (n === "a2auditors" || n === "a2denetci") return this._valueFromInfo(auditInfo, ["a2Denetci", "a2Full"]);
-      if (n === "a2lead" || n === "a2basdenetci") return this._valueFromInfo(auditInfo, ["a2Lead", "a2Denetci"]);
-      if (n === "a2basla") return this._valueFromInfo(auditInfo, ["a2Basla", "a2Baslav2"]);
-      if (n === "a2bitis") return this._valueFromInfo(auditInfo, ["a2Bitis", "a2Bitisv2"]);
-      if (n === "a2md" || n === "a2adamgun") return this._valueFromInfo(auditInfo, ["a2Md"], "");
-      if (n === "a2la") return this._valueFromInfo(auditInfo, ["a2La"], "");
-      if (n === "a2fa") return this._valueFromInfo(auditInfo, ["a2Fa"], "");
-      if (n === "a2sa") return this._valueFromInfo(auditInfo, ["a2Sa"], "");
+      if (n === "a2auditor") return this._valueFromInfo(auditInfo, ["a2_auditor", "a2Auditor", "a2Denetci"]);
+      if (n === "a2lead") return this._valueFromInfo(auditInfo, ["a2_lead", "a2Lead", "a2Basdenetci"]);
+      if (n === "a2baslangic") return this._valueFromInfo(auditInfo, ["a2_baslangic", "a2Basla"]);
+      if (n === "a2bitis") return this._valueFromInfo(auditInfo, ["a2_bitis", "a2Bitis"]);
+      if (n === "a2manday") return this._valueFromInfo(auditInfo, ["a2_manday", "a2Md"], "");
+      if (n === "a2basdenetci") return this._valueFromInfo(auditInfo, ["a2_bas_denetci", "a2La"], "");
+      if (n === "a2denetci2") return this._valueFromInfo(auditInfo, ["a2_denetci_2", "a2Fa"], "");
+      if (n === "a2denetci3") return this._valueFromInfo(auditInfo, ["a2_denetci_3", "a2Sa"], "");
 
       // Standartlar
       if (n === "qms") return this._valueFromInfo(auditInfo, ["qms"], "");
@@ -69,11 +71,11 @@ const AuditService = {
       if (n === "gmp") return this._valueFromInfo(auditInfo, ["gmp"], "");
 
       // Kapsam / Event
-      if (n === "a1kdenet" || n === "a1kapsam") return this._valueFromInfo(auditInfo, ["a1kDenet"], "");
-      if (n === "a2kdenet" || n === "a2kapsam") return this._valueFromInfo(auditInfo, ["a2kDenet"], "");
+      if (n === "a1kapsam") return this._valueFromInfo(auditInfo, ["a1_kapsam", "a1kDenet"], "");
+      if (n === "a2kapsam") return this._valueFromInfo(auditInfo, ["a2_kapsam", "a2kDenet"], "");
       if (n === "a1eventid") return a1EventId || "";
       if (n === "a2eventid") return a2EventId || "";
-      if (n === "_updated_at") return new Date().getTime();
+      if (n === "updatedat") return new Date().getTime();
 
       return this._valueFromInfo(auditInfo, [header], "");
     });
@@ -82,20 +84,6 @@ const AuditService = {
   _pickCell: function(row, idx, fallback) {
     if (!idx || idx < 1) return fallback !== undefined ? fallback : "";
     return row[idx - 1];
-  },
-
-  _pickCellWithFallback: function(row, idx, legacyIndex, fallback) {
-    const headerValue = this._pickCell(row, idx, null);
-    if (headerValue !== undefined && headerValue !== null && headerValue !== "") {
-      return headerValue;
-    }
-    if (legacyIndex !== undefined && legacyIndex !== null && legacyIndex >= 0) {
-      const legacyValue = row[legacyIndex];
-      if (legacyValue !== undefined && legacyValue !== null && legacyValue !== "") {
-        return legacyValue;
-      }
-    }
-    return fallback !== undefined ? fallback : "";
   },
 
   _parseDateTime: function(value, hhmm) {
@@ -166,26 +154,72 @@ const AuditService = {
     headers.forEach((header, idx) => {
       const n = BaseService.normalizeHeader(header);
       const val = row[idx];
-      if (n === "nickname" || n === "nick") info.nick = val;
-      else if (n === "firmano") info.firmaNo = val;
+      if (n === "nickname" || n === "nick") info.nickname = val;
+      else if (n === "firmano") {
+        info.firma_no = val;
+        info.firmano = val;
+      }
+      else if (n === "sertifikaid") {
+        info.sertifika_id = val;
+        info.sertifikaId = val;
+      }
       else if (n === "standart") info.standart = val;
-      else if (n === "denetimtipi" || n === "denetim") info.denetim = val;
-      else if (n === "a1auditors" || n === "a1denetci") info.a1Denetci = val;
-      else if (n === "a1lead" || n === "a1basdenetci") info.a1Lead = val;
-      else if (n === "a1basla") info.a1Basla = val;
-      else if (n === "a1bitis") info.a1Bitis = val;
-      else if (n === "a1md" || n === "a1adamgun") info.a1Md = val;
-      else if (n === "a1la") info.a1La = val;
-      else if (n === "a1fa") info.a1Fa = val;
-      else if (n === "a1sa") info.a1Sa = val;
-      else if (n === "a2auditors" || n === "a2denetci") info.a2Denetci = val;
-      else if (n === "a2lead" || n === "a2basdenetci") info.a2Lead = val;
-      else if (n === "a2basla") info.a2Basla = val;
-      else if (n === "a2bitis") info.a2Bitis = val;
-      else if (n === "a2md" || n === "a2adamgun") info.a2Md = val;
-      else if (n === "a2la") info.a2La = val;
-      else if (n === "a2fa") info.a2Fa = val;
-      else if (n === "a2sa") info.a2Sa = val;
+      else if (n === "denetimtipi") {
+        info.denetim = val;
+        info.denetim_tipi = val;
+      }
+      else if (n === "a1auditor") info.a1Denetci = val;
+      else if (n === "a1lead") info.a1Lead = val;
+      else if (n === "a1baslangic") {
+        info.a1Basla = val;
+        info.a1_baslangic = val;
+      }
+      else if (n === "a1bitis") {
+        info.a1Bitis = val;
+        info.a1_bitis = val;
+      }
+      else if (n === "a1manday") {
+        info.a1Md = val;
+        info.a1_manday = val;
+      }
+      else if (n === "a1basdenetci") {
+        info.a1La = val;
+        info.a1_bas_denetci = val;
+      }
+      else if (n === "a1denetci2") {
+        info.a1Fa = val;
+        info.a1_denetci_2 = val;
+      }
+      else if (n === "a1denetci3") {
+        info.a1Sa = val;
+        info.a1_denetci_3 = val;
+      }
+      else if (n === "a2auditor") info.a2Denetci = val;
+      else if (n === "a2lead") info.a2Lead = val;
+      else if (n === "a2baslangic") {
+        info.a2Basla = val;
+        info.a2_baslangic = val;
+      }
+      else if (n === "a2bitis") {
+        info.a2Bitis = val;
+        info.a2_bitis = val;
+      }
+      else if (n === "a2manday") {
+        info.a2Md = val;
+        info.a2_manday = val;
+      }
+      else if (n === "a2basdenetci") {
+        info.a2La = val;
+        info.a2_bas_denetci = val;
+      }
+      else if (n === "a2denetci2") {
+        info.a2Fa = val;
+        info.a2_denetci_2 = val;
+      }
+      else if (n === "a2denetci3") {
+        info.a2Sa = val;
+        info.a2_denetci_3 = val;
+      }
       else if (n === "qms") info.qms = val;
       else if (n === "mdd") info.mdd = val;
       else if (n === "ems") info.ems = val;
@@ -194,8 +228,14 @@ const AuditService = {
       else if (n === "isms") info.isms = val;
       else if (n === "engy") info.engy = val;
       else if (n === "gmp") info.gmp = val;
-      else if (n === "a1kdenet" || n === "a1kapsam") info.a1kDenet = val;
-      else if (n === "a2kdenet" || n === "a2kapsam") info.a2kDenet = val;
+      else if (n === "a1kapsam") {
+        info.a1kDenet = val;
+        info.a1_kapsam = val;
+      }
+      else if (n === "a2kapsam") {
+        info.a2kDenet = val;
+        info.a2_kapsam = val;
+      }
       else if (n === "a1eventid") info.a1EventId = val;
       else if (n === "a2eventid") info.a2EventId = val;
     });
@@ -209,7 +249,7 @@ const AuditService = {
   getAudits: function() {
     try {
       const ss = BaseService.openSS();
-      const ws = ss.getSheetByName("Denetim");
+      const ws = ss.getSheetByName(this.sheetName);
       const lastRow = ws.getLastRow();
       if (lastRow < 2) return [];
 
@@ -218,101 +258,78 @@ const AuditService = {
       const data = ws.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();
 
       const cols = {
-        id: BaseService.findHeaderIndex(headers, ["ID"]),
-        nick: BaseService.findHeaderIndex(headers, ["Nickname", "Nick", "Firma Adı"]),
-        firmaNo: BaseService.findHeaderIndex(headers, ["Firma No", "FirmaNo"]),
-        standart: BaseService.findHeaderIndex(headers, ["Standart", "Standard"]),
-        denetimTipi: BaseService.findHeaderIndex(headers, ["Denetim Tipi", "Denetim"]),
-        a1Auditor: BaseService.findHeaderIndex(headers, ["A1 Auditors", "A1 Denetçi"]),
-        a1Lead: BaseService.findHeaderIndex(headers, ["A1 Lead", "A1 Başdenetçi"]),
-        a1Basla: BaseService.findHeaderIndex(headers, ["A1 Başla"]),
-        a1Bitis: BaseService.findHeaderIndex(headers, ["A1 Bitiş"]),
-        a1Md: BaseService.findHeaderIndex(headers, ["A1 MD", "A1 Adam/Gün"]),
-        a1La: BaseService.findHeaderIndex(headers, ["A1 LA"]),
-        a1Fa: BaseService.findHeaderIndex(headers, ["A1 FA"]),
-        a1Sa: BaseService.findHeaderIndex(headers, ["A1 SA"]),
-        a2Auditor: BaseService.findHeaderIndex(headers, ["A2 Auditors", "A2 Denetçi"]),
-        a2Lead: BaseService.findHeaderIndex(headers, ["A2 Lead", "A2 Başdenetçi"]),
-        a2Basla: BaseService.findHeaderIndex(headers, ["A2 Başla"]),
-        a2Bitis: BaseService.findHeaderIndex(headers, ["A2 Bitiş"]),
-        a2Md: BaseService.findHeaderIndex(headers, ["A2 MD", "A2 Adam/Gün"]),
-        a2La: BaseService.findHeaderIndex(headers, ["A2 LA"]),
-        a2Fa: BaseService.findHeaderIndex(headers, ["A2 FA"]),
-        a2Sa: BaseService.findHeaderIndex(headers, ["A2 SA"]),
-        qms: BaseService.findHeaderIndex(headers, ["QMS"]),
-        mdd: BaseService.findHeaderIndex(headers, ["MDD"]),
-        ems: BaseService.findHeaderIndex(headers, ["EMS"]),
-        ohs: BaseService.findHeaderIndex(headers, ["OHS"]),
-        fsms: BaseService.findHeaderIndex(headers, ["FSMS"]),
-        isms: BaseService.findHeaderIndex(headers, ["ISMS"]),
-        engy: BaseService.findHeaderIndex(headers, ["ENGY", "ENGY."]),
-        gmp: BaseService.findHeaderIndex(headers, ["GMP"]),
-        a1kDenet: BaseService.findHeaderIndex(headers, ["A1 KDenet", "A1 Kapsam"]),
-        a2kDenet: BaseService.findHeaderIndex(headers, ["A2 KDenet", "A2 Kapsam"]),
-        a1EventId: BaseService.findHeaderIndex(headers, ["A1 Event ID"]),
-        a2EventId: BaseService.findHeaderIndex(headers, ["A2 Event ID"])
+        id: BaseService.findHeaderIndex(headers, ["id", "ID"]),
+        nick: BaseService.findHeaderIndex(headers, ["nick", "nickname", "Nickname", "Nick", "Firma Adı"]),
+        firmaNo: BaseService.findHeaderIndex(headers, ["firma_no", "Firma No", "FirmaNo"]),
+        standart: BaseService.findHeaderIndex(headers, ["standart", "Standart", "Standard"]),
+        denetimTipi: BaseService.findHeaderIndex(headers, ["denetim_tipi", "Denetim Tipi", "Denetim"]),
+        a1Auditor: BaseService.findHeaderIndex(headers, ["a1_auditor", "A1 Auditors", "A1 Denetçi"]),
+        a1Lead: BaseService.findHeaderIndex(headers, ["a1_lead", "A1 Lead", "A1 Başdenetçi"]),
+        a1Basla: BaseService.findHeaderIndex(headers, ["a1_baslangic", "A1 Başla"]),
+        a1Bitis: BaseService.findHeaderIndex(headers, ["a1_bitis", "A1 Bitiş"]),
+        a1Md: BaseService.findHeaderIndex(headers, ["a1_manday", "A1 MD", "A1 Adam/Gün"]),
+        a1La: BaseService.findHeaderIndex(headers, ["a1_bas_denetci", "A1 LA"]),
+        a1Fa: BaseService.findHeaderIndex(headers, ["a1_denetci_2", "A1 FA"]),
+        a1Sa: BaseService.findHeaderIndex(headers, ["a1_denetci_3", "A1 SA"]),
+        a2Auditor: BaseService.findHeaderIndex(headers, ["a2_auditor", "A2 Auditors", "A2 Denetçi"]),
+        a2Lead: BaseService.findHeaderIndex(headers, ["a2_lead", "A2 Lead", "A2 Başdenetçi"]),
+        a2Basla: BaseService.findHeaderIndex(headers, ["a2_baslangic", "A2 Başla"]),
+        a2Bitis: BaseService.findHeaderIndex(headers, ["a2_bitis", "A2 Bitiş"]),
+        a2Md: BaseService.findHeaderIndex(headers, ["a2_manday", "A2 MD", "A2 Adam/Gün"]),
+        a2La: BaseService.findHeaderIndex(headers, ["a2_bas_denetci", "A2 LA"]),
+        a2Fa: BaseService.findHeaderIndex(headers, ["a2_denetci_2", "A2 FA"]),
+        a2Sa: BaseService.findHeaderIndex(headers, ["a2_denetci_3", "A2 SA"]),
+        qms: BaseService.findHeaderIndex(headers, ["qms", "QMS"]),
+        mdd: BaseService.findHeaderIndex(headers, ["mdd", "MDD"]),
+        ems: BaseService.findHeaderIndex(headers, ["ems", "EMS"]),
+        ohs: BaseService.findHeaderIndex(headers, ["ohs", "OHS"]),
+        fsms: BaseService.findHeaderIndex(headers, ["fsms", "FSMS"]),
+        isms: BaseService.findHeaderIndex(headers, ["isms", "ISMS"]),
+        engy: BaseService.findHeaderIndex(headers, ["engy", "ENGY", "ENGY."]),
+        gmp: BaseService.findHeaderIndex(headers, ["gmp", "GMP"]),
+        a1kDenet: BaseService.findHeaderIndex(headers, ["a1_kapsam", "A1 KDenet", "A1 Kapsam"]),
+        a2kDenet: BaseService.findHeaderIndex(headers, ["a2_kapsam", "A2 KDenet", "A2 Kapsam"]),
+        a1EventId: BaseService.findHeaderIndex(headers, ["a1_event_id", "A1 Event ID"]),
+        a2EventId: BaseService.findHeaderIndex(headers, ["a2_event_id", "A2 Event ID"])
       };
 
       return data.map(r => ({
-        id: this._pickCellWithFallback(r, cols.id, 0, ""),
-        nick: this._pickCellWithFallback(r, cols.nick, 1, ""),
-        firmaNo: this._pickCellWithFallback(r, cols.firmaNo, 2, ""),
-        standart: this._pickCellWithFallback(r, cols.standart, 3, ""),
-        denetimTipi: this._pickCellWithFallback(r, cols.denetimTipi, 4, ""),
-        a1Auditor: this._pickCellWithFallback(r, cols.a1Auditor, 6, ""),
-        a1Lead: this._pickCellWithFallback(r, cols.a1Lead, 12, ""),
-        a1Basla: this._pickCellWithFallback(r, cols.a1Basla, 9, ""),
-        a1Bitis: this._pickCellWithFallback(r, cols.a1Bitis, 10, ""),
-        a1Md: this._pickCellWithFallback(r, cols.a1Md, 11, ""),
-        a1La: this._pickCellWithFallback(r, cols.a1La, 12, ""),
-        a1Fa: this._pickCellWithFallback(r, cols.a1Fa, 13, ""),
-        a1Sa: this._pickCellWithFallback(r, cols.a1Sa, 14, ""),
-        a2Auditor: this._pickCellWithFallback(r, cols.a2Auditor, 8, ""),
-        a2Lead: this._pickCellWithFallback(r, cols.a2Lead, 18, ""),
-        a2Basla: this._pickCellWithFallback(r, cols.a2Basla, 15, ""),
-        a2Bitis: this._pickCellWithFallback(r, cols.a2Bitis, 16, ""),
-        a2Md: this._pickCellWithFallback(r, cols.a2Md, 17, ""),
-        a2La: this._pickCellWithFallback(r, cols.a2La, 18, ""),
-        a2Fa: this._pickCellWithFallback(r, cols.a2Fa, 19, ""),
-        a2Sa: this._pickCellWithFallback(r, cols.a2Sa, 20, ""),
-        qms: this._pickCellWithFallback(r, cols.qms, 21, ""),
-        mdd: this._pickCellWithFallback(r, cols.mdd, 22, ""),
-        ems: this._pickCellWithFallback(r, cols.ems, 23, ""),
-        ohs: this._pickCellWithFallback(r, cols.ohs, 24, ""),
-        fsms: this._pickCellWithFallback(r, cols.fsms, 25, ""),
-        isms: this._pickCellWithFallback(r, cols.isms, 26, ""),
-        engy: this._pickCellWithFallback(r, cols.engy, 27, ""),
-        gmp: this._pickCellWithFallback(r, cols.gmp, 28, ""),
-        a1kDenet: this._pickCellWithFallback(r, cols.a1kDenet, 29, ""),
-        a2kDenet: this._pickCellWithFallback(r, cols.a2kDenet, 30, ""),
-        a1EventId: this._pickCellWithFallback(r, cols.a1EventId, 31, ""),
-        a2EventId: this._pickCellWithFallback(r, cols.a2EventId, 32, "")
+        id:         this._pickCell(r, cols.id, ""),
+        nick:       this._pickCell(r, cols.nick, ""),
+        firmaNo:    this._pickCell(r, cols.firmaNo, ""),
+        standart:   this._pickCell(r, cols.standart, ""),
+        denetimTipi: this._pickCell(r, cols.denetimTipi, ""),
+        a1Auditor:  this._pickCell(r, cols.a1Auditor, ""),
+        a1Lead:     this._pickCell(r, cols.a1Lead, ""),
+        a1Basla:    this._pickCell(r, cols.a1Basla, ""),
+        a1Bitis:    this._pickCell(r, cols.a1Bitis, ""),
+        a1Md:       this._pickCell(r, cols.a1Md, ""),
+        a1La:       this._pickCell(r, cols.a1La, ""),
+        a1Fa:       this._pickCell(r, cols.a1Fa, ""),
+        a1Sa:       this._pickCell(r, cols.a1Sa, ""),
+        a2Auditor:  this._pickCell(r, cols.a2Auditor, ""),
+        a2Lead:     this._pickCell(r, cols.a2Lead, ""),
+        a2Basla:    this._pickCell(r, cols.a2Basla, ""),
+        a2Bitis:    this._pickCell(r, cols.a2Bitis, ""),
+        a2Md:       this._pickCell(r, cols.a2Md, ""),
+        a2La:       this._pickCell(r, cols.a2La, ""),
+        a2Fa:       this._pickCell(r, cols.a2Fa, ""),
+        a2Sa:       this._pickCell(r, cols.a2Sa, ""),
+        qms:        this._pickCell(r, cols.qms, ""),
+        mdd:        this._pickCell(r, cols.mdd, ""),
+        ems:        this._pickCell(r, cols.ems, ""),
+        ohs:        this._pickCell(r, cols.ohs, ""),
+        fsms:       this._pickCell(r, cols.fsms, ""),
+        isms:       this._pickCell(r, cols.isms, ""),
+        engy:       this._pickCell(r, cols.engy, ""),
+        gmp:        this._pickCell(r, cols.gmp, ""),
+        a1kDenet:   this._pickCell(r, cols.a1kDenet, ""),
+        a2kDenet:   this._pickCell(r, cols.a2kDenet, ""),
+        a1EventId:  this._pickCell(r, cols.a1EventId, ""),
+        a2EventId:  this._pickCell(r, cols.a2EventId, "")
       })).reverse();
     } catch (e) {
       BaseService.logError("getAudits", e);
-      return [];
-    }
-  },
-
-  /**
-   * Belirli bir firmaya ait denetim kayıtlarını ham satır olarak döner.
-   */
-  getByFirmaId: function(firmaId) {
-    try {
-      const ss = BaseService.openSS();
-      const ws = ss.getSheetByName("Denetim");
-      const lastRow = ws.getLastRow();
-      if (lastRow < 2) return [];
-
-      const lastCol = ws.getLastColumn();
-      const headers = ws.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(h => String(h).trim());
-      const firmaNoCol = BaseService.findHeaderIndex(headers, ["Firma No", "FirmaNo"]);
-      if (firmaNoCol < 1) throw new Error("Firma No sütunu bulunamadı.");
-
-      const data = ws.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();
-      return data.filter(r => String(r[firmaNoCol - 1]) === String(firmaId));
-    } catch (e) {
-      BaseService.logError("getByFirmaId", e);
       return [];
     }
   },
@@ -325,9 +342,9 @@ const AuditService = {
     try {
       return BaseService.withScriptLock(() => {
         const ss = BaseService.openSS();
-        const ws = ss.getSheetByName("Denetim");
+        const ws = ss.getSheetByName(this.sheetName);
         const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getDisplayValues()[0].map(h => String(h).trim());
-        const newID = BaseService.getNextId("Denetim");
+        const newID = BaseService.getNextId(this.sheetName);
 
         let a1EventId = null;
         let a2EventId = null;
@@ -386,7 +403,7 @@ const AuditService = {
     try {
       return BaseService.withScriptLock(() => {
         const ss = BaseService.openSS();
-        const ws = ss.getSheetByName("Denetim");
+        const ws = ss.getSheetByName(this.sheetName);
         const lastRow = ws.getLastRow();
         if (lastRow < 2) throw new Error("Güncellenecek denetim bulunamadı.");
 
@@ -435,18 +452,19 @@ const AuditService = {
     try {
       return BaseService.withScriptLock(() => {
         const ss = BaseService.openSS();
-        const ws = ss.getSheetByName("Sertifika");
+        const ws = ss.getSheetByName("certificates");
         const lastRow = ws.getLastRow();
         if (lastRow < 2) return { success: true };
 
         const lastCol = ws.getLastColumn();
         const headers = ws.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
         const idCol = BaseService.findHeaderIndex(headers, ["ID"]);
-        const gozetimCol = BaseService.findHeaderIndex(headers, ["Gözetim Conf.", "Gözetim"]);
-        const eventCol = BaseService.findHeaderIndex(headers, ["Calendar ID", "Event ID"]);
+        const gozetimCol = BaseService.findHeaderIndex(headers, ["gozetim_confirmed", "Gözetim Conf.", "Gözetim"]);
+        const eventCol = BaseService.findHeaderIndex(headers, ["calendar_id", "Calendar ID", "Event ID"]);
+        const tsCol = BaseService.findHeaderIndex(headers, ["updated_at"]);
 
         if (idCol < 1) throw new Error("ID sütunu bulunamadı.");
-        if (gozetimCol < 1) throw new Error("Gözetim sütunu bulunamadı.");
+        if (gozetimCol < 1) throw new Error("gozetim_confirmed sütunu bulunamadı.");
 
         const data = ws.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();
         const sourceCal  = CalendarApp.getCalendarById(this._calendarId("CALENDAR_SOURCE"));
@@ -460,11 +478,7 @@ const AuditService = {
           const eventId = eventCol > 0 ? data[rowIndex][eventCol - 1] : "";
 
           ws.getRange(rowNum, gozetimCol).setValue(status ? "TRUE" : "FALSE");
-
-          const tsCol = BaseService.findHeaderIndex(headers, ["_updated_at"]);
-          if (tsCol > 0) {
-            ws.getRange(rowNum, tsCol).setValue(new Date().getTime());
-          }
+          if (tsCol > 0) ws.getRange(rowNum, tsCol).setValue(new Date().getTime());
 
           if (eventId && eventCol > 0) {
             const newEventId = this._moveCalendarEvent(eventId, status, sourceCal, archiveCal);

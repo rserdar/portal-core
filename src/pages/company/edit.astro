@@ -73,21 +73,6 @@ import { ArrowLeft, Save } from 'lucide-astro';
             <input type="text" id="f-nick" name="nickname" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Örn: ABC Teknoloji" />
             <p class="text-[10px] text-indigo-400/70 italic leading-tight">* Google Drive klasör adı olarak kullanılır.</p>
           </div>
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Danışman</label>
-            <div class="space-y-2">
-              <input
-                type="text"
-                id="f-dan"
-                name="dan"
-                list="consultant-list"
-                class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold"
-                placeholder="Danışman ara veya seç"
-              />
-              <datalist id="consultant-list"></datalist>
-              <p class="text-[10px] text-indigo-400/70 italic leading-tight">* Liste doğrudan danışman veritabanından yüklenir.</p>
-            </div>
-          </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
           <!-- Logo -->
@@ -148,7 +133,7 @@ import { ArrowLeft, Save } from 'lucide-astro';
           <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 flex-shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
-          <h2 class="text-base font-bold">Kapsam & Adres</h2>
+          <h2 class="text-base font-bold">Adres</h2>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="md:col-span-2 space-y-2">
@@ -156,9 +141,13 @@ import { ArrowLeft, Save } from 'lucide-astro';
             <input type="text" id="f-adres" name="adres" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Merkez Adres" />
           </div>
           <div class="md:col-span-1 space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Şehir / Ülke</label>
-            <div class="grid grid-cols-2 gap-2">
-              <input type="text" id="f-sehir" name="sehir" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Şehir" />
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Şehir</label>
+            <input type="text" id="f-city" name="city" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Şehir" />
+            <label class="flex items-center gap-2 mt-1 cursor-pointer select-none">
+              <input type="checkbox" id="yurtdisi-cb" class="w-4 h-4 rounded accent-indigo-500">
+              <span class="text-xs font-semibold text-gray-500">Yurt Dışı Firma</span>
+            </label>
+            <div id="ulke-row" class="hidden">
               <input type="text" id="f-ulke" name="ulke" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ülke" />
             </div>
           </div>
@@ -166,28 +155,6 @@ import { ArrowLeft, Save } from 'lucide-astro';
         <div class="space-y-2">
           <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Şube / Yazışma Adresi</label>
           <input type="text" id="f-yazisma" name="yazisma" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Varsa şube adresi..." />
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Türkçe Kapsam</label>
-              <div class="flex gap-2">
-                <button type="button" id="btn-kapsam-big" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold hover:bg-surface-hover transition-all">BÜYÜK</button>
-                <button type="button" id="btn-kapsam-translate" class="px-3 py-1 bg-surface border border-indigo-500/30 rounded-lg text-[10px] font-bold text-indigo-400 hover:bg-surface-hover transition-all">İngilizceye Çevir</button>
-              </div>
-            </div>
-            <textarea id="f-kapsam" name="kapsam" rows={4} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[100px]" placeholder="Sertifika kapsamı (TR)..."></textarea>
-          </div>
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">İngilizce Scope</label>
-              <div class="flex gap-2">
-                <button type="button" id="btn-scope-big" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold hover:bg-surface-hover transition-all">BIG</button>
-                <button type="button" id="btn-scope-translate" class="px-3 py-1 bg-surface border border-indigo-500/30 rounded-lg text-[10px] font-bold text-indigo-400 hover:bg-surface-hover transition-all">Türkçeye Çevir</button>
-              </div>
-            </div>
-            <textarea id="f-scope" name="scope" rows={4} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[100px]" placeholder="Certificate scope (EN)..."></textarea>
-          </div>
         </div>
       </section>
 
@@ -220,11 +187,11 @@ import { ArrowLeft, Save } from 'lucide-astro';
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Vergi Dairesi</label>
-            <input type="text" id="f-vergiD" name="vergiD" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <input type="text" id="f-vergi_dairesi" name="vergi_dairesi" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
           </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Vergi Numarası</label>
-            <input type="text" id="f-vergiN" name="vergiN" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
+            <input type="text" id="f-vergi_no" name="vergi_no" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
@@ -234,29 +201,29 @@ import { ArrowLeft, Save } from 'lucide-astro';
           </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yetkili Adı</label>
-            <input type="text" id="f-yetA" name="yetA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ad Soyad" />
+            <input type="text" id="f-yetkili_adi" name="yetkili_adi" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ad Soyad" />
           </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yetkili Ünvanı</label>
-            <input type="text" id="f-yetU" name="yetU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Genel Müdür, vb." />
+            <input type="text" id="f-yetkili_unvani" name="yetkili_unvani" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Genel Müdür, vb." />
           </div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
           <div class="space-y-2">
             <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">İrtibat Kişisi</label>
-            <input type="text" id="f-irtA" name="irtA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ad Soyad" />
+            <input type="text" id="f-irtibat_kisi" name="irtibat_kisi" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ad Soyad" />
           </div>
           <div class="space-y-2">
             <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">İrtibat Ünvanı</label>
-            <input type="text" id="f-irtU" name="irtU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Unvan" />
+            <input type="text" id="f-irtibat_unvani" name="irtibat_unvani" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Ünvan" />
           </div>
           <div class="space-y-2">
             <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">İrtibat Telefonu</label>
-            <input type="text" id="f-irtN" name="irtN" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="+90 ..." />
+            <input type="text" id="f-irtibat_tel" name="irtibat_tel" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="+90 ..." />
           </div>
           <div class="space-y-2">
             <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">İrtibat E-Posta</label>
-            <input type="email" id="f-irtM" name="irtM" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="irtibat@firma.com" />
+            <input type="email" id="f-irtibat_mail" name="irtibat_mail" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="irtibat@firma.com" />
           </div>
         </div>
       </section>
@@ -312,42 +279,15 @@ import { ArrowLeft, Save } from 'lucide-astro';
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Yapılan İşler</label>
-            <textarea id="f-yapis" name="yapis" rows={3} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[80px]"></textarea>
+            <textarea id="f-yapilan_is" name="yapilan_is" rows={3} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[80px]"></textarea>
           </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Firma Notları</label>
-            <textarea id="f-not" name="not" rows={3} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[80px]" placeholder="Özel notlar veya hatırlatıcılar..."></textarea>
+            <textarea id="f-firma_not" name="firma_not" rows={3} class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold min-h-[80px]" placeholder="Özel notlar veya hatırlatıcılar..."></textarea>
           </div>
         </div>
       </section>
 
-      <!-- ── 6. Sınıflandırma ─────────────────────────────────────────── -->
-      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
-        <div class="flex items-center gap-3 border-b border-border-main pb-4">
-          <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 flex-shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><polyline points="14 2 14 8 20 8"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/></svg>
-          </div>
-          <h2 class="text-base font-bold">Sınıflandırma & Kodlar</h2>
-        </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">EA Kodu</label>
-            <input type="text" id="f-ea" name="ea" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Örn: 19" />
-          </div>
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">NACE Kodu</label>
-            <input type="text" id="f-nace" name="nace" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Örn: 46.12" />
-          </div>
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Medikal</label>
-            <input type="text" id="f-medikal" name="medikal" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
-          </div>
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Gıda</label>
-            <input type="text" id="f-gida" name="gida" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" />
-          </div>
-        </div>
-      </section>
 
       <!-- ── 7. Doküman & Teknik Dosya ─────────────────────────────── -->
       <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6">
@@ -458,21 +398,6 @@ import { ArrowLeft, Save } from 'lucide-astro';
   if (btnBack) btnBack.href = firmaId ? `/company?id=${firmaId}` : '/search';
   if (btnView) btnView.href = firmaId ? `/company?id=${firmaId}` : '/search';
 
-  // ─── Load Consultants ─────────────────────────────────────────────────────────
-
-  async function loadConsultants(currentDan: string) {
-    const res = await api.getConsultants();
-    const list = document.getElementById('consultant-list') as HTMLDataListElement | null;
-    if (!list || !Array.isArray(res?.data)) return;
-    list.innerHTML = '';
-    (res.data as string[]).forEach((name) => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      list.appendChild(opt);
-    });
-    setVal('f-dan', currentDan);
-  }
-
   // ─── Populate Form ────────────────────────────────────────────────────────────
 
   async function loadCompany() {
@@ -493,64 +418,65 @@ import { ArrowLeft, Save } from 'lucide-astro';
 
     // Field mappings (API key → form field id)
     const fields: [string, string[]][] = [
-      ['f-unvan',   ['Unvan', 'unvan']],
-      ['f-nick',    ['Firma Adı', 'Nick', 'nick', 'FirmaAdi']],
-      ['f-not',     ['Firma Not', 'Not', 'not']],
-      ['f-adres',   ['Adres', 'adres']],
-      ['f-sehir',   ['İl', 'Il', 'Şehir', 'Sehir', 'il']],
-      ['f-ulke',    ['Ülke', 'Ulke', 'ulke']],
-      ['f-yazisma', ['Yazışma Adresi', 'YazismaAdresi', 'yazisma', 'Şube Adresi']],
-      ['f-kapsam',  ['Türkçe Kapsam', 'Sertifika Kapsamı (TR)', 'Kapsam', 'kapsam']],
-      ['f-scope',   ['İngilizce Kapsam', 'Sertifika Kapsamı (EN)', 'Scope', 'scope']],
-      ['f-tel',     ['Telefon', 'Tel', 'tel']],
-      ['f-faks',    ['Faks', 'faks']],
-      ['f-mail',    ['Mail', 'mail', 'E-Posta']],
-      ['f-www',     ['İnternet', 'Web', 'www', 'web']],
-      ['f-vergiD',  ['Vergi Dairesi', 'VergiDairesi', 'vergiD']],
-      ['f-vergiN',  ['Vergi Numarası', 'VergiNumarasi', 'vergiN']],
-      ['f-kyt',     ['KYT', 'Kalite Yönetim Temsilcisi', 'kyt']],
-      ['f-yetA',    ['Yetkili Adı', 'YetkiliAdi', 'yetA']],
-      ['f-yetU',    ['Yetkili Ünvanı', 'YetkiliUnvani', 'yetU']],
-      ['f-irtA',    ['İrtibat Kişisi', 'IrtibatKisi', 'irtA']],
-      ['f-irtU',    ['İrtibat Ünvanı', 'IrtibatUnvani', 'irtU']],
-      ['f-irtN',    ['İrtibat Tel', 'IrtibatKisiNumarasi', 'irtN']],
-      ['f-irtM',    ['İrtibat Mail', 'IrtibatKisisMail', 'irtM']],
-      ['f-tcs',     ['Toplam Çalışan Sayısı', 'TCS', 'tcs']],
-      ['f-ycs',     ['Yönetim Çalışan Sayısı', 'YCS', 'ycs']],
-      ['f-ucs',     ['Üretim Çalışan Sayısı', 'UCS', 'ucs']],
-      ['f-yzcs',    ['Yarı Zamanlı Çalışan Sayısı', 'YZCS', 'yzcs']],
-      ['f-tascs',   ['Taşeron Çalışan Sayısı', 'TASCS', 'tascs']],
-      ['f-acs',     ['Aynı İşte Çalışan Sayısı', 'ACS', 'acs']],
-      ['f-alan',    ['Alan', 'alan']],
-      ['f-vardiya', ['Vardiya', 'vardiya']],
-      ['f-dept',    ['Departman', 'departman', 'dept']],
-      ['f-nace',    ['NACE', 'nace']],
-      ['f-ea',      ['EA', 'ea']],
-      ['f-medikal', ['Medikal', 'medikal']],
-      ['f-gida',    ['Gıda', 'Gida', 'gida']],
-      ['f-yapis',   ['Yapılan İş', 'YapilanIs', 'yapis']],
-      ['f-logo',    ['Logo', 'logo']],
-      ['f-kase',    ['Kaşe', 'Kase', 'kase']],
-      ['f-sinif',   ['Firma Sınıfı', 'Sinif', 'sinif']],
-      ['f-tkapsam', ['Teknik Dosya Kapsamı', 'TKapsam', 'tkapsam']],
+      ['f-unvan',          ['unvan']],
+      ['f-nick',           ['nickname', 'nick']],
+      ['f-firma_not',      ['firma_not', 'not']],
+      ['f-adres',          ['adres']],
+      ['f-city',           ['city', 'sehir', 'il']],
+      ['f-ulke',           ['ulke']],
+      ['f-yazisma',        ['yazisma']],
+      ['f-tel',            ['tel']],
+      ['f-faks',           ['faks']],
+      ['f-mail',           ['mail']],
+      ['f-www',            ['www']],
+      ['f-vergi_dairesi',  ['vergi_dairesi', 'vergiD']],
+      ['f-vergi_no',       ['vergi_no', 'vergiN']],
+      ['f-kyt',            ['kyt']],
+      ['f-yetkili_adi',    ['yetkili_adi', 'yetA']],
+      ['f-yetkili_unvani', ['yetkili_unvani', 'yetU']],
+      ['f-irtibat_kisi',   ['irtibat_kisi', 'irtA']],
+      ['f-irtibat_unvani', ['irtibat_unvani', 'irtU']],
+      ['f-irtibat_tel',    ['irtibat_tel', 'irtN']],
+      ['f-irtibat_mail',   ['irtibat_mail', 'irtM']],
+      ['f-tcs',            ['tcs']],
+      ['f-ycs',            ['ycs']],
+      ['f-ucs',            ['ucs']],
+      ['f-yzcs',           ['yzcs']],
+      ['f-tascs',          ['tascs']],
+      ['f-acs',            ['acs']],
+      ['f-alan',           ['alan']],
+      ['f-vardiya',        ['vardiya']],
+      ['f-dept',           ['departman']],
+      ['f-yapilan_is',     ['yapilan_is', 'yapis']],
+      ['f-logo',           ['logo']],
+      ['f-kase',           ['kase']],
+      ['f-sinif',          ['sinif']],
+      ['f-tkapsam',        ['tkapsam']],
     ];
 
     fields.forEach(([id, keys]) => setVal(id, g(c, ...keys)));
     setVal('f-id', firmaId);
-    setChecked('f-dokuman', g(c, 'Doküman', 'Dokuman', 'dokuman'));
-    setChecked('f-teknik', g(c, 'Teknik', 'teknik'));
+    setChecked('f-dokuman', g(c, 'dokuman'));
+    setChecked('f-teknik', g(c, 'teknik'));
+
+    // Yurt dışı toggle: ulke değeri varsa ve TÜRKİYE değilse göster
+    const ulkeVal = g(c, 'ulke');
+    const yurtdisiCb = document.getElementById('yurtdisi-cb') as HTMLInputElement | null;
+    const ulkeRow = document.getElementById('ulke-row');
+    if (yurtdisiCb && ulkeRow) {
+      const isYurtdisi = !!ulkeVal && ulkeVal.toUpperCase().replace('İ','I') !== 'TURKIYE';
+      yurtdisiCb.checked = isYurtdisi;
+      ulkeRow.classList.toggle('hidden', !isYurtdisi);
+      if (!isYurtdisi) setVal('f-ulke', '');
+    }
     companyEtag = g(c, '__etag');
 
-    const dan = g(c, 'Danışman', 'Danisman', 'dan', 'danisman');
-    await loadConsultants(dan);
-
-    const nick = g(c, 'Firma Adı', 'Nick', 'nick');
+    const nick = g(c, 'nickname', 'nick');
     const headerNick = document.getElementById('header-nick');
     if (headerNick) headerNick.textContent = nick || `Firma #${firmaId}`;
 
     const footerName = document.getElementById('footer-company-name');
     if (footerName) footerName.textContent = nick || `Firma #${firmaId}`;
-
     document.title = `${nick || 'Firma'} Düzenle | Medicert Portal`;
 
     // Show form
@@ -575,47 +501,40 @@ import { ArrowLeft, Save } from 'lucide-astro';
     disable(true);
 
     const companyInfo = {
-      nickname: val('f-nick'),
-      unvan:    val('f-unvan'),
-      adres:    val('f-adres'),
-      sehir:    val('f-sehir'),
-      ulke:     val('f-ulke'),
-      yazisma:  val('f-yazisma'),
-      kapsam:   val('f-kapsam'),
-      scope:    val('f-scope'),
-      tel:      val('f-tel'),
-      faks:     val('f-faks'),
-      mail:     val('f-mail'),
-      www:      val('f-www'),
-      vergiD:   val('f-vergiD'),
-      vergiN:   val('f-vergiN'),
-      kyt:      val('f-kyt'),
-      yetA:     val('f-yetA'),
-      yetU:     val('f-yetU'),
-      irtA:     val('f-irtA'),
-      irtU:     val('f-irtU'),
-      irtN:     val('f-irtN'),
-      irtM:     val('f-irtM'),
-      dan:      val('f-dan'),
-      not:      val('f-not'),
-      tcs:      val('f-tcs'),
-      ycs:      val('f-ycs'),
-      ucs:      val('f-ucs'),
-      acs:      val('f-acs'),
-      yzcs:     val('f-yzcs'),
-      tascs:    val('f-tascs'),
-      alan:     val('f-alan'),
-      vardiya:  val('f-vardiya'),
-      departman: val('f-dept'),
-      nace:     val('f-nace'),
-      ea:       val('f-ea'),
-      medikal:  val('f-medikal'),
-      gida:     val('f-gida'),
-      yapis:    val('f-yapis'),
-      logo:     val('f-logo'),
-      kase:     val('f-kase'),
-      sinif:    val('f-sinif'),
-      tkapsam:  val('f-tkapsam'),
+      nickname:        val('f-nick'),
+      unvan:           val('f-unvan'),
+      adres:           val('f-adres'),
+      city:            val('f-city'),
+      ulke:            val('f-ulke'),
+      yazisma:         val('f-yazisma'),
+      tel:             val('f-tel'),
+      faks:            val('f-faks'),
+      mail:            val('f-mail'),
+      www:             val('f-www'),
+      vergi_dairesi:   val('f-vergi_dairesi'),
+      vergi_no:        val('f-vergi_no'),
+      kyt:             val('f-kyt'),
+      yetkili_adi:     val('f-yetkili_adi'),
+      yetkili_unvani:  val('f-yetkili_unvani'),
+      irtibat_kisi:    val('f-irtibat_kisi'),
+      irtibat_unvani:  val('f-irtibat_unvani'),
+      irtibat_tel:     val('f-irtibat_tel'),
+      irtibat_mail:    val('f-irtibat_mail'),
+      firma_not:       val('f-firma_not'),
+      tcs:             val('f-tcs'),
+      ycs:             val('f-ycs'),
+      ucs:             val('f-ucs'),
+      acs:             val('f-acs'),
+      yzcs:            val('f-yzcs'),
+      tascs:           val('f-tascs'),
+      alan:            val('f-alan'),
+      vardiya:         val('f-vardiya'),
+      departman:       val('f-dept'),
+      yapilan_is:      val('f-yapilan_is'),
+      logo:            val('f-logo'),
+      kase:            val('f-kase'),
+      sinif:           val('f-sinif'),
+      tkapsam:         val('f-tkapsam'),
       dokuman:  (document.getElementById('f-dokuman') as HTMLInputElement | null)?.checked ? 'TRUE' : 'FALSE',
       teknik:   (document.getElementById('f-teknik') as HTMLInputElement | null)?.checked ? 'TRUE' : 'FALSE',
     };
@@ -631,12 +550,10 @@ import { ArrowLeft, Save } from 'lucide-astro';
         const newList = currentList.map(c => {
           if (String(c.id) !== String(firmaId)) return c;
           return {
-            id: String(firmaId),
-            nickname: String(updatedData.nickname || updatedData.nick || updatedData['Firma Adı'] || c.nickname || ''),
-            unvan:    String(updatedData.unvan    || updatedData.Unvan    || c.unvan    || ''),
-            city:     String(updatedData.sehir    || updatedData['İl']    || c.city     || ''),
-            kapsam:   String(updatedData.kapsam   || updatedData['Türkçe Kapsam']  || c.kapsam   || ''),
-            scope:    String(updatedData.scope    || updatedData['İngilizce Kapsam'] || c.scope    || ''),
+            id:       String(firmaId),
+            nickname: String(updatedData.nickname || c.nickname || ''),
+            unvan:    String(updatedData.unvan    || c.unvan    || ''),
+            city:     String(updatedData.city     || c.city     || ''),
           };
         });
         $companies.set(newList);
@@ -670,76 +587,23 @@ import { ArrowLeft, Save } from 'lucide-astro';
       registerCleanup(() => el.removeEventListener(ev, fn));
     };
 
+    // Yurt dışı toggle
+    const yurtdisiCb = document.getElementById('yurtdisi-cb') as HTMLInputElement | null;
+    const ulkeRow = document.getElementById('ulke-row');
+    if (yurtdisiCb && ulkeRow) {
+      const handleYurtdisi = () => {
+        ulkeRow.classList.toggle('hidden', !yurtdisiCb.checked);
+        if (!yurtdisiCb.checked) setVal('f-ulke', '');
+      };
+      yurtdisiCb.addEventListener('change', handleYurtdisi);
+      registerCleanup(() => yurtdisiCb.removeEventListener('change', handleYurtdisi));
+    }
+
     addEv('btn-save', 'click', saveForm);
     addEv('btn-save-footer', 'click', saveForm);
     addEv('btn-cancel', 'click', () => {
       if (firmaId) window.location.href = `/company?id=${firmaId}`;
       else history.back();
-    });
-
-    addEv('btn-kapsam-big', 'click', () => {
-      const el = document.getElementById('f-kapsam') as HTMLTextAreaElement | null;
-      if (el) el.value = el.value.toLocaleUpperCase('tr-TR');
-    });
-    addEv('btn-scope-big', 'click', () => {
-      const el = document.getElementById('f-scope') as HTMLTextAreaElement | null;
-      if (el) el.value = el.value.toUpperCase();
-    });
-
-    addEv('btn-kapsam-translate', 'click', async () => {
-      const text = val('f-kapsam');
-      if (!text) return;
-      const button = document.getElementById('btn-kapsam-translate') as HTMLButtonElement | null;
-      const originalText = button?.textContent || 'İngilizceye Çevir';
-      if (button) {
-        button.disabled = true;
-        button.textContent = 'Çevriliyor...';
-      }
-      toast.info('Kapsam İngilizceye çevriliyor...');
-      try {
-        const res = await api.translate(text, true);
-        if (res?.data) {
-          setVal('f-scope', res.data);
-          toast.success('Çeviri tamamlandı.');
-        } else {
-          toast.error(res?.error || 'Çeviri başarısız.');
-        }
-      } catch (e: any) {
-        toast.error(`Çeviri hatası: ${e?.message || e || 'Bilinmeyen hata'}`);
-      } finally {
-        if (button) {
-          button.disabled = false;
-          button.textContent = originalText;
-        }
-      }
-    });
-
-    addEv('btn-scope-translate', 'click', async () => {
-      const text = val('f-scope');
-      if (!text) return;
-      const button = document.getElementById('btn-scope-translate') as HTMLButtonElement | null;
-      const originalText = button?.textContent || 'Türkçeye Çevir';
-      if (button) {
-        button.disabled = true;
-        button.textContent = 'Çevriliyor...';
-      }
-      toast.info('Scope Türkçeye çevriliyor...');
-      try {
-        const res = await api.translate(text, false);
-        if (res?.data) {
-          setVal('f-kapsam', res.data);
-          toast.success('Çeviri tamamlandı.');
-        } else {
-          toast.error(res?.error || 'Çeviri başarısız.');
-        }
-      } catch (e: any) {
-        toast.error(`Çeviri hatası: ${e?.message || e || 'Bilinmeyen hata'}`);
-      } finally {
-        if (button) {
-          button.disabled = false;
-          button.textContent = originalText;
-        }
-      }
     });
 
     addEv('btn-logo-select', 'click', () => openDrivePicker('f-logo', 'Logo'));
@@ -756,8 +620,6 @@ import { ArrowLeft, Save } from 'lucide-astro';
   }
 
   // Initial load
-  initPage();
-  // ViewTransitions support
   document.addEventListener('astro:page-load', initPage);
   // Cleanup away
   document.addEventListener('astro:before-preparation', runCleanups, { once: true });

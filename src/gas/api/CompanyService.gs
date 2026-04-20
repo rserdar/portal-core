@@ -5,7 +5,7 @@
  */
 
 const CompanyService = {
-  sheetName: "Firmalar",
+  sheetName: "companies",
 
   _valueFromInfo: function(companyInfo, aliases, fallback) {
     const list = Array.isArray(aliases) ? aliases : [aliases];
@@ -21,44 +21,44 @@ const CompanyService = {
     return headers.map(header => {
       const n = BaseService.normalizeHeader(header);
 
-      if (n === "firmano") return idValue;
-      if (n === "firmaadi") return this._valueFromInfo(companyInfo, ["nickname", "nick"]);
-      if (n === "unvan") return this._valueFromInfo(companyInfo, ["unvan"]);
-      if (n === "adres") return this._valueFromInfo(companyInfo, ["adres"]);
-      if (n === "il" || n === "sehir") return this._valueFromInfo(companyInfo, ["sehir", "il"]);
-      if (n === "ulke") return this._valueFromInfo(companyInfo, ["ulke"], "TÜRKİYE");
-      if (n === "yazismaadresi") return this._valueFromInfo(companyInfo, ["yazisma"]);
-      if (n === "vergidairesi") return this._valueFromInfo(companyInfo, ["vergiD"]);
-      if (n === "verginumarasi") return this._valueFromInfo(companyInfo, ["vergiN"]);
-      if (n === "telefon") return this._valueFromInfo(companyInfo, ["tel"]);
-      if (n === "faks") return this._valueFromInfo(companyInfo, ["faks"]);
-      if (n === "internet") return this._valueFromInfo(companyInfo, ["www"]);
-      if (n === "mail") return this._valueFromInfo(companyInfo, ["mail"]);
-      if (n === "yetkiliadi") return this._valueFromInfo(companyInfo, ["yetA"]);
-      if (n === "yetkiliunvani") return this._valueFromInfo(companyInfo, ["yetU"]);
-      if (n === "kyt" || n === "kaliteyonetimtemsilcisi") return this._valueFromInfo(companyInfo, ["kyt"]);
-      if (n === "irtibatkisi") return this._valueFromInfo(companyInfo, ["irtA"]);
-      if (n === "irtibatunvani" || n === "irtibatkisiunvani") return this._valueFromInfo(companyInfo, ["irtU"]);
-      if (n === "irtibattel" || n === "irtibatkisinumarasi") return this._valueFromInfo(companyInfo, ["irtN"]);
-      if (n === "irtibatmail" || n === "irtibatkisismail") return this._valueFromInfo(companyInfo, ["irtM"]);
-      if (n === "turkcekapsam" || n === "sertifikakapsamitr") return this._valueFromInfo(companyInfo, ["kapsam"]);
-      if (n === "ingilizcekapsam" || n === "sertifikakapsamien") return this._valueFromInfo(companyInfo, ["scope"]);
-      if (n === "yapilanis") return this._valueFromInfo(companyInfo, ["yapis"]);
-      if (n === "tcs" || n === "toplamcalisan" || n === "toplamcalisansayisi") return this._valueFromInfo(companyInfo, ["tcs"], 0);
-      if (n === "ycs" || n === "yonetimcalisan" || n === "yonetimcalisansayisi") return this._valueFromInfo(companyInfo, ["ycs"], 0);
-      if (n === "ucs" || n === "uretimcalisan" || n === "uretimcalisansayisi") return this._valueFromInfo(companyInfo, ["ucs"], 0);
-      if (n === "acs" || n === "ayniscalisan" || n === "ayniscalisansayisi") return this._valueFromInfo(companyInfo, ["acs"], 0);
-      if (n === "yzcs" || n === "yarizamanlicalisan" || n === "yarizamanlicalisansayisi") return this._valueFromInfo(companyInfo, ["yzcs"], 0);
-      if (n === "tascs" || n === "taseroncalisan" || n === "taseroncalisansayisi") return this._valueFromInfo(companyInfo, ["tascs"], 0);
-      if (n === "alan") return this._valueFromInfo(companyInfo, ["alan"]);
-      if (n === "departman") return this._valueFromInfo(companyInfo, ["dept", "departman"]);
-      if (n === "vardiya") return this._valueFromInfo(companyInfo, ["vardiya"], 1);
-      if (n === "logokase" || n === "firmalogosu" || n === "kaseimza") return this._valueFromInfo(companyInfo, ["logoK", "logo", "kase"]);
-      if (n === "danisman") return this._valueFromInfo(companyInfo, ["dan", "danisman"]);
-      if (n === "ea") return this._valueFromInfo(companyInfo, ["ea"]);
-      if (n === "nace") return this._valueFromInfo(companyInfo, ["nace"]);
-      if (n === "firmanot") return this._valueFromInfo(companyInfo, ["not"]);
-      if (n === "_updated_at") return new Date().getTime();
+      if (n === "id")           return idValue;
+      if (n === "nickname")     return this._valueFromInfo(companyInfo, ["nickname"]);
+      if (n === "unvan")        return this._valueFromInfo(companyInfo, ["unvan"]);
+      if (n === "adres")        return this._valueFromInfo(companyInfo, ["adres"]);
+      if (n === "city")         return this._valueFromInfo(companyInfo, ["city"]);
+      if (n === "ulke")         return this._valueFromInfo(companyInfo, ["ulke"], "TÜRKİYE");
+      if (n === "yazisma")      return this._valueFromInfo(companyInfo, ["yazisma"]);
+      if (n === "vergidairesi") return this._valueFromInfo(companyInfo, ["vergi_dairesi"]);
+      if (n === "vergino")      return this._valueFromInfo(companyInfo, ["vergi_no"]);
+      if (n === "tel")          return this._valueFromInfo(companyInfo, ["tel"]);
+      if (n === "faks")         return this._valueFromInfo(companyInfo, ["faks"]);
+      if (n === "www")          return this._valueFromInfo(companyInfo, ["www"]);
+      if (n === "mail")         return this._valueFromInfo(companyInfo, ["mail"]);
+      if (n === "yetkiliadi")   return this._valueFromInfo(companyInfo, ["yetkili_adi"]);
+      if (n === "yetkiliunvani")return this._valueFromInfo(companyInfo, ["yetkili_unvani"]);
+      if (n === "kyt")          return this._valueFromInfo(companyInfo, ["kyt"]);
+      if (n === "irtibatkisi")  return this._valueFromInfo(companyInfo, ["irtibat_kisi"]);
+      if (n === "irtibatunvani")return this._valueFromInfo(companyInfo, ["irtibat_unvani"]);
+      if (n === "irtibattel")   return this._valueFromInfo(companyInfo, ["irtibat_tel"]);
+      if (n === "irtibatmail")  return this._valueFromInfo(companyInfo, ["irtibat_mail"]);
+      if (n === "yapilanis")    return this._valueFromInfo(companyInfo, ["yapilan_is"]);
+      if (n === "tcs")          return this._valueFromInfo(companyInfo, ["tcs"], 0);
+      if (n === "ycs")          return this._valueFromInfo(companyInfo, ["ycs"], 0);
+      if (n === "ucs")          return this._valueFromInfo(companyInfo, ["ucs"], 0);
+      if (n === "acs")          return this._valueFromInfo(companyInfo, ["acs"], 0);
+      if (n === "yzcs")         return this._valueFromInfo(companyInfo, ["yzcs"], 0);
+      if (n === "tascs")        return this._valueFromInfo(companyInfo, ["tascs"], 0);
+      if (n === "alan")         return this._valueFromInfo(companyInfo, ["alan"]);
+      if (n === "departman")    return this._valueFromInfo(companyInfo, ["departman"]);
+      if (n === "vardiya")      return this._valueFromInfo(companyInfo, ["vardiya"], 1);
+      if (n === "logo")         return this._valueFromInfo(companyInfo, ["logo"]);
+      if (n === "kase")         return this._valueFromInfo(companyInfo, ["kase"]);
+      if (n === "dokuman")      return this._valueFromInfo(companyInfo, ["dokuman"]);
+      if (n === "teknik")       return this._valueFromInfo(companyInfo, ["teknik"]);
+      if (n === "tkapsam")      return this._valueFromInfo(companyInfo, ["tkapsam"]);
+      if (n === "sinif")        return this._valueFromInfo(companyInfo, ["sinif"]);
+      if (n === "firmanot")     return this._valueFromInfo(companyInfo, ["firma_not"]);
+      if (n === "updatedat")    return new Date().getTime();
 
       return this._valueFromInfo(companyInfo, [header], "");
     });
@@ -166,26 +166,4 @@ const CompanyService = {
     }
   },
 
-  /**
-   * Benzersiz danışman isimlerini döner (Firma ekleme formu için).
-   */
-  getConsultants: function() {
-    try {
-      const ss = BaseService.openSS();
-      const ws = ss.getSheetByName(this.sheetName);
-      const lastRow = ws.getLastRow();
-      if (lastRow < 2) return [];
-
-      const lastCol = ws.getLastColumn();
-      const headers = ws.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(h => String(h).trim());
-      const consultantCol = BaseService.findHeaderIndex(headers, ["Danışman", "Danisman", "dan"]);
-      if (consultantCol < 1) throw new Error("Danışman sütunu bulunamadı.");
-
-      const values = ws.getRange(2, consultantCol, lastRow - 1, 1).getDisplayValues().flat();
-      return [...new Set(values.filter(v => v && String(v).trim()))].sort();
-    } catch (e) {
-      BaseService.logError("getConsultants", e);
-      return [];
-    }
-  }
 };

@@ -108,6 +108,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <script>
   import { api } from '../../lib/api';
+  import { $companies } from '../../lib/store';
 
   function init() {
   const tableBody = document.getElementById('audit-table-body');
@@ -143,8 +144,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const id = Number(pickAuditValue(audit, ['id', 'ID'], ''));
     if (!Number.isNaN(id) && id > 0) return id;
 
-    const a2 = pickAuditValue(audit, ['a2Basla', 'a2Tarih'], '');
-    const a1 = pickAuditValue(audit, ['a1Basla', 'a1Tarih'], '');
+    const a2 = pickAuditValue(audit, ['a2_baslangic', 'a2Basla'], '');
+    const a1 = pickAuditValue(audit, ['a1_baslangic', 'a1Basla'], '');
     const raw = a2 || a1;
     const match = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
     if (match) {
@@ -256,11 +257,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const selectedType = filterType.value;
 
     const filtered = data.filter(audit => {
-      const nick = pickAuditValue(audit, ['nick', 'nickname'], '');
-      const firmaNo = pickAuditValue(audit, ['firmaNo', 'firmaID', 'firmaId'], '');
-      const auditor1 = pickAuditValue(audit, ['a1Auditor', 'denetci1'], '');
-      const auditor2 = pickAuditValue(audit, ['a2Auditor', 'denetci2'], '');
-      const denetimTipi = pickAuditValue(audit, ['denetimTipi', 'denetim'], '');
+      const firmaNo = pickAuditValue(audit, ['firma_no', 'firmaNo'], '');
+      const company = ($companies.get() as any[])?.find(c => String(c.firma_no || c.id || '') === String(firmaNo));
+      const nick = company ? (company.nick || company.firma_adi || firmaNo) : firmaNo;
+            const auditor1 = pickAuditValue(audit, ['a1_auditor', 'a1Auditor'], '');
+      const auditor2 = pickAuditValue(audit, ['a2_auditor', 'a2Auditor'], '');
+      const denetimTipi = pickAuditValue(audit, ['denetim_tipi', 'denetimTipi'], '');
 
       const matchSearch = `${nick}${firmaNo}${auditor1}${auditor2}`.toLowerCase().includes(searchTerm);
       const matchType = !selectedType || denetimTipi === selectedType;
@@ -283,16 +285,17 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const paged = filtered.slice(startIndex, startIndex + pageSize);
 
     paged.forEach(({ audit, originalIndex }) => {
-      const nick = pickAuditValue(audit, ['nick', 'nickname'], '-');
-      const firmaNo = pickAuditValue(audit, ['firmaNo', 'firmaID', 'firmaId'], '-');
-      const standart = pickAuditValue(audit, ['standart', 'standard'], '-');
-      const denetimTipi = pickAuditValue(audit, ['denetimTipi', 'denetim'], '-');
-      const a1Tarih = pickAuditValue(audit, ['a1Basla', 'a1Tarih'], '-');
-      const a2Tarih = pickAuditValue(audit, ['a2Basla', 'a2Tarih'], '-');
-      const denetci1 = pickAuditValue(audit, ['a1Auditor', 'denetci1'], '');
-      const denetci2 = pickAuditValue(audit, ['a2Auditor', 'denetci2'], '');
-      const a1Lead = pickAuditValue(audit, ['a1Lead', 'a1La'], '');
-      const a2Lead = pickAuditValue(audit, ['a2Lead', 'a2La'], '');
+      const firmaNo = pickAuditValue(audit, ['firma_no', 'firmaNo'], '-');
+      const company = ($companies.get() as any[])?.find(c => String(c.firma_no || c.id || '') === String(firmaNo));
+      const nick = company ? (company.nick || company.firma_adi || firmaNo) : firmaNo;
+            const standart = pickAuditValue(audit, ['standart', 'standard'], '-');
+      const denetimTipi = pickAuditValue(audit, ['denetim_tipi', 'denetimTipi'], '-');
+      const a1Tarih = pickAuditValue(audit, ['a1_baslangic', 'a1Basla'], '-');
+      const a2Tarih = pickAuditValue(audit, ['a2_baslangic', 'a2Basla'], '-');
+      const denetci1 = pickAuditValue(audit, ['a1_auditor', 'a1Auditor'], '');
+      const denetci2 = pickAuditValue(audit, ['a2_auditor', 'a2Auditor'], '');
+      const a1Lead = pickAuditValue(audit, ['a1_lead', 'a1_bas_denetci', 'a1Lead'], '');
+      const a2Lead = pickAuditValue(audit, ['a2_lead', 'a2_bas_denetci', 'a2Lead'], '');
       const denetciler = [denetci1, denetci2].filter(v => v && v !== 'Atanmadı').join(', ') || '-';
       
       const initials = getInitials(nick);

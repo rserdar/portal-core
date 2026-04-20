@@ -42,11 +42,6 @@ function doPost(e) {
         result.success = true;
         break;
 
-      case "getConsultants":
-        result.data = CompanyService.getConsultants();
-        result.success = true;
-        break;
-
       case "addCompany":
         const addResult = CompanyService.add(params.companyInfo);
         result.data = addResult.id;
@@ -136,18 +131,6 @@ function doPost(e) {
         break;
 
       // --- PROFORMA SERVİSİ ---
-      case "getProformasByFirmaId":
-      case "getProformaByFirmaId":
-      case "gdfProforma":
-        result.data = ProformaService.getByFirmaId(params.firmaId || params.id);
-        result.success = true;
-        break;
-
-      case "getProformaById":
-      case "proformaVeri":
-        result.data = ProformaService.getById(params.id);
-        result.success = true;
-        break;
 
       case "addProforma":
       case "addProInfo":
@@ -165,12 +148,6 @@ function doPost(e) {
         break;
 
       // --- STANDARTLAR ---
-      case "getStandardById": {
-        result.data = StandardService.getById(params.id);
-        result.success = true;
-        break;
-      }
-
       // --- MASTER DATA ---
       case "getMasterData":
         result.data = MasterDataService.get(params.type);
@@ -198,7 +175,8 @@ function doPost(e) {
 
       case "getFullSyncData":
         result.data = SyncService.getFullExport(params.scope, params);
-        result.success = true;
+        result.success = result.data && result.data.success === false ? false : true;
+        if (!result.success) result.error = result.data.error;
         break;
 
       case "getDeltaExport":
@@ -298,20 +276,11 @@ function doPost(e) {
         break;
 
       case "getAuditRows":
-        result.data = BaseService.getRawData("Denetim");
+        result.data = BaseService.getRawData("audits");
         result.success = true;
         break;
 
-      case "getAuditsByFirmaId":
-        result.data = AuditService.getByFirmaId(params.firmaId || params.id);
-        result.success = true;
-        break;
 
-      case "getRecentCertificates":
-      case "lastTwentyFive":
-        result.data = CertificateService.getRecent(params.limit || 25);
-        result.success = true;
-        break;
 
       case "scheduleAudit":
         const scheduleRes = AuditService.scheduleAudit(params.data);
@@ -377,7 +346,8 @@ function doPost(e) {
 
       case "exportBackup":
         result.data = SyncService.exportBackup();
-        result.success = true;
+        result.success = result.data && result.data.success === false ? false : true;
+        if (!result.success) result.error = result.data.error;
         break;
 
       case "importBackup":

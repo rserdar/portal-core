@@ -1,7 +1,7 @@
 /**
  * 🔄 DeltaSyncService: Satır Düzeyinde Değişiklik Takibi
  *
- * onEdit trigger ile değişen satırlara _updated_at damgası basar.
+ * onEdit trigger ile değişen satırlara updated_at damgası basar.
  * getDeltaExport(since) yalnızca değişen satırları döner — D1 yazma kotasını korur.
  *
  * Kurulum (bir kez GAS editöründen çalıştır):
@@ -9,11 +9,11 @@
  */
 
 const DeltaSyncService = {
-  TRACKED_SHEETS: ["Sertifika", "Firmalar", "Denetim", "Testler", "Proforma"],
-  TS_HEADER: "_updated_at",
+  TRACKED_SHEETS: ["certificates", "companies", "audits", "tests", "proformas"],
+  TS_HEADER: "updated_at",
 
   /**
-   * Bir kereliğine çalıştırılarak tüm listelerdeki _updated_at 
+   * Bir kereliğine çalıştırılarak tüm listelerdeki updated_at 
    * sütunlarını anlık tarih ile doldurur. (Geçmiş veriler için)
    */
   initializeAllTimestamps: function() {
@@ -45,7 +45,7 @@ const DeltaSyncService = {
   },
 
   /**
-   * Bir sayfada _updated_at kolon indexini bulur, yoksa sonuna ekler.
+   * Bir sayfada updated_at kolon indexini bulur, yoksa sonuna ekler.
    * @returns {number} 1-indexed kolon numarası
    */
   _ensureTsColumn: function(sheet) {
@@ -63,7 +63,7 @@ const DeltaSyncService = {
   },
 
   /**
-   * onEdit simple trigger — değişen satıra _updated_at damgası basar.
+   * onEdit simple trigger — değişen satıra updated_at damgası basar.
    * GAS editöründe otomatik tetiklenir (installable trigger gerekli değil).
    */
   handleEdit: function(e) {
@@ -87,7 +87,7 @@ const DeltaSyncService = {
 
   /**
    * since (ms) tarihinden sonra değişen satırları döner.
-   * _updated_at kolonu yoksa veya since null ise o sayfanın tüm verisi döner (güvenli fallback).
+   * updated_at kolonu yoksa veya since null ise o sayfanın tüm verisi döner (güvenli fallback).
    *
    * @param {number} since - Unix ms timestamp
    * @returns {{ certificates, companies, audits, tests, proformas, isDelta, since, lastUpdate }}
@@ -117,12 +117,21 @@ const DeltaSyncService = {
       proformas: []
     };
 
+    // Master data version kontrolü — değiştiyse tam dataset dahil edilir
+    const masterVersion = MasterDataService._getVersion();
+    const masterUpdatedAtIso = PropertiesService.getScriptProperties().getProperty(MasterDataService._updatedAtKey) || null;
+    const masterUpdatedAtMs = masterUpdatedAtIso ? new Date(masterUpdatedAtIso).getTime() : 0;
+    result.masterVersion = masterVersion;
+    if (masterUpdatedAtMs > sinceMs) {
+      result.masterData = MasterDataService.get(); // { version, updatedAt, datasets }
+    }
+
     const sheetMap = [
-      { key: "companies",    name: "Firmalar",  type: "objects" },
-      { key: "certificates", name: "Sertifika", type: "objects" },
-      { key: "audits",       name: "Denetim",   type: "raw"     },
-      { key: "tests",        name: "Testler",   type: "raw"     },
-      { key: "proformas",    name: "Proforma",  type: "objects" }
+      { key: "companies",    name: "companies", type: "objects" },
+      { key: "certificates", name: "certificates", type: "objects" },
+      { key: "audits",       name: "audits",    type: "objects" },
+      { key: "tests",        name: "tests",     type: "objects" },
+      { key: "proformas",    name: "proformas", type: "objects" }
     ];
 
     sheetMap.forEach(function(def) {
@@ -151,7 +160,7 @@ const DeltaSyncService = {
             }, {});
           });
         } else {
-          // raw: _updated_at kolonunu çıkar
+          // raw: updated_at kolonunu çıkar
           const keepIndices = headers.reduce(function(arr, h, i) {
             if (h !== DeltaSyncService.TS_HEADER) arr.push(i);
             return arr;

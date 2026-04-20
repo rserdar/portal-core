@@ -9,11 +9,11 @@ const MasterDataService = {
   _updatedAtKey: "MASTER_DATA_UPDATED_AT",
 
   _datasets: {
-    standards: "Standarts",
-    auditors: "Auditors",
-    consultants: "Consultants",
-    testdocs: "TestDoc",
-    sysdocs: "SysDoc"
+    standards: "standards",
+    auditors: "auditors",
+    consultants: "consultants",
+    testdocs: "testdocs",
+    sysdocs: "sysdocs"
   },
 
   _sheetMatrix: function(sheetName) {

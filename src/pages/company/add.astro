@@ -1,23 +1,16 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
-
-/**
- * 🏢 Yeni Firma Ekleme Sayfası
- * 
- * E-tabloya yeni kayıt eklemek için kullanılan kapsamlı form.
- * Modern, bölümlere ayrılmış ve akıllı asistan özellikli.
- */
 ---
 
 <DashboardLayout title="Yeni Firma Ekle">
   <div class="max-w-5xl mx-auto pb-20">
     <form id="add-company-form" class="space-y-8" autocomplete="off">
-      
+
       <!-- section: Genel Bilgiler -->
       <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.1s;">
         <div class="flex items-center gap-3 border-b border-border-main pb-4">
           <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"/><path d="M5 21V7"/><path d="M19 21V7"/><path d="M9 7v1"/><path d="M15 7v1"/><path d="M9 12v1"/><path d="M15 12v1"/><path d="M9 17v1"/><path d="M15 17v1"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2"/><path d="M5 21V7"/><path d="M19 21V7"/></svg>
           </div>
           <h2 class="text-xl font-bold">Genel Bilgiler</h2>
         </div>
@@ -27,39 +20,22 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Firma Ünvanı</label>
             <input type="text" name="unvan" id="unvan-input" required class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Örn: ABC Teknolojileri Ltd. Şti.">
           </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-2 relative">
-              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Firma Kısa Adı (Klasör Adı)</label>
-              <input type="text" name="nickname" id="nickname-input" required class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Örn: ABC Teknoloji">
-              <p class="text-[10px] text-indigo-400/70 mt-1 italic leading-tight">* Bu isim Google Drive'da otomatik klasör oluşturmak için kullanılacaktır.</p>
-            </div>
-            <div class="space-y-2">
-              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Danışman</label>
-              <div class="space-y-2">
-                <input
-                  type="text"
-                  name="danisman"
-                  id="consultant-input"
-                  list="consultant-list"
-                  class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden"
-                  placeholder="Danışman ara veya seç"
-                >
-                <datalist id="consultant-list"></datalist>
-                <p class="text-[10px] text-indigo-400/70 mt-1 italic leading-tight">* Liste doğrudan danışman veritabanından yüklenir.</p>
-              </div>
-            </div>
+
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Firma Kısa Adı (Klasör Adı)</label>
+            <input type="text" name="nickname" id="nickname-input" required class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Örn: ABC Teknoloji">
+            <p class="text-[10px] text-indigo-400/70 mt-1 italic leading-tight">* Bu isim Google Drive'da otomatik klasör oluşturmak için kullanılacaktır.</p>
           </div>
         </div>
       </section>
 
-      <!-- section: Adres & Kapsam -->
+      <!-- section: Adres -->
       <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.2s;">
         <div class="flex items-center gap-3 border-b border-border-main pb-4">
           <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 22 7-7"/><path d="M9 10a5 5 0 1 0 10 10 5 5 0 1 0-10-10Z"/><path d="m15 15 7-7"/><path d="m15 5 7 7"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
-          <h2 class="text-xl font-bold">Kapsam & Adres</h2>
+          <h2 class="text-xl font-bold">Adres</h2>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -68,10 +44,14 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
             <input type="text" name="adres" id="adres-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Merkez Adres Bilgisi">
           </div>
           <div class="md:col-span-1 space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Şehir / Ülke</label>
-            <div class="grid grid-cols-2 gap-2">
-              <input type="text" name="sehir" id="sehir-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Şehir">
-              <input type="text" name="ulke" id="ulke-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ülke" value="TÜRKİYE">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Şehir</label>
+            <input type="text" name="city" id="city-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Şehir">
+            <label class="flex items-center gap-2 mt-1 cursor-pointer select-none">
+              <input type="checkbox" id="yurtdisi-cb" class="w-4 h-4 rounded accent-indigo-500">
+              <span class="text-xs font-semibold text-gray-500">Yurt Dışı Firma</span>
+            </label>
+            <div id="ulke-row" class="hidden">
+              <input type="text" name="ulke" id="ulke-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ülke">
             </div>
           </div>
         </div>
@@ -80,37 +60,13 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Şube / Yazışma Adresi</label>
           <input type="text" name="yazisma" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Şube veya yazışma adresi (farklıysa)">
         </div>
-
-        <div class="space-y-6 mt-4">
-          <div class="space-y-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Türkçe Kapsam</label>
-              <div class="flex gap-2">
-                <button type="button" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold hover:bg-surface-hover transition-all" onclick="window.convertCase('kapsam', 'tr')">TR BÜYÜK</button>
-                <button type="button" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold text-primary hover:bg-surface-hover transition-all" onclick="window.translateField('kapsam', 'scope')">İngilizceye Çevir</button>
-              </div>
-            </div>
-            <textarea name="kapsam" id="kapsam-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden min-h-[100px]" placeholder="Sertifika kapsamını giriniz..."></textarea>
-          </div>
-
-          <div class="space-y-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">İngilizce Kapsam (Scope)</label>
-              <div class="flex gap-2">
-                <button type="button" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold hover:bg-surface-hover transition-all" onclick="window.convertCase('scope', 'en')">EN UPPER</button>
-                <button type="button" class="px-3 py-1 bg-surface border border-border-main rounded-lg text-[10px] font-bold text-primary hover:bg-surface-hover transition-all" onclick="window.translateField('scope', 'kapsam')">Türkçeye Çevir</button>
-              </div>
-            </div>
-            <textarea name="scope" id="scope-input" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden min-h-[100px]" placeholder="Certification scope in English..."></textarea>
-          </div>
-        </div>
       </section>
 
       <!-- section: İletişim & Vergi -->
       <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.3s;">
         <div class="flex items-center gap-3 border-b border-border-main pb-4">
           <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.68 9.82a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           </div>
           <h2 class="text-xl font-bold">İletişim & Vergi</h2>
         </div>
@@ -137,11 +93,11 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Vergi Dairesi</label>
-            <input type="text" name="vergiD" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden">
+            <input type="text" name="vergi_dairesi" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden">
           </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Vergi Numarası</label>
-            <input type="text" name="vergiN" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden">
+            <input type="text" name="vergi_no" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden">
           </div>
         </div>
 
@@ -152,30 +108,30 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Yetkili Adı</label>
-            <input type="text" name="yetA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ad Soyad">
+            <input type="text" name="yetkili_adi" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ad Soyad">
           </div>
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Yetkili Unvanı</label>
-            <input type="text" name="yetU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Genel Müdür, vb.">
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Yetkili Ünvanı</label>
+            <input type="text" name="yetkili_unvani" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Genel Müdür, vb.">
           </div>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
           <div class="space-y-2">
             <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">İrtibat Kişisi</label>
-            <input type="text" name="irtA" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ad Soyad">
+            <input type="text" name="irtibat_kisi" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ad Soyad">
           </div>
           <div class="space-y-2">
-            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">İrtibat Unvanı</label>
-            <input type="text" name="irtU" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Unvan">
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">İrtibat Ünvanı</label>
+            <input type="text" name="irtibat_unvani" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Ünvan">
           </div>
           <div class="space-y-2">
             <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">İrtibat Telefonu</label>
-            <input type="text" name="irtN" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="+90 ...">
+            <input type="text" name="irtibat_tel" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="+90 ...">
           </div>
           <div class="space-y-2">
             <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">İrtibat E-Posta</label>
-            <input type="email" name="irtM" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="irtibat@firma.com">
+            <input type="email" name="irtibat_mail" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="irtibat@firma.com">
           </div>
         </div>
       </section>
@@ -184,7 +140,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.4s;">
         <div class="flex items-center gap-3 border-b border-border-main pb-4">
           <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M12 11h.01"/><path d="M12 16h.01"/><path d="M8 11h.01"/><path d="M8 16h.01"/><path d="M16 11h.01"/><path d="M16 16h.01"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/></svg>
           </div>
           <h2 class="text-xl font-bold">Operasyonel Veriler</h2>
         </div>
@@ -234,49 +190,20 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Yapılan İşler</label>
-            <textarea name="yapis" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden min-h-[80px]" placeholder="Firmanın faaliyetlerini kısaca özetleyin..."></textarea>
+            <textarea name="yapilan_is" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden min-h-[80px]" placeholder="Firmanın faaliyetlerini kısaca özetleyin..."></textarea>
           </div>
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Firma Notları</label>
-            <textarea name="not" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden min-h-[80px]" placeholder="Özel notlar veya hatırlatıcılar..."></textarea>
-          </div>
-        </div>
-      </section>
-
-      <!-- section: Sınıflandırma & Kodlar -->
-      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.5s;">
-        <div class="flex items-center gap-3 border-b border-border-main pb-4">
-          <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><polyline points="14 2 14 8 20 8"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/></svg>
-          </div>
-          <h2 class="text-xl font-bold">Sınıflandırma & Kodlar</h2>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="space-y-2">
-            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">EA Kodu</label>
-            <input type="text" name="ea" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Örn: 19">
-          </div>
-          <div class="space-y-2">
-            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">NACE Kodu</label>
-            <input type="text" name="nace" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden" placeholder="Örn: 46.12">
-          </div>
-          <div class="space-y-2">
-            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Medikal</label>
-            <input type="text" name="medikal" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden">
-          </div>
-          <div class="space-y-2">
-            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Gıda</label>
-            <input type="text" name="gida" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden">
+            <textarea name="firma_not" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold shadow-sm overflow-hidden min-h-[80px]" placeholder="Özel notlar veya hatırlatıcılar..."></textarea>
           </div>
         </div>
       </section>
 
       <!-- section: Doküman & Teknik Dosya -->
-      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.6s;">
+      <section class="bg-surface border border-border-main shadow-xl p-8 rounded-3xl space-y-6 animate-fade-in" style="animation-delay: 0.5s;">
         <div class="flex items-center gap-3 border-b border-border-main pb-4">
           <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
           </div>
           <h2 class="text-xl font-bold">Doküman & Teknik Dosya</h2>
         </div>
@@ -305,41 +232,23 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       <!-- sticky: Footer Actions -->
       <div class="sticky bottom-8 z-50 bg-surface border border-border-main shadow-2xl p-4 rounded-2xl flex items-center justify-between">
         <button type="button" id="cancel-btn" class="px-6 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-surface-hover transition font-bold text-sm">İPTAL</button>
-        <div class="flex gap-4">
-          <button type="submit" id="submit-btn" class="px-8 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
-            <svg id="submit-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            <svg id="loading-icon" class="animate-spin hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-            KAYDET
-          </button>
-        </div>
+        <button type="submit" id="submit-btn" class="px-8 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2">
+          <svg id="submit-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <svg id="loading-icon" class="animate-spin hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          KAYDET
+        </button>
       </div>
 
     </form>
   </div>
 </DashboardLayout>
 
-
 <script>
   import { toast } from '../../lib/toast';
 
-  // Global helpers
-  declare global {
-    interface Window {
-      convertCase: (fieldName: string, lang: 'tr' | 'en') => void;
-      translateField: (fromField: string, toField: string) => Promise<void>;
-    }
-  }
-
   let cleanupFns: Array<() => void> = [];
-
-  function registerCleanup(fn: () => void) {
-    cleanupFns.push(fn);
-  }
-
-  function runCleanups() {
-    cleanupFns.forEach(fn => fn());
-    cleanupFns = [];
-  }
+  function registerCleanup(fn: () => void) { cleanupFns.push(fn); }
+  function runCleanups() { cleanupFns.forEach(fn => fn()); cleanupFns = []; }
 
   function initPage() {
     runCleanups();
@@ -351,83 +260,49 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const submitIcon = document.getElementById('submit-icon');
     const loadingIcon = document.getElementById('loading-icon');
 
-    // 🤖 Otomatik Kısa Ad (Nickname) Üretimi
+    // Yurt Dışı toggle
+    const yurtdisiCb = document.getElementById('yurtdisi-cb') as HTMLInputElement | null;
+    const ulkeRow = document.getElementById('ulke-row');
+    const ulkeInput = document.getElementById('ulke-input') as HTMLInputElement | null;
+    if (yurtdisiCb && ulkeRow && ulkeInput) {
+      const handleYurtdisi = () => {
+        ulkeRow.classList.toggle('hidden', !yurtdisiCb.checked);
+        if (!yurtdisiCb.checked) ulkeInput.value = '';
+      };
+      yurtdisiCb.addEventListener('change', handleYurtdisi);
+      registerCleanup(() => yurtdisiCb.removeEventListener('change', handleYurtdisi));
+    }
+
+    // Otomatik Kısa Ad (Nickname) Üretimi
     if (unvanInput && nicknameInput) {
       const handleUnvanInput = (e: Event) => {
-        const target = e.target as HTMLInputElement;
-        const val = target.value;
+        const val = (e.target as HTMLInputElement).value;
         if (val.length > 0) {
-          const parts = val.replace(/[.,;:!?(){}[\]'"-]/g, "").replace(/\s+/g, " ").trim().split(" ");
-          const nick = parts.slice(0, 3).map(p => {
-            if (p.length > 1) {
-              return p.charAt(0).toLocaleUpperCase('tr-TR') + p.substring(1).toLocaleLowerCase('tr-TR');
-            }
-            return p.toLocaleUpperCase('tr-TR');
-          }).join(" ");
-          nicknameInput.value = nick;
+          const parts = val.replace(/[.,;:!?(){}[\]'"-]/g, '').replace(/\s+/g, ' ').trim().split(' ');
+          nicknameInput.value = parts.slice(0, 3).map(p =>
+            p.length > 1 ? p.charAt(0).toLocaleUpperCase('tr-TR') + p.substring(1).toLocaleLowerCase('tr-TR') : p.toLocaleUpperCase('tr-TR')
+          ).join(' ');
         }
       };
       unvanInput.addEventListener('input', handleUnvanInput);
+      registerCleanup(() => unvanInput.removeEventListener('input', handleUnvanInput));
     }
 
-  // 📝 Case Conversion
-  window.convertCase = (fieldName, lang) => {
-    const input = document.getElementById(`${fieldName}-input`) as HTMLInputElement;
-    if (input) {
-      input.value = input.value.toLocaleUpperCase(lang === 'tr' ? 'tr-TR' : 'en-US');
-    }
-  };
-
-  // 🌍 Translate
-  window.translateField = async (fromField, toField) => {
-    const sourceInput = document.getElementById(`${fromField}-input`) as HTMLTextAreaElement;
-    const targetInput = document.getElementById(`${toField}-input`) as HTMLTextAreaElement;
-    
-    if (sourceInput && targetInput && sourceInput.value) {
-      targetInput.placeholder = "Çeviriliyor...";
-      const toEn = fromField === 'kapsam';
-      const response = await api.translate(sourceInput.value, toEn);
-      
-      if (response.success) {
-        targetInput.value = response.data;
-      } else {
-        toast.error(`Çeviri hatası oluştu: ${response.error}`);
-      }
-      targetInput.placeholder = "";
-    }
-  };
-
-  // 🔌 Danışman Listesini Doldur
-  async function loadConsultants() {
-    const response = await api.call<string[]>('getConsultants');
-    const list = document.getElementById('consultant-list') as HTMLDataListElement | null;
-    if (response.success && list && Array.isArray(response.data)) {
-      list.innerHTML = '';
-      response.data.forEach((name) => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        list.appendChild(opt);
-      });
-    }
-  }
-
-    // 💾 Kaydetme İşlemi
+    // Kaydetme
     if (form) {
-      form.addEventListener('submit', async (e) => {
+      const handleSubmit = async (e: Event) => {
         e.preventDefault();
-        
         const formData = new FormData(form);
         const companyInfo = Object.fromEntries(formData.entries());
         companyInfo.dokuman = formData.has('dokuman') ? 'TRUE' : 'FALSE';
-        companyInfo.teknik = formData.has('teknik') ? 'TRUE' : 'FALSE';
-        
-        // Loading state
+        companyInfo.teknik  = formData.has('teknik')  ? 'TRUE' : 'FALSE';
+
         if (submitBtn) submitBtn.disabled = true;
         if (submitIcon) submitIcon.classList.add('hidden');
         if (loadingIcon) loadingIcon.classList.remove('hidden');
 
         const response = await api.addCompany(companyInfo);
-        
+
         if (response.success) {
           const createdId = String((response as any)?.data?.id || (response as any)?.id || '').trim();
           const createdCompany = (response as any)?.data?.company;
@@ -435,27 +310,20 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           if (createdCompany && createdId) {
             try {
               const companies = (await DB.get<any[]>(DB.COMPANIES)) || [];
-              const nextCompanies = companies.filter((item) => {
-                const itemId = String(item?.id || item?.ID || item?.['Firma No'] || item?.firmaNo || '').trim();
-                return itemId !== createdId;
-              });
+              const nextCompanies = companies.filter(item =>
+                String(item?.id || item?.ID || item?.['Firma No'] || item?.firmaNo || '').trim() !== createdId
+              );
               nextCompanies.push(createdCompany);
               await DB.save(DB.COMPANIES, nextCompanies);
-            } catch (cacheError) {
-              console.warn('Company cache update skipped:', cacheError);
+            } catch (e) {
+              console.warn('Company cache update skipped:', e);
             }
           }
 
-          // 🔄 Yerel veriyi arka planda da tazele
           await SyncManager.checkAndSync();
-
-          const successMessage = 'Firma başarıyla eklendi.';
-          if (submitText) submitText.textContent = 'Başarılı, yönlendiriliyor...';
-          toast.success(`${successMessage} Firma profiline yönlendiriliyorsunuz.`, { duration: 2500 });
-
-          const targetUrl = createdId ? `/company?id=${encodeURIComponent(createdId)}` : '/search';
+          toast.success('Firma başarıyla eklendi. Firma profiline yönlendiriliyorsunuz.', { duration: 2500 });
           window.setTimeout(() => {
-            window.location.href = targetUrl;
+            window.location.href = createdId ? `/company?id=${encodeURIComponent(createdId)}` : '/search';
           }, 1400);
         } else {
           toast.error(`Hata: ${response.error}`);
@@ -463,17 +331,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           if (submitIcon) submitIcon.classList.remove('hidden');
           if (loadingIcon) loadingIcon.classList.add('hidden');
         }
-      });
+      };
+      form.addEventListener('submit', handleSubmit);
+      registerCleanup(() => form.removeEventListener('submit', handleSubmit));
     }
-
-    // Başlat
-    loadConsultants();
   }
 
-  // Initial load
-  initPage();
-  // Transition support
   document.addEventListener('astro:page-load', initPage);
-  // Cleanup away
   document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>

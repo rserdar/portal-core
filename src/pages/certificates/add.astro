@@ -178,7 +178,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-2">
                   <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Denetim Tipi</label>
-                  <select id="cert-denetim" name="denetim" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500">
+                  <select id="cert-denetim" name="denetim_tipi" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500">
                     <option value="Belgelendirme">Belgelendirme</option>
                     <option value="Gozetim">Gozetim</option>
                     <option value="Transfer">Transfer</option>
@@ -195,7 +195,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
               </div>
               <div id="other-standard-wrap" class="space-y-2 hidden">
                 <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Diger Standart</label>
-                <input id="cert-other" name="other" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Diger standart" />
+                <input id="cert-other" name="other_standart" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Diger standart" />
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-2">
@@ -218,21 +218,21 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
                 <div class="space-y-2">
                   <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Gecerli Sertifika Tarihi</label>
                   <div class="flex gap-2">
-                    <input id="cert-gst" name="gstRaw" type="date" class="flex-1 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                    <input id="cert-gst" name="sertifika_tarihi" type="date" class="flex-1 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
                     <button id="cert-auto-goz" type="button" class="shrink-0 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-[11px] font-black uppercase tracking-widest text-emerald-300 hover:bg-emerald-500/15 transition-colors">+1</button>
                   </div>
                 </div>
                 <div class="space-y-2">
                   <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Gozetim Tarihi</label>
-                  <input id="cert-goz" name="gozRaw" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                  <input id="cert-goz" name="gozetim_tarihi" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
                 </div>
                 <div class="space-y-2">
                   <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Tescil Tarihi</label>
-                  <input id="cert-stt" name="sttRaw" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                  <input id="cert-stt" name="tescil_tarihi" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
                 </div>
                 <div class="space-y-2">
                   <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Gecerlilik Tarihi</label>
-                  <input id="cert-sgt" name="sgtRaw" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                  <input id="cert-sgt" name="gecerlilik_tarihi" type="date" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
                 </div>
               </div>
             </div>
@@ -386,7 +386,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
   import { toast } from '../../lib/toast';
   import { loadCompanyOperationContext } from '../../features/operations/context';
   import {
-    normalizeLegacyIsoRows,
+    normalizeStandards,
     buildSuggestedCertPrefix,
     mergeCertNoSuggestion,
     addOneYearMinusOneDay,
@@ -462,7 +462,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
     };
 
     let companyContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
-    let standards: LegacyIsoOption[] = [];
+    let standards: StandardOption[] = [];
     let editingCertificate: Record<string, any> | null = null;
     let activeFirmaId = initialFirmaId;
     let selectedCompany: any = null;
@@ -663,7 +663,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
   async function loadStandards() {
     const res = await api.getMasterData('standards');
     const rows = res?.data?.dataset?.rows || [];
-    standards = normalizeLegacyIsoRows(rows);
+    standards = normalizeStandards(rows);
     renderStandards();
   }
 
@@ -736,73 +736,35 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
   }
 
   function normalizeCertificateRecord(record: any): Record<string, any> | null {
-    if (!record) return null;
+    if (!record || typeof record !== 'object' || Array.isArray(record)) return null;
 
-    if (Array.isArray(record)) {
-      const stt = String(record[8] ?? '').trim();
-      const sgt = String(record[9] ?? '').trim();
-      return {
-        ID: String(record[0] ?? '').trim(),
-        'Firma Adı': String(record[1] ?? '').trim(),
-        'Firma No': String(record[2] ?? '').trim(),
-        Standart: String(record[3] ?? '').trim(),
-        'Denetim Tipi': String(record[4] ?? '').trim(),
-        'Sertifika No': String(record[5] ?? '').trim(),
-        'Sertifika Tarihi': String(record[6] ?? '').trim(),
-        'Gözetim Tarihi': String(record[7] ?? '').trim(),
-        // Legacy sheet stores a single STT/Tescil column at index 8.
-        'Son Tetkik Tarihi': stt,
-        'Tescil Tarihi': stt,
-        'Sertifika Tescil Tarihi': stt,
-        'Sertifika Geçerlilik Tarihi': sgt,
-        Kapsam: String(record[10] ?? '').trim(),
-        Scope: String(record[11] ?? '').trim(),
-        Logo: String(record[12] ?? '').trim(),
-        Kod: String(record[13] ?? '').trim(),
-        Akreditasyon: String(record[14] ?? '').trim(),
-        Akredite: String(record[15] ?? '').trim(),
-        'Danışman': String(record[16] ?? '').trim(),
-        Durum: String(record[17] ?? '').trim(),
-        Not: String(record[18] ?? '').trim(),
-        'Gözetim Conf.': String(record[19] ?? '').trim(),
-        'Other Standard': String(record[20] ?? '').trim(),
-        'Calendar ID': String(record[21] ?? '').trim(),
-        'QR Code': String(record[22] ?? '').trim(),
-        'Cert Link': String(record[23] ?? '').trim(),
-      };
-    }
-
-    if (typeof record === 'object') {
-      return {
-        ID: normalizeObjectValue(record, ['ID', 'Id', 'id', 'certId', 'Certificate ID', 'certificateId', 'sertifikaId']),
-        'Firma Adı': normalizeObjectValue(record, ['Firma Adı', 'Nickname', 'nick', 'isim']),
-        'Firma No': normalizeObjectValue(record, ['Firma No', 'firmaNo', 'firmano']),
-        Standart: normalizeObjectValue(record, ['Standart', 'standart', 'standard']),
-        'Denetim Tipi': normalizeObjectValue(record, ['Denetim Tipi', 'Denetim', 'denetim', 'denetimTipi']),
-        'Sertifika No': normalizeObjectValue(record, ['Sertifika No', 'sNo', 'SNo', 'sno']),
-        'Sertifika Tarihi': normalizeObjectValue(record, ['Sertifika Tarihi', 'gst', 'GST', 'sTarihi']),
-        'Gözetim Tarihi': normalizeObjectValue(record, ['Gözetim Tarihi', 'Sertifika Gözetim Tarihi', 'goz', 'GOZ', 'sGozetimT']),
-        'Son Tetkik Tarihi': normalizeObjectValue(record, ['Tescil Tarihi', 'Sertifika Tescil Tarihi', 'Son Tetkik Tarihi', 'stt', 'STT', 'sTT']),
-        'Tescil Tarihi': normalizeObjectValue(record, ['Tescil Tarihi', 'Sertifika Tescil Tarihi', 'Son Tetkik Tarihi', 'stt', 'STT', 'sTT']),
-        'Sertifika Geçerlilik Tarihi': normalizeObjectValue(record, ['Sertifika Geçerlilik Tarihi', 'sgt', 'SGT', 'sGT']),
-        Kapsam: normalizeObjectValue(record, ['Kapsam', 'kapsam']),
-        Scope: normalizeObjectValue(record, ['Scope', 'scope']),
-        Logo: normalizeObjectValue(record, ['Logo', 'logo']),
-        Kod: normalizeObjectValue(record, ['Kod', 'kod', 'NACE', 'nace']),
-        Akreditasyon: normalizeObjectValue(record, ['Akreditasyon', 'akreditasyon']),
-        Akredite: normalizeObjectValue(record, ['Akredite', 'akredite']),
-        'Danışman': normalizeObjectValue(record, ['Danışman', 'Danisman', 'dan', 'danisman']),
-        Durum: normalizeObjectValue(record, ['Durum', 'durum']),
-        Not: normalizeObjectValue(record, ['Not', 'not']),
-        'Gözetim Conf.': normalizeObjectValue(record, ['Gözetim Conf.', 'gozetimConfirmed', 'gozetimConf', 'gozetim']),
-        'Other Standard': normalizeObjectValue(record, ['Other Standard', 'Other', 'other', 'Diğer', 'diger', 'Diger', 'diğer', 'Diğer Standart', 'digerStandart']),
-        'Calendar ID': normalizeObjectValue(record, ['Calendar ID', 'eventId', 'calendar']),
-        'QR Code': normalizeObjectValue(record, ['QR Code', 'qr', 'search']),
-        'Cert Link': normalizeObjectValue(record, ['Cert Link', 'certLink', 'certiLink']),
-      };
-    }
-
-    return null;
+    return {
+      ID: normalizeObjectValue(record, ['id', 'ID', 'Id', 'certId', 'Certificate ID', 'certificateId', 'sertifikaId']),
+      'Firma Adı': normalizeObjectValue(record, ['nick', 'Firma Adı', 'Nickname', 'isim']),
+      'Firma No': normalizeObjectValue(record, ['firma_no', 'Firma No', 'firmaNo', 'firmano']),
+      Standart: normalizeObjectValue(record, ['standart', 'Standart', 'standard']),
+      'Denetim Tipi': normalizeObjectValue(record, ['denetim_tipi', 'Denetim Tipi', 'denetim', 'denetimTipi']),
+      'Sertifika No': normalizeObjectValue(record, ['sertifika_no', 'Sertifika No', 'sNo', 'SNo', 'sno']),
+      'Sertifika Tarihi': normalizeObjectValue(record, ['sertifika_tarihi', 'Sertifika Tarihi', 'gst', 'GST', 'sTarihi']),
+      'Gözetim Tarihi': normalizeObjectValue(record, ['gozetim_tarihi', 'Gözetim Tarihi', 'Sertifika Gözetim Tarihi', 'goz', 'GOZ']),
+      'Son Tetkik Tarihi': normalizeObjectValue(record, ['tescil_tarihi', 'Tescil Tarihi', 'Sertifika Tescil Tarihi', 'Son Tetkik Tarihi', 'stt', 'STT']),
+      'Tescil Tarihi': normalizeObjectValue(record, ['tescil_tarihi', 'Tescil Tarihi', 'Sertifika Tescil Tarihi', 'Son Tetkik Tarihi', 'stt', 'STT']),
+      'Sertifika Geçerlilik Tarihi': normalizeObjectValue(record, ['gecerlilik_tarihi', 'Sertifika Geçerlilik Tarihi', 'sgt', 'SGT', 'sGT']),
+      Kapsam: normalizeObjectValue(record, ['kapsam', 'Kapsam']),
+      Scope: normalizeObjectValue(record, ['scope', 'Scope']),
+      Logo: normalizeObjectValue(record, ['logo', 'Logo']),
+      Kod: normalizeObjectValue(record, ['nace', 'Kod', 'kod', 'NACE']),
+      Akreditasyon: normalizeObjectValue(record, ['akreditasyon', 'Akreditasyon']),
+      Akredite: normalizeObjectValue(record, ['akredite', 'Akredite']),
+      'Danışman': normalizeObjectValue(record, ['consultant', 'Danışman', 'Danisman', 'dan', 'danisman']),
+      Durum: normalizeObjectValue(record, ['durum', 'Durum']),
+      Not: normalizeObjectValue(record, ['sertifika_not', 'Not', 'not']),
+      'Gözetim Conf.': normalizeObjectValue(record, ['gozetim_confirmed', 'Gözetim Conf.', 'gozetimConfirmed', 'gozetimConf']),
+      'Other Standard': normalizeObjectValue(record, ['other_standart', 'Other Standard', 'Other', 'other', 'Diğer', 'diger']),
+      'Calendar ID': normalizeObjectValue(record, ['calendar_id', 'Calendar ID', 'eventId', 'calendar']),
+      'QR Code': normalizeObjectValue(record, ['qr', 'QR Code']),
+      'Cert Link': normalizeObjectValue(record, ['cert_link', 'Cert Link', 'certLink', 'certiLink']),
+    };
   }
 
   function toInputDate(value: string) {
@@ -1153,29 +1115,29 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       }
 
       const certInfo = {
-        nick: companyContext.nick || getEditingValue('Firma Adı', 'Nickname', 'nick', 'isim'),
-        firmano: companyContext.firmaId || getEditingValue('Firma No', 'firmaNo', 'firmano'),
+        nick: companyContext.nick || getEditingValue('Firma Adı', 'nick'),
+        firma_no: companyContext.firmaId || getEditingValue('Firma No', 'firma_no', 'firmaNo'),
         standart: standardText,
-        other: els.otherInput?.value.trim() || '',
-        denetim: normalizeDenetimValue(els.denetim?.value || ''),
-        sno: els.sno?.value.trim() || '',
-        gst: toDisplayDate(els.gst?.value || ''),
-        goz: toDisplayDate(els.goz?.value || ''),
-        stt: toDisplayDate(els.stt?.value || ''),
-        sgt: toDisplayDate(els.sgt?.value || ''),
+        other_standart: els.otherInput?.value.trim() || '',
+        denetim_tipi: normalizeDenetimValue(els.denetim?.value || ''),
+        sertifika_no: els.sno?.value.trim() || '',
+        sertifika_tarihi: toDisplayDate(els.gst?.value || ''),
+        gozetim_tarihi: toDisplayDate(els.goz?.value || ''),
+        tescil_tarihi: toDisplayDate(els.stt?.value || ''),
+        gecerlilik_tarihi: toDisplayDate(els.sgt?.value || ''),
         kapsam: els.kapsam?.value.trim() || '',
         scope: els.scope?.value.trim() || '',
         logo: els.logo?.value.trim() || '',
-        kod: els.kod?.value.trim() || '',
+        nace: els.kod?.value.trim() || '',
         akreditasyon: els.akreditasyon?.value.trim() || 'IAKS',
         akredite: els.akredite?.value.trim() || 'Medicert',
-        dan: els.dan?.value.trim() || '',
+        consultant: els.dan?.value.trim() || '',
         durum: els.durum?.value.trim() || '',
-        not: els.not?.value.trim() || '',
-        gozetimConfirmed: els.gozetimDone?.checked ? 'TRUE' : 'FALSE',
+        sertifika_not: els.not?.value.trim() || '',
+        gozetim_confirmed: els.gozetimDone?.checked ? 'TRUE' : 'FALSE',
         qr: buildCertificateQrLink(companyContext.unvan || companyContext.nick, (els.isoFull?.value || standardText), els.sno?.value || ''),
-        calendar: getEditingValue('Calendar ID', 'eventId', 'calendar'),
-        certLink: getEditingValue('Cert Link', 'certLink', 'certiLink'),
+        calendar_id: getEditingValue('Calendar ID', 'calendar_id', 'calendar'),
+        cert_link: getEditingValue('Cert Link', 'cert_link', 'certLink'),
       };
 
       els.submit.disabled = true;
@@ -1297,8 +1259,6 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
   }
 
   // Initial load
-  initPage();
-  // Transition support
   document.addEventListener('astro:page-load', initPage);
   // Cleanup away
   document.addEventListener('astro:before-preparation', runCleanups);

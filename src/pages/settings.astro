@@ -765,9 +765,6 @@ const MASTER_SYNC_OPTIONS = [
     loadDataset(currentType);
   }
 
-  // Initial load
-  initPage();
-  // ViewTransitions support
   document.addEventListener('astro:page-load', initPage);
   // Cleanup away
   document.addEventListener('astro:before-preparation', runCleanups);

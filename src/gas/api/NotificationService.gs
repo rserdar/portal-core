@@ -27,6 +27,11 @@ const NotificationService = {
     return null;
   },
 
+  _cell: function(row, idx, fallback) {
+    if (!idx || idx < 1) return fallback !== undefined ? fallback : "";
+    return row[idx - 1];
+  },
+
   _buildSurveillanceHtml: function(firstName, title, rows, startDate, endDate) {
     const safeFirstName = firstName || "Merhaba";
     const safeTitle = title || "";
@@ -128,10 +133,10 @@ const NotificationService = {
   runMonthlyCheck: function() {
     try {
       const ss = BaseService.openSS();
-      const certWs = ss.getSheetByName("Sertifika");
-      const consWs = ss.getSheetByName("Consultants");
-      if (!certWs) throw new Error("Sertifika sayfası bulunamadı.");
-      if (!consWs) throw new Error("Consultants sayfası bulunamadı.");
+      const certWs = ss.getSheetByName("certificates");
+      const consWs = ss.getSheetByName("consultants");
+      if (!certWs) throw new Error("certificates sayfası bulunamadı.");
+      if (!consWs) throw new Error("consultants sayfası bulunamadı.");
 
       const today = new Date();
       // Aralık/Ocak geçişlerinde de net davranış için: [geçen ayın 1'i, +2 ayın 1'i)
@@ -149,20 +154,20 @@ const NotificationService = {
       const consHeaders = consWs.getRange(1, 1, 1, consLastCol).getDisplayValues()[0].map(h => String(h).trim());
       const consRows = consWs.getRange(2, 1, consLastRow - 1, consLastCol).getDisplayValues();
 
-      const cNameCol = BaseService.findHeaderIndex(consHeaders, ["Danışman", "Danisman", "Name", "Ad Soyad"]);
-      const cEmailCol = BaseService.findHeaderIndex(consHeaders, ["Email", "E-mail", "Mail"]);
-      const cFirstNameCol = BaseService.findHeaderIndex(consHeaders, ["Ad", "First Name", "İsim"]);
-      const cLastNameCol = BaseService.findHeaderIndex(consHeaders, ["Soyad", "Last Name"]);
-      const cTitleCol = BaseService.findHeaderIndex(consHeaders, ["Ünvan", "Unvan", "Title"]);
+      const cNameCol = BaseService.findHeaderIndex(consHeaders, ["ad", "Danışman", "Danisman", "Name", "Ad Soyad"]);
+      const cEmailCol = BaseService.findHeaderIndex(consHeaders, ["mail", "Email", "E-mail", "Mail"]);
+      const cFirstNameCol = BaseService.findHeaderIndex(consHeaders, ["yetkili_adi", "Ad", "First Name", "İsim"]);
+      const cLastNameCol = BaseService.findHeaderIndex(consHeaders, ["yetkili_soyad", "Soyad", "Last Name"]);
+      const cTitleCol = BaseService.findHeaderIndex(consHeaders, ["hitabet", "Ünvan", "Unvan", "Title"]);
 
       const consultantsData = {};
       consRows.forEach(row => {
-        const name = cNameCol > 0 ? row[cNameCol - 1] : row[0];
+        const name = this._cell(row, cNameCol, row[0] || "");
         if (!name) return;
-        const firstName = cFirstNameCol > 0 ? row[cFirstNameCol - 1] : row[4];
-        const lastName = cLastNameCol > 0 ? row[cLastNameCol - 1] : row[5];
-        const title = cTitleCol > 0 ? row[cTitleCol - 1] : row[6];
-        const email = (cEmailCol > 0 ? row[cEmailCol - 1] : row[3]) || this.DEFAULT_REPORT_RECIPIENT;
+        const firstName = this._cell(row, cFirstNameCol, "");
+        const lastName = this._cell(row, cLastNameCol, "");
+        const title = this._cell(row, cTitleCol, "");
+        const email = this._cell(row, cEmailCol, this.DEFAULT_REPORT_RECIPIENT) || this.DEFAULT_REPORT_RECIPIENT;
         consultantsData[String(name)] = {
           firstName: firstName || "",
           fullName: `${firstName || ""} ${lastName || ""}`.trim(),
@@ -180,41 +185,41 @@ const NotificationService = {
       const certHeaders = certWs.getRange(1, 1, 1, certLastCol).getDisplayValues()[0].map(h => String(h).trim());
       const certRows = certWs.getRange(2, 1, certLastRow - 1, certLastCol).getDisplayValues();
 
-      const firmCol = BaseService.findHeaderIndex(certHeaders, ["Nickname", "Nick", "Firma Adı"]);
-      const stdCol = BaseService.findHeaderIndex(certHeaders, ["Standart", "Standard"]);
-      const certNoCol = BaseService.findHeaderIndex(certHeaders, ["Sno", "SNo", "Sertifika No"]);
-      const survDateCol = BaseService.findHeaderIndex(certHeaders, ["GOZ", "Sertifika Gözetim Tarihi"]);
-      const accreditationCol = BaseService.findHeaderIndex(certHeaders, ["Akreditasyon"]);
-      const consultantCol = BaseService.findHeaderIndex(certHeaders, ["Danışman", "Danisman", "Dan"]);
-      const checkboxCol = BaseService.findHeaderIndex(certHeaders, ["Gözetim Conf.", "Gözetim"]);
-      const otherStdCol = BaseService.findHeaderIndex(certHeaders, ["Other", "Diğer", "Diger"]);
+      const firmCol = BaseService.findHeaderIndex(certHeaders, ["nickname", "Nickname", "Nick", "Firma Adı"]);
+      const stdCol = BaseService.findHeaderIndex(certHeaders, ["standart", "Standart", "Standard"]);
+      const certNoCol = BaseService.findHeaderIndex(certHeaders, ["sertifika_no", "Sno", "SNo", "Sertifika No"]);
+      const survDateCol = BaseService.findHeaderIndex(certHeaders, ["gozetim_tarihi", "GOZ", "Sertifika Gözetim Tarihi"]);
+      const accreditationCol = BaseService.findHeaderIndex(certHeaders, ["akreditasyon", "Akreditasyon"]);
+      const consultantCol = BaseService.findHeaderIndex(certHeaders, ["consultant", "Danışman", "Danisman", "Dan"]);
+      const checkboxCol = BaseService.findHeaderIndex(certHeaders, ["gozetim_confirmed", "Gözetim Conf.", "Gözetim"]);
+      const otherStdCol = BaseService.findHeaderIndex(certHeaders, ["other_standart", "Other", "Diğer", "Diger"]);
 
       let matchCount = 0;
       certRows.forEach(row => {
-        const dateValue = survDateCol > 0 ? row[survDateCol - 1] : "";
+        const dateValue = this._cell(row, survDateCol, "");
         const parsed = this._parseSheetDate(dateValue);
         if (!parsed) return;
         if (!(parsed >= startDate && parsed < endDate)) return;
 
-        const consultant = consultantCol > 0 ? row[consultantCol - 1] : "";
+        const consultant = this._cell(row, consultantCol, "");
         if (!consultantsData[consultant]) return;
 
-        const checkedRaw = checkboxCol > 0 ? row[checkboxCol - 1] : "";
-        const checked = String(checkedRaw).toLowerCase() === "true";
+        const checkedRaw = this._cell(row, checkboxCol, "");
+        const checked = checkedRaw === true || String(checkedRaw).toLowerCase() === "true" || String(checkedRaw) === "1";
         if (checked) return;
 
-        const stdRaw = stdCol > 0 ? row[stdCol - 1] : "";
+        const stdRaw = this._cell(row, stdCol, "");
         const standard = String(stdRaw) === "Other" && otherStdCol > 0 ? row[otherStdCol - 1] : stdRaw;
 
         consultantsData[consultant].data.push({
           date: this._formatDateDots(parsed),
-          firm: firmCol > 0 ? row[firmCol - 1] : "",
+          firm: this._cell(row, firmCol, ""),
           consultant: consultantsData[consultant].fullName,
           firstName: consultantsData[consultant].firstName,
           title: consultantsData[consultant].title,
           standard: standard || "",
-          certificateNo: certNoCol > 0 ? row[certNoCol - 1] : "",
-          accreditation: accreditationCol > 0 ? row[accreditationCol - 1] : ""
+          certificateNo: this._cell(row, certNoCol, ""),
+          accreditation: this._cell(row, accreditationCol, "")
         });
         matchCount++;
       });

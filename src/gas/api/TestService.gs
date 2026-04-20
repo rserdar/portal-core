@@ -2,7 +2,7 @@
  * 🧪 TestService: Laboratuvar ve Test Kayıtları
  */
 const TestService = {
-  sheetName: "Testler",
+  sheetName: "tests",
 
   _valueFromInfo: function(testInfo, aliases, fallback) {
     const list = Array.isArray(aliases) ? aliases : [aliases];
@@ -19,28 +19,31 @@ const TestService = {
       const n = BaseService.normalizeHeader(header);
 
       if (n === "id") return idValue;
-      if (n === "firmaadi" || n === "fname") return this._valueFromInfo(testInfo, ["firmaAdi", "fname", "nick"]);
-      if (n === "firmano" || n === "fno") return this._valueFromInfo(testInfo, ["firmaNo", "fno"]);
-      if (n === "testadi") return this._valueFromInfo(testInfo, ["testAdi"]);
+      if (n === "firmano") return this._valueFromInfo(testInfo, ["firma_no"]);
+      if (n === "testadi") return this._valueFromInfo(testInfo, ["test_adi"]);
       if (n === "marka") return this._valueFromInfo(testInfo, ["marka"]);
       if (n === "urun") return this._valueFromInfo(testInfo, ["urun"]);
-      if (n === "urunkodu") return this._valueFromInfo(testInfo, ["urunKodu"]);
-      if (n === "urunno") return this._valueFromInfo(testInfo, ["urunNo"]);
+      if (n === "urunkodu") return this._valueFromInfo(testInfo, ["urun_kodu"]);
+      if (n === "urunno") return this._valueFromInfo(testInfo, ["urun_no"]);
       if (n === "lot") return this._valueFromInfo(testInfo, ["lot"]);
-      if (n === "urunkabul") return this._valueFromInfo(testInfo, ["urunKabul"]);
-      if (n === "kabulsaat") return this._valueFromInfo(testInfo, ["kabulSaat"]);
-      if (n === "testbaslangic") return this._valueFromInfo(testInfo, ["testBaslangic"]);
-      if (n === "testbitis") return this._valueFromInfo(testInfo, ["testBitis"]);
-      if (n === "raportarihi") return this._valueFromInfo(testInfo, ["raporTarihi"]);
-      if (n === "raporno") return this._valueFromInfo(testInfo, ["raporNo"]);
-      if (n === "numunesayisi") return this._valueFromInfo(testInfo, ["numuneSayisi"]);
-      if (n === "numuneut") return this._valueFromInfo(testInfo, ["numuneUT"]);
-      if (n === "numuneskt") return this._valueFromInfo(testInfo, ["numuneSKT"]);
-      if (n === "urunbilgi") return this._valueFromInfo(testInfo, ["urunBilgi"]);
+      if (n === "urunkabul") return this._valueFromInfo(testInfo, ["urun_kabul"]);
+      if (n === "kabulsaat") return this._valueFromInfo(testInfo, ["kabul_saat"]);
+      if (n === "testbaslangic") return this._valueFromInfo(testInfo, ["test_baslangic"]);
+      if (n === "testbitis") return this._valueFromInfo(testInfo, ["test_bitis"]);
+      if (n === "raportarihi") return this._valueFromInfo(testInfo, ["rapor_tarihi"]);
+      if (n === "raporno") return this._valueFromInfo(testInfo, ["rapor_no"]);
+      if (n === "numunesayisi") return this._valueFromInfo(testInfo, ["numune_sayisi"]);
+      if (n === "numuneut") return this._valueFromInfo(testInfo, ["numune_ut"]);
+      if (n === "numuneskt") return this._valueFromInfo(testInfo, ["numune_skt"]);
+      if (n === "urunbilgi") return this._valueFromInfo(testInfo, ["urun_bilgi"]);
       if (n === "gorsel1") return this._valueFromInfo(testInfo, ["gorsel1"]);
       if (n === "gorsel2") return this._valueFromInfo(testInfo, ["gorsel2"]);
       if (n === "detay") return this._valueFromInfo(testInfo, ["detay"]);
-      if (n === "_updated_at") return new Date().getTime();
+      if (n === "gizle") {
+        const val = this._valueFromInfo(testInfo, ["gizle"]);
+        return (String(val).toLowerCase() === "true" || val === true || val === 1) ? true : false;
+      }
+      if (n === "updatedat") return new Date().getTime();
 
       return this._valueFromInfo(testInfo, [header], "");
     });
@@ -58,7 +61,7 @@ const TestService = {
 
       const lastCol = ws.getLastColumn();
       const headers = ws.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(h => String(h).trim());
-      const firmaNoCol = BaseService.findHeaderIndex(headers, ["Firma No", "FirmaNo", "FNo", "fno"]);
+      const firmaNoCol = BaseService.findHeaderIndex(headers, ["firma_no", "Firma No", "FirmaNo"]);
       if (firmaNoCol < 1) throw new Error("Firma No sütunu bulunamadı.");
 
       const data = ws.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();

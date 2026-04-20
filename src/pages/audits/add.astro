@@ -384,7 +384,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       const audit = normalizeAuditRecord(match);
       if (!audit) return;
 
-      const firmaId = String(audit.firmano || '').trim();
+      const firmaId = String(audit.firma_no || audit.firmano || '').trim();
       if (firmaId) {
         const cMatch = ($companies.get() as any[]).find(c => getCompanyId(c) === firmaId);
         if (cMatch) setSelectedCompany(cMatch);
@@ -400,29 +400,29 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       };
 
       if (xstandartInput) { xstandartInput.value = audit.standart || ''; refreshAuditorDropdowns(); }
-      if (denetimInput) { denetimInput.value = audit.denetim || ''; toggleStage2(); }
+      if (denetimInput) { denetimInput.value = audit.denetim_tipi || audit.denetim || ''; toggleStage2(); }
 
-      fill('a1Basla', toInputDate(audit.a1Basla));
-      fill('a1Bitis', toInputDate(audit.a1Bitis));
-      fill('a1Full', audit.a1Full);
-      fill('a1Manday', audit.a1Md);
-      fill('a1Md', audit.a1Md);
-      fill('leadAuditorInput1', audit.a1La);
-      fill('secondAuditorInput1', audit.a1Fa);
-      fill('thirdAuditorInput1', audit.a1Sa);
-      fill('a1Denetciler', audit.a1Denetci);
-      fill('a1KDenetci', audit.a1kDenet);
+      fill('a1Basla', toInputDate(audit.a1_baslangic || audit.a1Basla));
+      fill('a1Bitis', toInputDate(audit.a1_bitis || audit.a1Bitis));
+      fill('a1Full', audit.a1_full || audit.a1Full);
+      fill('a1Manday', audit.a1_manday || audit.a1Md);
+      fill('a1Md', audit.a1_manday || audit.a1Md);
+      fill('leadAuditorInput1', audit.a1_bas_denetci || audit.a1La);
+      fill('secondAuditorInput1', audit.a1_denetci_2 || audit.a1Fa);
+      fill('thirdAuditorInput1', audit.a1_denetci_3 || audit.a1Sa);
+      fill('a1Denetciler', audit.a1_auditor || audit.a1Denetci);
+      fill('a1KDenetci', audit.a1_kapsam || audit.a1kDenet);
 
-      fill('a2Basla', toInputDate(audit.a2Basla));
-      fill('a2Bitis', toInputDate(audit.a2Bitis));
-      fill('a2Full', audit.a2Full);
-      fill('a2Manday', audit.a2Md);
-      fill('a2Md', audit.a2Md);
-      fill('leadAuditorInput2', audit.a2La);
-      fill('secondAuditorInput2', audit.a2Fa);
-      fill('thirdAuditorInput2', audit.a2Sa);
-      fill('a2Denetciler', audit.a2Denetci);
-      fill('a2KDenetci', audit.a2kDenet);
+      fill('a2Basla', toInputDate(audit.a2_baslangic || audit.a2Basla));
+      fill('a2Bitis', toInputDate(audit.a2_bitis || audit.a2Bitis));
+      fill('a2Full', audit.a2_full || audit.a2Full);
+      fill('a2Manday', audit.a2_manday || audit.a2Md);
+      fill('a2Md', audit.a2_manday || audit.a2Md);
+      fill('leadAuditorInput2', audit.a2_bas_denetci || audit.a2La);
+      fill('secondAuditorInput2', audit.a2_denetci_2 || audit.a2Fa);
+      fill('thirdAuditorInput2', audit.a2_denetci_3 || audit.a2Sa);
+      fill('a2Denetciler', audit.a2_auditor || audit.a2Denetci);
+      fill('a2KDenetci', audit.a2_kapsam || audit.a2kDenet);
 
       ['9C','13C','14C','22C','27C','45C','50C','GMPC'].forEach(id => {
           const cb = document.getElementById(id) as HTMLInputElement | null;
@@ -433,21 +433,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     }
 
     function normalizeAuditRecord(r: any) {
-      if (Array.isArray(r)) {
-        return {
-          id: String(r[0]||''), nick: String(r[1]||''), firmano: String(r[2]||''),
-          standart: String(r[3]||''), denetim: String(r[4]||''),
-          a1Full: String(r[5]||''), a1Denetci: String(r[6]||''),
-          a2Full: String(r[7]||''), a2Denetci: String(r[8]||''),
-          a1Basla: String(r[9]||''), a1Bitis: String(r[10]||''), a1Md: String(r[11]||''),
-          a1La: String(r[12]||''), a1Fa: String(r[13]||''), a1Sa: String(r[14]||''),
-          a2Basla: String(r[15]||''), a2Bitis: String(r[16]||''), a2Md: String(r[17]||''),
-          a2La: String(r[18]||''), a2Fa: String(r[19]||''), a2Sa: String(r[20]||''),
-          qms: String(r[21]||''), mdd: String(r[22]||''), ems: String(r[23]||''), ohs: String(r[24]||''),
-          fsms: String(r[25]||''), isms: String(r[26]||''), engy: String(r[27]||''), gmp: String(r[28]||''),
-          a1kDenet: String(r[29]||''), a2kDenet: String(r[30]||'')
-        };
-      }
+      if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
       return r;
     }
 
@@ -459,7 +445,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
     function refreshAuditorDropdowns() {
       const rows = filterAuditorsByStandard(auditorRows, xstandartInput?.value || '');
-      const names = Array.from(new Set(rows.map(r => `${r[1] || ''} ${r[2] || ''}`.trim()).filter(Boolean)));
+      const names = Array.from(new Set(rows.map(r => `${r.ad || r[1] || ''} ${r.soyad || r[2] || ''}`.trim()).filter(Boolean)));
       ['leadAuditorInput1','secondAuditorInput1','thirdAuditorInput1','leadAuditorInput2','secondAuditorInput2','thirdAuditorInput2'].forEach(id => {
         const sel = document.getElementById(id) as HTMLSelectElement | null;
         if (!sel) return;
@@ -638,8 +624,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         byDate.clear();
         audits.forEach(a => {
           [1,2].forEach(stg => {
-            const startStr = stg === 1 ? (a.a1Baslav2 || a.a1Basla || a[9]) : (a.a2Baslav2 || a.a2Basla || a[15]);
-            const endStr = stg === 1 ? (a.a1Bitisv2 || a.a1Bitis || a[10]) : (a.a2Bitisv2 || a.a2Bitis || a[16]);
+            const startStr = stg === 1 ? (a.a1Baslav2 || a.a1_baslangic || a.a1Basla || a[9]) : (a.a2Baslav2 || a.a2_baslangic || a.a2Basla || a[15]);
+            const endStr = stg === 1 ? (a.a1Bitisv2 || a.a1_bitis || a.a1Bitis || a[10]) : (a.a2Bitisv2 || a.a2_bitis || a.a2Bitis || a[16]);
             const s = parse(startStr); const e = parse(endStr) || s;
             if (!s) return;
             let cur = new Date(s);
@@ -697,7 +683,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
             <p class="text-[10px] font-black uppercase text-muted">${dStr}</p>
             ${ent.map(e => `
               <div class="p-3 rounded-xl border border-border-main bg-surface-hover">
-                <p class="text-xs font-bold">${e.audit.nick || e.audit[1] || 'Firma'}</p>
+                <p class="text-xs font-bold">${e.audit.nick || e.audit.firma_no || e.audit[1] || 'Firma'}</p>
                 <p class="text-[10px] text-muted">${e.audit.standart || e.audit[3]} - Aşama ${e.stage}</p>
               </div>
             `).join('')}
@@ -719,7 +705,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     })();
   }
 
-  initPage();
   document.addEventListener('astro:page-load', initPage);
   document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>
