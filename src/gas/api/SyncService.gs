@@ -1,9 +1,13 @@
 /**
- * 🔄 SyncService: Sheets ve D1 Arasında Veri Tutarlılığı
+ * 🔄 SyncService: D1 → Sheets Süpürme (DailyBackupService tarafından çağrılır)
+ *
+ * Sheets'i source of truth kabul eden mimaride bu servis yalnızca
+ * D1'den gelen değişiklikleri Sheets yedeğine işlemek için kullanılır.
+ * Trigger kurulumu DailyBackupService.setupTrigger() üzerinden yapılır.
  */
 const SyncService = {
   /**
-   * D1'den gelen son değişiklikleri çekip Sheets'i (Yedek) günceller. (Gece Süpürücüsü)
+   * D1'den son değişiklikleri çekip Sheets'i günceller.
    */
   reconcileFromD1: function() {
     const props = PropertiesService.getScriptProperties();
@@ -21,92 +25,70 @@ const SyncService = {
       const payload = {
         action: "getD1Changes",
         apiKey: apiKey,
-        params: { 
+        params: {
           // D1 unixepoch() saniye bazlı çalıştığı için ms -> sn dönüşümü yapılır.
-          since: lastBackupTs > 0 ? Math.floor(lastBackupTs / 1000) : 0 
+          since: lastBackupTs > 0 ? Math.floor(lastBackupTs / 1000) : 0
         }
       };
 
-      const options = {
+      const res = UrlFetchApp.fetch(workerUrl, {
         method: "POST",
         contentType: "application/json",
         payload: JSON.stringify(payload),
         muteHttpExceptions: true
-      };
+      });
 
-      const res = UrlFetchApp.fetch(workerUrl, options);
-      const text = res.getContentText();
-      const result = JSON.parse(text);
-
+      const result = JSON.parse(res.getContentText());
       if (!result.success || !result.data) {
-        Logger.log("[SyncService] D1'den değişim verisi alınamadı: " + (result.error || text));
+        Logger.log("[SyncService] D1'den değişim verisi alınamadı: " + (result.error || res.getContentText()));
         return;
       }
 
-      const delta = result.data;
-      const stats = this._applyDeltaToSheets(delta);
-
+      const stats = this._applyDeltaToSheets(result.data);
       props.setProperty("LAST_BACKUP_TS", now.toString());
       Logger.log("[SyncService] Süpürme tamamlandı. İstatistikler: " + JSON.stringify(stats));
+      return stats;
     } catch (e) {
       BaseService.logError("reconcileFromD1", e);
     }
   },
 
   /**
-   * Gelen delta paketini (companies, certificates vb.) Sheets'e işler.
-   * D1'deki veriyi 'Source of Truth' kabul ederek Sheets'i günceller veya eksikse ekler.
+   * Gelen delta paketini Sheets'e işler.
+   * D1'deki veriyi kaynak kabul ederek günceller, eksikse ekler.
    */
   _applyDeltaToSheets: function(delta) {
     const stats = { companies: 0, certificates: 0, audits: 0, tests: 0, proformas: 0 };
-    
-    // Yardımcı: Kayıt varsa güncelle, yoksa ekle
-    const syncEntity = (list, service, statKey) => {
+
+    const syncEntity = (list, service, updateMethod, addMethod, statKey) => {
       if (!Array.isArray(list)) return;
       list.forEach(item => {
         try {
-          const id = item.id || item.ID || item.firma_no; // firma_no certificates/audits için bazen id niyetine geçebiliyor ama asıl id'ye bakılmalı
-          const res = service.update(id, item);
+          const id = item.id || item.ID;
+          const res = service[updateMethod](id, item);
           if (res && res.success) {
             stats[statKey]++;
           } else {
-            const addRes = service.add(item);
+            const addRes = service[addMethod](item);
             if (addRes && addRes.success) stats[statKey]++;
           }
         } catch (e) {
-          // Güncelleme bulunamadığında hata fırlatabilir, add ile devam et
-          const addRes = service.add(item);
-          if (addRes && addRes.success) stats[statKey]++;
+          try {
+            const addRes = service[addMethod](item);
+            if (addRes && addRes.success) stats[statKey]++;
+          } catch (e2) {
+            Logger.log("[SyncService] " + statKey + " eklenemedi: " + e2.message);
+          }
         }
       });
     };
 
-    syncEntity(delta.companies, CompanyService, "companies");
-    syncEntity(delta.certificates, CertificateService, "certificates");
-    syncEntity(delta.audits, AuditService, "audits");
-    syncEntity(delta.tests, TestService, "tests");
-    syncEntity(delta.proformas, ProformaService, "proformas");
-    
-    return stats;
-  },
+    syncEntity(delta.companies,    CompanyService,     "update",      "add",             "companies");
+    syncEntity(delta.certificates, CertificateService, "update",      "add",             "certificates");
+    syncEntity(delta.audits,       AuditService,       "updateAudit", "scheduleAudit",   "audits");
+    syncEntity(delta.tests,        TestService,        "update",      "add",             "tests");
+    syncEntity(delta.proformas,    ProformaService,    "update",      "add",             "proformas");
 
-  /**
-   * Her gece 03:00 - 04:00 arası çalışacak süpürücü tetikleyicisini kurar.
-   */
-  setupNightlyTrigger: function() {
-    const fnName = "reconcileFromD1";
-    const triggers = ScriptApp.getProjectTriggers();
-    const exists = triggers.some(t => t.getHandlerFunction() === fnName);
-    
-    if (!exists) {
-      ScriptApp.newTrigger(fnName)
-        .timeBased()
-        .everyDays(1)
-        .atHour(3)
-        .create();
-      Logger.log("[SyncService] Gece süpürücü tetikleyicisi kuruldu (03:00).");
-    } else {
-      Logger.log("[SyncService] Tetikleyici zaten mevcut.");
-    }
+    return stats;
   }
 };

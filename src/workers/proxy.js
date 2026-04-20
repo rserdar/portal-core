@@ -507,9 +507,9 @@ export default {
       const id = String(options.id ?? pick(["id", "ID"]) ?? "").trim();
       return {
         id,
-        firma_no: pick(["firma_no"]),
+        firma_no: pick(["firma_no", "firmano", "firmaNo"]),
         kdvsiz: pick(["kdvsiz"], "0"),
-        kdv_oran: pick(["kdv_oran", "kdvOran"], "20"),
+        kdv_oran: pick(["kdv_oran", "kdvOran", "kdvoran"], "20"),
         kdv: pick(["kdv"], "0"),
         toplam: pick(["toplam"], "0"),
         birim: pick(["birim"], "TL"),
