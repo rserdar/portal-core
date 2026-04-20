@@ -537,28 +537,12 @@ export default {
         a1_bas_denetci: pick(["a1_bas_denetci", "a1La", "a1Lead"]) ?? "",
         a1_denetci_2: pick(["a1_denetci_2", "a1Fa", "a1Auditor"]) ?? "",
         a1_denetci_3: pick(["a1_denetci_3", "a1Sa"]) ?? "",
-        a1_kapsam: pick(["a1_kapsam", "a1kDenet", "a1KDenet"]) ?? "",
-        a1_event_id: pick(["a1_event_id", "a1EventId"]) ?? "",
-        a1_auditor: pick(["a1_auditor", "a1Denetci"]) ?? "",
-        a1_lead: pick(["a1_lead", "a1Lead"]) ?? "",
         a2_baslangic: pick(["a2_baslangic", "a2Basla", "a2Baslav2"]) ?? "",
         a2_bitis: pick(["a2_bitis", "a2Bitis", "a2Bitisv2"]) ?? "",
         a2_manday: pick(["a2_manday", "a2Md"]) ?? "",
         a2_bas_denetci: pick(["a2_bas_denetci", "a2La", "a2Lead"]) ?? "",
         a2_denetci_2: pick(["a2_denetci_2", "a2Fa", "a2Auditor"]) ?? "",
         a2_denetci_3: pick(["a2_denetci_3", "a2Sa"]) ?? "",
-        a2_kapsam: pick(["a2_kapsam", "a2kDenet", "a2KDenet"]) ?? "",
-        a2_event_id: pick(["a2_event_id", "a2EventId"]) ?? "",
-        a2_auditor: pick(["a2_auditor", "a2Denetci"]) ?? "",
-        a2_lead: pick(["a2_lead", "a2Lead"]) ?? "",
-        qms: pick(["qms"]) ?? "",
-        mdd: pick(["mdd"]) ?? "",
-        ems: pick(["ems"]) ?? "",
-        ohs: pick(["ohs"]) ?? "",
-        fsms: pick(["fsms"]) ?? "",
-        isms: pick(["isms"]) ?? "",
-        engy: pick(["engy"]) ?? "",
-        gmp: pick(["gmp"]) ?? "",
       };
     };
     const rowToObject = (headers, row) => {
@@ -773,21 +757,16 @@ export default {
     const _D1_AUDIT_SQL = `INSERT OR REPLACE INTO audits
       (id,firma_no,sertifika_id,standart,denetim_tipi,
        a1_baslangic,a1_bitis,a1_manday,a1_bas_denetci,a1_denetci_2,a1_denetci_3,
-       a1_kapsam,a1_event_id,a1_auditor,a1_lead,
        a2_baslangic,a2_bitis,a2_manday,a2_bas_denetci,a2_denetci_2,a2_denetci_3,
-       a2_kapsam,a2_event_id,a2_auditor,a2_lead,
-       qms,mdd,ems,ohs,fsms,isms,engy,gmp,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`;
+       updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,unixepoch())`;
     const upsertAuditD1 = (a, idOverride) => {
       const id = idOverride || parseInt(getAuditId(a)) || null;
       return env.DB_D1.prepare(_D1_AUDIT_SQL).bind(
         id, parseInt(getAuditFirmaId(a)) || null, parseInt(a.sertifika_id) || null,
         a.standart || null, a.denetim_tipi || null,
         a.a1_baslangic || null, a.a1_bitis || null, parseFloat(a.a1_manday) || null, a.a1_bas_denetci || null, a.a1_denetci_2 || null, a.a1_denetci_3 || null,
-        a.a1_kapsam || null, a.a1_event_id || null, a.a1_auditor || null, a.a1_lead || null,
-        a.a2_baslangic || null, a.a2_bitis || null, parseFloat(a.a2_manday) || null, a.a2_bas_denetci || null, a.a2_denetci_2 || null, a.a2_denetci_3 || null,
-        a.a2_kapsam || null, a.a2_event_id || null, a.a2_auditor || null, a.a2_lead || null,
-        a.qms || null, a.mdd || null, a.ems || null, a.ohs || null, a.fsms || null, a.isms || null, a.engy || null, a.gmp || null
+        a.a2_baslangic || null, a.a2_bitis || null, parseFloat(a.a2_manday) || null, a.a2_bas_denetci || null, a.a2_denetci_2 || null, a.a2_denetci_3 || null
       );
     };
 
