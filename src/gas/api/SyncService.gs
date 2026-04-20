@@ -1,5 +1,7 @@
-  // DEPRECATED: JSON exportBackup removed.,
-
+/**
+ * 🔄 SyncService: Sheets ve D1 Arasında Veri Tutarlılığı
+ */
+const SyncService = {
   /**
    * D1'den gelen son değişiklikleri çekip Sheets'i (Yedek) günceller. (Gece Süpürücüsü)
    */
