@@ -343,11 +343,15 @@ const AuditService = {
       return BaseService.withScriptLock(() => {
         const ss = BaseService.openSS();
         const ws = ss.getSheetByName(this.sheetName);
-        const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getDisplayValues()[0].map(h => String(h).trim());
-        const newID = BaseService.getNextId(this.sheetName);
+        const lastCol = ws.getLastColumn();
+        const headers = ws.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(h => String(h).trim());
 
-        let a1EventId = null;
-        let a2EventId = null;
+        // D1 ID önceliği
+        const newID = auditInfo.id || auditInfo.ID || BaseService.getNextId(this.sheetName);
+        const id = newID;
+
+        let a1EventId = "";
+        let a2EventId = "";
 
         try {
           const cal = CalendarApp.getCalendarById(this._calendarId("CALENDAR_MAIN"));

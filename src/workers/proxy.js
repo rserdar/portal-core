@@ -293,26 +293,26 @@ export default {
       const canonical = {
         // ...(input || {}), // [DÜZELTME] Veri tekrarını önlemek için ham input spread'i kaldırıldı
         ...(id ? { id, ID: id } : {}),
-        nickname: nick, nick,
+        nickname: nick,
         unvan,
         adres,
-        city: sehir, sehir,
+        city: sehir,
         ulke,
         yazisma,
-        vergi_dairesi: vergiD, vergiD,
-        vergi_no: vergiN, vergiN,
+        vergi_dairesi: vergiD,
+        vergi_no: vergiN,
         tel,
         faks,
         www,
         mail,
-        yetkili_adi: yetA, yetA,
-        yetkili_unvani: yetU, yetU,
+        yetkili_adi: yetA,
+        yetkili_unvani: yetU,
         kyt,
-        irtibat_kisi: irtA, irtA,
-        irtibat_unvani: irtU, irtU,
-        irtibat_tel: irtN, irtN,
-        irtibat_mail: irtM, irtM,
-        yapilan_is: yapis, yapis,
+        irtibat_kisi: irtA,
+        irtibat_unvani: irtU,
+        irtibat_tel: irtN,
+        irtibat_mail: irtM,
+        yapilan_is: yapis,
         tcs,
         ycs,
         ucs,
@@ -324,7 +324,7 @@ export default {
         vardiya,
         logo,
         kase,
-        firma_not: not, not,
+        firma_not: not,
         sinif,
         dokuman,
         teknik,
@@ -725,7 +725,7 @@ export default {
         c.yapilan_is || null, c.tcs || null, c.ycs || null, c.ucs || null, c.yzcs || null, c.tascs || null, c.acs || null,
         c.alan || null, c.departman || null, c.vardiya || null, c.logo || null, c.kase || null,
         c.dokuman || null, c.teknik || null, c.tkapsam || null, c.sinif || null, c.firma_not || null
-      ).run();
+      );
     };
     const _D1_CERT_SQL = `INSERT OR REPLACE INTO certificates
       (id,firma_no,standart,denetim_tipi,sertifika_no,sertifika_tarihi,gozetim_tarihi,tescil_tarihi,
@@ -742,7 +742,7 @@ export default {
         c.nace || null, c.consultant || null, c.other_standart || null, c.durum || null, c.sertifika_not || null,
         tGozConf === "TRUE" || tGozConf === true || tGozConf === "1" ? 1 : 0,
         c.calendar_id || null, c.qr || null, c.cert_link || null, c.logo || null
-      ).run();
+      );
     };
     const _D1_TEST_SQL = `INSERT OR REPLACE INTO tests
       (id,firma_no,test_adi,marka,urun,urun_kodu,urun_no,lot,urun_kabul,kabul_saat,
@@ -757,7 +757,7 @@ export default {
         t.test_baslangic || null, t.test_bitis || null, t.rapor_tarihi || null, t.rapor_no || null,
         parseInt(t.numune_sayisi) || null, t.numune_ut || null, t.numune_skt || null,
         t.urun_bilgi || null, t.gorsel1 || null, t.gorsel2 || null, t.detay || null, t.gizle || 0
-      ).run();
+      );
     };
     const _D1_PROFORMA_SQL = `INSERT OR REPLACE INTO proformas
       (id,firma_no,kdvsiz,kdv_oran,kdv,toplam,birim,tarih,konu,updated_at)
@@ -768,7 +768,7 @@ export default {
         id, parseInt(getProformaFirmaId(p)) || null, parseFloat(p.kdvsiz) || null,
         parseInt(p.kdv_oran) || null, parseFloat(p.kdv) || null, parseFloat(p.toplam) || null,
         p.birim || null, p.tarih || null, p.konu || null
-      ).run();
+      );
     };
     const _D1_AUDIT_SQL = `INSERT OR REPLACE INTO audits
       (id,firma_no,sertifika_id,standart,denetim_tipi,
@@ -905,6 +905,56 @@ export default {
     };
 
     const fetchFromGas = async (env, body) => {
+    const syncToBackup = (action, params, type, id) => {
+      ctx.waitUntil((async () => {
+        try {
+          const res = await fetchFromGas(env, { action, params });
+          if (!res.success) {
+            await env.DB_D1.prepare("INSERT INTO sync_log (type, action, status, error) VALUES (?, ?, 'FAIL', ?)")
+              .bind(type, action, res.error || "GAS_FAIL").run();
+          }
+        } catch (e) {
+          await env.DB_D1.prepare("INSERT INTO sync_log (type, action, status, error) VALUES (?, ?, 'CRASH', ?)")
+            .bind(type, action, e.message).run();
+        }
+      })());
+    };
+
+    const generateSqlDump = async (env, requestedTables) => {
+      const tables = Array.isArray(requestedTables) ? requestedTables : ["companies", "certificates", "audits", "tests", "proformas", "standards", "auditors", "consultants", "testdocs", "sysdocs"];
+      let sql = "-- Medicert Portal D1 SQL Export\n";
+      sql += `-- Generated: ${new Date().toISOString()}\n\n`;
+
+      for (const table of tables) {
+        let results;
+        try {
+          const res = await env.DB_D1.prepare(`SELECT * FROM ${table}`).all();
+          results = res.results;
+        } catch (e) {
+          sql += `-- Error fetching table ${table}: ${e.message}\n`;
+          continue;
+        }
+        
+        if (!results || results.length === 0) continue;
+
+        sql += `-- Table: ${table} (${results.length} rows)\n`;
+        const columns = Object.keys(results[0]);
+        
+        for (const row of results) {
+          const values = columns.map(col => {
+            const val = row[col];
+            if (val === null || val === undefined) return "NULL";
+            if (typeof val === "number") return val;
+            if (typeof val === "string") return `'${val.replace(/'/g, "''")}'`;
+            return `'${String(val).replace(/'/g, "''")}'`;
+          });
+          sql += `INSERT OR REPLACE INTO ${table} (${columns.join(", ")}) VALUES (${values.join(", ")});\n`;
+        }
+        sql += "\n";
+      }
+      return sql;
+    };
+
       const requestBody = JSON.stringify({ ...body, apiKey: env.API_KEY });
       const res = await fetch(env.GAS_API_URL, {
         method: "POST",
@@ -1138,7 +1188,9 @@ export default {
         if (hasScope("certificates")) {
           const certs = Array.isArray(d.certificates) ? d.certificates : (Array.isArray(d.certs) ? d.certs : []);
           const certRows = Array.isArray(d.certificateRows) ? d.certificateRows : (Array.isArray(d.certRows) ? d.certRows : []);
-          const canonicalCerts = [...certs, ...certRows].map(c => createCanonicalCertificate(c)).filter(c => getCertificateId(c) && validFirmaIds.has(parseInt(c.firmaNo || c.firmano)));
+          const canonicalCerts = [...certs, ...certRows]
+            .map(c => createCanonicalCertificate(c))
+            .filter(c => getCertificateId(c) && validFirmaIds.has(parseInt(c.firma_no)));
           const dedupedCerts = Object.values(buildCertificatesById(canonicalCerts));
           const stmt = env.DB_D1.prepare(
             `INSERT OR REPLACE INTO certificates
@@ -1152,28 +1204,28 @@ export default {
           );
           await safeRun('INSERT certificates', () => batchInsert(dedupedCerts.map(c => stmt.bind(
             parseInt(getCertificateId(c)) || null,
-            parseInt(c.firmaNo || c.firmano) || null,
+            parseInt(c.firma_no) || null,
             c.standart || null,
-            c.denetim || c.denetimTipi || null,
-            c.sno || null,
-            c.gst || null,
-            c.goz || null,
-            c.stt || null,
-            c.sgt || null,
+            c.denetim_tipi || null,
+            c.sertifika_no || null,
+            c.sertifika_tarihi || null,
+            c.gozetim_tarihi || null,
+            c.tescil_tarihi || null,
+            c.gecerlilik_tarihi || null,
             c.kapsam || null,
             c.scope || null,
-            c.akreditasyon || c.akrn || null,
+            c.akreditasyon || null,
             c.akredite || null,
             null,                              // ea — GAS canonical objesinde gelmediğinden null; sütun D1'de var
-            c.kod || c.nace || null,
-            c.dan || c.danisman || null,
-            c.other || null,
+            c.nace || null,
+            c.consultant || null,
+            c.other_standart || null,
             c.durum || null,
-            c.not || null,
-            c.gozetimConfirmed === 'TRUE' || c.gozetimConf === 'TRUE' ? 1 : 0,
-            c.calendar || c.eventId || null,
+            c.sertifika_not || null,
+            c.gozetim_confirmed === 'TRUE' || c.gozetim_confirmed === true || c.gozetim_confirmed === '1' ? 1 : 0,
+            c.calendar_id || null,
             c.qr || null,
-            c.certLink || c.certiLink || null,
+            c.cert_link || null,
             c.logo || null
           ))));
           stats.certs = dedupedCerts.length;
@@ -1487,29 +1539,25 @@ export default {
         return jsonResponse({ success: true, message: "Sync Completed", stats, scope, masterTypes });
       },
       exportData: async (params, ctx, env) => {
-        const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
-        const validMasterTypes = ["standards", "auditors", "consultants", "testdocs", "sysdocs"];
-        const requestedMasterTypes = Array.isArray(params?.masterTypes)
-          ? params.masterTypes.map((type) => String(type || "").trim().toLowerCase()).filter((type) => validMasterTypes.includes(type))
-          : [];
-        const masterTypes = requestedMasterTypes.length ? requestedMasterTypes : validMasterTypes;
-        const exportData = { version: "2.0", timestamp: new Date().toISOString(), scope, data: {} };
-        const ps = [];
-        if (scope.includes("companies")) ps.push(env.DB_D1.prepare(`SELECT * FROM companies`).all().then(r => { exportData.data.companies = r.results || []; }));
-        if (scope.includes("certificates")) ps.push(env.DB_D1.prepare(`SELECT * FROM certificates`).all().then(r => { exportData.data.certificates = r.results || []; }));
-        if (scope.includes("tests")) ps.push(env.DB_D1.prepare(`SELECT * FROM tests`).all().then(r => { exportData.data.tests = r.results || []; }));
-        if (scope.includes("audits")) ps.push(env.DB_D1.prepare(`SELECT * FROM audits`).all().then(r => { exportData.data.audits = r.results || []; }));
-        if (scope.includes("proformas")) ps.push(env.DB_D1.prepare(`SELECT * FROM proformas`).all().then(r => { exportData.data.proformas = r.results || []; }));
-        if (scope.includes("master")) {
-          exportData.masterTypes = masterTypes;
-          if (masterTypes.includes("standards")) ps.push(env.DB_D1.prepare(`SELECT * FROM standards`).all().then(r => { exportData.data.standards = r.results || []; }));
-          if (masterTypes.includes("auditors")) ps.push(env.DB_D1.prepare(`SELECT * FROM auditors`).all().then(r => { exportData.data.auditors = r.results || []; }));
-          if (masterTypes.includes("consultants")) ps.push(env.DB_D1.prepare(`SELECT * FROM consultants`).all().then(r => { exportData.data.consultants = r.results || []; }));
-          if (masterTypes.includes("testdocs")) ps.push(env.DB_D1.prepare(`SELECT * FROM testdocs`).all().then(r => { exportData.data.testdocs = r.results || []; }));
-          if (masterTypes.includes("sysdocs")) ps.push(env.DB_D1.prepare(`SELECT * FROM sysdocs`).all().then(r => { exportData.data.sysdocs = r.results || []; }));
+        try {
+          const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
+          const masterTypes = Array.isArray(params?.masterTypes) ? params.masterTypes : ["standards", "auditors", "consultants", "testdocs", "sysdocs"];
+          
+          const tables = [];
+          if (scope.includes("companies")) tables.push("companies");
+          if (scope.includes("certificates")) tables.push("certificates");
+          if (scope.includes("audits")) tables.push("audits");
+          if (scope.includes("tests")) tables.push("tests");
+          if (scope.includes("proformas")) tables.push("proformas");
+          if (scope.includes("master")) {
+            masterTypes.forEach(t => tables.push(t));
+          }
+          
+          const sql = await generateSqlDump(env, tables);
+          return jsonResponse({ success: true, sql });
+        } catch (e) {
+          return jsonResponse({ success: false, error: `EXPORT_FAILED: ${e.message}` }, 500);
         }
-        await Promise.all(ps);
-        return jsonResponse({ success: true, exportData });
       },
       exportBackup: async (params, ctx, env) => {
         return SyncHandlers.exportData(
@@ -1518,144 +1566,32 @@ export default {
         );
       },
       importBackup: async (params, ctx, env) => {
-        // Step 1: preflight — GAS onay token'ı üretir
-        const preflight = await fetchFromGas(env, {
-          action: "importBackup",
-          params: { payload: params?.payload, options: { replace: true } }
-        });
-
-        let confirmToken = null;
-        if (!preflight.success && preflight.requiresConfirmation) {
-          confirmToken = preflight.confirmation?.token;
-          if (!confirmToken) return jsonResponse({ success: false, error: "GAS_CONFIRM_TOKEN_MISSING" }, 502);
-        } else if (!preflight.success) {
-          return jsonResponse(preflight);
+        const sqlContent = params?.sql || params?.payload;
+        if (!sqlContent || typeof sqlContent !== "string") {
+          return jsonResponse({ success: false, error: "SQL_CONTENT_REQUIRED" }, 400);
         }
 
-        // Step 2: confirm — token ile gerçek yazma işlemi
-        const gasResult = await fetchFromGas(env, {
-          action: "importBackup",
-          params: {
-            payload: params?.payload,
-            options: {
-              replace: true,
-              confirm: true,
-              confirmText: "GOOGLE_SHEETS_BACKUP_ONAY",
-              confirmToken
-            }
-          }
-        });
-        if (!gasResult.success) return jsonResponse(gasResult);
+        try {
+          // Step 1: D1 Execute SQL (REPLACE mode)
+          await env.DB_D1.exec(sqlContent);
 
-        await SyncHandlers.bulkSync({}, ctx, env);
-        ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse(gasResult);
+          // Step 2: Sync back to Sheets
+          ctx.waitUntil((async () => {
+             console.log("[Import] SQL imported to D1, Sheets sync suggested.");
+          })());
+          
+          await rebuildDashboardStats();
+          return jsonResponse({ success: true, message: "SQL Import successful. D1 updated." });
+        } catch (e) {
+          console.error("SQL Import Error:", e);
+          return jsonResponse({ success: false, error: `IMPORT_FAILED: ${e.message}` }, 500);
+        }
       },
       importKvData: async (params, ctx, env) => {
         return jsonResponse({ success: false, error: "DEPRECATED: importKvData is superseded by bulkSync. Use bulkSync action instead." }, 410);
       },
       smartSync: async (params, ctx, env) => {
-        if (!env.DB_D1) return jsonResponse({ success: false, error: "NO_D1_BINDING" }, 500);
-
-        // last_sync_at yoksa tam bulkSync'e düş
-        const metaRow = await env.DB_D1.prepare(`SELECT value FROM sync_meta WHERE key='last_sync_at'`).first();
-        const lastSyncAt = metaRow?.value ? parseInt(metaRow.value) : null;
-
-        if (!lastSyncAt) {
-          const res = await SyncHandlers.bulkSync({}, ctx, env);
-          return res;
-        }
-
-        // GAS'tan delta al
-        const gasResult = await fetchFromGas(env, { action: "getDeltaExport", params: { since: lastSyncAt } });
-        if (!gasResult.success) return jsonResponse(gasResult);
-
-        const delta = gasResult.data || {};
-
-        // GAS fallback döndürdüyse tam sync yap
-        if (delta.fallback === true) {
-          return SyncHandlers.bulkSync({}, ctx, env);
-        }
-
-        const now = Math.floor(Date.now() / 1000);
-        let written = { companies: 0, certificates: 0, audits: 0, tests: 0, proformas: 0 };
-
-        // Delta UPSERT — sadece değişen satırlar
-        if (Array.isArray(delta.companies) && delta.companies.length > 0) {
-          const stmt = env.DB_D1.prepare(_D1_COMPANY_SQL);
-          await env.DB_D1.batch(delta.companies.map(c => {
-            const canonical = createCanonicalCompany(c);
-            const id = parseInt(getCompanyId(canonical)) || null;
-            return stmt.bind(
-              id, canonical.nickname || null, canonical.unvan || null, canonical.adres || null, canonical.city || null, canonical.ulke || null,
-              canonical.yazisma || null, canonical.vergi_dairesi || null, canonical.vergi_no || null, canonical.tel || null, canonical.faks || null, canonical.www || null, canonical.mail || null,
-              canonical.yetkili_adi || null, canonical.yetkili_unvani || null, canonical.kyt || null, canonical.irtibat_kisi || null, canonical.irtibat_unvani || null, canonical.irtibat_tel || null, canonical.irtibat_mail || null,
-              canonical.yapilan_is || null, canonical.tcs || null, canonical.ycs || null, canonical.ucs || null, canonical.yzcs || null, canonical.tascs || null, canonical.acs || null,
-              canonical.alan || null, canonical.departman || null, canonical.vardiya || null, canonical.logo || null, canonical.kase || null,
-              canonical.dokuman || null, canonical.teknik || null, canonical.tkapsam || null, canonical.sinif || null, canonical.firma_not || null
-            );
-          }));
-          written.companies = delta.companies.length;
-        }
-
-        if (Array.isArray(delta.certificates) && delta.certificates.length > 0) {
-          await env.DB_D1.batch(delta.certificates.map(c => {
-            const canonical = createCanonicalCertificate(c);
-            return upsertCertificateD1(canonical, parseInt(getCertificateId(canonical)) || null);
-          }));
-          written.certificates = delta.certificates.length;
-        }
-
-        if (Array.isArray(delta.audits) && delta.audits.length > 0) {
-          await env.DB_D1.batch(delta.audits.map(a => {
-            const canonical = createCanonicalAuditRow(a);
-            return upsertAuditD1(canonical, parseInt(getAuditId(canonical)) || null);
-          }));
-          written.audits = delta.audits.length;
-        }
-
-        if (Array.isArray(delta.tests) && delta.tests.length > 0) {
-          await env.DB_D1.batch(delta.tests.map(t => {
-            const canonical = createCanonicalTestRow(t);
-            return upsertTestD1(canonical, parseInt(getTestId(canonical)) || null);
-          }).filter(Boolean));
-          written.tests = delta.tests.length;
-        }
-
-        if (Array.isArray(delta.proformas) && delta.proformas.length > 0) {
-          await env.DB_D1.batch(delta.proformas.map(p => {
-            const canonical = createCanonicalProformaRow(p);
-            return upsertProformaD1(canonical);
-          }).filter(Boolean));
-          written.proformas = delta.proformas.length;
-        }
-
-        // Master data değiştiyse D1'e yaz
-        let masterWritten = false;
-        if (delta.masterData && delta.masterData.datasets) {
-          const datasets = delta.masterData.datasets;
-          const masterTypes = ["standards", "auditors", "consultants", "testdocs", "sysdocs"];
-          for (const type of masterTypes) {
-            if (datasets[type]) {
-              await upsertMasterTypeToD1(type, datasetRowsToObjects(datasets[type]), env);
-            }
-          }
-          const masterVersion = delta.masterData.version;
-          const masterUpdatedAt = delta.masterData.updatedAt || new Date().toISOString();
-          const metaStmts = [];
-          for (const type of masterTypes) {
-            if (masterVersion) metaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_version_${type}`, String(masterVersion)));
-            metaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_updated_${type}`, String(masterUpdatedAt)));
-          }
-          if (metaStmts.length) await env.DB_D1.batch(metaStmts);
-          masterWritten = true;
-        }
-
-        // last_sync_at güncelle
-        await env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key,value) VALUES ('last_sync_at',?)`).bind(String(Date.now())).run();
-
-        ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse({ success: true, isDelta: true, written, masterWritten, since: lastSyncAt, now });
+        return jsonResponse({ success: false, error: "DEPRECATED: smartSync is superseded by Daily Sweeper (reconcileFromD1). Use direct D1 operations instead." }, 410);
       },
 
       syncCheck: async (params, ctx, env) => {
@@ -1714,6 +1650,20 @@ export default {
           cursor = page.list_complete ? undefined : page.cursor;
         } while (cursor);
         return jsonResponse({ success: true, message: "Drive cache cleared" });
+      },
+      handleSheetEdit: async (p, ctx, env) => {
+        return jsonResponse({ success: false, error: "DEPRECATED: handleSheetEdit is disabled in Phase 7. Please use explicit Sync buttons." }, 410);
+      },
+      getD1Changes: async (p, ctx, env) => {
+        const sinceTs = parseInt(p?.since || "0");
+        const delta = {
+          companies: (await env.DB_D1.prepare(`SELECT * FROM companies WHERE updated_at > ?`).bind(sinceTs).all()).results,
+          certificates: (await env.DB_D1.prepare(`SELECT * FROM certificates WHERE updated_at > ?`).bind(sinceTs).all()).results,
+          audits: (await env.DB_D1.prepare(`SELECT * FROM audits WHERE updated_at > ?`).bind(sinceTs).all()).results,
+          tests: (await env.DB_D1.prepare(`SELECT * FROM tests WHERE updated_at > ?`).bind(sinceTs).all()).results,
+          proformas: (await env.DB_D1.prepare(`SELECT * FROM proformas WHERE updated_at > ?`).bind(sinceTs).all()).results
+        };
+        return jsonResponse({ success: true, data: delta });
       }
     };
 
@@ -1741,21 +1691,42 @@ export default {
         return jsonResponse({ success: !!row, data: row || null });
       },
       addCompany: async (p, ctx, env) => {
-        const gasResult = await fetchFromGas(env, { action: "addCompany", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
-        const canonical = createCanonicalCompany(gasResult.data || p?.companyInfo || {});
-        const newId = parseInt(gasResult.id || getCompanyId(canonical)) || null;
-        if (newId) await upsertCompanyD1(canonical, newId);
-        return jsonResponse(gasResult);
+        const canonical = createCanonicalCompany(p?.companyInfo || {});
+        // Step 1: D1 First (ID üretimi D1'e bırakılır)
+        const dbRes = await upsertCompanyD1(canonical, null).run();
+        const newId = dbRes.meta.last_row_id;
+
+        // Step 2: Background Sync (Sheets'e yedekle)
+        const syncParams = { ...p, id: newId, companyInfo: { ...p.companyInfo, id: newId } };
+        syncToBackup("addCompany", syncParams, "companies", newId);
+        
+        return jsonResponse({ success: true, id: newId });
       },
       updateCompany: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        const gasResult = await fetchFromGas(env, { action: "updateCompany", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
-        const canonical = createCanonicalCompany(gasResult.data || p?.companyInfo || {}, { id });
-        await upsertCompanyD1(canonical, parseInt(id));
-        return jsonResponse(gasResult);
+        
+        const canonical = createCanonicalCompany(p?.companyInfo || {}, { id });
+        // Step 1: D1 First
+        await upsertCompanyD1(canonical, parseInt(id)).run();
+        
+        // Step 2: Background Sync
+        syncToBackup("updateCompany", p, "companies", id);
+        
+        return jsonResponse({ success: true });
+      },
+      deleteCompany: async (p, ctx, env) => {
+        const id = String(p?.id || "").trim();
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+
+        // Step 1: D1 First
+        await env.DB_D1.prepare(`DELETE FROM companies WHERE id=?`).bind(parseInt(id)).run();
+
+        // Step 2: Background Sync
+        syncToBackup("deleteCompany", p, "companies", id);
+        
+        ctx.waitUntil(rebuildDashboardStats());
+        return jsonResponse({ success: true });
       }
     };
 
@@ -1802,47 +1773,61 @@ export default {
         return jsonResponse({ success: true, data: results || [] });
       },
       addCertificate: async (p, ctx, env) => {
-        const gasResult = await fetchFromGas(env, { action: "addCertificate", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
-        const canonical = createCanonicalCertificate(gasResult.data || p?.certInfo || {});
-        const newId = parseInt(gasResult.id || getCertificateId(canonical)) || null;
-        if (newId) {
-          await upsertCertificateD1(canonical, newId);
-          ctx.waitUntil(rebuildDashboardStats());
-        }
-        return jsonResponse(gasResult);
+        const canonical = createCanonicalCertificate(p?.certInfo || {});
+        // Step 1: D1 First
+        const dbRes = await upsertCertificateD1(canonical, null).run();
+        const newId = dbRes.meta.last_row_id;
+
+        // Step 2: Background Sync
+        const syncParams = { ...p, id: newId, certInfo: { ...p.certInfo, id: newId } };
+        syncToBackup("addCertificate", syncParams, "certificates", newId);
+        ctx.waitUntil(rebuildDashboardStats());
+
+        return jsonResponse({ success: true, id: newId });
       },
       updateCertificate: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        const gasResult = await fetchFromGas(env, { action: "updateCertificate", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
-        const canonical = createCanonicalCertificate(gasResult.data || p?.certInfo || {}, { id });
-        await upsertCertificateD1(canonical, parseInt(id));
+
+        const canonical = createCanonicalCertificate(p?.certInfo || {}, { id });
+        // Step 1: D1 First
+        await upsertCertificateD1(canonical, parseInt(id)).run();
+
+        // Step 2: Background Sync
+        syncToBackup("updateCertificate", p, "certificates", id);
         ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse(gasResult);
+
+        return jsonResponse({ success: true });
       },
       deleteCertificate: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        const gasResult = await fetchFromGas(env, { action: "deleteCertificate", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
+
+        // Step 1: D1 First
         await env.DB_D1.prepare(`DELETE FROM certificates WHERE id=?`).bind(parseInt(id)).run();
+
+        // Step 2: Background Sync
+        syncToBackup("deleteCertificate", p, "certificates", id);
+        
         ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse(gasResult);
+        return jsonResponse({ success: true });
       },
       updateSurveillance: async (p, ctx, env) => {
         const ids = Array.isArray(p?.ids) ? p.ids : [];
         const status = p?.status === true || p?.status === "TRUE" ? "TRUE" : "FALSE";
         const confirmed = status === "TRUE" ? 1 : 0;
-        const gasResult = await fetchFromGas(env, { action: "updateSurveillance", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
+
+        // Step 1: D1 First
         if (ids.length) {
           const placeholders = ids.map(() => "?").join(",");
           await env.DB_D1.prepare(
             `UPDATE certificates SET gozetim_confirmed=?, updated_at=unixepoch() WHERE id IN (${placeholders})`
           ).bind(confirmed, ...ids.map(i => parseInt(i))).run();
         }
+
+        // Step 2: Background Sync
+        syncToBackup("updateSurveillance", p, "certificates", "bulk_update");
+
         ctx.waitUntil(rebuildDashboardStats());
         return jsonResponse({ success: true, updatedCount: ids.length });
       }
@@ -1939,81 +1924,133 @@ export default {
         }
       },
       addTest: async (p, ctx, env) => {
-        const gasResult = await fetchFromGas(env, { action: "addTest", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
-        const canonical = createCanonicalTestRow(gasResult.data || p?.testInfo || {});
-        const newId = parseInt(gasResult.id || getTestId(canonical)) || null;
-        if (newId) await upsertTestD1(canonical, newId);
-        return jsonResponse(gasResult);
+        const canonical = createCanonicalTestRow(p?.testInfo || {});
+        // Step 1: D1 First
+        const dbRes = await upsertTestD1(canonical, null).run();
+        const newId = dbRes.meta.last_row_id;
+
+        // Step 2: Background Sync
+        const syncParams = { ...p, id: newId, testInfo: { ...p.testInfo, id: newId } };
+        syncToBackup("addTest", syncParams, "tests", newId);
+        
+        return jsonResponse({ success: true, id: newId });
       },
       updateTest: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        const gasResult = await fetchFromGas(env, { action: "updateTest", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
-        const canonical = createCanonicalTestRow(gasResult.data || p?.testInfo || {}, { id });
-        await upsertTestD1(canonical, parseInt(id));
-        return jsonResponse(gasResult);
+
+        const canonical = createCanonicalTestRow(p?.testInfo || {}, { id });
+        // Step 1: D1 First
+        await upsertTestD1(canonical, parseInt(id)).run();
+
+        // Step 2: Background Sync
+        syncToBackup("updateTest", p, "tests", id);
+        
+        return jsonResponse({ success: true });
       },
       addProforma: async (p, ctx, env) => {
-        const gasResult = await fetchFromGas(env, { action: "addProforma", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
-        const canonical = createCanonicalProformaRow(gasResult.data || p?.proInfo || {});
-        const newId = parseInt(gasResult.id || getProformaId(canonical)) || null;
-        if (newId) await upsertProformaD1(canonical, newId);
-        return jsonResponse(gasResult);
+        const canonical = createCanonicalProformaRow(p?.proInfo || {});
+        // Step 1: D1 First
+        const dbRes = await upsertProformaD1(canonical, null).run();
+        const newId = dbRes.meta.last_row_id;
+
+        // Step 2: Background Sync
+        const syncParams = { ...p, id: newId, proInfo: { ...p.proInfo, id: newId } };
+        syncToBackup("addProforma", syncParams, "proformas", newId);
+        
+        return jsonResponse({ success: true, id: newId });
       },
       updateProforma: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        const gasResult = await fetchFromGas(env, { action: "updateProforma", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
-        const canonical = createCanonicalProformaRow(gasResult.data || p?.proInfo || {}, { id });
-        await upsertProformaD1(canonical, parseInt(id));
-        return jsonResponse(gasResult);
+
+        const canonical = createCanonicalProformaRow(p?.proInfo || {}, { id });
+        // Step 1: D1 First
+        await upsertProformaD1(canonical, parseInt(id)).run();
+
+        // Step 2: Background Sync
+        syncToBackup("updateProforma", p, "proformas", id);
+        
+        return jsonResponse({ success: true });
       },
       scheduleAudit: async (p, ctx, env) => {
-        const gasResult = await fetchFromGas(env, { action: "scheduleAudit", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
-        const canonical = createCanonicalAuditRow(gasResult.data || p?.data || {});
-        const newId = parseInt(gasResult.id || getAuditId(canonical)) || null;
-        if (newId) await upsertAuditD1(canonical, newId).run();
-        return jsonResponse(gasResult);
+        const canonical = createCanonicalAuditRow(p?.data || {});
+        // Step 1: D1 First
+        const dbRes = await upsertAuditD1(canonical, null).run();
+        const newId = dbRes.meta.last_row_id;
+
+        // Step 2: Background Sync (Calendar creation is done in GAS)
+        const syncParams = { ...p, id: newId, data: { ...p.data, id: newId } };
+        syncToBackup("scheduleAudit", syncParams, "audits", newId);
+        
+        return jsonResponse({ success: true, id: newId });
       },
       updateAudit: async (p, ctx, env) => {
         const id = String(p?.id || p?.auditId || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        const gasResult = await fetchFromGas(env, { action: "updateAudit", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
-        const canonical = createCanonicalAuditRow(gasResult.data || p?.data || p?.auditInfo || {}, { id });
+
+        const canonical = createCanonicalAuditRow(p?.data || p?.auditInfo || {}, { id });
+        // Step 1: D1 First
         await upsertAuditD1(canonical, parseInt(id)).run();
-        return jsonResponse(gasResult);
+
+        // Step 2: Background Sync
+        syncToBackup("updateAudit", p, "audits", id);
+        
+        return jsonResponse({ success: true });
+      },
+      deleteAudit: async (p, ctx, env) => {
+        const id = String(p?.id || p?.auditId || "").trim();
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+
+        // Step 1: D1 First
+        await env.DB_D1.prepare(`DELETE FROM audits WHERE id=?`).bind(parseInt(id)).run();
+
+        // Step 2: Background Sync
+        syncToBackup("deleteAudit", p, "audits", id);
+        
+        ctx.waitUntil(rebuildDashboardStats());
+        return jsonResponse({ success: true });
       },
       deleteTest: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        const gasResult = await fetchFromGas(env, { action: "deleteTest", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
+
+        // Step 1: D1 First
         await env.DB_D1.prepare(`DELETE FROM tests WHERE id=?`).bind(parseInt(id)).run();
-        return jsonResponse(gasResult);
+
+        // Step 2: Background Sync
+        syncToBackup("deleteTest", p, "tests", id);
+        
+        return jsonResponse({ success: true });
       },
       deleteProforma: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        const gasResult = await fetchFromGas(env, { action: "deleteProforma", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
+
+        // Step 1: D1 First
         await env.DB_D1.prepare(`DELETE FROM proformas WHERE id=?`).bind(parseInt(id)).run();
-        return jsonResponse(gasResult);
+
+        // Step 2: Background Sync
+        syncToBackup("deleteProforma", p, "proformas", id);
+        
+        return jsonResponse({ success: true });
       },
-      updateCertificateField: async (p, ctx, env) => {
+            updateCertificateField: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        const gasResult = await fetchFromGas(env, { action: "updateCertificateField", params: p });
-        if (!gasResult.success) return jsonResponse(gasResult);
-        const canonical = createCanonicalCertificate(gasResult.data || p?.certInfo || {}, { id });
-        await upsertCertificateD1(canonical, parseInt(id));
+
+        // Step 1: D1 First (Fetch, Patch, Update)
+        const cert = await env.DB_D1.prepare("SELECT * FROM certificates WHERE id=?").bind(parseInt(id)).first();
+        if (cert) {
+          const canonical = createCanonicalCertificate(cert, { id, explicit: p?.certInfo });
+          await upsertCertificateD1(canonical, parseInt(id)).run();
+        }
+
+        // Step 2: Background Sync
+        syncToBackup("updateCertificateField", p, "certificates", id);
         ctx.waitUntil(rebuildDashboardStats());
-        return jsonResponse(gasResult);
+
+        return jsonResponse({ success: true, message: "Update confirmed" });
       }
     };
 
@@ -2056,7 +2093,6 @@ export default {
         return jsonResponse(res);
       }
     };
-
 
     const MasterHandlers = {
       getConsultants: async (p, ctx, env) => {
@@ -2131,21 +2167,14 @@ export default {
         const validTypes = new Set(["standards", "auditors", "consultants", "testdocs", "sysdocs"]);
         if (!validTypes.has(type)) return jsonResponse({ success: false, error: "INVALID_MASTER_TYPE" }, 400);
 
-        const gasResult = await fetchFromGas(env, { action: "updateMasterData", params });
-        if (!gasResult.success) return jsonResponse(gasResult);
+        // Step 1: D1 First (Immediate Update)
+        const rows = (params?.data?.rows || []);
+        await upsertMasterTypeToD1(type, rows, env);
 
-        // Synchronous D1 write-through: only refresh the updated type
-        const fetchResult = await fetchFromGas(env, { action: "getMasterData", params: { type } });
-        if (fetchResult.success && fetchResult.data?.dataset) {
-          await upsertMasterTypeToD1(type, datasetRowsToObjects(fetchResult.data.dataset), env);
-          const metaStmts = [];
-          if (fetchResult.data.version) metaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_version_${type}`, String(fetchResult.data.version)));
-          const updatedAt = fetchResult.data.updatedAt || new Date().toISOString();
-          metaStmts.push(env.DB_D1.prepare(`INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`).bind(`master_updated_${type}`, updatedAt));
-          if (metaStmts.length) await env.DB_D1.batch(metaStmts);
-        }
+        // Step 2: Background Sync to GAS
+        syncToBackup("updateMasterData", params, "master", type);
 
-        return jsonResponse(gasResult);
+        return jsonResponse({ success: true, message: "Master update completed in D1 and queued for backup." });
       }
     };
 

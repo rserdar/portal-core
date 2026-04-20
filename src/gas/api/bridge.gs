@@ -344,6 +344,7 @@ function doPost(e) {
         result.success = true;
         break;
 
+      /* DEPRECATED: JSON backups are superseded by D1 SQL backups in the Worker
       case "exportBackup":
         result.data = SyncService.exportBackup();
         result.success = result.data && result.data.success === false ? false : true;
@@ -355,6 +356,17 @@ function doPost(e) {
         result.data = importRes;
         result.success = importRes.success;
         if (!importRes.success) result.error = importRes.error;
+        break;
+      */
+
+      case "reconcileFromD1":
+        SyncService.reconcileFromD1();
+        result.success = true;
+        break;
+
+      case "setupNightlyTrigger":
+        SyncService.setupNightlyTrigger();
+        result.success = true;
         break;
 
       default:

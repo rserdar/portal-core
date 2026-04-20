@@ -81,9 +81,11 @@ const TestService = {
         const ss = BaseService.openSS();
         const ws = ss.getSheetByName(this.sheetName);
         const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getDisplayValues()[0].map(h => String(h).trim());
-        const newId = BaseService.getNextId(this.sheetName);
+        
+        // D1 ID önceliği
+        const newId = testInfo.id || testInfo.ID || BaseService.getNextId(this.sheetName);
+        
         const newRow = this._buildRowByHeaders(headers, testInfo || {}, newId);
-
         ws.appendRow(newRow);
         return { success: true, id: newId };
       }, 30000, "TestService.add");

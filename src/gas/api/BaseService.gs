@@ -70,13 +70,28 @@ const BaseService = {
     }
   },
 
-  getDataAsObjects: function(sheetName, offset, limit) {
+  /**
+   * Sheet adını önce birebir, sonra normalize ederek çözer.
+   * Böylece görünmeyen boşluk / case farkları master sync'i kırmaz.
+   */
+  resolveSheet: function(sheetName) {
     const ss = this.openSS();
-    const sheet = ss.getSheetByName(sheetName);
+    const wanted = String(sheetName || "").trim();
+    if (!wanted) throw new Error("Sheet adı boş.");
 
-    if (!sheet) {
-      throw new Error(`${sheetName} sayfası bulunamadı.`);
-    }
+    const exact = ss.getSheetByName(wanted);
+    if (exact) return exact;
+
+    const wantedNorm = this.normalizeHeader(wanted);
+    const sheets = ss.getSheets();
+    const fallback = sheets.find((sheet) => this.normalizeHeader(sheet.getName()) === wantedNorm);
+    if (fallback) return fallback;
+
+    throw new Error(`${sheetName} sayfası bulunamadı.`);
+  },
+
+  getDataAsObjects: function(sheetName, offset, limit) {
+    const sheet = this.resolveSheet(sheetName);
 
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return [];
@@ -106,9 +121,7 @@ const BaseService = {
    */
   getRawData: function(sheetName, offset, limit) {
     try {
-      const ss = this.openSS();
-      const sheet = ss.getSheetByName(sheetName);
-      if (!sheet) throw new Error(`${sheetName} sayfası bulunamadı.`);
+      const sheet = this.resolveSheet(sheetName);
 
       const lastRow = sheet.getLastRow();
       if (lastRow < 2) return [];
@@ -131,9 +144,7 @@ const BaseService = {
    */
   getTotalRows: function(sheetName) {
     try {
-      const ss = this.openSS();
-      const sheet = ss.getSheetByName(sheetName);
-      if (!sheet) return 0;
+      const sheet = this.resolveSheet(sheetName);
       return Math.max(0, sheet.getLastRow() - 1);
     } catch (e) {
       return 0;
@@ -146,8 +157,7 @@ const BaseService = {
    * call stack limitini aşması riskini ortadan kaldırır.
    */
   getNextId: function(sheetName) {
-    const ss = this.openSS();
-    const sheet = ss.getSheetByName(sheetName);
+    const sheet = this.resolveSheet(sheetName);
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return 1;
 

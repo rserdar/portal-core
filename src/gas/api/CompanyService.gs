@@ -116,7 +116,10 @@ const CompanyService = {
         const ss = BaseService.openSS();
         const ws = ss.getSheetByName(this.sheetName);
         const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getDisplayValues()[0].map(h => String(h).trim());
-        const newId = BaseService.getNextId(this.sheetName);
+        
+        // D1 merkezli yapıda ID dışarıdan gelebilir. Yoksa legacy usulü oluştur.
+        const newId = companyInfo.id || companyInfo.ID || BaseService.getNextId(this.sheetName);
+        
         const newRow = this._buildRowByHeaders(headers, companyInfo || {}, newId);
         ws.appendRow(newRow);
         return { success: true, id: newId };

@@ -17,9 +17,7 @@ const MasterDataService = {
   },
 
   _sheetMatrix: function(sheetName) {
-    const ss = BaseService.openSS();
-    const ws = ss.getSheetByName(sheetName);
-    if (!ws) throw new Error(`${sheetName} sayfası bulunamadı.`);
+    const ws = BaseService.resolveSheet(sheetName);
 
     const lastCol = ws.getLastColumn();
     const headers = ws.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(h => String(h).trim());
@@ -121,9 +119,7 @@ const MasterDataService = {
         }
 
         const sheetName = this._datasets[key];
-        const ss = BaseService.openSS();
-        const ws = ss.getSheetByName(sheetName);
-        if (!ws) throw new Error(`${sheetName} sayfası bulunamadı.`);
+        const ws = BaseService.resolveSheet(sheetName);
 
         const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getDisplayValues()[0].map(h => String(h).trim());
         const rows = this._normalizeRows(headers, (data && data.rows) || []);

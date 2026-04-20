@@ -131,15 +131,15 @@ const MASTER_SYNC_OPTIONS = [
 
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pt-2">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">D1 &lt;-&gt; JSON</p>
-          <h2 class="text-xl font-extrabold mt-1">JSON Yedekleme / Geri Yükleme</h2>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">D1 &lt;-&gt; SQL</p>
+          <h2 class="text-xl font-extrabold mt-1">SQL Yedekleme / Geri Yükleme</h2>
           <p class="text-sm text-muted mt-2">
-            Canlı D1 verilerini .json olarak yedekle veya bir yedeği sisteme (Replace) geri yükle.
+            Canlı D1 verilerini .sql olarak yedekle veya bir yedeği sisteme geri yükle.
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
           <button id="export-backup-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-600/20 active:scale-95 transition-all">
-            Seçili Verileri .json Olarak Yedekle
+            D1 Veritabanını .sql Olarak Yedekle
           </button>
         </div>
       </div>
@@ -148,9 +148,9 @@ const MASTER_SYNC_OPTIONS = [
 
       <div class="rounded-xl border border-border-main bg-surface-hover p-4 space-y-3">
         <div class="flex flex-col md:flex-row md:items-center gap-3">
-          <input id="import-file-input" type="file" accept=".json,application/json" class="block w-full text-sm text-muted file:mr-4 file:rounded-lg file:border-0 file:bg-surface file:px-3 file:py-2 file:text-sm file:font-bold file:text-main cursor-pointer" />
+          <input id="import-file-input" type="file" accept=".sql" class="block w-full text-sm text-muted file:mr-4 file:rounded-lg file:border-0 file:bg-surface file:px-3 file:py-2 file:text-sm file:font-bold file:text-main cursor-pointer" />
           <button id="import-backup-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-rose-600/20 active:scale-95 transition-all whitespace-nowrap" disabled>
-            Yedeği İçeri Aktar (Replace)
+            SQL Yedeğini Geri Yükle (Replace)
           </button>
         </div>
         <div class="flex items-start gap-2 text-xs text-amber-400/80 bg-amber-500/5 p-2 rounded-lg border border-amber-500/20">
@@ -158,7 +158,7 @@ const MASTER_SYNC_OPTIONS = [
             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
           </svg>
           <p>
-            <b>DİKKAT:</b> İçeri aktarma işlemi <u>tüm tabloları</u> (firmalar, sertifikalar, testler, denetimler, proformalar) yedekteki veriyle değiştirir. Kısmi geri yükleme desteklenmez.
+            <b>DİKKAT:</b> İçeri aktarma işlemi seçili SQL kapsamındaki tüm verileri D1 veritabanında günceller.
           </p>
         </div>
       </div>
@@ -310,8 +310,8 @@ const MASTER_SYNC_OPTIONS = [
     btn.classList.toggle("opacity-80", busy);
   }
 
-  function downloadJson(filename: string, payload: any) {
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+  function downloadFile(filename: string, content: string, type: string = "text/plain") {
+    const blob = new Blob([content], { type: type + ";charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -639,15 +639,15 @@ const MASTER_SYNC_OPTIONS = [
         setBackupStatus("Lütfen yedeklemek istediğiniz kapsamları seçin.", "error");
         return;
       }
-      setBackupStatus("[" + scope.join(", ") + "] kapsamı için D1 yedek paketi hazırlanıyor...");
+      setBackupStatus("[" + scope.join(", ") + "] kapsamı için D1 SQL yedek paketi hazırlanıyor...");
       const res = await api.exportData(scope, masterTypes);
-      if (!res.success || !res.exportData) {
+      if (!res.success || !res.sql) {
         setBackupStatus("Dışa aktarma başarısız: " + (res.error || "Bilinmeyen hata"), "error");
         return;
       }
       const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-      downloadJson("mc-d1-backup-" + stamp + ".json", res.exportData);
-      setBackupStatus("D1 yedeği indirildi (" + scope.length + " kategori).", "success");
+      downloadFile("mc-d1-backup-" + stamp + ".sql", res.sql, "text/plain");
+      setBackupStatus("D1 SQL yedeği indirildi (" + scope.length + " kategori).", "success");
     });
 
     const fileInput = document.getElementById("import-file-input") as HTMLInputElement | null;
@@ -659,23 +659,23 @@ const MASTER_SYNC_OPTIONS = [
         selectedBackupPayload = null;
         if (iBtn) iBtn.disabled = true;
         if (!file) {
-          setBackupStatus("İçeri aktarma için bir JSON dosyası seçin.");
+          setBackupStatus("İçeri aktarma için bir SQL dosyası (.sql) seçin.");
           return;
         }
         try {
           const text = await file.text();
-          selectedBackupPayload = JSON.parse(text);
+          selectedBackupPayload = text;
           if (iBtn) iBtn.disabled = false;
-          setBackupStatus("Yedek dosyası hazır: " + file.name + ". 'Geri Yükle' butonuna basarak işlemi başlatabilirsin.", "success");
+          setBackupStatus(`SQL yedek dosyası hazır: ` + file.name + ". 'Geri Yükle' butonuna basarak işlemi başlatabilirsin.", "success");
         } catch (error) {
-          setBackupStatus("Seçilen dosya geçerli bir JSON yedeği değil.", "error");
+          setBackupStatus("Seçilen dosya okunamadı.", "error");
         }
       });
     }
 
     addEv("import-backup-btn", "click", async () => {
       if (!selectedBackupPayload) {
-        setBackupStatus("Önce geçerli bir yedek JSON dosyası seçin.", "error");
+        setBackupStatus("Önce geçerli bir .sql dosyası seçin.", "error");
         return;
       }
       if (!confirm("DİKKAT! Bu işlem TÜM tabloları (firmalar, sertifikalar, testler, denetimler, proformalar) yedekteki veriyle değiştirecektir. Devam etmek istiyor musun?")) {

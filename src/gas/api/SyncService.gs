@@ -1,275 +1,110 @@
-/**
- * 🔄 SyncService: Toplu Veri Senkronizasyonu
- * 
- * Tüm önemli Sheet verilerini tek bir paket olarak Cloudflare KV'ye aktarmak için kullanılır.
- */
-
-const SyncService = {
-  _backupConfirm: {
-    cachePrefix: "backup_confirm:",
-    ttlSec: 600,
-    phrase: "GOOGLE_SHEETS_BACKUP_ONAY"
-  },
-
-  _newConfirmationToken: function() {
-    const raw = Utilities.getUuid().replace(/-/g, "") + "_" + new Date().getTime();
-    return raw;
-  },
-
-  _issueBackupConfirmation: function(reason) {
-    const token = this._newConfirmationToken();
-    const cfg = this._backupConfirm;
-    CacheService.getScriptCache().put(cfg.cachePrefix + token, "1", cfg.ttlSec);
-    return {
-      success: false,
-      requiresConfirmation: true,
-      error: reason || "CONFIRMATION_REQUIRED",
-      confirmation: {
-        token: token,
-        expiresInSec: cfg.ttlSec,
-        phrase: cfg.phrase,
-        message: "Google Sheets'e yedek geri yükleme işlemini onaylamak için aynı token ve phrase ile isteği tekrar gönderin."
-      }
-    };
-  },
-
-  _consumeBackupConfirmation: function(token) {
-    if (!token) return false;
-    const cfg = this._backupConfirm;
-    const cache = CacheService.getScriptCache();
-    const key = cfg.cachePrefix + token;
-    const exists = cache.get(key);
-    if (!exists) return false;
-    cache.remove(key);
-    return true;
-  },
-
-  _safeRead: function(syncWarnings, label, reader) {
-    try {
-      return reader() || [];
-    } catch (err) {
-      BaseService.logError(`getFullExport:${label}`, err);
-      syncWarnings.push({ source: label, error: String(err.message || err) });
-      return [];
-    }
-  },
-
-  _getSheetAndHeaders: function(sheetName) {
-    const ss = BaseService.openSS();
-    const sheet = ss.getSheetByName(sheetName);
-    if (!sheet) throw new Error(`${sheetName} sayfası bulunamadı.`);
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0].map(h => String(h).trim());
-    return { sheet: sheet, headers: headers };
-  },
-
-  _clearDataRows: function(sheet) {
-    const lastRow = sheet.getLastRow();
-    if (lastRow > 1) {
-      sheet.deleteRows(2, lastRow - 1);
-    }
-  },
-
-  _writeObjects: function(sheetName, objects, replace) {
-    const rows = Array.isArray(objects) ? objects : [];
-    const sh = this._getSheetAndHeaders(sheetName);
-    const sheet = sh.sheet;
-    const headers = sh.headers;
-
-    if (replace) this._clearDataRows(sheet);
-    if (!rows.length) return 0;
-
-    const values = rows.map(obj => {
-      const src = obj && typeof obj === "object" ? obj : {};
-      return headers.map(h => (src[h] !== undefined && src[h] !== null) ? src[h] : "");
-    });
-    sheet.getRange(2, 1, values.length, headers.length).setValues(values);
-    return values.length;
-  },
-
-  _writeRawRows: function(sheetName, dataRows, replace) {
-    const rows = Array.isArray(dataRows) ? dataRows : [];
-    const sh = this._getSheetAndHeaders(sheetName);
-    const sheet = sh.sheet;
-    const headers = sh.headers;
-
-    if (replace) this._clearDataRows(sheet);
-    if (!rows.length) return 0;
-
-    const normalized = rows.map(row => {
-      if (Array.isArray(row)) {
-        const arr = row.slice(0, headers.length);
-        while (arr.length < headers.length) arr.push("");
-        return arr;
-      }
-
-      // Object row (D1 backup format): map each sheet header to the matching object key
-      const src = row && typeof row === "object" ? row : {};
-      return headers.map(h => {
-        if (src[h] !== undefined && src[h] !== null && src[h] !== "") return src[h];
-        const normH = BaseService.normalizeHeader(h);
-        for (const k in src) {
-          if (BaseService.normalizeHeader(k) === normH && src[k] !== undefined && src[k] !== null && src[k] !== "") return src[k];
-        }
-        return "";
-      });
-    });
-    sheet.getRange(2, 1, normalized.length, headers.length).setValues(normalized);
-    return normalized.length;
-  },
-
+  // DEPRECATED: JSON exportBackup removed.,
 
   /**
-   * Tüm sistem verilerini (veya seçili kapsamı) dışa aktarır.
-   * @param {string[]} scope - İsteğe bağlı kapsam dizisi (örn: ["certificates", "companies"])
-   * @param {Object} params - Paging parametreleri {offset, limit}
+   * D1'den gelen son değişiklikleri çekip Sheets'i (Yedek) günceller. (Gece Süpürücüsü)
    */
-  getFullExport: function(scope, params) {
-    const start = new Date().getTime();
-    const p = params || {};
-    const offset = p.offset;
-    const limit = p.limit;
+  reconcileFromD1: function() {
+    const props = PropertiesService.getScriptProperties();
+    const workerUrl = props.getProperty("WORKER_URL");
+    const apiKey = props.getProperty("API_KEY");
+    if (!workerUrl) {
+      Logger.log("[SyncService] WORKER_URL tanımlanmamış, süpürme yapılamaz.");
+      return;
+    }
+
+    const lastBackupTs = parseInt(props.getProperty("LAST_BACKUP_TS") || "0");
+    const now = new Date().getTime();
 
     try {
-      const syncWarnings = [];
-      const data = { lastUpdate: new Date().getTime().toString(), syncWarnings, totalCount: 0 };
-      
-      const has = function(s) { 
-        return !scope || (Array.isArray(scope) && scope.includes(s)); 
+      const payload = {
+        action: "getD1Changes",
+        apiKey: apiKey,
+        params: { 
+          // D1 unixepoch() saniye bazlı çalıştığı için ms -> sn dönüşümü yapılır.
+          since: lastBackupTs > 0 ? Math.floor(lastBackupTs / 1000) : 0 
+        }
       };
 
-      if (has("companies")) {
-        data.companies = BaseService.getDataAsObjects("companies", offset, limit);
-        data.totalCount = BaseService.getTotalRows("companies");
-      }
-      if (has("certificates")) {
-        data.certificates = BaseService.getDataAsObjects("certificates", offset, limit);
-        data.totalCount = BaseService.getTotalRows("certificates");
-      }
-      if (has("tests")) {
-        data.tests = BaseService.getDataAsObjects("tests", offset, limit);
-        data.totalCount = BaseService.getTotalRows("tests");
-      }
-      if (has("audits")) {
-        data.audits = BaseService.getDataAsObjects("audits", offset, limit);
-        data.totalCount = BaseService.getTotalRows("audits");
-      }
-      if (has("proformas")) {
-        data.proformas = BaseService.getDataAsObjects("proformas", offset, limit);
-        data.totalCount = BaseService.getTotalRows("proformas");
-      }
-      if (has("master")) {
-        data.standards = BaseService.getDataAsObjects("standards");
-        data.auditors = BaseService.getDataAsObjects("auditors");
-        data.consultants = BaseService.getDataAsObjects("consultants");
-        data.testdocs = BaseService.getDataAsObjects("testdocs");
-        data.sysdocs = BaseService.getDataAsObjects("sysdocs");
-        data.totalCount = 1; // Master data genellikle paging gerektirmez
+      const options = {
+        method: "POST",
+        contentType: "application/json",
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      };
+
+      const res = UrlFetchApp.fetch(workerUrl, options);
+      const text = res.getContentText();
+      const result = JSON.parse(text);
+
+      if (!result.success || !result.data) {
+        Logger.log("[SyncService] D1'den değişim verisi alınamadı: " + (result.error || text));
+        return;
       }
 
-      PropertiesService.getScriptProperties().setProperty("LAST_UPDATE", data.lastUpdate);
-      const end = new Date().getTime();
-      Logger.log(`[SyncService] Chunked Export (${scope || 'ALL'}) took ${end - start}ms`);
-      return data;
+      const delta = result.data;
+      const stats = this._applyDeltaToSheets(delta);
+
+      props.setProperty("LAST_BACKUP_TS", now.toString());
+      Logger.log("[SyncService] Süpürme tamamlandı. İstatistikler: " + JSON.stringify(stats));
     } catch (e) {
-      BaseService.logError("getFullExport", e);
-      return { success: false, error: e.message };
+      BaseService.logError("reconcileFromD1", e);
     }
   },
 
   /**
-   * Tam yedek paketi üretir (export).
-   * @returns {{version:string,createdAt:string,data:Object}}
+   * Gelen delta paketini (companies, certificates vb.) Sheets'e işler.
+   * D1'deki veriyi 'Source of Truth' kabul ederek Sheets'i günceller veya eksikse ekler.
    */
-  exportBackup: function() {
-    const data = this.getFullExport();
-    if (data && data.success === false) return data;
-    const masterData = MasterDataService.getForSync();
-    if (masterData && masterData.success === false) {
-      return { success: false, error: "Master data export başarısız: " + masterData.error };
-    }
-    return {
-      version: "v1",
-      createdAt: new Date().toISOString(),
-      data: data,
-      masterData: masterData
+  _applyDeltaToSheets: function(delta) {
+    const stats = { companies: 0, certificates: 0, audits: 0, tests: 0, proformas: 0 };
+    
+    // Yardımcı: Kayıt varsa güncelle, yoksa ekle
+    const syncEntity = (list, service, statKey) => {
+      if (!Array.isArray(list)) return;
+      list.forEach(item => {
+        try {
+          const id = item.id || item.ID || item.firma_no; // firma_no certificates/audits için bazen id niyetine geçebiliyor ama asıl id'ye bakılmalı
+          const res = service.update(id, item);
+          if (res && res.success) {
+            stats[statKey]++;
+          } else {
+            const addRes = service.add(item);
+            if (addRes && addRes.success) stats[statKey]++;
+          }
+        } catch (e) {
+          // Güncelleme bulunamadığında hata fırlatabilir, add ile devam et
+          const addRes = service.add(item);
+          if (addRes && addRes.success) stats[statKey]++;
+        }
+      });
     };
+
+    syncEntity(delta.companies, CompanyService, "companies");
+    syncEntity(delta.certificates, CertificateService, "certificates");
+    syncEntity(delta.audits, AuditService, "audits");
+    syncEntity(delta.tests, TestService, "tests");
+    syncEntity(delta.proformas, ProformaService, "proformas");
+    
+    return stats;
   },
 
   /**
-   * Yedek paketinden geri yükleme yapar (replace mode).
-   * Güvenlik için options.replace=true zorunludur.
+   * Her gece 03:00 - 04:00 arası çalışacak süpürücü tetikleyicisini kurar.
    */
-  importBackup: function(payload, options) {
-    try {
-      return BaseService.withScriptLock(() => {
-        const opts = options || {};
-        const replace = opts.replace === true;
-        if (!replace) {
-          throw new Error("Güvenlik için importBackup yalnızca options.replace=true ile çalışır.");
-        }
-
-        // 2. doğrulama protokolü:
-        // 1) İlk çağrı token üretir (requiresConfirmation=true)
-        // 2) İkinci çağrı aynı token + phrase + confirm=true ile devam eder
-        const hasConfirm = opts.confirm === true;
-        const hasPhrase = String(opts.confirmText || "").trim() === this._backupConfirm.phrase;
-        const token = String(opts.confirmToken || "").trim();
-        if (!hasConfirm || !hasPhrase) {
-          return this._issueBackupConfirmation("CONFIRMATION_REQUIRED");
-        }
-        if (!this._consumeBackupConfirmation(token)) {
-          return this._issueBackupConfirmation("CONFIRMATION_TOKEN_INVALID_OR_EXPIRED");
-        }
-
-        const backup = payload && payload.data ? payload.data : payload;
-        if (!backup || typeof backup !== "object") {
-          throw new Error("Geçersiz backup payload.");
-        }
-
-      const companies = Array.isArray(backup.companies) ? backup.companies : [];
-      const certificates = Array.isArray(backup.certificates) ? backup.certificates : [];
-      const certificateRows = Array.isArray(backup.certificateRows) ? backup.certificateRows : [];
-      const tests = Array.isArray(backup.tests) ? backup.tests : [];
-      const audits = Array.isArray(backup.audits) ? backup.audits : [];
-      const proformas = Array.isArray(backup.proformas) ? backup.proformas : [];
-
-      // Master data: yeni format (masterData.datasets.*) önce, eski flat format fallback
-      const masterData = backup.masterData && backup.masterData.datasets ? backup.masterData : null;
-      const masterSets = masterData ? masterData.datasets : {};
-      const masterStandards = Array.isArray(masterSets.standards && masterSets.standards.rows) ? masterSets.standards.rows : (Array.isArray(backup.standards) ? backup.standards : []);
-      const masterAuditors = Array.isArray(masterSets.auditors && masterSets.auditors.rows) ? masterSets.auditors.rows : (Array.isArray(backup.auditors) ? backup.auditors : []);
-      const masterConsultants = Array.isArray(masterSets.consultants && masterSets.consultants.rows) ? masterSets.consultants.rows : (Array.isArray(backup.consultants) ? backup.consultants : []);
-      const masterTestDocs = Array.isArray(masterSets.testdocs && masterSets.testdocs.rows) ? masterSets.testdocs.rows : (Array.isArray(backup.testdocs) ? backup.testdocs : []);
-      const masterSysDocs = Array.isArray(masterSets.sysdocs && masterSets.sysdocs.rows) ? masterSets.sysdocs.rows : (Array.isArray(backup.sysdocs) ? backup.sysdocs : []);
-
-      const stats = {};
-      stats.companies = this._writeObjects("companies", companies, replace);
-      if (certificates.length > 0) {
-        stats.certificates = this._writeObjects("certificates", certificates, replace);
-      } else {
-        stats.certificates = this._writeRawRows("certificates", certificateRows, replace);
-      }
-      stats.tests = this._writeObjects("tests", tests, replace);
-      stats.audits = this._writeObjects("audits", audits, replace);
-      stats.proformas = this._writeObjects("proformas", proformas, replace);
-      stats.standards = this._writeRawRows("standards", masterStandards, replace);
-      stats.auditors = this._writeRawRows("auditors", masterAuditors, replace);
-      stats.consultants = this._writeRawRows("consultants", masterConsultants, replace);
-      stats.testdocs = this._writeRawRows("testdocs", masterTestDocs, replace);
-      stats.sysdocs = this._writeRawRows("sysdocs", masterSysDocs, replace);
-
-        const now = new Date().getTime().toString();
-        const props = PropertiesService.getScriptProperties();
-        props.setProperty("LAST_UPDATE", now);
-        // Master data versiyonunu da geri yükleme sonrası ilerlet.
-        const currentMasterVersion = parseInt(props.getProperty("MASTER_DATA_VERSION") || "1", 10);
-        props.setProperty("MASTER_DATA_VERSION", (isNaN(currentMasterVersion) ? 1 : currentMasterVersion + 1).toString());
-        props.setProperty("MASTER_DATA_UPDATED_AT", new Date().toISOString());
-        return { success: true, stats: stats, lastUpdate: now };
-      }, 60000, "SyncService.importBackup");
-    } catch (e) {
-      BaseService.logError("importBackup", e);
-      return { success: false, error: e.message };
+  setupNightlyTrigger: function() {
+    const fnName = "reconcileFromD1";
+    const triggers = ScriptApp.getProjectTriggers();
+    const exists = triggers.some(t => t.getHandlerFunction() === fnName);
+    
+    if (!exists) {
+      ScriptApp.newTrigger(fnName)
+        .timeBased()
+        .everyDays(1)
+        .atHour(3)
+        .create();
+      Logger.log("[SyncService] Gece süpürücü tetikleyicisi kuruldu (03:00).");
+    } else {
+      Logger.log("[SyncService] Tetikleyici zaten mevcut.");
     }
   }
 };

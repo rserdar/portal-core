@@ -22,3 +22,13 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# Cloudflare Wrangler
+.wrangler/
+.dev.vars
+
+# Agent settings
+.claude/
+
+# Temporary files
+.tmp_*
