@@ -1,17 +1,17 @@
 /**
- * 🛰️ Medicert Portal: Cloudflare Worker Proxy (v6.0 - Dispatcher Pattern)
+ * 🛰️ Medicert Portal: Cloudflare Worker Proxy (v7.0 - D1-Primary)
  *
  * Mimari Özeti:
- * - Source of Truth: Google Sheets (GAS üzerinden).
- * - Cache / Index: Cloudflare D1 (env.DB_D1) — SQL destekli, KV'nin yerini aldı.
- * - KV (env.DB): Yalnızca auth token ve mutex lock için korunur.
- * - Write path: Worker → GAS (Sheets write) → D1 güncelle.
- * - Read path:  Worker → D1 okur; self-healing fallback uygulanmaz (miss = boş sonuç).
+ * - Source of Truth: Cloudflare D1 — tüm yazma işlemleri doğrudan D1'e gider.
+ * - KV (env.DB): Yalnızca token/lock/Drive cache için; operasyonel veri yazılmaz.
+ * - Write path: Worker → D1 (doğrudan); GAS yazma yolunda yer almaz.
+ * - Backup path: ctx.waitUntil → GAS (Sheets backup, non-blocking).
+ * - Read path: Worker → D1 SQL; GAS fallback uygulanmaz.
  * - Google Native (Drive/Calendar/Docs/Gmail): Doğrudan GAS, D1 bypass.
  *
  * Bindings:
- *   env.DB      — Cloudflare KV  (token/lock only)
- *   env.DB_D1   — Cloudflare D1  (primary cache/index)
+ *   env.DB      — Cloudflare KV  (token/lock/Drive cache only)
+ *   env.DB_D1   — Cloudflare D1  (source of truth)
  */
 
 export default {
@@ -904,22 +904,6 @@ export default {
       return JSON.parse(text);
     };
 
-    const fetchFromGas = async (env, body) => {
-    const syncToBackup = (action, params, type, id) => {
-      ctx.waitUntil((async () => {
-        try {
-          const res = await fetchFromGas(env, { action, params });
-          if (!res.success) {
-            await env.DB_D1.prepare("INSERT INTO sync_log (type, action, status, error) VALUES (?, ?, 'FAIL', ?)")
-              .bind(type, action, res.error || "GAS_FAIL").run();
-          }
-        } catch (e) {
-          await env.DB_D1.prepare("INSERT INTO sync_log (type, action, status, error) VALUES (?, ?, 'CRASH', ?)")
-            .bind(type, action, e.message).run();
-        }
-      })());
-    };
-
     const generateSqlDump = async (env, requestedTables) => {
       const tables = Array.isArray(requestedTables) ? requestedTables : ["companies", "certificates", "audits", "tests", "proformas", "standards", "auditors", "consultants", "testdocs", "sysdocs"];
       let sql = "-- Medicert Portal D1 SQL Export\n";
@@ -934,12 +918,12 @@ export default {
           sql += `-- Error fetching table ${table}: ${e.message}\n`;
           continue;
         }
-        
+
         if (!results || results.length === 0) continue;
 
         sql += `-- Table: ${table} (${results.length} rows)\n`;
         const columns = Object.keys(results[0]);
-        
+
         for (const row of results) {
           const values = columns.map(col => {
             const val = row[col];
@@ -955,6 +939,7 @@ export default {
       return sql;
     };
 
+    const fetchFromGas = async (env, body) => {
       const requestBody = JSON.stringify({ ...body, apiKey: env.API_KEY });
       const res = await fetch(env.GAS_API_URL, {
         method: "POST",
@@ -972,6 +957,21 @@ export default {
         throw new Error(`GAS_HTTP_ERROR: ${code} — ${text.slice(0, 200)}`);
       }
       return JSON.parse(text);
+    };
+
+    const syncToBackup = (action, params, type, id) => {
+      ctx.waitUntil((async () => {
+        try {
+          const res = await fetchFromGas(env, { action, params });
+          if (!res.success) {
+            await env.DB_D1.prepare("INSERT INTO sync_log (action, entity_type, entity_id, status, error_message) VALUES (?, ?, ?, 'FAIL', ?)")
+              .bind(action, type, id || null, res.error || "GAS_FAIL").run();
+          }
+        } catch (e) {
+          await env.DB_D1.prepare("INSERT INTO sync_log (action, entity_type, entity_id, status, error_message) VALUES (?, ?, ?, 'CRASH', ?)")
+            .bind(action, type, id || null, e.message).run();
+        }
+      })());
     };
 
     const SyncHandlers = {
