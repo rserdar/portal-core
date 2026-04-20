@@ -108,6 +108,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <script>
   import { api } from '../../lib/api';
+  import { pickValue, getVisiblePageNumbers, getInitials } from '../../lib/utils';
   import { $companies } from '../../lib/store';
 
   function init() {
@@ -130,22 +131,14 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   let allAudits: any[] = [];
   let currentPage = 1;
   let pageSize = 20;
-
-  function pickAuditValue(audit: any, aliases: string[], fallback = '') {
-    for (const key of aliases) {
-      if (audit && audit[key] !== undefined && audit[key] !== null && String(audit[key]).trim() !== '') {
-        return String(audit[key]);
-      }
-    }
-    return fallback;
   }
 
   function getSortableAuditValue(audit: any, originalIndex: number) {
-    const id = Number(pickAuditValue(audit, ['id', 'ID'], ''));
+    const id = Number(pickValue(audit, ['id', 'ID'], ''));
     if (!Number.isNaN(id) && id > 0) return id;
 
-    const a2 = pickAuditValue(audit, ['a2_baslangic', 'a2Basla'], '');
-    const a1 = pickAuditValue(audit, ['a1_baslangic', 'a1Basla'], '');
+    const a2 = pickValue(audit, ['a2_baslangic', 'a2Basla'], '');
+    const a1 = pickValue(audit, ['a1_baslangic', 'a1Basla'], '');
     const raw = a2 || a1;
     const match = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
     if (match) {
@@ -156,10 +149,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     return originalIndex;
   }
 
-  function getVisiblePageNumbers(totalPages: number, page: number) {
-    const pages = new Set<number>([1, totalPages, page - 1, page, page + 1]);
-    return Array.from(pages).filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
-  }
 
     function updatePagination(totalItems: number) {
       const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -208,9 +197,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       });
     }
 
-    function getInitials(name: string): string {
-      return String(name || '').trim().split(/\s+/).filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
-    }
 
     function attachTableActions() {
       document.querySelectorAll('.audit-detail-toggle').forEach((btn) => {
@@ -257,12 +243,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const selectedType = filterType.value;
 
     const filtered = data.filter(audit => {
-      const firmaNo = pickAuditValue(audit, ['firma_no', 'firmaNo'], '');
+      const firmaNo = pickValue(audit, ['firma_no', 'firmaNo'], '');
       const company = ($companies.get() as any[])?.find(c => String(c.firma_no || c.id || '') === String(firmaNo));
       const nick = company ? (company.nick || company.firma_adi || firmaNo) : firmaNo;
-            const auditor1 = pickAuditValue(audit, ['a1_auditor', 'a1Auditor'], '');
-      const auditor2 = pickAuditValue(audit, ['a2_auditor', 'a2Auditor'], '');
-      const denetimTipi = pickAuditValue(audit, ['denetim_tipi', 'denetimTipi'], '');
+            const auditor1 = pickValue(audit, ['a1_auditor', 'a1Auditor'], '');
+      const auditor2 = pickValue(audit, ['a2_auditor', 'a2Auditor'], '');
+      const denetimTipi = pickValue(audit, ['denetim_tipi', 'denetimTipi'], '');
 
       const matchSearch = `${nick}${firmaNo}${auditor1}${auditor2}`.toLowerCase().includes(searchTerm);
       const matchType = !selectedType || denetimTipi === selectedType;
@@ -285,21 +271,21 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const paged = filtered.slice(startIndex, startIndex + pageSize);
 
     paged.forEach(({ audit, originalIndex }) => {
-      const firmaNo = pickAuditValue(audit, ['firma_no', 'firmaNo'], '-');
+      const firmaNo = pickValue(audit, ['firma_no', 'firmaNo'], '-');
       const company = ($companies.get() as any[])?.find(c => String(c.firma_no || c.id || '') === String(firmaNo));
       const nick = company ? (company.nick || company.firma_adi || firmaNo) : firmaNo;
-            const standart = pickAuditValue(audit, ['standart', 'standard'], '-');
-      const denetimTipi = pickAuditValue(audit, ['denetim_tipi', 'denetimTipi'], '-');
-      const a1Tarih = pickAuditValue(audit, ['a1_baslangic', 'a1Basla'], '-');
-      const a2Tarih = pickAuditValue(audit, ['a2_baslangic', 'a2Basla'], '-');
-      const denetci1 = pickAuditValue(audit, ['a1_auditor', 'a1Auditor'], '');
-      const denetci2 = pickAuditValue(audit, ['a2_auditor', 'a2Auditor'], '');
-      const a1Lead = pickAuditValue(audit, ['a1_lead', 'a1_bas_denetci', 'a1Lead'], '');
-      const a2Lead = pickAuditValue(audit, ['a2_lead', 'a2_bas_denetci', 'a2Lead'], '');
+            const standart = pickValue(audit, ['standart', 'standard'], '-');
+      const denetimTipi = pickValue(audit, ['denetim_tipi', 'denetimTipi'], '-');
+      const a1Tarih = pickValue(audit, ['a1_baslangic', 'a1Basla'], '-');
+      const a2Tarih = pickValue(audit, ['a2_baslangic', 'a2Basla'], '-');
+      const denetci1 = pickValue(audit, ['a1_auditor', 'a1Auditor'], '');
+      const denetci2 = pickValue(audit, ['a2_auditor', 'a2Auditor'], '');
+      const a1Lead = pickValue(audit, ['a1_lead', 'a1_bas_denetci', 'a1Lead'], '');
+      const a2Lead = pickValue(audit, ['a2_lead', 'a2_bas_denetci', 'a2Lead'], '');
       const denetciler = [denetci1, denetci2].filter(v => v && v !== 'Atanmadı').join(', ') || '-';
       
       const initials = getInitials(nick);
-      const auditId = pickAuditValue(audit, ['id', 'ID'], String(originalIndex + 1));
+      const auditId = pickValue(audit, ['id', 'ID'], String(originalIndex + 1));
       const detailRowId = `audit-detail-${auditId}`;
 
       const tr = document.createElement('tr');

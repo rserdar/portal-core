@@ -91,6 +91,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   import { $companies, $syncStatus, $certificates } from '../lib/store';
   import { SyncManager } from '../lib/sync';
   import { toast } from '../lib/toast';
+  import { normalize, pickValue, getInitials, escHtml, getVisiblePageNumbers } from '../lib/utils';
 
   let currentTerm = '';
   let currentPage = 1;
@@ -208,36 +209,14 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
   // Helper functions used by renderResults (kept outside initPage for clarity)
 
-  function normalize(str: any): string {
-    if (!str) return '';
-    return str.toString()
-      .toLocaleLowerCase('tr-TR')
-      .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
-      .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c').trim();
-  }
-
-  function pickField(company: any, keys: string[], fallback = ''): string {
-    if (!company) return fallback;
-    for (const key of keys) {
-      const value = company[key];
-      if (value !== undefined && value !== null && String(value).trim() !== '') return String(value).trim();
-    }
-    return fallback;
-  }
-
   function mapCompany(company: any) {
     // Worker search index uses: id, nickname, unvan, city, kapsam, scope
-    const id = pickField(company, ['id', 'ID', 'Firma No', 'FirmaNo', 'firmaNo', 'firma_no', 'no']);
-    const nickname = pickField(company, ['nickname', 'Nickname', 'nick', 'Nick', 'FirmaAdi', 'Firma Adı', 'Markası', 'Marka Adı'], '-');
-    const unvan = pickField(company, ['unvan', 'Unvan', 'UNVAN', 'firmaUnvan', 'firma_unvan'], '-');
-    const city = pickField(company, ['city', 'City', 'sehir', 'şehir', 'il', 'İl', 'Il', 'Şehir', 'Sehir'], '-');
+    const id = pickValue(company, ['id', 'ID', 'Firma No', 'FirmaNo', 'firmaNo', 'firma_no', 'no']);
+    const nickname = pickValue(company, ['nickname', 'Nickname', 'nick', 'Nick', 'FirmaAdi', 'Firma Adı', 'Markası', 'Marka Adı'], '-');
+    const unvan = pickValue(company, ['unvan', 'Unvan', 'UNVAN', 'firmaUnvan', 'firma_unvan'], '-');
+    const city = pickValue(company, ['city', 'City', 'sehir', 'şehir', 'il', 'İl', 'Il', 'Şehir', 'Sehir'], '-');
     const searchStr = normalize(`${unvan} ${nickname} ${id}`);
     return { id, unvan, nickname, city, searchStr };
-  }
-
-
-  function getInitials(nick: string): string {
-    return String(nick || '').trim().split(/\s+/).filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
   }
 
   function renderResults(companies: readonly any[], term: string) {
@@ -381,10 +360,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; refreshUI(); } };
     controls.appendChild(prevBtn);
 
-    let range: number[] = [];
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) range.push(i);
-    }
+    const range = getVisiblePageNumbers(totalPages, currentPage);
 
     let last: number | null = null;
     range.forEach(i => {
@@ -423,18 +399,9 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 
   /** Bir objeden birden fazla olası key ile değer okur (basit versiyon) */
   function gField(obj: any, ...keys: string[]): string {
-    for (const k of keys) {
-      const v = obj?.[k];
-      if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
-    }
-    return '';
+    return pickValue(obj, keys);
   }
 
-  function escHtml(value: any): string {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
 
   function certBadge(standard: string): string {
     const s = standard.trim();
@@ -578,8 +545,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           }, 3000);
         } else {
           clearTimeout(timer);
-          // api.call('deleteCompany', { id: btn.dataset.id });
-          console.log('Delete target:', btn.dataset.id);
+          toast.warning('Silme işlemi henüz aktif değil.');
         }
       };
     });

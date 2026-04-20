@@ -475,26 +475,9 @@ const quickActions = [
     import { SyncManager } from "../lib/sync";
     import { api } from "../lib/api";
     import { toast } from "../lib/toast";
+    import { countUp } from "../lib/utils";
 
     // --- Helpers ---
-
-    function countUp(el, target) {
-      if (target === 0) {
-        el.textContent = "0";
-        return;
-      }
-      const duration = 600;
-      const start = performance.now();
-      const from = parseInt(el.textContent || "0") || 0;
-
-      const tick = (now: number) => {
-        const progress = Math.min((now - start) / duration, 1);
-        const ease = 1 - Math.pow(1 - progress, 3);
-        el.textContent = Math.round(from + (target - from) * ease).toString();
-        if (progress < 1) requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    }
 
     function getCurrentMonthLabel(): string {
       return "Bekleyen Gözetimler";

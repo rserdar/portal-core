@@ -126,6 +126,16 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   import { $certificates, $syncStatus } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
   import { toast } from '../../lib/toast';
+  import {
+    normalizeKey,
+    pickValue,
+    escHtml,
+    escAttr,
+    parseDateValue,
+    normalizeLink,
+    getVisiblePageNumbers,
+    getInitials
+  } from '../../lib/utils';
 
   let filters = { search: '', standard: '' };
   let currentPage = 1;
@@ -187,76 +197,16 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       emptyState?.classList.add('hidden');
     }
 
-    function normalizeKey(value: any) {
-    return String(value || '')
-      .trim()
-      .toLocaleLowerCase('tr-TR')
-      .replace(/[ıİ]/g, 'i')
-      .replace(/[ğĞ]/g, 'g')
-      .replace(/[üÜ]/g, 'u')
-      .replace(/[şŞ]/g, 's')
-      .replace(/[öÖ]/g, 'o')
-      .replace(/[çÇ]/g, 'c')
-      .replace(/_/g, '') // Ensure snake_case matches compressed aliases
-      .replace(/[^a-z0-9]+/g, '');
-  }
-
-  function pickValue(item: any, aliases: string[], fallback = '') {
-    for (const key of aliases) {
-      if (item && item[key] !== undefined && item[key] !== null && String(item[key]).trim() !== '') {
-        return String(item[key]);
-      }
+    function hasFullCertificateDataset(data: readonly any[]) {
+      if (!Array.isArray(data) || data.length === 0) return false;
+      const checkKeys = ['akreditasyon', 'kapsam', 'durum'];
+      return data.some((item: any) => {
+        if (!item || typeof item !== 'object') return false;
+        const keys = Object.keys(item).map(k => k.toLowerCase());
+        return checkKeys.some(ck => keys.includes(ck));
+      });
     }
 
-    if (item && typeof item === 'object') {
-      const normalizedAliases = aliases.map((alias) => normalizeKey(alias));
-      for (const [rawKey, rawValue] of Object.entries(item)) {
-        if (rawValue === undefined || rawValue === null) continue;
-        if (String(rawValue).trim() === '') continue;
-        if (normalizedAliases.includes(normalizeKey(rawKey))) {
-          return String(rawValue);
-        }
-      }
-    }
-
-    return fallback;
-  }
-
-  function hasFullCertificateDataset(data: readonly any[]) {
-    if (!Array.isArray(data) || data.length === 0) return false;
-    const checkKeys = ['akreditasyon', 'kapsam', 'durum'];
-    return data.some((item: any) => {
-      if (!item || typeof item !== 'object') return false;
-      const keys = Object.keys(item).map(k => k.toLowerCase());
-      return checkKeys.some(ck => keys.includes(ck));
-    });
-  }
-
-  function pickExistingField(item: any, aliases: string[], fallback: string) {
-    for (const key of aliases) {
-      if (item && Object.prototype.hasOwnProperty.call(item, key)) return key;
-    }
-
-    if (item && typeof item === 'object') {
-      const normalizedAliases = aliases.map((alias) => normalizeKey(alias));
-      for (const rawKey of Object.keys(item)) {
-        if (normalizedAliases.includes(normalizeKey(rawKey))) return rawKey;
-      }
-    }
-
-    return fallback;
-  }
-
-  function escHtml(v: any) {
-    return String(v ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-
-  function escAttr(v: any) {
-    return escHtml(v).replace(/"/g, "&quot;");
-  }
 
   function normalizeStandard(item: any) {
     const mainStandart = pickValue(item, ["Standart", "standard"], "-");
@@ -290,13 +240,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     return pickValue(item, ["cert_link", "certLink", "Sertifika Linki"], "");
   }
 
-  function normalizeLink(value: string) {
-    const raw = String(value || '').trim();
-    if (!raw) return '';
-    if (/^https?:\/\//i.test(raw)) return raw;
-    if (/^www\./i.test(raw)) return `https://${raw}`;
-    return raw;
-  }
 
   function getCertificateId(item: any, fallback = '-') {
     const direct = pickValue(item, ["ID", "Id", "id", "Certificate ID", "certificateId", "sertifikaId"], "");
@@ -317,20 +260,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     return fallback;
   }
 
-  function parseDateValue(raw: string) {
-    const value = String(raw || '').trim();
-    if (!value) return null;
-
-    const trMatch = value.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/);
-    if (trMatch) {
-      const [, dd, mm, yyyy, hh = '00', min = '00'] = trMatch;
-      const dt = new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min));
-      return Number.isNaN(dt.getTime()) ? null : dt;
-    }
-
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
 
   function getCreatedAt(item: any) {
     return pickValue(item, [
@@ -370,10 +299,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       .sort(([a], [b]) => a.localeCompare(b, 'tr'));
   }
 
-  function getVisiblePageNumbers(totalPages: number, page: number) {
-    const pages = new Set<number>([1, totalPages, page - 1, page, page + 1]);
-    return Array.from(pages).filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
-  }
 
     function updatePagination(totalItems: number) {
       const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -422,9 +347,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       });
     }
 
-    function getInitials(name: string): string {
-      return String(name || '').trim().split(/\s+/).filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
-    }
 
     const unsubCerts = $certificates.subscribe(certs => {
       if (!fullCertificatesLoaded && (certs || []).length > 0 && !hasFullCertificateDataset(certs || [])) {

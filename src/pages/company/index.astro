@@ -664,66 +664,26 @@ import {
   import { api } from '../../lib/api';
   import { SyncManager } from '../../lib/sync';
   import { toast } from '../../lib/toast';
+  import {
+    normalizeKey,
+    pickValue,
+    isTruthyFlag,
+    isZeroish,
+    toHrefByType,
+    escHtml,
+    normalizeLink as toDriveFileUrl,
+    parseDateValue,
+    getStandartPriority,
+    getCertificateRecordId,
+  } from "../../lib/utils"
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-  function normalizeLookupKey(value: any): string {
-    return String(value || '')
-      .trim()
-      .toLocaleLowerCase('tr-TR')
-      .replace(/[ıİ]/g, 'i')
-      .replace(/[ğĞ]/g, 'g')
-      .replace(/[üÜ]/g, 'u')
-      .replace(/[şŞ]/g, 's')
-      .replace(/[öÖ]/g, 'o')
-      .replace(/[çÇ]/g, 'c')
-      .replace(/[^a-z0-9]/g, '');
-  }
-
   /** Bir objeden birden fazla olası key ile değer okur */
   function g(obj: Record<string, any>, ...keys: string[]): string {
-    for (const k of keys) {
-      const v = obj?.[k];
-      if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
-    }
-    if (obj && typeof obj === 'object') {
-      const normalizedKeys = keys.map((key) => normalizeLookupKey(key));
-      for (const [rawKey, rawValue] of Object.entries(obj)) {
-        if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') continue;
-        if (normalizedKeys.includes(normalizeLookupKey(rawKey))) {
-          return String(rawValue).trim();
-        }
-      }
-    }
-    return '';
+    return pickValue(obj, keys);
   }
 
-  function getCertificateRecordId(record: any, fallback = ''): string {
-    if (Array.isArray(record)) {
-      return String(record[0] ?? fallback).trim();
-    }
-
-    const direct = g(record || {}, 'ID', 'Id', 'id', 'Certificate ID', 'certificateId', 'sertifikaId');
-    if (direct) return direct;
-
-    if (record && typeof record === 'object') {
-      const entries = Object.entries(record);
-      if (entries.length > 0) {
-        const [firstKey, firstValue] = entries[0];
-        const firstValueText = String(firstValue ?? '').trim();
-        if (firstValueText && (normalizeLookupKey(firstKey) === '' || entries.length > 0)) {
-          return firstValueText;
-        }
-      }
-    }
-
-    return fallback;
-  }
-
-  function isTruthyFlag(value: unknown): boolean {
-    const normalized = String(value ?? '').trim().toLowerCase();
-    return ['true', '1', 'yes', 'on', 'evet'].includes(normalized);
-  }
 
   function setEl(id: string, value: string) {
     const el = document.getElementById(id);
@@ -758,35 +718,6 @@ import {
     } else {
       block.classList.add('hidden');
     }
-  }
-
-  function isZeroish(value: any) {
-    const text = String(value ?? '').trim();
-    if (!text) return true;
-    const normalized = text.replace(',', '.');
-    if (!/^[-+]?\d+(\.\d+)?$/.test(normalized)) return false;
-    return Number(normalized) === 0;
-  }
-
-  function toDriveFileUrl(value: string) {
-    const cleanValue = value.trim();
-    if (!cleanValue) return '';
-    if (/^https?:\/\//i.test(cleanValue)) return cleanValue;
-    if (/^[a-zA-Z0-9_-]{20,}$/.test(cleanValue)) {
-      return `https://drive.google.com/file/d/${cleanValue}/view`;
-    }
-    return '';
-  }
-
-  function toHrefByType(value: string, type: 'tel' | 'mail' | 'web' | 'drive') {
-    const cleanValue = value.trim();
-    if (!cleanValue) return '';
-
-    if (type === 'tel') return `tel:${cleanValue}`;
-    if (type === 'mail') return `mailto:${cleanValue}`;
-    if (type === 'drive') return toDriveFileUrl(cleanValue);
-    if (/^https?:\/\//i.test(cleanValue)) return cleanValue;
-    return `https://${cleanValue}`;
   }
 
   function setLinkedField(id: string, value: string, blockId: string, type: 'tel' | 'mail' | 'web' | 'drive') {
@@ -837,15 +768,6 @@ import {
 
   function badge(text: string, cls: string) {
     return `<span class="text-[10px] font-bold px-2.5 py-1 rounded-full border ${cls}">${text}</span>`;
-  }
-
-  function escHtml(value: any) {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
   }
 
   function getExpandableLimit(id: keyof typeof EXPANDABLE_TEXT_LIMITS) {
@@ -1714,16 +1636,7 @@ import {
 
   // ─── Load Certificates ────────────────────────────────────────────────────────
 
-  function parseCertDate(dateStr: string): number {
-    if (!dateStr) return 0;
-    const parts = dateStr.split('.');
-    if (parts.length !== 3) return 0;
-    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
-  }
 
-  function getCertDateStr(c: any): string {
-    return g(c, 'sertifika_tarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi');
-  }
 
   function renderCerts(certData: any[]) {
     const skeleton = document.getElementById('cert-skeleton');
@@ -1746,7 +1659,7 @@ import {
     }
 
     // Sertifika tarihine göre en yeniden en eskiye sırala
-    allCertData = [...certData].sort((a, b) => parseCertDate(getCertDateStr(b)) - parseCertDate(getCertDateStr(a)));
+    allCertData = [...certData].sort((a, b) => parseDateValue(pickValue(b, ['sertifika_tarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi'], ''))?.getTime() || 0) - (parseDateValue(pickValue(a, ['sertifika_tarihi', 'Sertifika Tarihi', 'Belge Tarihi', 'gst', 'GST', 'sTarihi'], ''))?.getTime() || 0));
     certCurrentPage = 1;
     if (count) count.textContent = String(allCertData.length);
     renderCertPage();
@@ -1754,13 +1667,6 @@ import {
     updateDanismanFromCerts();
   }
 
-  const STANDART_PRIORITY = ['9001', '13485', '14001', '22000', '45001', '27001', '50001', 'GMP'];
-
-function getStandartPriority(standart: string): number {
-    const s = (standart || '').toUpperCase();
-    const idx = STANDART_PRIORITY.findIndex(p => s.includes(p));
-    return idx === -1 ? STANDART_PRIORITY.length : idx;
-  }
 
   function updateDanismanFromCerts() {
     if (!allCertData.length) return;

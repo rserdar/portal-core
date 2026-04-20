@@ -237,6 +237,14 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
   import { $tests, $companies, $syncStatus } from "../../lib/store";
   import { SyncManager } from "../../lib/sync";
   import { toast } from "../../lib/toast";
+  import {
+    pickValue,
+    escHtml,
+    escAttr,
+    parseDateValue,
+    getVisiblePageNumbers,
+    getInitials
+  } from "../../lib/utils";
 
   let filters = { search: "" };
   let currentPage = 1;
@@ -287,28 +295,6 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
       "next-page-btn",
     ) as HTMLButtonElement;
 
-    function escHtml(v: any) {
-      return String(v ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-    }
-
-    function escAttr(v: any) {
-      return escHtml(v).replace(/"/g, "&quot;");
-    }
-
-    function parseDateValue(raw: string) {
-      const value = String(raw || "").trim();
-      if (!value) return null;
-      const trMatch = value.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
-      if (trMatch) {
-        const [, dd, mm, yyyy] = trMatch;
-        return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
-      }
-      const parsed = new Date(value);
-      return Number.isNaN(parsed.getTime()) ? null : parsed;
-    }
 
     function getSortableTimestamp(item: any, originalIndex: number) {
       const dateVal = item.rapor_tarihi || item.test_bitis || item.test_baslangic;
@@ -317,12 +303,6 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
       return originalIndex;
     }
 
-    function getVisiblePageNumbers(totalPages: number, page: number) {
-      const pages = new Set<number>([1, totalPages, page - 1, page, page + 1]);
-      return Array.from(pages)
-        .filter((p) => p >= 1 && p <= totalPages)
-        .sort((a, b) => a - b);
-    }
 
     function updatePagination(totalItems: number) {
       const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -372,18 +352,6 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
       });
     }
 
-    function getInitials(name: string): string {
-      return (
-        String(name || "")
-          .trim()
-          .split(/\s+/)
-          .filter(Boolean)
-          .map((w) => w[0])
-          .join("")
-          .toUpperCase()
-          .slice(0, 2) || "??"
-      );
-    }
 
     function getFilteredData(data: readonly any[]) {
       return data.filter((item: any) => {
