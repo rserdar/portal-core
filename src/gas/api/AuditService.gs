@@ -27,6 +27,7 @@ const AuditService = {
         const newRow = headers.map(h => {
           if (h === "id" || h === "ID") return newID;
           if (h === "updated_at") return new Date().getTime();
+          if (auditInfo[h] === undefined) Logger.log("[AuditService.scheduleAudit] Eşleşmeyen header: " + h);
           return auditInfo[h] !== undefined ? auditInfo[h] : "";
         });
         ws.appendRow(newRow);
@@ -59,6 +60,7 @@ const AuditService = {
         const fullRow = headers.map(h => {
           if (h === "id" || h === "ID") return String(id);
           if (h === "updated_at") return new Date().getTime();
+          if (auditInfo[h] === undefined) Logger.log("[AuditService.updateAudit] Eşleşmeyen header: " + h);
           return auditInfo[h] !== undefined ? auditInfo[h] : rows[rowIndex][headers.indexOf(h)];
         });
         ws.getRange(rowIndex + 2, 1, 1, headers.length).setValues([fullRow]);

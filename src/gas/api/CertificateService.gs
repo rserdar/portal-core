@@ -12,6 +12,7 @@ const CertificateService = {
         const v = info[h];
         return (v === true || String(v).toLowerCase() === "true" || String(v) === "1") ? "TRUE" : "FALSE";
       }
+      if (info[h] === undefined) Logger.log("[CertificateService._buildRow] Eşleşmeyen header: " + h);
       return info[h] !== undefined ? info[h] : "";
     });
   },

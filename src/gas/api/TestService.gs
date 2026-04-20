@@ -8,6 +8,7 @@ const TestService = {
     return headers.map(h => {
       if (h === "id" || h === "ID") return id;
       if (h === "updated_at") return new Date().getTime();
+      if (info[h] === undefined) Logger.log("[TestService._buildRow] Eşleşmeyen header: " + h);
       return info[h] !== undefined ? info[h] : "";
     });
   },
