@@ -32,6 +32,7 @@ export default defineConfig({
         // HTML sayfaları cache'lenmez — CF Access session redirect'lerini bloke etmesin
         globPatterns: ['**/*.{css,js,svg,png,ico,woff,woff2}'],
         // navigateFallback kapalı: tüm navigasyonlar ağa gider, CF Access her zaman devreye girebilir
+        navigateFallback: null,
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
