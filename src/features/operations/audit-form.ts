@@ -1,3 +1,5 @@
+import { shiftIsoDate, toDotsDate } from './date-format';
+
 export type AuditRows = any[];
 
 export function uniqueColumnValues(rows: AuditRows, index: number) {
@@ -42,15 +44,37 @@ export function getAuditorShortName(rows: AuditRows, name: string) {
 }
 
 export function formatDateToDots(dateString: string) {
-  if (!dateString) return '';
-  return dateString.split('-').reverse().join('.');
+  return toDotsDate(dateString);
 }
 
-export function shiftIsoDate(startValue: string, offsetDays: number) {
-  if (!startValue) return '';
-  const date = new Date(startValue);
-  date.setDate(date.getDate() + offsetDays);
-  return date.toISOString().slice(0, 10);
+export function buildAuditStagePayload(
+  stage: 'a1' | 'a2',
+  fields: {
+    start: string;
+    end: string;
+    full: string;
+    lead: string;
+    second: string;
+    third: string;
+    manDay: string;
+    names: string;
+    shortNames: string;
+  }
+) {
+  const prefix = stage;
+  return {
+    [`${prefix}Basla`]: formatDateToDots(fields.start),
+    [`${prefix}Bitis`]: formatDateToDots(fields.end),
+    [`${prefix}Baslav2`]: fields.start,
+    [`${prefix}Bitisv2`]: fields.end,
+    [`${prefix}Full`]: fields.full,
+    [`${prefix}La`]: fields.lead,
+    [`${prefix}Fa`]: fields.second,
+    [`${prefix}Sa`]: fields.third,
+    [`${prefix}Md`]: fields.manDay,
+    [`${prefix}Denetci`]: fields.names,
+    [`${prefix}kDenet`]: fields.shortNames,
+  };
 }
 
 export function buildAuditRangeLabel(startValue: string, endValue: string) {
@@ -128,3 +152,5 @@ export function checkboxIdForStandard(standard: string) {
 
   return mapping[standard] || '';
 }
+
+export { shiftIsoDate };

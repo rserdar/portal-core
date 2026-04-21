@@ -1,3 +1,5 @@
+import { addOneYearMinusOneDay, toDotsDate } from './date-format';
+
 export interface StandardOption {
   id: string;
   prefix: string;
@@ -26,21 +28,11 @@ export function mergeCertNoSuggestion(prefix: string, certNoInput: string) {
   return prefix;
 }
 
-export function addOneYearMinusOneDay(value: string) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  date.setFullYear(date.getFullYear() + 1);
-  date.setDate(date.getDate() - 1);
-  return date.toISOString().split('T')[0];
+export function toDisplayDate(value: string) {
+  return toDotsDate(value);
 }
 
-export function toDisplayDate(value: string) {
-  if (!value) return '';
-  const parts = value.split('-');
-  if (parts.length !== 3) return value;
-  return `${parts[2]}.${parts[1]}.${parts[0]}`;
-}
+export { addOneYearMinusOneDay };
 
 export function buildCertificateQrLink(unvan: string, standardLabel: string, certNo: string) {
   const cleanUnvan = unvan.trim();

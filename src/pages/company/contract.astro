@@ -115,6 +115,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
   import { loadCompanyOperationContext } from '../../features/operations/context';
+  import { toDotsDate } from '../../features/operations/date-format';
   import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
 
   let activeContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
@@ -214,7 +215,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
         const payload = {
           ...activeContext,
           id: firmaId,
-          tarih: dateInput.value.split('-').reverse().join('.'),
+          tarih: toDotsDate(dateInput.value),
           ucret: priceInput.value,
           konu: subjectInput.value,
           yetA: activeContext?.yetkiliAdi || '',

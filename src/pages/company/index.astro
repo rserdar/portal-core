@@ -664,6 +664,7 @@ import {
   import { api } from '../../lib/api';
   import { SyncManager } from '../../lib/sync';
   import { toast } from '../../lib/toast';
+  import { toInputDateValue } from '../../features/operations/date-format';
   import {
     normalizeKey,
     pickValue,
@@ -1802,8 +1803,8 @@ import {
 
       const standartDisplay = isOther && otherStandart ? otherStandart : standart;
 
-      const parsedGoz = gozT ? new Date(gozT.split('.').reverse().join('-')) : null;
-      const parsedBelge = belgeTarihi ? new Date(belgeTarihi.split('.').reverse().join('-')) : null;
+      const parsedGoz = gozT ? new Date(toInputDateValue(gozT)) : null;
+      const parsedBelge = belgeTarihi ? new Date(toInputDateValue(belgeTarihi)) : null;
       const now = new Date();
       now.setHours(0, 0, 0, 0);
 

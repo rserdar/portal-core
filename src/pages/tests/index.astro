@@ -237,6 +237,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
   import { $tests, $companies, $syncStatus } from "../../lib/store";
   import { SyncManager } from "../../lib/sync";
   import { toast } from "../../lib/toast";
+  import { todayIso } from "../../features/operations/date-format";
   import {
     pickValue,
     escHtml,
@@ -623,7 +624,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
           ),
         ].join("\n");
         downloadFile(
-          `Testler_${new Date().toISOString().slice(0, 10)}.csv`,
+          `Testler_${todayIso()}.csv`,
           "\uFEFF" + csv,
           "text/csv;charset=utf-8;",
         );
@@ -647,7 +648,7 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
           .join("")}</tbody></table>`;
         const html = `<html><head><meta charset="utf-8" /></head><body>${tableHtml}</body></html>`;
         downloadFile(
-          `Testler_${new Date().toISOString().slice(0, 10)}.xls`,
+          `Testler_${todayIso()}.xls`,
           html,
           "application/vnd.ms-excel;charset=utf-8;",
         );

@@ -80,6 +80,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   import { SyncManager } from '../../lib/sync';
   import { toast } from '../../lib/toast';
   import { loadCompanyOperationContext } from '../../features/operations/context';
+  import { toDotsDate, toInputDateValue, todayIso } from '../../features/operations/date-format';
   import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
 
   interface ProformaRow {
@@ -167,19 +168,6 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     return value.toFixed(digits).replace(/\.00$/, '');
   }
 
-  function normalizeDateForStorage(value: string) {
-    if (!value) return '';
-    const [year, month, day] = value.split('-');
-    if (!year || !month || !day) return value;
-    return `${day}.${month}.${year}`;
-  }
-
-  function normalizeDateForInput(value: string) {
-    const match = String(value || '').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-    if (!match) return '';
-    return `${match[3]}-${match[2]}-${match[1]}`;
-  }
-
   function setSaveButtonState() {
     if (!saveButton) return;
     saveButton.textContent = editingProformaId ? 'Proforma Güncelle' : 'Proforma Kaydet';
@@ -188,7 +176,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   function fillAmountDefaults() {
     if (amountInputs.oran && !amountInputs.oran.value.trim()) amountInputs.oran.value = '20';
     if (amountInputs.birim && !amountInputs.birim.value.trim()) amountInputs.birim.value = 'TL';
-    if (amountInputs.tarih && !amountInputs.tarih.value) amountInputs.tarih.value = new Date().toISOString().slice(0, 10);
+    if (amountInputs.tarih && !amountInputs.tarih.value) amountInputs.tarih.value = todayIso();
   }
 
   function clearForm() {
@@ -199,7 +187,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     if (amountInputs.konu) amountInputs.konu.value = '';
     if (amountInputs.oran) amountInputs.oran.value = '20';
     if (amountInputs.birim) amountInputs.birim.value = 'TL';
-    if (amountInputs.tarih) amountInputs.tarih.value = new Date().toISOString().slice(0, 10);
+    if (amountInputs.tarih) amountInputs.tarih.value = todayIso();
     setSaveButtonState();
   }
 
@@ -330,7 +318,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     const kdv = amountInputs.kdv?.value.trim() || '';
     const toplam = amountInputs.toplam?.value.trim() || '';
     const birim = amountInputs.birim?.value.trim() || 'TL';
-    const tarih = normalizeDateForStorage(amountInputs.tarih?.value || '');
+    const tarih = toDotsDate(amountInputs.tarih?.value || '');
     const konu = amountInputs.konu?.value.trim() || '';
 
     if (!activeContext?.firmaId) return { error: 'Firma bağlamı hazır değil.' };
@@ -390,7 +378,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     if (amountInputs.kdv) amountInputs.kdv.value = row.kdv || '';
     if (amountInputs.toplam) amountInputs.toplam.value = row.toplam || '';
     if (amountInputs.birim) amountInputs.birim.value = row.birim || 'TL';
-    if (amountInputs.tarih) amountInputs.tarih.value = normalizeDateForInput(row.tarih || '') || new Date().toISOString().slice(0, 10);
+    if (amountInputs.tarih) amountInputs.tarih.value = toInputDateValue(row.tarih || '') || todayIso();
     if (amountInputs.konu) amountInputs.konu.value = row.konu || '';
     setSaveButtonState();
     amountInputs.konu?.scrollIntoView({ behavior: 'smooth', block: 'center' });

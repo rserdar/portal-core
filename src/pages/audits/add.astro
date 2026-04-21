@@ -244,10 +244,11 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
   import { SyncManager } from '../../lib/sync';
+  import { toInputDateValue } from '../../features/operations/date-format';
   import { 
     uniqueColumnValues, 
     filterAuditorsByStandard, 
-    formatDateToDots, 
+    buildAuditStagePayload,
     shiftIsoDate, 
     buildAuditRangeLabel, 
     buildAuditorSummary, 
@@ -431,9 +432,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     }
 
     function toInputDate(v: string) {
-      if (!v) return '';
-      const p = v.split('.');
-      return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : v;
+      return toInputDateValue(v);
     }
 
     function refreshAuditorDropdowns() {
@@ -515,10 +514,28 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         firmano: getCompanyId(selectedCompany),
         standart: val('xstandartInput'),
         denetim: val('denetimInput'),
-        a1Basla: formatDateToDots(val('a1Basla')), a1Bitis: formatDateToDots(val('a1Bitis')), a1Baslav2: val('a1Basla'), a1Bitisv2: val('a1Bitis'), a1Full: val('a1Full'),
-        a1La: val('leadAuditorInput1'), a1Fa: val('secondAuditorInput1'), a1Sa: val('thirdAuditorInput1'), a1Md: val('a1Md'), a1Denetci: val('a1Denetciler'), a1kDenet: val('a1KDenetci'),
-        a2Basla: formatDateToDots(val('a2Basla')), a2Bitis: formatDateToDots(val('a2Bitis')), a2Baslav2: val('a2Basla'), a2Bitisv2: val('a2Bitis'), a2Full: val('a2Full'),
-        a2La: val('leadAuditorInput2'), a2Fa: val('secondAuditorInput2'), a2Sa: val('thirdAuditorInput2'), a2Md: val('a2Md'), a2Denetci: val('a2Denetciler'), a2kDenet: val('a2KDenetci')
+        ...buildAuditStagePayload('a1', {
+          start: val('a1Basla'),
+          end: val('a1Bitis'),
+          full: val('a1Full'),
+          lead: val('leadAuditorInput1'),
+          second: val('secondAuditorInput1'),
+          third: val('thirdAuditorInput1'),
+          manDay: val('a1Md'),
+          names: val('a1Denetciler'),
+          shortNames: val('a1KDenetci'),
+        }),
+        ...buildAuditStagePayload('a2', {
+          start: val('a2Basla'),
+          end: val('a2Bitis'),
+          full: val('a2Full'),
+          lead: val('leadAuditorInput2'),
+          second: val('secondAuditorInput2'),
+          third: val('thirdAuditorInput2'),
+          manDay: val('a2Md'),
+          names: val('a2Denetciler'),
+          shortNames: val('a2KDenetci'),
+        })
       };
 
       const res = isEditMode() ? await api.updateAudit(editAuditId, info) : await api.scheduleAudit(info);
@@ -632,8 +649,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       function toIso(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
       function parse(s: string) {
         if (!s) return null;
-        if (s.includes('.')) { const [d,m,y] = s.split('.'); return new Date(+y,+m-1,+d); }
-        return new Date(s);
+        const iso = toInputDateValue(s);
+        return iso ? new Date(iso) : new Date(s);
       }
 
       function getMonthBounds(targetYear: number, targetMonth: number) {

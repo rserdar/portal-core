@@ -521,6 +521,16 @@ export default {
     const getProformaFirmaId = (p) => String(p?.firma_no ?? "").trim();
     const getAuditId = (a) => String(a?.id ?? a?.ID ?? "").trim();
     const getAuditFirmaId = (a) => String(a?.firma_no ?? a?.firmaNo ?? a?.firmano ?? "").trim();
+    const formatIsoToDots = (value) => {
+      const raw = String(value ?? "").trim();
+      if (!raw) return "";
+      if (/^\d{2}\.\d{2}\.\d{4}$/.test(raw)) return raw;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        const [year, month, day] = raw.split("-");
+        return `${day}.${month}.${year}`;
+      }
+      return raw;
+    };
     const createCanonicalAuditRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
       const pick = getPicker(input, options.explicit || null);
@@ -543,6 +553,30 @@ export default {
         a2_bas_denetci: pick(["a2_bas_denetci", "a2La", "a2Lead"]) ?? "",
         a2_denetci_2: pick(["a2_denetci_2", "a2Fa", "a2Auditor"]) ?? "",
         a2_denetci_3: pick(["a2_denetci_3", "a2Sa"]) ?? "",
+      };
+    };
+    const createAuditBackupPayload = (source, options = {}) => {
+      const canonical = createCanonicalAuditRow(source, options);
+      return {
+        ...canonical,
+        denetim: canonical.denetim_tipi || "",
+        firmano: canonical.firma_no || "",
+        a1Basla: formatIsoToDots(canonical.a1_baslangic),
+        a1Bitis: formatIsoToDots(canonical.a1_bitis),
+        a1Baslav2: canonical.a1_baslangic || "",
+        a1Bitisv2: canonical.a1_bitis || "",
+        a1Md: canonical.a1_manday || "",
+        a1La: canonical.a1_bas_denetci || "",
+        a1Fa: canonical.a1_denetci_2 || "",
+        a1Sa: canonical.a1_denetci_3 || "",
+        a2Basla: formatIsoToDots(canonical.a2_baslangic),
+        a2Bitis: formatIsoToDots(canonical.a2_bitis),
+        a2Baslav2: canonical.a2_baslangic || "",
+        a2Bitisv2: canonical.a2_bitis || "",
+        a2Md: canonical.a2_manday || "",
+        a2La: canonical.a2_bas_denetci || "",
+        a2Fa: canonical.a2_denetci_2 || "",
+        a2Sa: canonical.a2_denetci_3 || "",
       };
     };
     const rowToObject = (headers, row) => {
@@ -1992,7 +2026,7 @@ export default {
         const newId = dbRes.meta.last_row_id;
 
         // Step 2: Background Sync (Calendar creation is done in GAS)
-        const syncParams = { ...p, id: newId, data: { ...canonical, id: newId } };
+        const syncParams = { ...p, id: newId, data: createAuditBackupPayload({ ...canonical, id: newId }) };
         syncToBackup("scheduleAudit", syncParams, "audits", newId);
         
         return jsonResponse({ success: true, id: newId });
@@ -2006,7 +2040,7 @@ export default {
         await upsertAuditD1(canonical, parseInt(id)).run();
 
         // Step 2: Background Sync
-        syncToBackup("updateAudit", { ...p, id, data: canonical }, "audits", id);
+        syncToBackup("updateAudit", { ...p, id, data: createAuditBackupPayload(canonical, { id }) }, "audits", id);
         
         return jsonResponse({ success: true });
       },
