@@ -353,8 +353,8 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
   async function loadDocuments(forceFresh = false) {
     if (!selectedFirmaNo || !tableLoader || !emptyState || !resultsContainer || !fileCount) {
       if (forceFresh) {
-        toast.error('Lutfen once bir firma secin.');
-        setStatus('Yenilemek icin once firma secin.');
+        toast.error('Lütfen önce bir firma seçin.');
+        setStatus('Yenilemek için önce bir firma seçin.');
       }
       return;
     }
@@ -448,8 +448,8 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
 
     refreshBtn?.addEventListener('click', async () => {
       if (!selectedFirmaNo) {
-        toast.error('Lutfen once bir firma secin.');
-        setStatus('Yenilemek icin once firma secin.');
+        toast.error('Lütfen önce bir firma seçin.');
+        setStatus('Yenilemek için önce bir firma seçin.');
         return;
       }
 
@@ -462,7 +462,7 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
 
       try {
         await loadDocuments(true);
-        toast.success('Dosya listesi guncellendi.');
+        toast.success('Dosya listesi güncellendi.');
       } finally {
         refreshBtn.disabled = false;
         refreshBtn.innerHTML = original;

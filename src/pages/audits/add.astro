@@ -26,7 +26,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
           <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end bg-surface-hover p-6 rounded-[2rem] border border-border-main">
             <div class="space-y-2">
-              <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Arayın</label>
+              <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Arama</label>
               <input id="audit-picker-search" list="audit-picker-list" type="text" placeholder="Firma adıyla veya ID ile ara..." class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
               <datalist id="audit-picker-list"></datalist>
             </div>
@@ -41,7 +41,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         <div id="audit-form-section" class="hidden">
           <div class="p-6 sm:p-8 border-b border-border-main space-y-2">
             <div class="flex flex-wrap items-center gap-2">
-              <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted" id="audit-company-badge">Firma Seçimi Bekleniyor</span>
+              <span class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted" id="audit-company-badge">Firma seçimi bekleniyor</span>
             </div>
             <h1 id="audit-page-title" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Denetim Detayları</h1>
           </div>
@@ -114,9 +114,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                   </div>
                   <input id="a1Md" type="hidden" />
                   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Baş Denetçi</span><select id="leadAuditorInput1" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim Yapınız...</option></select></label>
-                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">2. Denetçi</span><select id="secondAuditorInput1" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim Yapınız...</option></select></label>
-                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">3. Denetçi</span><select id="thirdAuditorInput1" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim Yapınız...</option></select></label>
+                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Baş Denetçi</span><select id="leadAuditorInput1" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim yapın...</option></select></label>
+                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">2. Denetçi</span><select id="secondAuditorInput1" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim yapın...</option></select></label>
+                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">3. Denetçi</span><select id="thirdAuditorInput1" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim yapın...</option></select></label>
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">İsimler</span><input id="a1Denetciler" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
@@ -144,9 +144,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                   </div>
                   <input id="a2Md" type="hidden" />
                   <div id="stage2AreaR2" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Baş Denetçi</span><select id="leadAuditorInput2" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim Yapınız...</option></select></label>
-                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">2. Denetçi</span><select id="secondAuditorInput2" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim Yapınız...</option></select></label>
-                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">3. Denetçi</span><select id="thirdAuditorInput2" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim Yapınız...</option></select></label>
+                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">Baş Denetçi</span><select id="leadAuditorInput2" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim yapın...</option></select></label>
+                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">2. Denetçi</span><select id="secondAuditorInput2" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim yapın...</option></select></label>
+                    <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">3. Denetçi</span><select id="thirdAuditorInput2" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main"><option value="">Seçim yapın...</option></select></label>
                   </div>
                   <div id="stage2AreaR3" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <label class="space-y-2 block"><span class="text-[11px] font-bold uppercase tracking-widest text-muted">İsimler</span><input id="a2Denetciler" type="text" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main" /></label>
@@ -182,7 +182,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
               <div>
                 <div class="flex flex-wrap items-center gap-2">
                   <h2 class="text-sm font-black uppercase tracking-widest text-main">Denetim Takvimi</h2>
-                  <span id="cal-source-badge" class="inline-flex items-center rounded-full border border-border-main bg-surface px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-muted">Hazir</span>
+                  <span id="cal-source-badge" class="inline-flex items-center rounded-full border border-border-main bg-surface px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-muted">Hazır</span>
                 </div>
                 <p class="text-xs text-muted">Planlı denetimler ve denetçi müsaitliği</p>
               </div>
@@ -229,7 +229,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                 <div class="w-10 h-10 rounded-2xl bg-surface-hover flex items-center justify-center mx-auto text-muted">
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
                 </div>
-                <p class="text-xs text-muted">Detay için güne tıklayın</p>
+                <p class="text-xs text-muted">Detayları görmek için bir güne tıklayın.</p>
               </div>
             </div>
           </div>
@@ -312,7 +312,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       const displayName = nick || unvan || (id ? `Firma #${id}` : '');
 
       if (firmaIdInput) firmaIdInput.value = id;
-      if (companyBadge) companyBadge.textContent = company ? `${displayName} [${id}]` : 'Firma Seçimi Bekleniyor';
+      if (companyBadge) companyBadge.textContent = company ? `${displayName} [${id}]` : 'Firma seçimi bekleniyor';
       if (companyNameEl) companyNameEl.textContent = displayName || '—';
       if (companyIdPillEl) companyIdPillEl.textContent = id || '—';
 
@@ -442,7 +442,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       ['leadAuditorInput1','secondAuditorInput1','thirdAuditorInput1','leadAuditorInput2','secondAuditorInput2','thirdAuditorInput2'].forEach(id => {
         const sel = document.getElementById(id) as HTMLSelectElement | null;
         if (!sel) return;
-        sel.innerHTML = '<option value="">Seçim Yapınız...</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('');
+        sel.innerHTML = '<option value="">Seçim yapın...</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('');
       });
     }
 
@@ -537,7 +537,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     pickerSearch?.addEventListener('input', () => {
       const match = resolveCompanyFromQuery(pickerSearch.value);
       if (pickerStatus) {
-        pickerStatus.textContent = match ? 'Firma tanındı. Devam edebilirsiniz.' : 'Listeden veya ID ile geçerli bir firma bulun.';
+        pickerStatus.textContent = match ? 'Firma bulundu. Devam edebilirsiniz.' : 'Listeden ya da ID ile geçerli bir firma seçin.';
         pickerStatus.className = `text-xs font-semibold ${match ? 'text-emerald-400' : 'text-muted'}`;
       }
     });
@@ -603,7 +603,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       auditorRows = Array.isArray(res.data) ? res.data : [];
       if (xstandartInput) {
         const stds = ['9001', '13485', '14001', '22000', '27001', '45001', '50001', 'GMP'];
-        xstandartInput.innerHTML = '<option value="">Standart Seçiniz...</option>' + stds.map(s => `<option value="${s}">${s}</option>`).join('');
+        xstandartInput.innerHTML = '<option value="">Standart seçin...</option>' + stds.map(s => `<option value="${s}">${s}</option>`).join('');
       }
       refreshAuditorDropdowns();
       if (pendingEditAudit) {
@@ -737,12 +737,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         sourceBadge.className = 'inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em]';
         if (state === 'network') {
           sourceBadge.classList.add('border-sky-500/20', 'bg-sky-500/10', 'text-sky-300');
-          sourceBadge.textContent = 'Network';
+          sourceBadge.textContent = 'Ağ';
           return;
         }
         if (state === 'cache') {
           sourceBadge.classList.add('border-emerald-500/20', 'bg-emerald-500/10', 'text-emerald-300');
-          sourceBadge.textContent = 'Cache';
+          sourceBadge.textContent = 'Önbellek';
           return;
         }
         if (state === 'error') {
@@ -751,7 +751,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           return;
         }
         sourceBadge.classList.add('border-border-main', 'bg-surface', 'text-muted');
-        sourceBadge.textContent = 'Hazir';
+        sourceBadge.textContent = 'Hazır';
       }
 
       function activeMonthKey() {

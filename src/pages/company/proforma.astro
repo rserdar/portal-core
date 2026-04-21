@@ -333,7 +333,7 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     const tarih = normalizeDateForStorage(amountInputs.tarih?.value || '');
     const konu = amountInputs.konu?.value.trim() || '';
 
-    if (!activeContext?.firmaId) return { error: 'Firma contexti hazır değil.' };
+    if (!activeContext?.firmaId) return { error: 'Firma bağlamı hazır değil.' };
     if (!kdvsiz || !toplam || !tarih || !konu) return { error: 'KDV hariç, toplam, tarih ve konu alanlarını doldur.' };
 
     return {
