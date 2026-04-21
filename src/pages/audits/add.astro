@@ -85,32 +85,13 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                   <span class="text-[11px] font-bold uppercase tracking-widest text-muted">Denetim Tipi</span>
                   <select id="denetimInput" class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-semibold text-main">
                     <option value="İlk" selected>İlk</option>
-                    <option value="Gözetim 1">Gözetim 1</option>
-                    <option value="Gözetim 2">Gözetim 2</option>
+                    <option value="Gözetim">Gözetim</option>
                     <option value="Yeniden">Yeniden</option>
                     <option value="Özel">Özel</option>
-                    <option value="Tekrar">Tekrar</option>
                   </select>
                 </label>
               </div>
 
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { id: '9C', label: '9001' },
-                  { id: '13C', label: '13485' },
-                  { id: '14C', label: '14001' },
-                  { id: '22C', label: '22000' },
-                  { id: '27C', label: '27001' },
-                  { id: '45C', label: '45001' },
-                  { id: '50C', label: '50001' },
-                  { id: 'GMPC', label: 'GMP' },
-                ].map((item) => (
-                  <label class="flex items-center gap-2 rounded-2xl border border-border-main bg-surface px-3 py-3 text-sm font-semibold text-main">
-                    <input id={item.id} type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface text-indigo-500" />
-                    <span>{item.label}</span>
-                  </label>
-                ))}
-              </div>
             </section>
 
             <section class="rounded-[1.75rem] border border-border-main bg-surface-hover p-5 sm:p-6 space-y-6">
@@ -199,7 +180,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
               </div>
               <div>
-                <h2 class="text-sm font-black uppercase tracking-widest text-main">Denetim Takvimi</h2>
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-sm font-black uppercase tracking-widest text-main">Denetim Takvimi</h2>
+                  <span id="cal-source-badge" class="inline-flex items-center rounded-full border border-border-main bg-surface px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-muted">Hazir</span>
+                </div>
                 <p class="text-xs text-muted">Planlı denetimler ve denetçi müsaitliği</p>
               </div>
             </div>
@@ -267,8 +251,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     shiftIsoDate, 
     buildAuditRangeLabel, 
     buildAuditorSummary, 
-    shouldHideStage2, 
-    checkboxIdForStandard 
+    shouldHideStage2
   } from '../../features/operations/audit-form';
 
   let cleanupFns: Array<() => void> = [];
@@ -306,6 +289,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     let selectedCompany: any = null;
     let auditorRows: any[][] = [];
     let reloadCalendarView: (() => Promise<void>) | null = null;
+    let pendingEditAudit: any = null;
 
     function isEditMode() { return Boolean(editAuditId); }
     function getCompanyId(c: any) { 
@@ -375,23 +359,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       if (saveLabel) saveLabel.textContent = isEditMode() ? 'Denetimi Güncelle' : 'Denetim Ekle';
     }
 
-    async function loadExistingAudit() {
-      if (!isEditMode()) return;
-      const res = await api.getAudits();
-      const match = (res.data as any[] || []).find(a => String(a.id || a.ID || a[0]) === String(editAuditId));
-      if (!match) return;
-      
-      const audit = normalizeAuditRecord(match);
+    function applyAuditToForm(audit: any) {
       if (!audit) return;
-
       const firmaId = String(audit.firma_no || audit.firmano || '').trim();
       if (firmaId) {
         const cMatch = ($companies.get() as any[]).find(c => getCompanyId(c) === firmaId);
         if (cMatch) setSelectedCompany(cMatch);
-        else {
-          const cRes = await api.getCompanyById(firmaId);
-          if (cRes.success) setSelectedCompany(cRes.data);
-        }
       }
 
       const fill = (id: string, v: any) => {
@@ -424,12 +397,32 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       fill('a2Denetciler', audit.a2_auditor || audit.a2Denetci);
       fill('a2KDenetci', audit.a2_kapsam || audit.a2kDenet);
 
-      ['9C','13C','14C','22C','27C','45C','50C','GMPC'].forEach(id => {
-          const cb = document.getElementById(id) as HTMLInputElement | null;
-          if (cb) cb.checked = ['true','1','yes','x','on','evet'].includes(String(audit[id.toLowerCase()] || '').toLowerCase());
-      });
-      
       updateAuditors('a1'); updateAuditors('a2');
+    }
+
+    async function loadExistingAudit() {
+      if (!isEditMode()) return;
+      const res = await api.getAuditById(editAuditId);
+      const match = res.data;
+      if (!res.success || !match) return;
+      
+      const audit = normalizeAuditRecord(match);
+      if (!audit) return;
+
+      const firmaId = String(audit.firma_no || audit.firmano || '').trim();
+      if (firmaId) {
+        const cMatch = ($companies.get() as any[]).find(c => getCompanyId(c) === firmaId);
+        if (cMatch) setSelectedCompany(cMatch);
+        else {
+          const cRes = await api.getCompanyById(firmaId);
+          if (cRes.success) setSelectedCompany(cRes.data);
+        }
+      }
+
+      pendingEditAudit = audit;
+      if (auditorRows.length > 0) {
+        applyAuditToForm(audit);
+      }
     }
 
     function normalizeAuditRecord(r: any) {
@@ -458,26 +451,36 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       const end = (document.getElementById(`${stage}Bitis`) as HTMLInputElement | null)?.value || '';
       const res = buildAuditRangeLabel(start, end);
       const full = document.getElementById(`${stage}Full`) as HTMLInputElement | null;
-      const manday = document.getElementById(`${stage}Manday`) as HTMLInputElement | null;
-      const md = document.getElementById(`${stage}Md`) as HTMLInputElement | null;
       if (full) full.value = res.fullLabel;
-      if (manday) manday.value = res.manDays;
-      if (md) md.value = res.manDays;
+      
+      // updateAuditors will now handle both visible and hidden manday fields
       updateAuditors(stage);
     }
 
     function updateAuditors(stage: 'a1' | 'a2') {
+      const start = (document.getElementById(`${stage}Basla`) as HTMLInputElement | null)?.value || '';
+      const end = (document.getElementById(`${stage}Bitis`) as HTMLInputElement | null)?.value || '';
+      const res = buildAuditRangeLabel(start, end);
+      const baseDays = Number(res.manDays) || 0;
+
       const l = (document.getElementById(stage === 'a1' ? 'leadAuditorInput1' : 'leadAuditorInput2') as HTMLSelectElement | null)?.value || '';
       const s = (document.getElementById(stage === 'a1' ? 'secondAuditorInput1' : 'secondAuditorInput2') as HTMLSelectElement | null)?.value || '';
       const t = (document.getElementById(stage === 'a1' ? 'thirdAuditorInput1' : 'thirdAuditorInput2') as HTMLSelectElement | null)?.value || '';
-      const rawMd = (document.getElementById(`${stage}Manday`) as HTMLInputElement | null)?.value || '';
-      const summary = buildAuditorSummary(auditorRows, [l,s,t], rawMd);
+      
+      const auditors = [l, s, t].filter(Boolean);
+      const multiplier = auditors.length || 1;
+      const totalManDays = String(baseDays * multiplier);
+
+      const summary = buildAuditorSummary(auditorRows, [l,s,t], String(baseDays));
       const namesEl = document.getElementById(stage === 'a1' ? 'a1Denetciler' : 'a2Denetciler') as HTMLInputElement | null;
       const shortEl = document.getElementById(stage === 'a1' ? 'a1KDenetci' : 'a2KDenetci') as HTMLInputElement | null;
+      const visibleMd = document.getElementById(stage === 'a1' ? 'a1Manday' : 'a2Manday') as HTMLInputElement | null;
       const mdHidden = document.getElementById(stage === 'a1' ? 'a1Md' : 'a2Md') as HTMLInputElement | null;
+
       if (namesEl) namesEl.value = summary.names;
       if (shortEl) shortEl.value = summary.shortNames;
-      if (mdHidden) mdHidden.value = summary.totalManDays;
+      if (visibleMd) visibleMd.value = totalManDays;
+      if (mdHidden) mdHidden.value = totalManDays;
     }
 
     function toggleStage2() {
@@ -488,6 +491,17 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     async function saveAudit() {
       if (!selectedCompany) return toast.error('Lütfen bir firma seçin.');
       if (!xstandartInput?.value) return toast.error('Lütfen standart seçin.');
+      
+      const auditType = denetimInput?.value || '';
+      const la1 = (document.getElementById('leadAuditorInput1') as HTMLSelectElement)?.value;
+      const la2 = (document.getElementById('leadAuditorInput2') as HTMLSelectElement)?.value;
+
+      if (!la1) return toast.error('Aşama 1 Baş Denetçisi seçilmelidir.');
+      
+      if (!['Gözetim', 'Özel'].includes(auditType)) {
+        if (!la2) return toast.error('Aşama 2 Baş Denetçisi seçilmelidir.');
+      }
+
       if (!saveBtn) return;
 
       saveBtn.disabled = true;
@@ -495,14 +509,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       saveBtn.innerHTML = 'Kaydediliyor...';
 
       const val = (id: string) => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value || '';
-      const check = (id: string) => (document.getElementById(id) as HTMLInputElement | null)?.checked ? 'TRUE' : 'FALSE';
 
       const info = {
         nick: getCompanyNick(selectedCompany),
         firmano: getCompanyId(selectedCompany),
         standart: val('xstandartInput'),
         denetim: val('denetimInput'),
-        qms: check('9C'), mdd: check('13C'), ems: check('14C'), fsms: check('22C'), isms: check('27C'), ohs: check('45C'), engy: check('50C'), gmp: check('GMPC'),
         a1Basla: formatDateToDots(val('a1Basla')), a1Bitis: formatDateToDots(val('a1Bitis')), a1Baslav2: val('a1Basla'), a1Bitisv2: val('a1Bitis'), a1Full: val('a1Full'),
         a1La: val('leadAuditorInput1'), a1Fa: val('secondAuditorInput1'), a1Sa: val('thirdAuditorInput1'), a1Md: val('a1Md'), a1Denetci: val('a1Denetciler'), a1kDenet: val('a1KDenetci'),
         a2Basla: formatDateToDots(val('a2Basla')), a2Bitis: formatDateToDots(val('a2Bitis')), a2Baslav2: val('a2Basla'), a2Bitisv2: val('a2Bitis'), a2Full: val('a2Full'),
@@ -538,11 +550,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
     xstandartInput?.addEventListener('change', () => {
       refreshAuditorDropdowns();
-      const cbId = checkboxIdForStandard(xstandartInput?.value || '');
-      if (cbId) {
-        const cb = document.getElementById(cbId) as HTMLInputElement | null;
-        if (cb) cb.checked = true;
-      }
     });
     denetimInput?.addEventListener('change', toggleStage2);
     ['a1Basla','a1Bitis','a2Basla','a2Bitis'].forEach(id => document.getElementById(id)?.addEventListener('change', () => updateRange(id.startsWith('a1') ? 'a1' : 'a2')));
@@ -577,27 +584,31 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         const sub = $companies.subscribe(c => syncCompanyList(c as any[]));
         registerCleanup(() => sub());
 
-        // Pre-selection logic depends on store being ready
-        if (preselectedFirmaId) {
+        // Edit mode takes precedence over firma preselection because the audit record
+        // is the source of truth for all upper-form fields.
+        if (isEditMode()) {
+          await loadExistingAudit();
+        } else if (preselectedFirmaId) {
           const match = companies.find(c => getCompanyId(c) === preselectedFirmaId);
           if (match) setSelectedCompany(match);
           else api.getCompanyById(preselectedFirmaId).then(r => r.success && setSelectedCompany(r.data));
-        } else if (isEditMode()) {
-           loadExistingAudit();
         } else {
-           setSelectedCompany(null);
+          setSelectedCompany(null);
         }
     }
     
     void setupStore();
 
-    api.getMasterData('auditors').then(res => {
-      auditorRows = res.data?.rows || res.data?.dataset?.rows || [];
+    api.getAuditors().then(res => {
+      auditorRows = Array.isArray(res.data) ? res.data : [];
       if (xstandartInput) {
         const stds = ['9001', '13485', '14001', '22000', '27001', '45001', '50001', 'GMP'];
         xstandartInput.innerHTML = '<option value="">Standart Seçiniz...</option>' + stds.map(s => `<option value="${s}">${s}</option>`).join('');
       }
       refreshAuditorDropdowns();
+      if (pendingEditAudit) {
+        applyAuditToForm(pendingEditAudit);
+      }
     });
 
     // --- CALENDAR LOGIC ---
@@ -605,6 +616,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       const grid = document.getElementById('cal-grid');
       const title = document.getElementById('cal-title');
       const detail = document.getElementById('cal-detail');
+      const loader = document.getElementById('cal-loader') as HTMLElement | null;
+      const prevBtn = document.getElementById('cal-prev') as HTMLButtonElement | null;
+      const nextBtn = document.getElementById('cal-next') as HTMLButtonElement | null;
+      const sourceBadge = document.getElementById('cal-source-badge') as HTMLElement | null;
       const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
       
       let year = new Date().getFullYear();
@@ -612,6 +627,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       let audits: any[] = [];
       let byDate = new Map<string, any[]>();
       let selDate: string | null = null;
+      const monthCache = new Map<string, any[]>();
 
       function toIso(d: Date) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
       function parse(s: string) {
@@ -620,16 +636,27 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         return new Date(s);
       }
 
+      function getMonthBounds(targetYear: number, targetMonth: number) {
+        return {
+          start: new Date(targetYear, targetMonth, 1),
+          end: new Date(targetYear, targetMonth + 1, 0),
+        };
+      }
+
       function buildMap() {
         byDate.clear();
+        const { start: monthStart, end: monthEnd } = getMonthBounds(year, month);
         audits.forEach(a => {
           [1,2].forEach(stg => {
             const startStr = stg === 1 ? (a.a1Baslav2 || a.a1_baslangic || a.a1Basla || a[9]) : (a.a2Baslav2 || a.a2_baslangic || a.a2Basla || a[15]);
             const endStr = stg === 1 ? (a.a1Bitisv2 || a.a1_bitis || a.a1Bitis || a[10]) : (a.a2Bitisv2 || a.a2_bitis || a.a2Bitis || a[16]);
             const s = parse(startStr); const e = parse(endStr) || s;
             if (!s) return;
-            let cur = new Date(s);
-            while(cur <= e) {
+            const rangeStart = s > monthStart ? s : monthStart;
+            const rangeEnd = e < monthEnd ? e : monthEnd;
+            if (rangeStart > rangeEnd) return;
+            let cur = new Date(rangeStart);
+            while(cur <= rangeEnd) {
               const k = toIso(cur);
               if (!byDate.has(k)) byDate.set(k, []);
               byDate.get(k)!.push({ audit: a, stage: stg });
@@ -681,27 +708,105 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         detail.innerHTML = `
           <div class="space-y-3">
             <p class="text-[10px] font-black uppercase text-muted">${dStr}</p>
-            ${ent.map(e => `
-              <div class="p-3 rounded-xl border border-border-main bg-surface-hover">
-                <p class="text-xs font-bold">${e.audit.nick || e.audit.firma_no || e.audit[1] || 'Firma'}</p>
-                <p class="text-[10px] text-muted">${e.audit.standart || e.audit[3]} - Aşama ${e.stage}</p>
-              </div>
-            `).join('')}
+            ${ent.map(e => {
+              const a = e.audit;
+              const firma = a.nickname || a.unvan || a.nick || a.firma_no || '—';
+              const std = a.standart || '—';
+              const auditors = e.stage === 1
+                ? [a.a1_bas_denetci, a.a1_denetci_2, a.a1_denetci_3]
+                : [a.a2_bas_denetci, a.a2_denetci_2, a.a2_denetci_3];
+              const auditorStr = auditors.filter(Boolean).join(', ') || '—';
+              return `
+                <div class="p-3 rounded-xl border border-border-main bg-surface-hover space-y-1">
+                  <p class="text-xs font-bold text-main">${firma}</p>
+                  <p class="text-[10px] text-muted">${std} · Aşama ${e.stage}</p>
+                  <p class="text-[10px] text-indigo-400">${auditorStr}</p>
+                </div>`;
+            }).join('')}
           </div>`;
       });
 
-      async function refresh() {
-        const r = await api.getAudits();
-        const loader = document.getElementById('cal-loader');
-        if (loader) loader.style.display = 'none';
-        if (r.success) { audits = r.data || []; buildMap(); render(); }
+      function setCalendarBusy(isBusy: boolean) {
+        if (loader) loader.style.display = isBusy ? 'flex' : 'none';
+        prevBtn && (prevBtn.disabled = isBusy);
+        nextBtn && (nextBtn.disabled = isBusy);
       }
 
-      reloadCalendarView = refresh;
-      document.getElementById('cal-prev')?.addEventListener('click', () => { month--; if (month<0) { month=11; year--; } render(); });
-      document.getElementById('cal-next')?.addEventListener('click', () => { month++; if (month>11) { month=0; year++; } render(); });
+      function setCalendarSourceState(state: 'idle' | 'network' | 'cache' | 'error') {
+        if (!sourceBadge) return;
+        sourceBadge.className = 'inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em]';
+        if (state === 'network') {
+          sourceBadge.classList.add('border-sky-500/20', 'bg-sky-500/10', 'text-sky-300');
+          sourceBadge.textContent = 'Network';
+          return;
+        }
+        if (state === 'cache') {
+          sourceBadge.classList.add('border-emerald-500/20', 'bg-emerald-500/10', 'text-emerald-300');
+          sourceBadge.textContent = 'Cache';
+          return;
+        }
+        if (state === 'error') {
+          sourceBadge.classList.add('border-rose-500/20', 'bg-rose-500/10', 'text-rose-300');
+          sourceBadge.textContent = 'Hata';
+          return;
+        }
+        sourceBadge.classList.add('border-border-main', 'bg-surface', 'text-muted');
+        sourceBadge.textContent = 'Hazir';
+      }
 
-      refresh();
+      function activeMonthKey() {
+        return `${year}-${String(month + 1).padStart(2, '0')}`;
+      }
+
+      async function refresh(invalidate = false) {
+        const key = activeMonthKey();
+        if (invalidate) monthCache.delete(key);
+        const cached = monthCache.get(key);
+        if (cached) {
+          audits = cached;
+          buildMap();
+          render();
+          setCalendarSourceState('cache');
+          return;
+        }
+        setCalendarSourceState('network');
+        setCalendarBusy(true);
+        const r = await api.getAuditCalendar(year, month + 1);
+        setCalendarBusy(false);
+        if (r.success) {
+          audits = Array.isArray(r.data) ? r.data : [];
+          monthCache.set(key, audits);
+          buildMap();
+          render();
+          setCalendarSourceState('network');
+          if (selDate) {
+            const selectedEntries = byDate.get(selDate) || [];
+            if (selectedEntries.length === 0 && detail) {
+              detail.innerHTML = '<div class="py-10 text-center text-xs text-muted">Bu tarihte denetim yok.</div>';
+            }
+          }
+          return;
+        }
+        audits = [];
+        byDate.clear();
+        render();
+        setCalendarSourceState('error');
+        if (detail) detail.innerHTML = '<div class="py-10 text-center text-xs text-rose-400">Takvim verisi yüklenemedi.</div>';
+      }
+
+      reloadCalendarView = () => refresh(true);
+      prevBtn?.addEventListener('click', () => {
+        month--;
+        if (month < 0) { month = 11; year--; }
+        void refresh();
+      });
+      nextBtn?.addEventListener('click', () => {
+        month++;
+        if (month > 11) { month = 0; year++; }
+        void refresh();
+      });
+
+      void refresh();
     })();
   }
 

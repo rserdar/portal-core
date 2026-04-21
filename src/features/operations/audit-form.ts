@@ -111,7 +111,7 @@ export function buildAuditorSummary(rows: AuditRows, auditors: string[], manDays
 }
 
 export function shouldHideStage2(auditType: string) {
-  return ['Gözetim 1', 'Gözetim 2', 'Özel'].includes(auditType);
+  return ['Gözetim', 'Özel'].includes(auditType);
 }
 
 export function checkboxIdForStandard(standard: string) {

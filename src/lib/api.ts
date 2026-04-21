@@ -95,9 +95,12 @@ export const api = {
       "getCertificatesByFirmaId",
       "getRecentCertificates",
       "getAudits",
+      "getAuditById",
+      "getAuditCalendar",
       "getAuditsByFirmaId",
       "getTestsByFirmaId",
       "getConsultants",
+      "getAuditors",
       "getStandardById",
       "getProformasByFirmaId",
       "getProformaById",
@@ -127,9 +130,11 @@ export const api = {
       "uploadFile",
       "deepRepairIndex",
       "generateProforma",
+      "getFolderId",
+      "getRecentFiles",
     ]);
     const timeoutMs = longRunningActions.has(action) ? LONG_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const timeoutId = setTimeout(() => controller.abort('timeout'), timeoutMs);
 
     const requestPromise = (async (): Promise<ApiResponse<T>> => {
     try {
@@ -155,9 +160,16 @@ export const api = {
       }
       return { status: response.status, ...((payload || { success: false, data: null, error: "Geçersiz yanıt" }) as ApiResponse<T>) };
     } catch (error: any) {
-      const isAbort = error?.name === 'AbortError';
-      console.error("API Çağrı Hatası:", error);
-      return { success: false, data: null, error: isAbort ? "İstek zaman aşımına uğradı." : (error.message || "Bilinmeyen hata") };
+      const isTimeout = error?.name === 'AbortError' && controller.signal.reason === 'timeout';
+      const isOtherAbort = error?.name === 'AbortError' && !isTimeout;
+      
+      console.error(`[API] Call Error (${action}):`, error);
+
+      let errorMsg = error.message || "Bilinmeyen hata";
+      if (isTimeout) errorMsg = "İstek zaman aşımına uğradı (Timeout).";
+      if (isOtherAbort) errorMsg = "İstek iptal edildi (Aborted).";
+
+      return { success: false, data: null, error: errorMsg };
     } finally {
       clearTimeout(timeoutId);
       if (requestKey) {
@@ -196,6 +208,12 @@ export const api = {
     let result = await this.call("getAudits");
     return result;
   },
+  async getAuditById(id: string | number) {
+    return this.call("getAuditById", { id });
+  },
+  async getAuditCalendar(year: number, month: number) {
+    return this.call("getAuditCalendar", { year, month });
+  },
   async getTests() {
     let result = await this.call("getTests");
     if (result.success) {
@@ -214,6 +232,7 @@ export const api = {
   async getTestsByFirmaId(firmaId: string | number) { 
     return this.call("getTestsByFirmaId", { firmaId }); 
   },
+  async getAuditors() { return this.call("getAuditors"); },
   async getProformasByFirmaId(firmaId: string | number) {
     return this.call("getProformasByFirmaId", { firmaId });
   },

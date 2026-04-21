@@ -1106,17 +1106,29 @@ import {
   }
 
   async function openCompanyFolder(btn: HTMLButtonElement) {
-    if (!firmaId) return;
+    if (!firmaId) {
+      toast.error('Firma ID bulunamadı. Lütfen sayfayı yenileyin.');
+      return;
+    }
     const prev = btn.innerHTML;
+    // Loading state
     btn.innerHTML = '<div class="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>';
     btn.disabled = true;
+
     try {
+      console.log(`[Profile] Requesting folder for: ${firmaId}`);
       const res = await api.call('getFolderId', { id: firmaId });
+      
       if (res.success && res.data) {
         window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
       } else {
-        toast.error(res.error || 'Firma klasörü bulunamadı.');
+        const msg = res.error || 'Firma klasörü bulunamadı.';
+        toast.error(msg);
+        console.error(`[Profile] getFolderId failed:`, msg);
       }
+    } catch (err: any) {
+      toast.error('Klasör açılırken bir hata oluştu.');
+      console.error(`[Profile] openCompanyFolder Exception:`, err);
     } finally {
       btn.innerHTML = prev;
       btn.disabled = false;

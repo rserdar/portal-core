@@ -132,6 +132,41 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   let currentPage = 1;
   let pageSize = 20;
 
+  function findCompanyByFirmaNo(firmaNo: string) {
+    const companies = ($companies.get() as any[]) || [];
+    return companies.find((company) => {
+      const companyId = pickValue(company, ['id', 'ID', 'firma_no', 'firmaNo', 'firmano'], '');
+      return String(companyId) === String(firmaNo);
+    });
+  }
+
+  function getCompanyDisplayName(firmaNo: string) {
+    const company = findCompanyByFirmaNo(firmaNo);
+    if (!company) return firmaNo;
+    return pickValue(
+      company,
+      ['nickname', 'nick', 'firma_adi', 'Firma Adı', 'FirmaAdi', 'unvan'],
+      firmaNo
+    );
+  }
+
+  function getAuditStagePeople(audit: any, stage: 1 | 2) {
+    const keys =
+      stage === 1
+        ? ['a1_bas_denetci', 'a1Lead', 'a1_lead', 'a1_denetci_2', 'a1Auditor', 'a1_auditor', 'a1_denetci_3']
+        : ['a2_bas_denetci', 'a2Lead', 'a2_lead', 'a2_denetci_2', 'a2Auditor', 'a2_auditor', 'a2_denetci_3'];
+
+    return keys
+      .map((key) => String(pickValue(audit, [key], '') || '').trim())
+      .filter((value, index, list) => value && value !== 'Atanmadı' && list.indexOf(value) === index);
+  }
+
+  function getAuditPeopleText(audit: any) {
+    const people = [...getAuditStagePeople(audit, 1), ...getAuditStagePeople(audit, 2)]
+      .filter((value, index, list) => list.indexOf(value) === index);
+    return people.join(', ') || '-';
+  }
+
   function getSortableAuditValue(audit: any, originalIndex: number) {
     const id = Number(pickValue(audit, ['id', 'ID'], ''));
     if (!Number.isNaN(id) && id > 0) return id;
@@ -224,6 +259,13 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   async function loadAudits() {
     if (!tableBody || !tableLoader || !noResults) return;
 
+    if (!(($companies.get() as any[]) || []).length) {
+      const companiesRes = await api.getCompanies();
+      if (companiesRes.success && Array.isArray(companiesRes.data)) {
+        $companies.set(companiesRes.data);
+      }
+    }
+
     const res = await api.getAudits();
     tableLoader.classList.add('hidden');
 
@@ -243,13 +285,11 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
     const filtered = data.filter(audit => {
       const firmaNo = pickValue(audit, ['firma_no', 'firmaNo'], '');
-      const company = ($companies.get() as any[])?.find(c => String(c.firma_no || c.id || '') === String(firmaNo));
-      const nick = company ? (company.nick || company.firma_adi || firmaNo) : firmaNo;
-            const auditor1 = pickValue(audit, ['a1_auditor', 'a1Auditor'], '');
-      const auditor2 = pickValue(audit, ['a2_auditor', 'a2Auditor'], '');
+      const nick = getCompanyDisplayName(firmaNo);
+      const auditors = getAuditPeopleText(audit);
       const denetimTipi = pickValue(audit, ['denetim_tipi', 'denetimTipi'], '');
 
-      const matchSearch = `${nick}${firmaNo}${auditor1}${auditor2}`.toLowerCase().includes(searchTerm);
+      const matchSearch = `${nick}${firmaNo}${auditors}`.toLowerCase().includes(searchTerm);
       const matchType = !selectedType || denetimTipi === selectedType;
       return matchSearch && matchType;
     }).map((audit, originalIndex) => ({ audit, originalIndex }))
@@ -271,17 +311,18 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
     paged.forEach(({ audit, originalIndex }) => {
       const firmaNo = pickValue(audit, ['firma_no', 'firmaNo'], '-');
-      const company = ($companies.get() as any[])?.find(c => String(c.firma_no || c.id || '') === String(firmaNo));
-      const nick = company ? (company.nick || company.firma_adi || firmaNo) : firmaNo;
-            const standart = pickValue(audit, ['standart', 'standard'], '-');
+      const nick = getCompanyDisplayName(firmaNo);
+      const standart = pickValue(audit, ['standart', 'standard'], '-');
       const denetimTipi = pickValue(audit, ['denetim_tipi', 'denetimTipi'], '-');
       const a1Tarih = pickValue(audit, ['a1_baslangic', 'a1Basla'], '-');
       const a2Tarih = pickValue(audit, ['a2_baslangic', 'a2Basla'], '-');
-      const denetci1 = pickValue(audit, ['a1_auditor', 'a1Auditor'], '');
-      const denetci2 = pickValue(audit, ['a2_auditor', 'a2Auditor'], '');
-      const a1Lead = pickValue(audit, ['a1_lead', 'a1_bas_denetci', 'a1Lead'], '');
-      const a2Lead = pickValue(audit, ['a2_lead', 'a2_bas_denetci', 'a2Lead'], '');
-      const denetciler = [denetci1, denetci2].filter(v => v && v !== 'Atanmadı').join(', ') || '-';
+      const a1People = getAuditStagePeople(audit, 1);
+      const a2People = getAuditStagePeople(audit, 2);
+      const denetci1 = a1People.join(', ') || '-';
+      const denetci2 = a2People.join(', ') || '-';
+      const a1Lead = pickValue(audit, ['a1_bas_denetci', 'a1Lead', 'a1_lead'], '');
+      const a2Lead = pickValue(audit, ['a2_bas_denetci', 'a2Lead', 'a2_lead'], '');
+      const denetciler = getAuditPeopleText(audit);
       
       const initials = getInitials(nick);
       const auditId = pickValue(audit, ['id', 'ID'], String(originalIndex + 1));

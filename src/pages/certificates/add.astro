@@ -154,16 +154,22 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
               <p class="text-sm font-semibold text-main leading-relaxed" id="cert-company-address">—</p>
             </div>
             <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
-              <p class="text-[10px] font-bold uppercase tracking-widest text-muted mb-1">Mevcut Kapsam</p>
-              <p class="text-sm font-semibold text-main leading-relaxed line-clamp-4" id="cert-company-kapsam">—</p>
-            </div>
-            <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
-              <p class="text-[10px] font-bold uppercase tracking-widest text-muted mb-3">Aksiyonlar</p>
+              <div class="flex items-center justify-between gap-3 mb-3">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-muted">Aksiyonlar</p>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-muted">Hizli Erisim</span>
+              </div>
               <div class="flex flex-wrap gap-2">
                 <a id="cert-add-audit-link" href="#" class="inline-flex items-center gap-2 rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors">Denetim Ekle</a>
                 <button id="cert-fill-from-company" type="button" class="inline-flex items-center gap-2 rounded-2xl border border-border-main bg-surface px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface-hover transition-colors">Bilgileri Getir</button>
                 <button id="cert-open-recent" type="button" class="inline-flex items-center gap-2 rounded-2xl border border-sky-500/20 bg-sky-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-sky-300 hover:bg-sky-500/15 transition-colors">Son 25 Sertifika</button>
               </div>
+            </div>
+            <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+              <div class="flex items-center justify-between gap-3 mb-3">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-muted">Ek Bilgiler</p>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-muted">Notlar</span>
+              </div>
+              <textarea id="cert-not" name="not" form="certificate-form" rows={5} class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm text-main min-h-[144px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Notlar"></textarea>
             </div>
           </div>
         </div>
@@ -193,18 +199,14 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
                   </select>
                 </div>
               </div>
-              <div id="other-standard-wrap" class="space-y-2 hidden">
-                <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Diger Standart</label>
-                <input id="cert-other" name="other_standart" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Diger standart" />
-              </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-2">
                   <label class="text-[11px] font-bold uppercase tracking-widest text-muted">ISO Tam Adi</label>
                   <input id="cert-iso-full" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-60 cursor-not-allowed" readonly />
                 </div>
                 <div class="space-y-2">
-                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Kisa Adi</label>
-                  <input id="cert-nick" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-60 cursor-not-allowed" readonly />
+                  <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Diger Standart</label>
+                  <input id="cert-other" name="other_standart" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-60 cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Diger standart" readonly />
                 </div>
               </div>
             </div>
@@ -238,13 +240,13 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
             </div>
           </section>
 
-          <section class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6">
+          <section class="grid grid-cols-1 gap-6">
             <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
               <div class="flex items-center justify-between gap-3">
                 <h2 class="text-sm font-black uppercase tracking-widest text-main">Sertifika Bilgileri</h2>
                 <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 3</span>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 <div class="space-y-2">
                   <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Oneri sNo</label>
                   <div class="flex min-w-0 items-stretch gap-2">
@@ -286,19 +288,11 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
                   <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Logo</label>
                   <input id="cert-logo" name="logo" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Drive dosya ID veya URL" />
                 </div>
+                <label id="cert-gozetim-row" class="hidden sm:col-span-2 xl:col-span-3 flex items-center gap-3 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main">
+                  <input id="cert-gozetim-done" type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface text-primary" />
+                  Gozetim yapildi mi?
+                </label>
               </div>
-            </div>
-
-            <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
-              <h2 class="text-sm font-black uppercase tracking-widest text-main">Ek Bilgiler</h2>
-              <div class="space-y-2">
-                <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Notlar</label>
-                <textarea id="cert-not" name="not" rows={7} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[180px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Notlar"></textarea>
-              </div>
-              <label id="cert-gozetim-row" class="hidden flex items-center gap-3 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main">
-                <input id="cert-gozetim-done" type="checkbox" class="h-4 w-4 rounded border-border-main bg-surface text-primary" />
-                Gozetim yapildi mi?
-              </label>
             </div>
           </section>
 
@@ -311,6 +305,10 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
                   <button id="cert-kapsam-translate" type="button" class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors">EN Cevir</button>
                 </div>
               </div>
+              <div id="cert-prev-kapsam-card" class="hidden rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-amber-200/80 mb-1">Onceki Kapsam</p>
+                <p id="cert-prev-kapsam" class="text-sm font-semibold text-main leading-relaxed whitespace-pre-wrap">—</p>
+              </div>
               <textarea id="cert-kapsam" name="kapsam" rows={9} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
             </div>
 
@@ -321,6 +319,10 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
                   <button id="cert-scope-upper" type="button" class="rounded-2xl border border-border-main bg-surface-hover px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface transition-colors">BIG</button>
                   <button id="cert-scope-translate" type="button" class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors">TR Cevir</button>
                 </div>
+              </div>
+              <div id="cert-prev-scope-card" class="hidden rounded-2xl border border-sky-500/20 bg-sky-500/10 px-4 py-3">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-sky-200/80 mb-1">Previous Scope</p>
+                <p id="cert-prev-scope" class="text-sm font-semibold text-main leading-relaxed whitespace-pre-wrap">—</p>
               </div>
               <textarea id="cert-scope" name="scope" rows={9} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
             </div>
@@ -426,10 +428,8 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       form: document.getElementById('certificate-form') as HTMLFormElement | null,
       backLink: document.getElementById('cert-back-link') as HTMLAnchorElement | null,
       standSelect: document.getElementById('cert-standart') as HTMLSelectElement | null,
-      otherWrap: document.getElementById('other-standard-wrap'),
       otherInput: document.getElementById('cert-other') as HTMLInputElement | null,
       isoFull: document.getElementById('cert-iso-full') as HTMLInputElement | null,
-      nick: document.getElementById('cert-nick') as HTMLInputElement | null,
       gst: document.getElementById('cert-gst') as HTMLInputElement | null,
       goz: document.getElementById('cert-goz') as HTMLInputElement | null,
       stt: document.getElementById('cert-stt') as HTMLInputElement | null,
@@ -458,6 +458,10 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
       akredite: document.getElementById('cert-akredite') as HTMLInputElement | null,
       durum: document.getElementById('cert-durum') as HTMLInputElement | null,
       not: document.getElementById('cert-not') as HTMLTextAreaElement | null,
+      prevKapsamCard: document.getElementById('cert-prev-kapsam-card'),
+      prevKapsam: document.getElementById('cert-prev-kapsam'),
+      prevScopeCard: document.getElementById('cert-prev-scope-card'),
+      prevScope: document.getElementById('cert-prev-scope'),
       gozetimRow: document.getElementById('cert-gozetim-row'),
       gozetimDone: document.getElementById('cert-gozetim-done') as HTMLInputElement | null,
     };
@@ -585,7 +589,6 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
     setText('cert-company-dan', companyContext.danisman || 'Danisman atanamamis');
     setText('cert-company-unvan', companyContext.unvan || companyContext.nick || `Firma #${companyContext.firmaId}`);
     setText('cert-company-address', [companyContext.adres, [companyContext.sehir, companyContext.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—');
-    setText('cert-company-kapsam', companyContext.kapsam || 'Kapsam bulunamadi.');
     setText(
       'cert-company-stats',
       editing
@@ -594,7 +597,6 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
           ? `${companyContext.certificates.length} sertifika arasindan #${cloneId} kopyalaniyor.`
           : `${companyContext.certificates.length} sertifika, ${companyContext.tests.length} test kaydi bulundu.`,
     );
-    if (els.nick) els.nick.value = companyContext.nick;
     if (els.submitLabel) {
       els.submitLabel.textContent = editing
         ? 'Sertifikayi Guncelle'
@@ -604,6 +606,8 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
     }
     els.deleteBtn?.classList.toggle('hidden', !editing);
     document.getElementById('cert-gozetim-row')?.classList.toggle('hidden', !editing);
+    els.prevKapsamCard?.classList.toggle('hidden', !editing && !cloning);
+    els.prevScopeCard?.classList.toggle('hidden', !editing && !cloning);
   }
 
   function renderStandards() {
@@ -657,8 +661,12 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
   function syncOtherStandardVisibility(standardText: string, options: { clearOnHide?: boolean } = {}) {
     const { clearOnHide = true } = options;
     const visible = shouldShowOtherStandard(standardText);
-    els.otherWrap?.classList.toggle('hidden', !visible);
-    if (!visible && clearOnHide && els.otherInput) els.otherInput.value = '';
+    if (els.otherInput) {
+      els.otherInput.readOnly = !visible;
+      els.otherInput.classList.toggle('cursor-not-allowed', !visible);
+      els.otherInput.classList.toggle('opacity-60', !visible);
+      if (!visible && clearOnHide) els.otherInput.value = '';
+    }
   }
 
   async function loadStandards() {
@@ -878,8 +886,6 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
 
   function fillFromCompanyContext() {
     if (!companyContext) return;
-    if (els.kapsam) els.kapsam.value = companyContext.kapsam || '';
-    if (els.scope) els.scope.value = companyContext.scope || '';
     if (els.logo) els.logo.value = companyContext.logo || '';
     if (els.dan) els.dan.value = companyContext.danisman || '';
     const kodInput = document.getElementById('cert-kod') as HTMLInputElement | null;
@@ -967,7 +973,9 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from 'lucide-astro';
     if (els.stt) els.stt.value = toInputDate(normalizeObjectValue(cert, ['Tescil Tarihi', 'Sertifika Tescil Tarihi', 'Son Tetkik Tarihi', 'stt', 'STT', 'sTT']));
     if (els.sgt) els.sgt.value = toInputDate(normalizeObjectValue(cert, ['Sertifika Geçerlilik Tarihi', 'sgt', 'SGT', 'sGT']));
     if (els.kapsam) els.kapsam.value = normalizeObjectValue(cert, ['Kapsam', 'kapsam']);
+    if (els.prevKapsam) els.prevKapsam.textContent = normalizeObjectValue(cert, ['Kapsam', 'kapsam']) || 'Kapsam bulunamadi.';
     if (els.scope) els.scope.value = normalizeObjectValue(cert, ['Scope', 'scope']);
+    if (els.prevScope) els.prevScope.textContent = normalizeObjectValue(cert, ['Scope', 'scope']) || 'Scope bulunamadi.';
     if (els.logo) els.logo.value = normalizeObjectValue(cert, ['Logo', 'logo']);
     if (els.kod) els.kod.value = normalizeObjectValue(cert, ['Kod', 'kod', 'NACE', 'nace']);
     if (els.akreditasyon) els.akreditasyon.value = normalizeObjectValue(cert, ['Akreditasyon', 'akreditasyon']) || 'IAKS';

@@ -476,23 +476,23 @@ export default {
       const id = String(options.id ?? pick(["id", "ID"]) ?? "").trim();
       return {
         id,
-        firma_no: pick(["firma_no"]) ?? "",
-        test_adi: pick(["test_adi"]) ?? "",
+        firma_no: pick(["firma_no", "firmaNo", "firmano"]) ?? "",
+        test_adi: pick(["test_adi", "testAdi"]) ?? "",
         marka: pick(["marka"]) ?? "",
         urun: pick(["urun"]) ?? "",
-        urun_kodu: pick(["urun_kodu"]) ?? "",
-        urun_no: pick(["urun_no"]) ?? "",
+        urun_kodu: pick(["urun_kodu", "urunKodu"]) ?? "",
+        urun_no: pick(["urun_no", "urunNo"]) ?? "",
         lot: pick(["lot"]) ?? "",
-        urun_kabul: pick(["urun_kabul"]) ?? "",
-        kabul_saat: pick(["kabul_saat"]) ?? "",
-        test_baslangic: pick(["test_baslangic"]) ?? "",
-        test_bitis: pick(["test_bitis"]) ?? "",
-        rapor_tarihi: pick(["rapor_tarihi"]) ?? "",
-        rapor_no: pick(["rapor_no"]) ?? "",
-        numune_sayisi: pick(["numune_sayisi"]) ?? "",
-        numune_ut: pick(["numune_ut"]) ?? "",
-        numune_skt: pick(["numune_skt"]) ?? "",
-        urun_bilgi: pick(["urun_bilgi"]) ?? "",
+        urun_kabul: pick(["urun_kabul", "urunKabul"]) ?? "",
+        kabul_saat: pick(["kabul_saat", "kabulSaat"]) ?? "",
+        test_baslangic: pick(["test_baslangic", "testBaslangic"]) ?? "",
+        test_bitis: pick(["test_bitis", "testBitis"]) ?? "",
+        rapor_tarihi: pick(["rapor_tarihi", "raporTarihi"]) ?? "",
+        rapor_no: pick(["rapor_no", "raporNo"]) ?? "",
+        numune_sayisi: pick(["numune_sayisi", "numuneSayisi"]) ?? "",
+        numune_ut: pick(["numune_ut", "numuneUT"]) ?? "",
+        numune_skt: pick(["numune_skt", "numuneSKT"]) ?? "",
+        urun_bilgi: pick(["urun_bilgi", "urunBilgi"]) ?? "",
         gorsel1: pick(["gorsel1"]) ?? "",
         gorsel2: pick(["gorsel2"]) ?? "",
         detay: pick(["detay"]) ?? "",
@@ -531,14 +531,14 @@ export default {
         sertifika_id: pick(["sertifika_id", "certId", "sertifikaId"]) ?? "",
         standart: pick(["standart"]) ?? "",
         denetim_tipi: pick(["denetim_tipi", "denetimTipi", "denetim"]) ?? "",
-        a1_baslangic: pick(["a1_baslangic", "a1Basla", "a1Baslav2"]) ?? "",
-        a1_bitis: pick(["a1_bitis", "a1Bitis", "a1Bitisv2"]) ?? "",
+        a1_baslangic: pick(["a1_baslangic", "a1Baslav2", "a1Basla"]) ?? "",
+        a1_bitis: pick(["a1_bitis", "a1Bitisv2", "a1Bitis"]) ?? "",
         a1_manday: pick(["a1_manday", "a1Md"]) ?? "",
         a1_bas_denetci: pick(["a1_bas_denetci", "a1La", "a1Lead"]) ?? "",
         a1_denetci_2: pick(["a1_denetci_2", "a1Fa", "a1Auditor"]) ?? "",
         a1_denetci_3: pick(["a1_denetci_3", "a1Sa"]) ?? "",
-        a2_baslangic: pick(["a2_baslangic", "a2Basla", "a2Baslav2"]) ?? "",
-        a2_bitis: pick(["a2_bitis", "a2Bitis", "a2Bitisv2"]) ?? "",
+        a2_baslangic: pick(["a2_baslangic", "a2Baslav2", "a2Basla"]) ?? "",
+        a2_bitis: pick(["a2_bitis", "a2Bitisv2", "a2Bitis"]) ?? "",
         a2_manday: pick(["a2_manday", "a2Md"]) ?? "",
         a2_bas_denetci: pick(["a2_bas_denetci", "a2La", "a2Lead"]) ?? "",
         a2_denetci_2: pick(["a2_denetci_2", "a2Fa", "a2Auditor"]) ?? "",
@@ -1851,6 +1851,39 @@ export default {
         const row = await env.DB_D1.prepare(`SELECT * FROM audits WHERE id=?`).bind(parseInt(id)).first();
         return jsonResponse({ success: !!row, data: row || null });
       },
+      getAuditCalendar: async (p, ctx, env) => {
+        const year = Number.parseInt(String(p?.year || ""), 10);
+        const month = Number.parseInt(String(p?.month || ""), 10);
+        if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+          return jsonResponse({ success: false, error: "INVALID_YEAR_MONTH" }, 400);
+        }
+
+        const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
+        const monthEnd = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+        // D1'de tarihler hem 'DD.MM.YYYY' hem 'YYYY-MM-DD' formunda olabilir.
+        // CASE WHEN ile noktalı formatı ISO'ya çevirerek karşılaştırma yapıyoruz.
+        const toIso = `CASE WHEN col LIKE '__.__.____'
+          THEN SUBSTR(col,7,4)||'-'||SUBSTR(col,4,2)||'-'||SUBSTR(col,1,2)
+          ELSE col END`;
+        const a1s = toIso.replaceAll("col", "a.a1_baslangic");
+        const a1e = toIso.replaceAll("col", "COALESCE(NULLIF(a.a1_bitis,''),a.a1_baslangic)");
+        const a2s = toIso.replaceAll("col", "a.a2_baslangic");
+        const a2e = toIso.replaceAll("col", "COALESCE(NULLIF(a.a2_bitis,''),a.a2_baslangic)");
+        const { results } = await env.DB_D1.prepare(
+          `SELECT a.*, co.nickname, co.unvan
+           FROM audits a
+           LEFT JOIN companies co ON co.id = a.firma_no
+           WHERE (
+             a.a1_baslangic IS NOT NULL AND TRIM(a.a1_baslangic) != ''
+             AND ${a1s} < ? AND ${a1e} >= ?
+           ) OR (
+             a.a2_baslangic IS NOT NULL AND TRIM(a.a2_baslangic) != ''
+             AND ${a2s} < ? AND ${a2e} >= ?
+           )
+           ORDER BY COALESCE(a.a1_baslangic, a.a2_baslangic) DESC`
+        ).bind(monthEnd, monthStart, monthEnd, monthStart).all();
+        return jsonResponse({ success: true, data: results || [] });
+      },
       buildCertPayload: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
@@ -1909,7 +1942,7 @@ export default {
         const newId = dbRes.meta.last_row_id;
 
         // Step 2: Background Sync
-        const syncParams = { ...p, id: newId, testInfo: { ...p.testInfo, id: newId } };
+        const syncParams = { ...p, id: newId, testInfo: { ...canonical, id: newId } };
         syncToBackup("addTest", syncParams, "tests", newId);
         
         return jsonResponse({ success: true, id: newId });
@@ -1923,7 +1956,7 @@ export default {
         await upsertTestD1(canonical, parseInt(id)).run();
 
         // Step 2: Background Sync
-        syncToBackup("updateTest", p, "tests", id);
+        syncToBackup("updateTest", { ...p, id, testInfo: canonical }, "tests", id);
         
         return jsonResponse({ success: true });
       },
@@ -1934,7 +1967,7 @@ export default {
         const newId = dbRes.meta.last_row_id;
 
         // Step 2: Background Sync
-        const syncParams = { ...p, id: newId, proInfo: { ...p.proInfo, id: newId } };
+        const syncParams = { ...p, id: newId, proInfo: { ...canonical, id: newId } };
         syncToBackup("addProforma", syncParams, "proformas", newId);
         
         return jsonResponse({ success: true, id: newId });
@@ -1948,7 +1981,7 @@ export default {
         await upsertProformaD1(canonical, parseInt(id)).run();
 
         // Step 2: Background Sync
-        syncToBackup("updateProforma", p, "proformas", id);
+        syncToBackup("updateProforma", { ...p, id, proInfo: canonical }, "proformas", id);
         
         return jsonResponse({ success: true });
       },
@@ -1959,7 +1992,7 @@ export default {
         const newId = dbRes.meta.last_row_id;
 
         // Step 2: Background Sync (Calendar creation is done in GAS)
-        const syncParams = { ...p, id: newId, data: { ...p.data, id: newId } };
+        const syncParams = { ...p, id: newId, data: { ...canonical, id: newId } };
         syncToBackup("scheduleAudit", syncParams, "audits", newId);
         
         return jsonResponse({ success: true, id: newId });
@@ -1973,7 +2006,7 @@ export default {
         await upsertAuditD1(canonical, parseInt(id)).run();
 
         // Step 2: Background Sync
-        syncToBackup("updateAudit", p, "audits", id);
+        syncToBackup("updateAudit", { ...p, id, data: canonical }, "audits", id);
         
         return jsonResponse({ success: true });
       },
@@ -2076,6 +2109,10 @@ export default {
     const MasterHandlers = {
       getConsultants: async (p, ctx, env) => {
         const { results } = await env.DB_D1.prepare(`SELECT * FROM consultants ORDER BY ad`).all();
+        return jsonResponse({ success: true, data: results || [] });
+      },
+      getAuditors: async (p, ctx, env) => {
+        const { results } = await env.DB_D1.prepare(`SELECT * FROM auditors ORDER BY ad, soyad`).all();
         return jsonResponse({ success: true, data: results || [] });
       },
       getConsultantById: async (p, ctx, env) => {
