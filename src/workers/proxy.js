@@ -577,25 +577,45 @@ export default {
     const createAuditBackupPayload = (source, options = {}) => {
       const canonical = createCanonicalAuditRow(source, options);
       return {
-        ...canonical,
-        denetim: canonical.denetim_tipi || "",
-        firmano: canonical.firma_no || "",
+        id: canonical.id,
+        firma_no: canonical.firma_no,
+        firmano: canonical.firma_no, // Alias for Sheets
+        sertifika_id: canonical.sertifika_id,
+        standart: canonical.standart,
+        denetim_tipi: canonical.denetim_tipi,
+        denetim: canonical.denetim_tipi, // Alias for Sheets
+        
+        // Stage 1 - All formatted to dots
+        a1_baslangic: formatIsoToDots(canonical.a1_baslangic),
+        a1_bitis: formatIsoToDots(canonical.a1_bitis),
         a1Basla: formatIsoToDots(canonical.a1_baslangic),
         a1Bitis: formatIsoToDots(canonical.a1_bitis),
         a1Baslav2: formatIsoToDots(canonical.a1_baslangic),
         a1Bitisv2: formatIsoToDots(canonical.a1_bitis),
-        a1Md: canonical.a1_manday || "",
-        a1La: canonical.a1_bas_denetci || "",
-        a1Fa: canonical.a1_denetci_2 || "",
-        a1Sa: canonical.a1_denetci_3 || "",
+        a1_manday: canonical.a1_manday,
+        a1Md: canonical.a1_manday,
+        a1_bas_denetci: canonical.a1_bas_denetci,
+        a1La: canonical.a1_bas_denetci,
+        a1_denetci_2: canonical.a1_denetci_2,
+        a1Fa: canonical.a1_denetci_2,
+        a1_denetci_3: canonical.a1_denetci_3,
+        a1Sa: canonical.a1_denetci_3,
+
+        // Stage 2 - All formatted to dots
+        a2_baslangic: formatIsoToDots(canonical.a2_baslangic),
+        a2_bitis: formatIsoToDots(canonical.a2_bitis),
         a2Basla: formatIsoToDots(canonical.a2_baslangic),
         a2Bitis: formatIsoToDots(canonical.a2_bitis),
         a2Baslav2: formatIsoToDots(canonical.a2_baslangic),
         a2Bitisv2: formatIsoToDots(canonical.a2_bitis),
-        a2Md: canonical.a2_manday || "",
-        a2La: canonical.a2_bas_denetci || "",
-        a2Fa: canonical.a2_denetci_2 || "",
-        a2Sa: canonical.a2_denetci_3 || "",
+        a2_manday: canonical.a2_manday,
+        a2Md: canonical.a2_manday,
+        a2_bas_denetci: canonical.a2_bas_denetci,
+        a2La: canonical.a2_bas_denetci,
+        a2_denetci_2: canonical.a2_denetci_2,
+        a2Fa: canonical.a2_denetci_2,
+        a2_denetci_3: canonical.a2_denetci_3,
+        a2Sa: canonical.a2_denetci_3
       };
     };
     const rowToObject = (headers, row) => {
