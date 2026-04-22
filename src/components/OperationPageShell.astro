@@ -1,10 +1,10 @@
 ---
-import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import DashboardLayout from '../layouts/DashboardLayout.astro';
 import { ArrowLeft } from 'lucide-astro';
 import {
   OPERATION_DEFINITIONS,
   type OperationPageKey,
-} from '../../features/operations/definitions';
+} from '../features/definitions';
 
 interface Props {
   pageKey: OperationPageKey;
@@ -26,7 +26,7 @@ const { pageKey, title, description } = Astro.props;
       <span class="text-xs font-bold text-muted" id="op-breadcrumb-label">{title}</span>
     </div>
 
-    <section class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
+    <section class="bg-surface border border-border-main shadow-xl rounded-[2rem]">
       <div id="op-skeleton" class="p-6 sm:p-8 animate-pulse space-y-4">
         <div class="h-3 w-24 rounded bg-surface-hover"></div>
         <div class="h-8 w-64 rounded bg-surface-hover"></div>

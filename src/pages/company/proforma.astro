@@ -1,5 +1,6 @@
 ---
-import OperationPageShell from '../../components/operations/OperationPageShell.astro';
+import OperationPageShell from '../../components/OperationPageShell.astro';
+import CompanyPicker from '../../components/CompanyPicker.astro';
 ---
 
 
@@ -8,26 +9,12 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   title="Proforma"
   description="Proforma listeleme ve yeni kayıt hazırlama akışını, mobilde de rahat kullanılacak şekilde ayrı bir operasyon sayfasına taşır."
 >
-  <div slot="select" class="space-y-5">
-    <div class="space-y-2">
-      <p class="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-400">Proforma</p>
-      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Firma Seçerek Devam Et</h1>
-      <p class="text-sm leading-relaxed text-muted max-w-2xl">Bu ekran header'dan doğrudan açıldığında önce ilgili firmayı seçersin. Firma profilinden geliyorsan proforma akışına direkt geçilir.</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
-      <div class="space-y-2">
-        <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Seçimi</label>
-        <input id="proforma-company-search" list="proforma-company-list" type="text" placeholder="Firma ara..." class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
-        <datalist id="proforma-company-list"></datalist>
-      </div>
-      <button id="proforma-company-continue" type="button" class="w-full md:w-auto inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-colors">
-        Firma ile Devam Et
-      </button>
-    </div>
-
-    <p id="proforma-page-select-status" class="text-xs font-semibold text-muted">Firma listesi hazırlanıyor...</p>
-  </div>
+  <CompanyPicker
+    slot="select"
+    prefix="proforma"
+    eyebrow="Proforma"
+    description="Bu ekran header'dan doğrudan açıldığında önce ilgili firmayı seçersin. Firma profilinden geliyorsan proforma akışına direkt geçilir."
+  />
 
   <div class="space-y-6">
     <section class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
@@ -76,12 +63,11 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 
 <script>
   import { api } from '../../lib/api';
-  import { $companies } from '../../lib/store';
-  import { SyncManager } from '../../lib/sync';
   import { toast } from '../../lib/toast';
-  import { loadCompanyOperationContext } from '../../features/operations/context';
-  import { toDotsDate, toInputDateValue, todayIso } from '../../features/operations/date-format';
-  import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
+  import { setupOperationCompanyPicker } from '../../features/company-picker';
+  import { loadCompanyOperationContext } from '../../features/context';
+  import { toDotsDate, toInputDateValue, todayIso } from '../../features/date-format';
+  import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/definitions';
 
   interface ProformaRow {
     id: string;
@@ -117,10 +103,6 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     const params = new URLSearchParams(location.search);
     let firmaId = params.get('id') || params.get('firmaId') || '';
 
-    const companySearch = document.getElementById('proforma-company-search') as HTMLInputElement | null;
-    const companyList = document.getElementById('proforma-company-list');
-    const companyContinue = document.getElementById('proforma-company-continue') as HTMLButtonElement | null;
-    const selectStatus = document.getElementById('proforma-page-select-status');
     const listBox = document.getElementById('proforma-list');
     const listPlaceholder = document.getElementById('proforma-list-placeholder');
     const counterEl = document.getElementById('proforma-counter');
@@ -138,26 +120,6 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     };
 
     // Helper to allow nested functions to see the variables
-    (window as any)._proformaCtx = { 
-      firmaId, companySearch, companyList, companyContinue, selectStatus, listBox, listPlaceholder, counterEl, saveButton, clearButton, refreshButton, amountInputs 
-    };
-
-  function companyLabel(company: any) {
-    const id = String(company?.['Firma No'] || company?.FirmaNo || company?.firmaNo || company?.id || company?.ID || '').trim();
-    const nick = String(company?.['Firma Adı'] || company?.nickname || company?.Nick || company?.nick || company?.FirmaAdi || company?.Unvan || company?.unvan || 'Firma').trim();
-    return `${nick} (${id || '—'})`;
-  }
-
-  function getCompanyId(company: any) {
-    return String(company?.['Firma No'] || company?.FirmaNo || company?.firmaNo || company?.id || company?.ID || '').trim();
-  }
-
-  function setSelectStatus(message: string, isError = false) {
-    if (!selectStatus) return;
-    selectStatus.textContent = message;
-    selectStatus.className = `text-xs font-semibold ${isError ? 'text-rose-400' : 'text-muted'}`;
-  }
-
   function parseDecimal(value: string) {
     if (!value) return NaN;
     return Number.parseFloat(value.replace(/\s+/g, '').replace(',', '.'));
@@ -480,31 +442,6 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
     (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', '/search');
   }
 
-  function syncCompanyList(companies: any[]) {
-    if (!companyList) return;
-    const frag = document.createDocumentFragment();
-    companies.forEach((company) => {
-      const option = document.createElement('option');
-      option.value = companyLabel(company);
-      frag.appendChild(option);
-    });
-    companyList.innerHTML = '';
-    companyList.appendChild(frag);
-    if (companies.length > 0) setSelectStatus('Bir firma seçip devam edebilirsin.');
-  }
-
-  function resolveCompanyFromInput() {
-    const raw = companySearch?.value.trim() || '';
-    const companies = $companies.get() as any[];
-    if (!raw) return null;
-    return companies.find((company) => {
-      const label = companyLabel(company);
-      const id = getCompanyId(company);
-      const nick = String(company?.['Firma Adı'] || company?.nickname || company?.Nick || company?.nick || company?.FirmaAdi || '').trim();
-      return raw === label || raw === id || raw === nick;
-    }) || null;
-  }
-
   async function loadScreen() {
     if (!firmaId) return;
 
@@ -547,31 +484,14 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
   }
 
     async function prepareCompanyPicker() {
-      showCompanyPicker();
-      syncCompanyList($companies.get() as any[]);
-      
-      await SyncManager.init();
-      if (($companies.get() as any[]).length === 0) {
-        const res = await api.getCompanies();
-        if (res.success && Array.isArray(res.data)) {
-          $companies.set(res.data);
-        }
-      }
-
-      companySearch?.addEventListener('input', () => {
-        const selected = resolveCompanyFromInput();
-        setSelectStatus(selected ? 'Firma seçildi. Devam edebilirsin.' : 'Listeden geçerli bir firma seç.');
-      });
-
-      companyContinue?.addEventListener('click', async () => {
-        const selected = resolveCompanyFromInput();
-        const selectedId = selected ? getCompanyId(selected) : '';
-        if (!selectedId) {
-          setSelectStatus('Devam etmek için listeden geçerli bir firma seç.', true);
-          return;
-        }
-        firmaId = selectedId;
-        await loadScreen();
+      await setupOperationCompanyPicker({
+        prefix: 'proforma',
+        registerCleanup,
+        onShowPicker: showCompanyPicker,
+        onSelected: async ({ id }) => {
+          firmaId = id;
+          await loadScreen();
+        },
       });
     }
 
@@ -582,9 +502,6 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
       }
       await loadScreen();
     }
-
-    const unsubCompanies = $companies.subscribe((companies) => syncCompanyList(companies as any[]));
-    registerCleanup(unsubCompanies);
 
     void boot();
   }

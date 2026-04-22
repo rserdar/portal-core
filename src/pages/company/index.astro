@@ -3,7 +3,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import { Icon } from 'astro-icon/components';
 import {
   OPERATION_DEFINITIONS,
-} from '../../features/operations/definitions';
+} from '../../features/definitions';
 import {
   MapPin, Phone, Mail, Globe,
   FileText, Award, ClipboardList, Pencil, ArrowLeft,
@@ -664,7 +664,7 @@ import {
   import { api } from '../../lib/api';
   import { SyncManager } from '../../lib/sync';
   import { toast } from '../../lib/toast';
-  import { toInputDateValue } from '../../features/operations/date-format';
+  import { toInputDateValue } from '../../features/date-format';
   import {
     normalizeKey,
     pickValue,

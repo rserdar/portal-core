@@ -1,5 +1,5 @@
 ---
-import OperationPageShell from '../../components/operations/OperationPageShell.astro';
+import OperationPageShell from '../../components/OperationPageShell.astro';
 ---
 
 <OperationPageShell
@@ -100,12 +100,12 @@ import OperationPageShell from '../../components/operations/OperationPageShell.a
 <script>
   import { toast } from '../../lib/toast';
   import { api } from '../../lib/api';
-  import { loadCompanyOperationContext } from '../../features/operations/context';
-  import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/operations/definitions';
+  import { loadCompanyOperationContext } from '../../features/context';
+  import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/definitions';
   import { $companies } from '../../lib/store';
   import { normalizeKey } from '../../lib/utils';
   import { SyncManager } from '../../lib/sync';
-  import { normalizeStandards, type StandardOption } from '../../features/operations/certificate-form';
+  import { normalizeStandards, type StandardOption } from '../../features/certificate-form';
 
   let cleanupFns: Array<() => void> = [];
 

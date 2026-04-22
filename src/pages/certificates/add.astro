@@ -1,6 +1,8 @@
 ---
 import DashboardLayout from "../../layouts/DashboardLayout.astro";
 import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
+import CompanyPicker from "../../components/CompanyPicker.astro";
+
 ---
 
 <DashboardLayout title="Sertifika Ekle">
@@ -24,7 +26,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
     </div>
 
     <section
-      class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden"
+      class="bg-surface border border-border-main shadow-xl rounded-[2rem]"
     >
       <div id="cert-page-skeleton">
         <!-- Spinner -->
@@ -48,7 +50,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
           <span class="text-xs font-bold text-muted"
-            >Firma ve sertifika bilgileri yükleniyor...</span
+            >Firma ve sertifika bilgileri y�kleniyor...</span
           >
         </div>
 
@@ -66,8 +68,6 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
               <div class="h-4 w-full max-w-xl rounded bg-surface-hover"></div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div class="h-20 rounded-2xl bg-surface-hover"></div>
-              <div class="h-20 rounded-2xl bg-surface-hover"></div>
               <div class="h-20 rounded-2xl bg-surface-hover"></div>
             </div>
           </div>
@@ -148,7 +148,8 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
         </div>
       </div>
 
-      <div id="cert-page-select" class="hidden p-6 sm:p-8 space-y-5">
+      <CompanyPicker id="cert" />
+
         <div class="space-y-2">
           <p
             class="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-400"
@@ -172,14 +173,23 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
               class="text-[11px] font-bold uppercase tracking-widest text-muted"
               >Firma Seçimi</label
             >
-            <input
-              id="cert-company-search"
-              list="cert-company-list"
-              type="text"
-              placeholder="Firma ara..."
-              class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
-            />
-            <datalist id="cert-company-list"></datalist>
+            <div class="relative">
+              <input
+                id="cert-company-search"
+                type="text"
+                autocomplete="off"
+                aria-autocomplete="list"
+                aria-expanded="false"
+                aria-controls="cert-company-list"
+                placeholder="Firma ara..."
+                class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
+              />
+              <div
+                id="cert-company-list"
+                class="absolute left-0 right-0 top-[calc(100%+0.45rem)] z-20 hidden max-h-64 overflow-y-auto rounded-2xl border border-border-main bg-surface p-2 shadow-2xl shadow-slate-950/10"
+              >
+              </div>
+            </div>
           </div>
           <button
             id="cert-company-continue"
@@ -851,7 +861,9 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
   import { SyncManager } from "../../lib/sync";
   import { toast } from "../../lib/toast";
   import { normalizeKey } from "../../lib/utils";
-  import { loadCompanyOperationContext } from "../../features/operations/context";
+  import { loadCompanyOperationContext } from "../../features/context";
+  import { setupOperationCompanyPicker } from "../../features/company-picker";
+
   import {
     normalizeStandards,
     buildSuggestedCertPrefix,
@@ -859,7 +871,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
     addOneYearMinusOneDay,
     toDisplayDate,
     buildCertificateQrLink,
-  } from "../../features/operations/certificate-form";
+  } from "../../features/certificate-form";
 
   let cleanupFns: Array<() => void> = [];
 
@@ -887,7 +899,9 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
       companySearch: document.getElementById(
         "cert-company-search",
       ) as HTMLInputElement | null,
-      companyList: document.getElementById("cert-company-list"),
+      companyList: document.getElementById(
+        "cert-company-list",
+      ) as HTMLDivElement | null,
       companyContinue: document.getElementById(
         "cert-company-continue",
       ) as HTMLButtonElement | null,
@@ -984,6 +998,8 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
     let consultantOptions: string[] = [];
     let consultantSuggestions: string[] = [];
     let activeConsultantIndex = -1;
+    let companySuggestions: any[] = [];
+    let activeCompanyIndex = -1;
 
     function getCompanyValue(company: any, ...keys: string[]) {
       if (!company || typeof company !== "object") return "";
@@ -1049,17 +1065,16 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
     }
 
     function syncCompanyList(companies: any[]) {
-      if (!els.companyList) return;
-      const frag = document.createDocumentFragment();
-      companies.forEach((company) => {
-        const option = document.createElement("option");
-        option.value = companyLabel(company);
-        frag.appendChild(option);
-      });
-      els.companyList.innerHTML = "";
-      els.companyList.appendChild(frag);
       if (companies.length > 0) {
         setSelectStatus("Bir firma seçip devam edebilirsin.");
+      }
+      if (
+        document.activeElement === els.companySearch &&
+        !els.companyList?.classList.contains("hidden")
+      ) {
+        renderCompanySuggestions(els.companySearch?.value || "", {
+          forceOpen: true,
+        });
       }
     }
 
@@ -1077,6 +1092,118 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
           );
         }) || null
       );
+    }
+
+    function closeCompanyList() {
+      activeCompanyIndex = -1;
+      companySuggestions = [];
+      if (!els.companyList) return;
+      els.companyList.classList.add("hidden");
+      els.companyList.innerHTML = "";
+      els.companySearch?.setAttribute("aria-expanded", "false");
+    }
+
+    function chooseCompany(company: any) {
+      selectedCompany = company;
+      if (els.companySearch) {
+        els.companySearch.value = companyLabel(company);
+        els.companySearch.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      setSelectStatus("Firma seçildi. Devam edebilirsin.");
+      closeCompanyList();
+    }
+
+    function renderCompanySuggestions(
+      query = "",
+      options: { forceOpen?: boolean } = {},
+    ) {
+      if (!els.companyList || !els.companySearch) return;
+
+      const companies = $companies.get() as any[];
+      const normalizedQuery = normalizeSearchText(query);
+      const suggestions = normalizedQuery
+        ? companies.filter((company) => {
+            const haystacks = [
+              companyLabel(company),
+              getCompanyDisplayName(company),
+              getCompanyId(company),
+            ];
+            return haystacks.some((value) =>
+              normalizeSearchText(value).includes(normalizedQuery),
+            );
+          })
+        : companies.slice(0, 12);
+
+      companySuggestions = suggestions.slice(0, 12);
+      activeCompanyIndex = companySuggestions.length ? 0 : -1;
+
+      if (!companySuggestions.length) {
+        if (options.forceOpen && query.trim()) {
+          els.companyList.innerHTML =
+            '<p class="px-3 py-2 text-xs font-semibold text-muted">Eşleşen firma bulunamadı. Listeden bir firma seçmelisin.</p>';
+          els.companyList.classList.remove("hidden");
+          els.companySearch.setAttribute("aria-expanded", "true");
+          return;
+        }
+        closeCompanyList();
+        return;
+      }
+
+      els.companyList.innerHTML = "";
+      const fragment = document.createDocumentFragment();
+      companySuggestions.forEach((company, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.companyOption = getCompanyId(company);
+        button.className = `company-option flex w-full flex-col items-start rounded-xl px-3 py-2 text-left text-sm font-semibold transition-colors ${
+          index === activeCompanyIndex
+            ? "bg-indigo-500/10 text-indigo-200"
+            : "text-main hover:bg-surface-hover"
+        }`;
+
+        const primary = document.createElement("span");
+        primary.textContent = getCompanyDisplayName(company) || "Firma";
+        button.appendChild(primary);
+
+        const secondary = document.createElement("span");
+        secondary.className =
+          "text-[11px] font-bold uppercase tracking-widest text-muted";
+        secondary.textContent = `M${getCompanyId(company) || "—"}`;
+        button.appendChild(secondary);
+
+        fragment.appendChild(button);
+      });
+      els.companyList.appendChild(fragment);
+      els.companyList.classList.remove("hidden");
+      els.companySearch.setAttribute("aria-expanded", "true");
+    }
+
+    function moveCompanySelection(direction: 1 | -1) {
+      if (!companySuggestions.length || !els.companyList) return;
+      activeCompanyIndex =
+        (activeCompanyIndex + direction + companySuggestions.length) %
+        companySuggestions.length;
+      const buttons = Array.from(
+        els.companyList.querySelectorAll<HTMLButtonElement>(
+          "[data-company-option]",
+        ),
+      );
+      buttons.forEach((button, index) => {
+        button.classList.toggle(
+          "bg-indigo-500/10",
+          index === activeCompanyIndex,
+        );
+        button.classList.toggle(
+          "text-indigo-200",
+          index === activeCompanyIndex,
+        );
+        button.classList.toggle("text-main", index !== activeCompanyIndex);
+        button.classList.toggle(
+          "hover:bg-surface-hover",
+          index !== activeCompanyIndex,
+        );
+      });
+      buttons[activeCompanyIndex]?.scrollIntoView({ block: "nearest" });
     }
 
     function setShellError() {
@@ -2241,30 +2368,90 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
     }
 
     async function prepareCompanyPicker() {
-      showCompanyPicker();
-      syncCompanyList($companies.get() as any[]);
-      $companies.subscribe((companies) => syncCompanyList(companies as any[]));
-      await SyncManager.init();
-      if (($companies.get() as any[]).length === 0) {
-        const res = await api.getCompanies();
+      await setupOperationCompanyPicker({
+        idPrefix: 'cert',
+        onSelect: (c: any) => {
+          activeFirmaId = String(c?.['Firma No'] || c?.FirmaNo || c?.firmaNo || c?.id || c?.ID || '').trim();
+          void loadScreen();
+        },
+        onShowPicker: () => {
+          els.skeleton?.classList.add("hidden");
+          els.error?.classList.add("hidden");
+          els.shell?.classList.add("hidden");
+          els.select?.classList.remove("hidden");
+          if (els.backLink) els.backLink.href = "/certificates";
+        }
+      });
+    }
+
+
+
+
         if (res.success && Array.isArray(res.data)) {
           $companies.set(res.data);
         }
       }
 
       if (els.companySearch) {
-        els.companySearch.oninput = () => {
-          selectedCompany = resolveCompanyFromInput();
-          setSelectStatus(
-            selectedCompany
-              ? "Firma seçildi. Devam edebilirsin."
-              : "Listeden geçerli bir firma seç.",
-          );
+
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            if (els.companyList?.classList.contains("hidden")) {
+              renderCompanySuggestions(els.companySearch?.value || "", {
+                forceOpen: true,
+              });
+              return;
+            }
+            moveCompanySelection(1);
+            return;
+          }
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+            if (!els.companyList?.classList.contains("hidden")) {
+              moveCompanySelection(-1);
+            }
+            return;
+          }
+          if (event.key === "Enter") {
+            if (
+              activeCompanyIndex >= 0 &&
+              companySuggestions[activeCompanyIndex]
+            ) {
+              event.preventDefault();
+              chooseCompany(companySuggestions[activeCompanyIndex]);
+              return;
+            }
+            selectedCompany = resolveCompanyFromInput();
+            if (selectedCompany) {
+              event.preventDefault();
+              void els.companyContinue?.click();
+            }
+            return;
+          }
+          if (event.key === "Escape") {
+            closeCompanyList();
+          }
+        };
+        els.companySearch.onblur = () => {
+          window.setTimeout(() => closeCompanyList(), 120);
         };
       }
 
+      els.companyList?.addEventListener("mousedown", (event) => {
+        const option = (event.target as HTMLElement).closest<HTMLButtonElement>(
+          "[data-company-option]",
+        );
+        if (!option) return;
+        event.preventDefault();
+        const matched = companySuggestions.find(
+          (company) =>
+            getCompanyId(company) === (option.dataset.companyOption || ""),
+        );
+        if (matched) chooseCompany(matched);
+      });
+
       if (els.companyContinue) {
-        els.companyContinue.onclick = async () => {
+
           selectedCompany = resolveCompanyFromInput();
           const selectedId = selectedCompany
             ? getCompanyId(selectedCompany)
@@ -2280,11 +2467,12 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
           await loadScreen();
         };
       }
-    }
+
 
     async function loadScreen() {
       if (!activeFirmaId) {
-        showCompanyPicker();
+        await prepareCompanyPicker();
+
         return;
       }
 
@@ -2328,6 +2516,7 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
     }
 
     async function boot() {
+
       if (activeFirmaId) {
         await loadScreen();
         return;
@@ -2336,12 +2525,9 @@ import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
       await prepareCompanyPicker();
     }
 
-    const unsubCompanies = $companies.subscribe((companies) =>
-      syncCompanyList(companies as any[]),
-    );
-    registerCleanup(unsubCompanies);
 
     void boot();
+
   }
 
   // Initial load
