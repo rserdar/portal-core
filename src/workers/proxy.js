@@ -1873,10 +1873,16 @@ export default {
         return jsonResponse({ success: true, data: results || [] });
       },
       getAudits: async (p, ctx, env) => {
+        const toIso = (col) => `CASE WHEN ${col} LIKE '__.__.____'
+          THEN SUBSTR(${col},7,4)||'-'||SUBSTR(${col},4,2)||'-'||SUBSTR(${col},1,2)
+          ELSE ${col} END`;
+        const a1s = toIso("a.a1_baslangic");
+        const a2s = toIso("a.a2_baslangic");
+
         const { results } = await env.DB_D1.prepare(
           `SELECT a.*, co.nickname, co.unvan FROM audits a
            LEFT JOIN companies co ON co.id = a.firma_no
-           ORDER BY COALESCE(a.a1_baslangic, a.a2_baslangic) DESC`
+           ORDER BY COALESCE(${a1s}, ${a2s}) DESC`
         ).all();
         return jsonResponse({ success: true, data: results || [] });
       },
