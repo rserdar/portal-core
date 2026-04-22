@@ -501,6 +501,18 @@ export default {
     };
     const getTestId = (t) => String(t?.id ?? t?.ID ?? "").trim();
     const getTestFirmaId = (t) => String(t?.firma_no ?? "").trim();
+    const createTestBackupPayload = (source, options = {}) => {
+      const canonical = createCanonicalTestRow(source, options);
+      return {
+        ...canonical,
+        urun_kabul: formatIsoToDots(canonical.urun_kabul),
+        test_baslangic: formatIsoToDots(canonical.test_baslangic),
+        test_bitis: formatIsoToDots(canonical.test_bitis),
+        rapor_tarihi: formatIsoToDots(canonical.rapor_tarihi),
+        numune_ut: formatIsoToDots(canonical.numune_ut),
+        numune_skt: formatIsoToDots(canonical.numune_skt)
+      };
+    };
     const createCanonicalProformaRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
       const pick = getPicker(input);
@@ -519,6 +531,13 @@ export default {
     };
     const getProformaId = (p) => String(p?.id ?? p?.ID ?? "").trim();
     const getProformaFirmaId = (p) => String(p?.firma_no ?? "").trim();
+    const createProformaBackupPayload = (source, options = {}) => {
+      const canonical = createCanonicalProformaRow(source, options);
+      return {
+        ...canonical,
+        tarih: formatIsoToDots(canonical.tarih)
+      };
+    };
     const getAuditId = (a) => String(a?.id ?? a?.ID ?? "").trim();
     const getAuditFirmaId = (a) => String(a?.firma_no ?? a?.firmaNo ?? a?.firmano ?? "").trim();
     const formatIsoToDots = (value) => {
@@ -1976,7 +1995,7 @@ export default {
         const newId = dbRes.meta.last_row_id;
 
         // Step 2: Background Sync
-        const syncParams = { ...p, id: newId, testInfo: { ...canonical, id: newId } };
+        const syncParams = { ...p, id: newId, testInfo: { ...createTestBackupPayload(canonical), id: newId } };
         syncToBackup("addTest", syncParams, "tests", newId);
         
         return jsonResponse({ success: true, id: newId });
@@ -1990,7 +2009,7 @@ export default {
         await upsertTestD1(canonical, parseInt(id)).run();
 
         // Step 2: Background Sync
-        syncToBackup("updateTest", { ...p, id, testInfo: canonical }, "tests", id);
+        syncToBackup("updateTest", { ...p, id, testInfo: createTestBackupPayload(canonical, { id }) }, "tests", id);
         
         return jsonResponse({ success: true });
       },
@@ -2001,7 +2020,7 @@ export default {
         const newId = dbRes.meta.last_row_id;
 
         // Step 2: Background Sync
-        const syncParams = { ...p, id: newId, proInfo: { ...canonical, id: newId } };
+        const syncParams = { ...p, id: newId, proInfo: { ...createProformaBackupPayload(canonical), id: newId } };
         syncToBackup("addProforma", syncParams, "proformas", newId);
         
         return jsonResponse({ success: true, id: newId });
@@ -2015,7 +2034,7 @@ export default {
         await upsertProformaD1(canonical, parseInt(id)).run();
 
         // Step 2: Background Sync
-        syncToBackup("updateProforma", { ...p, id, proInfo: canonical }, "proformas", id);
+        syncToBackup("updateProforma", { ...p, id, proInfo: createProformaBackupPayload(canonical, { id }) }, "proformas", id);
         
         return jsonResponse({ success: true });
       },
