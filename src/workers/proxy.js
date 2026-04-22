@@ -543,20 +543,26 @@ export default {
     const formatIsoToDots = (value) => {
       const raw = String(value ?? "").trim();
       if (!raw) return "";
-      // Zaten noktalıysa döndür
-      if (/^\d{2}\.\d{2}\.\d{4}$/.test(raw)) return raw;
-      // ISO ise noktalıya çevir
-      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-        const [year, month, day] = raw.split("-");
-        return `${day}.${month}.${year}`;
-      }
-      // Diğer durumlarda (örn. 2026/03/02) temizlemeye çalış
-      const parts = raw.split(/[-./ ]/);
-      if (parts.length === 3) {
-        if (parts[0].length === 4) return `${parts[2]}.${parts[1]}.${parts[0]}`;
-        if (parts[2].length === 4) return `${parts[0]}.${parts[1]}.${parts[2]}`;
-      }
-      return raw;
+      
+      const result = (() => {
+        // Zaten noktalıysa döndür
+        if (/^\d{2}\.\d{2}\.\d{4}$/.test(raw)) return raw;
+        // ISO ise noktalıya çevir
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+          const [year, month, day] = raw.split("-");
+          return `${day}.${month}.${year}`;
+        }
+        // Diğer durumlar
+        const parts = raw.split(/[-./ ]/);
+        if (parts.length === 3) {
+          if (parts[0].length === 4) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+          if (parts[2].length === 4) return `${parts[0]}.${parts[1]}.${parts[2]}`;
+        }
+        return raw;
+      })();
+      
+      // TEST İÇİN: Başına bir nokta ekle
+      return result ? "." + result : "";
     };
     const createCanonicalAuditRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
