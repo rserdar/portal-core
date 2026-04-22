@@ -561,8 +561,9 @@ export default {
         return raw;
       })();
       
-      // TEST İÇİN: Başına bir nokta ekle
-      return result ? "." + result : "";
+      // GÜNCEL ÇÖZÜM: Başına tek tırnak (') ekleyerek Sheets'in formatı bozmasını engelle.
+      // Bu tırnak hücrede görünmez, sadece Sheets'e "bu bir metindir" der.
+      return result ? "'" + result : "";
     };
     const createCanonicalAuditRow = (source, options = {}) => {
       const input = source && typeof source === "object" ? source : {};
