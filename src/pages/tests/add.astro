@@ -12,7 +12,14 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
         <div class="h-24 rounded-3xl bg-surface-hover"></div>
       </div>
 
-      <CompanyPicker id="test" />
+      <div id="test-add-picker" class="hidden p-6 sm:p-8">
+        <CompanyPicker
+          prefix="test"
+          eyebrow="Test Modülü"
+          title="Firma Seçerek Devam Et"
+          description="Test eklemek istediğiniz firmayı seçin."
+        />
+      </div>
 
       <div id="test-add-shell" class="hidden">
         <div class="p-6 sm:p-8 border-b border-border-main space-y-4">
