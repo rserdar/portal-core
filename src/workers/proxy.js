@@ -600,7 +600,11 @@ export default {
         a1Bitis: formatIsoToDots(canonical.a1_bitis),
         a1Baslav2: formatIsoToDots(canonical.a1_baslangic),
         a1Bitisv2: formatIsoToDots(canonical.a1_bitis),
-        // Ekstra varyasyonlar (boşluklu veya farklı isimlendirmeler için)
+        // Google Sheets'teki BÜYÜK HARF ve Türkçe karakterli başlıklar için tam eşleşme:
+        "A1 BAŞLA": formatIsoToDots(canonical.a1_baslangic),
+        "A1 BİTİŞ": formatIsoToDots(canonical.a1_bitis),
+        "A1 BASLA": formatIsoToDots(canonical.a1_baslangic),
+        "A1 BITIS": formatIsoToDots(canonical.a1_bitis),
         "A1 Basla": formatIsoToDots(canonical.a1_baslangic),
         "A1 Bitiş": formatIsoToDots(canonical.a1_bitis),
         "A1 Bitis": formatIsoToDots(canonical.a1_bitis),
@@ -620,7 +624,11 @@ export default {
         a2Bitis: formatIsoToDots(canonical.a2_bitis),
         a2Baslav2: formatIsoToDots(canonical.a2_baslangic),
         a2Bitisv2: formatIsoToDots(canonical.a2_bitis),
-        // Ekstra varyasyonlar
+        // Google Sheets'teki BÜYÜK HARF ve Türkçe karakterli başlıklar için tam eşleşme:
+        "A2 BAŞLA": formatIsoToDots(canonical.a2_baslangic),
+        "A2 BİTİŞ": formatIsoToDots(canonical.a2_bitis),
+        "A2 BASLA": formatIsoToDots(canonical.a2_baslangic),
+        "A2 BITIS": formatIsoToDots(canonical.a2_bitis),
         "A2 Basla": formatIsoToDots(canonical.a2_baslangic),
         "A2 Bitiş": formatIsoToDots(canonical.a2_bitis),
         "A2 Bitis": formatIsoToDots(canonical.a2_bitis),
