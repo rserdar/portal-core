@@ -72,9 +72,9 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
 
   async function initPicker() {
     await setupOperationCompanyPicker({
-      idPrefix: 'test',
-      onSelect: (c: any) => {
-        activeFirmaId = String(c?.['Firma No'] || c?.FirmaNo || c?.firmaNo || c?.id || c?.ID || '').trim();
+      prefix: 'test',
+      onSelected: ({ id }) => {
+        activeFirmaId = id;
         void renderWithContext();
       },
       onShowPicker: () => {

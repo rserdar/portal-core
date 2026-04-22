@@ -541,8 +541,9 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
     
     async function prepareCompanyPicker() {
       await setupOperationCompanyPicker({
-        idPrefix: 'audit',
-        onSelect: (c) => setSelectedCompany(c),
+        prefix: 'audit',
+        registerCleanup,
+        onSelected: ({ company }) => setSelectedCompany(company),
         onShowPicker: () => {
            pickerSection?.classList.remove('hidden');
            formSection?.classList.add('hidden');

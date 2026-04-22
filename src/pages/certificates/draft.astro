@@ -1,5 +1,6 @@
 ---
 import OperationPageShell from '../../components/OperationPageShell.astro';
+import CompanyPicker from '../../components/CompanyPicker.astro';
 ---
 
 <OperationPageShell
@@ -7,40 +8,84 @@ import OperationPageShell from '../../components/OperationPageShell.astro';
   title="Taslak Oluştur"
   description="Standart, dil ve kapsam tercihlerini belirleyerek sertifika taslağı oluşturur. Firma bilgileri otomatik yüklenir."
 >
+  <CompanyPicker
+    slot="select"
+    prefix="draft"
+    eyebrow="Sertifika Taslağı"
+    description="Taslak oluşturmak için önce bir firma seçmelisin."
+  />
+
   <div class="space-y-6">
 
-    <section class="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-6">
+    <section class="space-y-6">
 
-      <!-- Sol: Taslak Ayarları -->
+      <!-- Taslak Ayarları (Full Width) -->
       <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
         <h2 class="text-sm font-black uppercase tracking-widest text-main">Taslak Ayarları</h2>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Standart</label>
-            <select id="draft-standard" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500">
-              <option value="">Seçiniz...</option>
-            </select>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Sol Sütun: Standart/Dil + Türkçe Kapsam -->
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Standart</label>
+                <select id="draft-standard" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500">
+                  <option value="">Seçiniz...</option>
+                </select>
+              </div>
+              <div class="space-y-2">
+                <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Dil</label>
+                <div class="flex gap-3">
+                  <label class="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main cursor-pointer hover:bg-surface transition-colors">
+                    <input type="radio" name="draft-lang" value="EN" checked class="accent-indigo-500" />
+                    EN
+                  </label>
+                  <label class="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main cursor-pointer hover:bg-surface transition-colors">
+                    <input type="radio" name="draft-lang" value="TR" class="accent-indigo-500" />
+                    TR
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Türkçe Kapsam</label>
+                <div class="flex gap-2">
+                  <button id="draft-kapsam-upper" type="button" class="rounded-2xl border border-border-main bg-surface-hover px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface transition-colors">BÜYÜK</button>
+                  <button id="draft-kapsam-translate" type="button" class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors">EN Çevir</button>
+                </div>
+              </div>
+              <textarea id="draft-kapsam" rows={8} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
+            </div>
           </div>
-          <div class="space-y-2">
-            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Dil</label>
-            <div class="flex gap-3">
-              <label class="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main cursor-pointer hover:bg-surface transition-colors">
-                <input type="radio" name="draft-lang" value="EN" checked class="accent-indigo-500" />
-                EN
-              </label>
-              <label class="flex-1 flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main cursor-pointer hover:bg-surface transition-colors">
-                <input type="radio" name="draft-lang" value="TR" class="accent-indigo-500" />
-                TR
-              </label>
+
+          <!-- Sağ Sütun: Bilgi Notu + İngilizce Kapsam -->
+          <div class="space-y-4">
+            <div class="rounded-2xl border border-dashed border-border-main bg-surface-hover/30 p-4 min-h-[78px] flex items-center">
+              <p class="text-xs leading-relaxed text-muted">
+                Standart, dil ve kapsam verileri taslak şablonuna doğrudan basılır. 
+                <span class="font-bold text-main">"Diğer"</span> seçiminde placeholder alanları da kullanılır.
+              </p>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-[11px] font-bold uppercase tracking-widest text-muted">İngilizce Kapsam (Scope)</label>
+                <div class="flex gap-2">
+                  <button id="draft-scope-upper" type="button" class="rounded-2xl border border-border-main bg-surface-hover px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface transition-colors">BÜYÜK</button>
+                  <button id="draft-scope-translate" type="button" class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors">TR Çevir</button>
+                </div>
+              </div>
+              <textarea id="draft-scope" rows={8} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
             </div>
           </div>
         </div>
 
         <!-- Diğer Standart Alanları — sadece "Diğer" seçilince görünür -->
-        <div id="draft-other-wrap" class="hidden grid-cols-1 sm:grid-cols-2 gap-4">
+        <div id="draft-other-wrap" class="hidden grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <div class="space-y-2">
-            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Standart</label>
+            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Özel Standart Adı</label>
             <input id="draft-other-full" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Örn. ISO 9001:2015" />
           </div>
           <div class="space-y-2">
@@ -48,48 +93,10 @@ import OperationPageShell from '../../components/OperationPageShell.astro';
             <input id="draft-other-desc" type="text" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Örn. Quality Management System" />
           </div>
         </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Türkçe Kapsam</label>
-            <textarea id="draft-kapsam" rows={8} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
-          </div>
-          <div class="space-y-2">
-            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">İngilizce Kapsam (Scope)</label>
-            <textarea id="draft-scope" rows={8} class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main min-h-[220px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sağ: Önizleme Özeti -->
-      <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
-        <h2 class="text-sm font-black uppercase tracking-widest text-main">Önizleme Özeti</h2>
-
-        <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-3 text-sm">
-          <div>
-            <p class="text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">Firma</p>
-            <p id="draft-preview-firma" class="font-semibold text-main">—</p>
-          </div>
-          <div>
-            <p class="text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">Adres</p>
-            <p id="draft-preview-yetkili" class="font-semibold text-main">—</p>
-          </div>
-          <div>
-            <p class="text-[10px] font-bold uppercase tracking-widest text-muted mb-0.5">Standart / Dil</p>
-            <p id="draft-preview-standard" class="font-semibold text-main">—</p>
-          </div>
-        </div>
-
-        <div class="rounded-2xl border border-dashed border-border-main p-4 text-sm leading-relaxed text-muted">
-          Standart, dil ve kapsam verileri Google Docs taslak şablonuna doğrudan basılır. "Diğer" seçimi yapıldığında iki özel placeholder alanı da ayrıca kullanılır.
-        </div>
       </div>
     </section>
 
     <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
-      <button id="draft-preview-button" type="button" class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm font-bold text-main hover:bg-surface-hover transition-colors">
-        Önizlemeyi Güncelle
-      </button>
       <button id="draft-generate-button" type="button" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
         Taslak Oluştur
       </button>
@@ -102,9 +109,8 @@ import OperationPageShell from '../../components/OperationPageShell.astro';
   import { api } from '../../lib/api';
   import { loadCompanyOperationContext } from '../../features/context';
   import { OPERATION_DEFINITIONS, buildOperationHref } from '../../features/definitions';
-  import { $companies } from '../../lib/store';
   import { normalizeKey } from '../../lib/utils';
-  import { SyncManager } from '../../lib/sync';
+  import { setupOperationCompanyPicker } from '../../features/company-picker';
   import { normalizeStandards, type StandardOption } from '../../features/certificate-form';
 
   let cleanupFns: Array<() => void> = [];
@@ -133,41 +139,9 @@ import OperationPageShell from '../../components/OperationPageShell.astro';
       otherDesc: document.getElementById('draft-other-desc') as HTMLInputElement | null,
       kapsam: document.getElementById('draft-kapsam') as HTMLTextAreaElement | null,
       scope: document.getElementById('draft-scope') as HTMLTextAreaElement | null,
-      previewFirma: document.getElementById('draft-preview-firma'),
-      previewYetkili: document.getElementById('draft-preview-yetkili'),
-      previewStandard: document.getElementById('draft-preview-standard'),
-      previewButton: document.getElementById('draft-preview-button') as HTMLButtonElement | null,
+      opStats: document.getElementById('op-company-stats'),
       generateButton: document.getElementById('draft-generate-button') as HTMLButtonElement | null,
     };
-
-    function getCompanyValue(company: any, ...keys: string[]) {
-    if (!company || typeof company !== 'object') return '';
-    for (const key of keys) {
-      const value = company[key];
-      if (value !== undefined && value !== null && String(value).trim() !== '') {
-        return String(value).trim();
-      }
-    }
-    return '';
-  }
-
-  function getCompanyId(company: any) {
-    return getCompanyValue(company, 'Firma No', 'FirmaNo', 'firmaNo', 'id', 'ID');
-  }
-
-  function getCompanyNick(company: any) {
-    return getCompanyValue(company, 'Firma Adı', 'nickname', 'Nick', 'nick', 'FirmaAdi');
-  }
-
-  function getCompanyDisplayName(company: any) {
-    return getCompanyNick(company) || getCompanyValue(company, 'Unvan', 'unvan');
-  }
-
-  function companyLabel(company: any) {
-    const nick = getCompanyDisplayName(company) || 'Firma';
-    const companyId = getCompanyId(company) || '—';
-    return `${nick} (${companyId})`;
-  }
 
   function pickObjectValue(record: Record<string, any>, aliases: string[]) {
     for (const key of aliases) {
@@ -194,7 +168,7 @@ import OperationPageShell from '../../components/OperationPageShell.astro';
       .replace(/[Ş]/g, 'S')
       .replace(/[Ö]/g, 'O')
       .replace(/[Ç]/g, 'C');
-    return normalized === 'DIGER';
+    return normalized === 'DIGER' || normalized === 'CE';
   }
 
   function getSelectedLang() {
@@ -273,20 +247,16 @@ import OperationPageShell from '../../components/OperationPageShell.astro';
 
   function hydratePreview() {
     if (!companyContext) return;
-    if (els.previewFirma) els.previewFirma.textContent = companyContext.unvan || companyContext.nick || '—';
-    if (els.previewYetkili) {
-      els.previewYetkili.textContent = [companyContext.adres, [companyContext.sehir, companyContext.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
-    }
     const payload = buildDraftPayloadPreview();
-    if (els.previewStandard) {
+    if (els.opStats) {
       if (!payload?.standardLabel) {
-        els.previewStandard.textContent = '—';
+        els.opStats.textContent = 'Standart seçilmedi';
       } else if (payload.isOther) {
         const fullValue = payload.other || '{{Standart}}';
         const descValue = payload.aStandart || '{{aStandart}}';
-        els.previewStandard.textContent = `${fullValue} / ${descValue} / ${payload.lang}`;
+        els.opStats.textContent = `${fullValue} / ${descValue} / ${payload.lang}`;
       } else {
-        els.previewStandard.textContent = `${payload.standardLabel} / ${payload.lang}`;
+        els.opStats.textContent = `${payload.standardLabel} / ${payload.lang}`;
       }
     }
   }
@@ -367,84 +337,19 @@ import OperationPageShell from '../../components/OperationPageShell.astro';
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
   }
 
-  function renderPickerState(message = 'Bir firma seçip taslak akışına devam edebilirsin.', isError = false) {
-    const errorBox = document.getElementById('op-error');
-    if (!errorBox) return;
-    errorBox.innerHTML = `
-      <div class="space-y-5">
-        <div class="space-y-2">
-          <p class="text-[10px] font-black uppercase tracking-[0.24em] ${isError ? 'text-rose-400' : 'text-indigo-400'}">Sertifika Merkezi</p>
-          <h2 class="text-2xl font-extrabold tracking-tight text-main">Firma Seçerek Devam Et</h2>
-          <p class="text-sm leading-relaxed ${isError ? 'text-rose-400' : 'text-muted'}">${message}</p>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-end">
-          <div class="space-y-2">
-            <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Firma Seçimi</label>
-            <input id="draft-company-search" list="draft-company-list" type="text" placeholder="Firma ara..." class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm font-semibold text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
-            <datalist id="draft-company-list"></datalist>
-          </div>
-          <button id="draft-company-continue" type="button" class="w-full md:w-auto inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 transition-colors">
-            Taslak ile Devam Et
-          </button>
-        </div>
-        <p id="draft-company-status" class="text-xs font-semibold ${isError ? 'text-rose-400' : 'text-muted'}">${message}</p>
-      </div>
-    `;
-  }
-
-  function syncCompanyList() {
-    const companyList = document.getElementById('draft-company-list');
-    if (!companyList) return;
-    const frag = document.createDocumentFragment();
-    ($companies.get() as any[]).forEach((company) => {
-      const option = document.createElement('option');
-      option.value = companyLabel(company);
-      frag.appendChild(option);
-    });
-    companyList.innerHTML = '';
-    companyList.appendChild(frag);
-  }
-
-  function resolveCompanyFromInput() {
-    const raw = (document.getElementById('draft-company-search') as HTMLInputElement | null)?.value.trim() || '';
-    if (!raw) return null;
-    return ($companies.get() as any[]).find((company) => {
-      return companyLabel(company) === raw || getCompanyDisplayName(company) === raw || getCompanyId(company) === raw;
-    }) || null;
-  }
-
   async function preparePicker() {
-    document.getElementById('op-skeleton')?.classList.add('hidden');
-    document.getElementById('op-shell')?.classList.add('hidden');
-    document.getElementById('op-error')?.classList.remove('hidden');
-    (document.getElementById('op-back-link') as HTMLAnchorElement | null)?.setAttribute('href', '/certificates');
-    renderPickerState();
-    syncCompanyList();
-    $companies.subscribe(() => syncCompanyList());
-    await SyncManager.init();
-    if (($companies.get() as any[]).length === 0) {
-      const res = await api.getCompanies();
-      if (res.success && Array.isArray(res.data)) {
-        $companies.set(res.data);
+    await setupOperationCompanyPicker({
+      prefix: 'draft',
+      registerCleanup,
+      onShowPicker: () => {
+        document.getElementById('op-skeleton')?.classList.add('hidden');
+        document.getElementById('op-shell')?.classList.add('hidden');
+        document.getElementById('op-select')?.classList.remove('hidden');
+      },
+      onSelected: async ({ id }) => {
+        activeFirmaId = id;
+        await boot();
       }
-    }
-
-    document.getElementById('draft-company-search')?.addEventListener('input', () => {
-      const status = document.getElementById('draft-company-status');
-      const selected = resolveCompanyFromInput();
-      if (status) status.textContent = selected ? 'Firma seçildi. Devam edebilirsiniz.' : 'Listeden geçerli bir firma seçin.';
-    });
-
-    document.getElementById('draft-company-continue')?.addEventListener('click', async () => {
-      const status = document.getElementById('draft-company-status');
-      const selected = resolveCompanyFromInput();
-      const selectedId = selected ? getCompanyId(selected) : '';
-      if (!selectedId) {
-        if (status) status.textContent = 'Devam etmek için listeden geçerli bir firma seçin.';
-        return;
-      }
-      activeFirmaId = selectedId;
-      await boot();
     });
   }
 
@@ -457,8 +362,9 @@ import OperationPageShell from '../../components/OperationPageShell.astro';
     const context = await loadCompanyOperationContext(activeFirmaId);
     if (!context) {
       document.getElementById('op-skeleton')?.classList.add('hidden');
-      document.getElementById('op-error')?.classList.remove('hidden');
-      renderPickerState('Firma bilgileri yüklenemedi. Lütfen başka bir firma seçip tekrar deneyin.', true);
+      document.getElementById('op-shell')?.classList.add('hidden');
+      // Retry via picker if context fails
+      await preparePicker();
       return;
     }
     companyContext = context;
@@ -475,12 +381,27 @@ import OperationPageShell from '../../components/OperationPageShell.astro';
     document.getElementById('op-company-dan')!.textContent = context.danisman || 'Danışman atanmamış';
     document.getElementById('op-company-unvan')!.textContent = context.unvan || context.nick || `Firma #${context.firmaId}`;
     document.getElementById('op-company-address')!.textContent = [context.adres, [context.sehir, context.ulke].filter(Boolean).join(' / ')].filter(Boolean).join(' - ') || '—';
-    document.getElementById('op-company-kapsam')!.textContent = context.scope || context.kapsam || 'Kapsam bulunamadı.';
-    document.getElementById('op-company-stats')!.textContent = `${context.certificates.length} sertifika kaydından standart seçimi yapılacak.`;
+    
+    // Use last certificate for scope and consultant if company record is empty
+    const lastCert = context.certificates && context.certificates.length > 0 
+      ? context.certificates[context.certificates.length - 1] 
+      : null;
+    
+    const finalKapsam = context.kapsam || (lastCert ? pickObjectValue(lastCert, ['Türkçe Kapsam', 'Kapsam', 'kapsam', 'KAPSAM']) : '');
+    const finalScope = context.scope || (lastCert ? pickObjectValue(lastCert, ['İngilizce Kapsam', 'Scope', 'scope', 'SCOPE']) : '');
+    const finalDanisman = context.danisman || (lastCert ? pickObjectValue(lastCert, ['Danışman', 'Consultant', 'danisman', 'dan']) : '');
+
+    document.getElementById('op-company-dan')!.textContent = finalDanisman || 'Danışman atanmamış';
+    document.getElementById('op-company-kapsam')!.textContent = finalScope || finalKapsam || 'Kapsam bulunamadı.';
+    
+    // Set initial text for opStats
+    if (els.opStats) {
+      els.opStats.textContent = 'Standart seçilmedi';
+    }
 
     await loadStandards();
-    if (els.kapsam) els.kapsam.value = context.kapsam || '';
-    if (els.scope) els.scope.value = context.scope || '';
+    if (els.kapsam) els.kapsam.value = finalKapsam || '';
+    if (els.scope) els.scope.value = finalScope || '';
     els.standard?.addEventListener('change', () => {
       syncOtherStandardFields();
       hydratePreview();
@@ -492,21 +413,42 @@ import OperationPageShell from '../../components/OperationPageShell.astro';
     els.scope?.addEventListener('input', hydratePreview);
     els.otherFull?.addEventListener('input', hydratePreview);
     els.otherDesc?.addEventListener('input', hydratePreview);
-    els.previewButton?.addEventListener('click', () => {
-      hydratePreview();
-      toast.info('Önizleme özeti güncellendi.');
+
+    document.getElementById('draft-kapsam-upper')?.addEventListener('click', () => {
+      if (els.kapsam) els.kapsam.value = els.kapsam.value.toLocaleUpperCase('tr-TR');
     });
+    document.getElementById('draft-scope-upper')?.addEventListener('click', () => {
+      if (els.scope) els.scope.value = els.scope.value.toLocaleUpperCase('en-US');
+    });
+
+    const kapsamTransBtn = document.getElementById('draft-kapsam-translate') as HTMLButtonElement | null;
+    if (kapsamTransBtn) {
+      kapsamTransBtn.onclick = async () => {
+        if (!els.kapsam || !els.scope || !els.kapsam.value.trim()) return;
+        const res = await api.translate(els.kapsam.value, true);
+        if (res.success && els.scope) els.scope.value = String(res.data || '');
+        else toast.error(`Çeviri hatası: ${res.error}`);
+      };
+    }
+
+    const scopeTransBtn = document.getElementById('draft-scope-translate') as HTMLButtonElement | null;
+    if (scopeTransBtn) {
+      scopeTransBtn.onclick = async () => {
+        if (!els.scope || !els.kapsam || !els.scope.value.trim()) return;
+        const res = await api.translate(els.scope.value, false);
+        if (res.success && els.kapsam) els.kapsam.value = String(res.data || '');
+        else toast.error(`Çeviri hatası: ${res.error}`);
+      };
+    }
+
     els.generateButton?.addEventListener('click', () => void generateDraft());
     syncOtherStandardFields();
     hydratePreview();
 
     document.getElementById('op-skeleton')?.classList.add('hidden');
-    document.getElementById('op-error')?.classList.add('hidden');
+    document.getElementById('op-select')?.classList.add('hidden');
     document.getElementById('op-shell')?.classList.remove('hidden');
   }
-
-    const unsubCompanies = $companies.subscribe(() => syncCompanyList());
-    registerCleanup(unsubCompanies);
 
     void boot();
   }

@@ -159,7 +159,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
 
       <div id="cert-page-error" class="hidden p-8 space-y-2">
         <p id="cert-page-error-text" class="text-sm font-bold text-rose-400">
-          Firma baÄŸlamÄ± yÃ¼klenemedi.
+          Firma bağlamı yüklenemedi.
         </p>
         <p
           id="cert-page-error-detail"
@@ -181,7 +181,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
             >
             <span
               class="text-[10px] font-black uppercase tracking-[0.24em] px-2.5 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-              id="cert-company-dan">DanÄ±ÅŸman</span
+              id="cert-company-dan">Danışman</span
             >
           </div>
 
@@ -190,10 +190,10 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
               class="truncate text-2xl sm:text-3xl font-extrabold tracking-tight text-main"
               id="cert-company-unvan"
             >
-              Firma yÃ¼kleniyor...
+              Firma yükleniyor...
             </h1>
             <p class="text-sm font-semibold text-muted" id="cert-company-stats">
-              â€”
+              —
             </p>
           </div>
 
@@ -210,7 +210,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 class="text-sm font-semibold text-main leading-relaxed"
                 id="cert-company-address"
               >
-                â€”
+                —
               </p>
             </div>
             <div
@@ -224,7 +224,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 </p>
                 <span
                   class="text-[10px] font-bold uppercase tracking-widest text-muted"
-                  >HÄ±zlÄ± EriÅŸim</span
+                  >Hızlı Erişim</span
                 >
               </div>
               <div class="flex flex-wrap gap-2">
@@ -286,7 +286,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 </h2>
                 <span
                   class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted"
-                  >AdÄ±m 1</span
+                  >Adım 1</span
                 >
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -300,9 +300,9 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                     name="denetim_tipi"
                     class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                   >
-                    <option value="Belgelendirme">Ä°lk</option>
-                    <option value="Gozetim">GÃ¶zetim</option>
-                    <option value="Transfer">Ã–zel</option>
+                    <option value="Belgelendirme">İlk</option>
+                    <option value="Gozetim">Gözetim</option>
+                    <option value="Transfer">Özel</option>
                     <option value="Belge Yenileme">Yeniden</option>
                   </select>
                 </div>
@@ -316,7 +316,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                     name="standart"
                     class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                   >
-                    <option value="">YÃ¼kleniyor...</option>
+                    <option value="">Yükleniyor...</option>
                   </select>
                 </div>
               </div>
@@ -324,7 +324,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 <div class="space-y-2">
                   <label
                     class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >ISO Tam AdÄ±</label
+                    >ISO Tam Adı</label
                   >
                   <input
                     id="cert-iso-full"
@@ -336,14 +336,14 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 <div class="space-y-2">
                   <label
                     class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >DiÄŸer Standart</label
+                    >Diğer Standart</label
                   >
                   <input
                     id="cert-other"
                     name="other_standart"
                     type="text"
                     class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-60 cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
-                    placeholder="DiÄŸer standart"
+                    placeholder="Diğer standart"
                     readonly
                   />
                 </div>
@@ -361,14 +361,14 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 </h2>
                 <span
                   class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted"
-                  >AdÄ±m 2</span
+                  >Adım 2</span
                 >
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-2">
                   <label
                     class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >GeÃ§erli Sertifika Tarihi</label
+                    >Geçerli Sertifika Tarihi</label
                   >
                   <div class="flex gap-2">
                     <input
@@ -388,7 +388,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 <div class="space-y-2">
                   <label
                     class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >GÃ¶zetim Tarihi</label
+                    >Gözetim Tarihi</label
                   >
                   <input
                     id="cert-goz"
@@ -412,7 +412,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 <div class="space-y-2">
                   <label
                     class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >GeÃ§erlilik Tarihi</label
+                    >Geçerlilik Tarihi</label
                   >
                   <input
                     id="cert-sgt"
@@ -437,14 +437,14 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 </h2>
                 <span
                   class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted"
-                  >AdÄ±m 3</span
+                  >Adım 3</span
                 >
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 <div class="space-y-2">
                   <label
                     class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >Ã–neri SNo</label
+                    >Öneri SNo</label
                   >
                   <div class="flex min-w-0 items-stretch gap-2">
                     <input
@@ -457,8 +457,8 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                       id="cert-apply-suggested"
                       type="button"
                       class="inline-flex h-[50px] w-[50px] shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15 transition-colors"
-                      aria-label="Ã–neri sertifika numarasÄ±nÄ± uygula"
-                      title="Ã–neri sertifika numarasÄ±nÄ± uygula"
+                      aria-label="Öneri sertifika numarasını uygula"
+                      title="Öneri sertifika numarasını uygula"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -488,7 +488,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                     name="sno"
                     type="text"
                     class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
-                    placeholder="Sertifika numarasÄ±"
+                    placeholder="Sertifika numarası"
                   />
                 </div>
                 <div class="space-y-2">
@@ -507,7 +507,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 <div class="space-y-2">
                   <label
                     class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >Akredite KuruluÅŸ</label
+                    >Akredite Kuruluş</label
                   >
                   <input
                     id="cert-akredite"
@@ -532,7 +532,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 <div class="space-y-2">
                   <label
                     class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >DanÄ±ÅŸman</label
+                    >Danışman</label
                   >
                   <div class="relative">
                     <input
@@ -544,7 +544,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                       aria-expanded="false"
                       aria-controls="consultant-list"
                       class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
-                      placeholder="DanÄ±ÅŸman ara veya yaz"
+                      placeholder="Danışman ara veya yaz"
                     />
                     <div
                       id="consultant-list"
@@ -588,7 +588,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                     type="checkbox"
                     class="h-4 w-4 rounded border-border-main bg-surface text-primary"
                   />
-                  GÃ¶zetim yapÄ±ldÄ± mÄ±?
+                  Gözetim yapıldı mı?
                 </label>
               </div>
             </div>
@@ -602,20 +602,20 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 <h2
                   class="text-sm font-black uppercase tracking-widest text-main"
                 >
-                  TÃ¼rkÃ§e Kapsam
+                  Türkçe Kapsam
                 </h2>
                 <div class="flex gap-2">
                   <button
                     id="cert-kapsam-upper"
                     type="button"
                     class="rounded-2xl border border-border-main bg-surface-hover px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface transition-colors"
-                    >BÃœYÃœK</button
+                    >BÜYÜK</button
                   >
                   <button
                     id="cert-kapsam-translate"
                     type="button"
                     class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors"
-                    >EN Ã‡evir</button
+                    >EN Çevir</button
                   >
                 </div>
               </div>
@@ -626,13 +626,13 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 <p
                   class="text-[10px] font-bold uppercase tracking-widest text-amber-200/80 mb-1"
                 >
-                  Ã–nceki Kapsam
+                  Önceki Kapsam
                 </p>
                 <p
                   id="cert-prev-kapsam"
                   class="text-sm font-semibold text-main leading-relaxed whitespace-pre-wrap"
                 >
-                  â€”
+                  —
                 </p>
               </div>
               <textarea
@@ -650,20 +650,20 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 <h2
                   class="text-sm font-black uppercase tracking-widest text-main"
                 >
-                  Ä°ngilizce Scope
+                  İngilizce Scope
                 </h2>
                 <div class="flex gap-2">
                   <button
                     id="cert-scope-upper"
                     type="button"
                     class="rounded-2xl border border-border-main bg-surface-hover px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface transition-colors"
-                    >BÃœYÃœK</button
+                    >BÜYÜK</button
                   >
                   <button
                     id="cert-scope-translate"
                     type="button"
                     class="rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors"
-                    >TR Ã‡evir</button
+                    >TR Çevir</button
                   >
                 </div>
               </div>
@@ -674,13 +674,13 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                 <p
                   class="text-[10px] font-bold uppercase tracking-widest text-sky-200/80 mb-1"
                 >
-                  Ã–nceki Scope
+                  Önceki Scope
                 </p>
                 <p
                   id="cert-prev-scope"
                   class="text-sm font-semibold text-main leading-relaxed whitespace-pre-wrap"
                 >
-                  â€”
+                  —
                 </p>
               </div>
               <textarea
@@ -701,7 +701,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
               class="hidden inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-bold text-rose-400 hover:bg-rose-500/15 transition-colors"
             >
               <X size={14} />
-              SertifikayÄ± Sil
+              Sertifikayı Sil
             </button>
             <button
               id="cert-clear"
@@ -715,7 +715,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
               class="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-bold text-rose-400 hover:bg-rose-500/15 transition-colors"
             >
               <X size={14} />
-              Ä°ptal
+              İptal
             </a>
             <button
               id="cert-submit"
@@ -731,7 +731,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
     </section>
   </div>
 
-  <!-- Son 25 Sertifika Modal â€” backdrop ve panel doÄŸrudan fixed/viewport-relative -->
+  <!-- Son 25 Sertifika Modal — backdrop ve panel doğrudan fixed/viewport-relative -->
   <div id="cert-recent-modal" class="hidden">
     <div class="fixed inset-0 z-[90] bg-slate-950/70 backdrop-blur-sm"></div>
     <button
@@ -757,13 +757,13 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
             <h2
               class="text-sm sm:text-base font-extrabold tracking-tight text-main truncate"
             >
-              Son Ã‡Ä±kan 25 Sertifika
+              Son Çıkan 25 Sertifika
             </h2>
             <p
               id="cert-recent-summary"
               class="text-xs font-semibold text-muted truncate"
             >
-              YÃ¼kleniyor...
+              Yükleniyor...
             </p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
@@ -791,7 +791,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
             id="cert-recent-empty"
             class="m-5 sm:m-6 rounded-2xl border border-dashed border-border-main px-4 py-5 text-sm font-semibold text-muted"
           >
-            Son sertifikalar yÃ¼kleniyor...
+            Son sertifikalar yükleniyor...
           </div>
           <div
             id="cert-recent-list"
@@ -823,11 +823,9 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
   } from "../../features/certificate-form";
 
   let cleanupFns: Array<() => void> = [];
-
   function registerCleanup(fn: () => void) {
     cleanupFns.push(fn);
   }
-
   function runCleanups() {
     cleanupFns.forEach((fn) => fn());
     cleanupFns = [];
@@ -979,7 +977,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
     function getCompanyNick(company: any) {
       return getCompanyValue(
         company,
-        "Firma AdÄ±",
+        "Firma Adı",
         "nickname",
         "Nick",
         "nick",
@@ -995,7 +993,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
 
     function companyLabel(company: any) {
       const nick = getCompanyDisplayName(company) || "Firma";
-      const companyId = getCompanyId(company) || "â€”";
+      const companyId = getCompanyId(company) || "—";
       return `${nick} (${companyId})`;
     }
 
@@ -1015,7 +1013,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
 
     function syncCompanyList(companies: any[]) {
       if (companies.length > 0) {
-        setSelectStatus("Bir firma seÃ§ip devam edebilirsin.");
+        setSelectStatus("Bir firma seçip devam edebilirsin.");
       }
       if (
         document.activeElement === els.companySearch &&
@@ -1058,7 +1056,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
         els.companySearch.value = companyLabel(company);
         els.companySearch.dispatchEvent(new Event("change", { bubbles: true }));
       }
-      setSelectStatus("Firma seÃ§ildi. Devam edebilirsin.");
+      setSelectStatus("Firma seçildi. Devam edebilirsin.");
       closeCompanyList();
     }
 
@@ -1089,7 +1087,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       if (!companySuggestions.length) {
         if (options.forceOpen && query.trim()) {
           els.companyList.innerHTML =
-            '<p class="px-3 py-2 text-xs font-semibold text-muted">EÅŸleÅŸen firma bulunamadÄ±. Listeden bir firma seÃ§melisin.</p>';
+            '<p class="px-3 py-2 text-xs font-semibold text-muted">Eşleşen firma bulunamadı. Listeden bir firma seçmelisin.</p>';
           els.companyList.classList.remove("hidden");
           els.companySearch.setAttribute("aria-expanded", "true");
           return;
@@ -1117,7 +1115,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
         const secondary = document.createElement("span");
         secondary.className =
           "text-[11px] font-bold uppercase tracking-widest text-muted";
-        secondary.textContent = `M${getCompanyId(company) || "â€”"}`;
+        secondary.textContent = `M${getCompanyId(company) || "—"}`;
         button.appendChild(secondary);
 
         fragment.appendChild(button);
@@ -1196,7 +1194,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       setText(
         "cert-header-breadcrumb",
         editing
-          ? "Sertifika DÃ¼zenle"
+          ? "Sertifika Düzenle"
           : cloning
             ? "Sertifika Kopyala"
             : "Sertifika Ekle",
@@ -1205,7 +1203,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       setText("cert-company-nick", companyContext.nick || "Firma");
       setText(
         "cert-company-dan",
-        companyContext.danisman || "DanÄ±ÅŸman atanmamÄ±ÅŸ",
+        companyContext.danisman || "Danışman atanmamış",
       );
       setText(
         "cert-company-unvan",
@@ -1222,21 +1220,21 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
             .join(" / "),
         ]
           .filter(Boolean)
-          .join(" - ") || "â€”",
+          .join(" - ") || "—",
       );
       setText(
         "cert-company-stats",
         editing
-          ? `${companyContext.certificates.length} sertifika arasÄ±ndan #${editId} dÃ¼zenleniyor.`
+          ? `${companyContext.certificates.length} sertifika arasından #${editId} düzenleniyor.`
           : cloning
-            ? `${companyContext.certificates.length} sertifika arasÄ±ndan #${cloneId} kopyalanÄ±yor.`
-            : `${companyContext.certificates.length} sertifika, ${companyContext.tests.length} test kaydÄ± bulundu.`,
+            ? `${companyContext.certificates.length} sertifika arasından #${cloneId} kopyalanıyor.`
+            : `${companyContext.certificates.length} sertifika, ${companyContext.tests.length} test kaydı bulundu.`,
       );
       if (els.submitLabel) {
         els.submitLabel.textContent = editing
-          ? "SertifikayÄ± GÃ¼ncelle"
+          ? "Sertifikayı Güncelle"
           : cloning
-            ? "GÃ¶zetim SertifikasÄ± OluÅŸtur"
+            ? "Gözetim Sertifikası Oluştur"
             : "Sertifika Ekle";
       }
       els.deleteBtn?.classList.toggle("hidden", !editing);
@@ -1249,7 +1247,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
 
     function renderStandards() {
       if (!els.standSelect) return;
-      els.standSelect.innerHTML = '<option value="">SeÃ§iniz...</option>';
+      els.standSelect.innerHTML = '<option value="">Seçiniz...</option>';
       standards.forEach((item) => {
         const option = document.createElement("option");
         option.value = item.id;
@@ -1269,7 +1267,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           "10002",
           "50001",
           "CE",
-          "DiÄŸer",
+          "Diğer",
         ].forEach((value) => {
           const option = document.createElement("option");
           option.value = value;
@@ -1298,12 +1296,12 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       const normalized = String(standardText || "")
         .trim()
         .toLocaleUpperCase("tr-TR")
-        .replace(/[Ä°I]/g, "I")
+        .replace(/[İI]/g, "I")
         .replace(/[Ä]/g, "G")
-        .replace(/[Ãœ]/g, "U")
+        .replace(/[Ü]/g, "U")
         .replace(/[Å]/g, "S")
-        .replace(/[Ã–]/g, "O")
-        .replace(/[Ã‡]/g, "C");
+        .replace(/[Ö]/g, "O")
+        .replace(/[Ç]/g, "C");
       return normalized === "DIGER" || normalized === "CE";
     }
 
@@ -1338,13 +1336,13 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
 
       return normalizeObjectValue(entry as Record<string, any>, [
         "ad",
-        "adÄ±",
+        "adı",
         "adi",
         "isim",
         "name",
         "fullName",
         "consultant",
-        "danÄ±ÅŸman",
+        "danışman",
         "danisman",
       ]);
     }
@@ -1352,12 +1350,12 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
     function normalizeSearchText(value: string) {
       return String(value || "")
         .toLocaleLowerCase("tr-TR")
-        .replace(/Ä±/g, "i")
-        .replace(/ÄŸ/g, "g")
-        .replace(/Ã¼/g, "u")
-        .replace(/ÅŸ/g, "s")
-        .replace(/Ã¶/g, "o")
-        .replace(/Ã§/g, "c")
+        .replace(/ı/g, "i")
+        .replace(/ğ/g, "g")
+        .replace(/ü/g, "u")
+        .replace(/ş/g, "s")
+        .replace(/ö/g, "o")
+        .replace(/ç/g, "c")
         .trim();
     }
 
@@ -1397,7 +1395,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       if (!consultantSuggestions.length) {
         if (options.forceOpen && query.trim()) {
           els.consultantList.innerHTML =
-            '<p class="px-3 py-2 text-xs font-semibold text-muted">EÅŸleÅŸen danÄ±ÅŸman bulunamadÄ±. YazdÄ±ÄŸÄ±nÄ±z metin kaydedilebilir.</p>';
+            '<p class="px-3 py-2 text-xs font-semibold text-muted">Eşleşen danışman bulunamadı. Yazdığınız metin kaydedilebilir.</p>';
           els.consultantList.classList.remove("hidden");
           els.dan.setAttribute("aria-expanded", "true");
           return;
@@ -1519,12 +1517,12 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
         const normalizedFirstKey = String(firstKey || "")
           .trim()
           .toLocaleLowerCase("tr-TR")
-          .replace(/[Ä±Ä°]/g, "i")
-          .replace(/[ÄŸÄ]/g, "g")
-          .replace(/[Ã¼Ãœ]/g, "u")
-          .replace(/[ÅŸÅ]/g, "s")
-          .replace(/[Ã¶Ã–]/g, "o")
-          .replace(/[Ã§Ã‡]/g, "c")
+          .replace(/[ıİ]/g, "i")
+          .replace(/[ğÄ]/g, "g")
+          .replace(/[üÜ]/g, "u")
+          .replace(/[şÅ]/g, "s")
+          .replace(/[öÖ]/g, "o")
+          .replace(/[çÇ]/g, "c")
           .replace(/[^a-z0-9]/g, "");
         const firstValueText = String(firstValue ?? "").trim();
         if (
@@ -1554,9 +1552,9 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           "certificateId",
           "sertifikaId",
         ]),
-        "Firma AdÄ±": normalizeObjectValue(record, [
+        "Firma Adı": normalizeObjectValue(record, [
           "nick",
-          "Firma AdÄ±",
+          "Firma Adı",
           "Nickname",
           "isim",
         ]),
@@ -1591,10 +1589,10 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           "GST",
           "sTarihi",
         ]),
-        "GÃ¶zetim Tarihi": normalizeObjectValue(record, [
+        "Gözetim Tarihi": normalizeObjectValue(record, [
           "gozetim_tarihi",
-          "GÃ¶zetim Tarihi",
-          "Sertifika GÃ¶zetim Tarihi",
+          "Gözetim Tarihi",
+          "Sertifika Gözetim Tarihi",
           "goz",
           "GOZ",
         ]),
@@ -1614,9 +1612,9 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           "stt",
           "STT",
         ]),
-        "Sertifika GeÃ§erlilik Tarihi": normalizeObjectValue(record, [
+        "Sertifika Geçerlilik Tarihi": normalizeObjectValue(record, [
           "gecerlilik_tarihi",
-          "Sertifika GeÃ§erlilik Tarihi",
+          "Sertifika Geçerlilik Tarihi",
           "sgt",
           "SGT",
           "sGT",
@@ -1630,18 +1628,18 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           "Akreditasyon",
         ]),
         Akredite: normalizeObjectValue(record, ["akredite", "Akredite"]),
-        DanÄ±ÅŸman: normalizeObjectValue(record, [
+        Danışman: normalizeObjectValue(record, [
           "consultant",
-          "DanÄ±ÅŸman",
+          "Danışman",
           "Danisman",
           "dan",
           "danisman",
         ]),
         Durum: normalizeObjectValue(record, ["durum", "Durum"]),
         Not: normalizeObjectValue(record, ["sertifika_not", "Not", "not"]),
-        "GÃ¶zetim Conf.": normalizeObjectValue(record, [
+        "Gözetim Conf.": normalizeObjectValue(record, [
           "gozetim_confirmed",
-          "GÃ¶zetim Conf.",
+          "Gözetim Conf.",
           "gozetimConfirmed",
           "gozetimConf",
         ]),
@@ -1650,7 +1648,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           "Other Standard",
           "Other",
           "other",
-          "DiÄŸer",
+          "Diğer",
           "diger",
         ]),
         "Calendar ID": normalizeObjectValue(record, [
@@ -1687,13 +1685,13 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
 
     function renderRecentCertificates() {
       if (!els.recentSummary || !els.recentEmpty || !els.recentList) return;
-      els.recentSummary.textContent = `${recentCertificates.length} kayÄ±t referans iÃ§in hazÄ±r.`;
+      els.recentSummary.textContent = `${recentCertificates.length} kayıt referans için hazır.`;
 
       if (!recentCertificates.length) {
         els.recentList.classList.add("hidden");
         els.recentList.innerHTML = "";
         els.recentEmpty.classList.remove("hidden");
-        els.recentEmpty.textContent = "Son sertifika kaydÄ± bulunamadÄ±.";
+        els.recentEmpty.textContent = "Son sertifika kaydı bulunamadı.";
         return;
       }
 
@@ -1716,11 +1714,11 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
         .map(
           (record) => `
       <div class="${cols} gap-px border-t border-border-main bg-border-main">
-        <div class="bg-surface px-3 py-2.5 text-xs font-semibold text-main whitespace-nowrap">${escapeHtml(normalizeObjectValue(record, ["Sertifika Tarihi", "gst", "GST", "sTarihi"]) || "â€”")}</div>
-        <div class="bg-surface px-3 py-2.5 text-xs font-semibold text-main whitespace-nowrap">${escapeHtml(normalizeObjectValue(record, ["Standart", "standart", "standard"]) || "â€”")}</div>
-        <div class="bg-surface px-3 py-2.5 text-xs font-mono text-main">${escapeHtml(normalizeObjectValue(record, ["Sertifika No", "sNo", "SNo", "sno"]) || "â€”")}</div>
-        <div class="bg-surface px-3 py-2.5 text-xs text-main">${escapeHtml(normalizeObjectValue(record, ["Firma AdÄ±", "Nickname", "nick", "isim"]) || "â€”")}</div>
-        <div class="bg-surface px-3 py-2.5 text-xs text-main whitespace-nowrap">${escapeHtml(normalizeObjectValue(record, ["Denetim Tipi", "denetim", "Denetim", "denetimTipi"]) || "â€”")}</div>
+        <div class="bg-surface px-3 py-2.5 text-xs font-semibold text-main whitespace-nowrap">${escapeHtml(normalizeObjectValue(record, ["Sertifika Tarihi", "gst", "GST", "sTarihi"]) || "—")}</div>
+        <div class="bg-surface px-3 py-2.5 text-xs font-semibold text-main whitespace-nowrap">${escapeHtml(normalizeObjectValue(record, ["Standart", "standart", "standard"]) || "—")}</div>
+        <div class="bg-surface px-3 py-2.5 text-xs font-mono text-main">${escapeHtml(normalizeObjectValue(record, ["Sertifika No", "sNo", "SNo", "sno"]) || "—")}</div>
+        <div class="bg-surface px-3 py-2.5 text-xs text-main">${escapeHtml(normalizeObjectValue(record, ["Firma Adı", "Nickname", "nick", "isim"]) || "—")}</div>
+        <div class="bg-surface px-3 py-2.5 text-xs text-main whitespace-nowrap">${escapeHtml(normalizeObjectValue(record, ["Denetim Tipi", "denetim", "Denetim", "denetimTipi"]) || "—")}</div>
       </div>
     `,
         )
@@ -1731,10 +1729,10 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
 
     async function loadRecentCertificates() {
       if (els.recentSummary)
-        els.recentSummary.textContent = "Son sertifikalar yÃ¼kleniyor...";
+        els.recentSummary.textContent = "Son sertifikalar yükleniyor...";
       if (els.recentEmpty) {
         els.recentEmpty.classList.remove("hidden");
-        els.recentEmpty.textContent = "Son sertifikalar yÃ¼kleniyor...";
+        els.recentEmpty.textContent = "Son sertifikalar yükleniyor...";
       }
       if (els.recentList) {
         els.recentList.classList.add("hidden");
@@ -1745,7 +1743,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       if (!res.success) {
         recentCertificates = [];
         if (els.recentSummary)
-          els.recentSummary.textContent = "Liste yÃ¼klenemedi.";
+          els.recentSummary.textContent = "Liste yüklenemedi.";
         if (els.recentEmpty) {
           els.recentEmpty.classList.remove("hidden");
           els.recentEmpty.textContent =
@@ -1853,7 +1851,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       if (!sourceId) return;
       const cert = await resolveExistingCertificate(sourceId);
       if (!cert) {
-        throw new Error(`Sertifika bulunamadÄ±: ${sourceId}`);
+        throw new Error(`Sertifika bulunamadı: ${sourceId}`);
       }
 
       editingCertificate = cert;
@@ -1866,11 +1864,11 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
         "Other Standard",
         "Other",
         "other",
-        "DiÄŸer",
+        "Diğer",
         "diger",
         "Diger",
-        "diÄŸer",
-        "DiÄŸer Standart",
+        "diğer",
+        "Diğer Standart",
         "digerStandart",
         "other",
       ]);
@@ -1878,7 +1876,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       if (els.standSelect) {
         let effectiveStandardValue = standardValue;
         if (!effectiveStandardValue && otherValue) {
-          effectiveStandardValue = "DiÄŸer";
+          effectiveStandardValue = "Diğer";
         }
 
         let option = Array.from(els.standSelect.options).find(
@@ -1937,8 +1935,8 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       if (els.goz)
         els.goz.value = toInputDate(
           normalizeObjectValue(cert, [
-            "GÃ¶zetim Tarihi",
-            "Sertifika GÃ¶zetim Tarihi",
+            "Gözetim Tarihi",
+            "Sertifika Gözetim Tarihi",
             "goz",
             "GOZ",
             "sGozetimT",
@@ -1958,7 +1956,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       if (els.sgt)
         els.sgt.value = toInputDate(
           normalizeObjectValue(cert, [
-            "Sertifika GeÃ§erlilik Tarihi",
+            "Sertifika Geçerlilik Tarihi",
             "sgt",
             "SGT",
             "sGT",
@@ -1969,12 +1967,12 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       if (els.prevKapsam)
         els.prevKapsam.textContent =
           normalizeObjectValue(cert, ["Kapsam", "kapsam"]) ||
-          "Kapsam bulunamadÄ±.";
+          "Kapsam bulunamadı.";
       if (els.scope)
         els.scope.value = normalizeObjectValue(cert, ["Scope", "scope"]);
       if (els.prevScope)
         els.prevScope.textContent =
-          normalizeObjectValue(cert, ["Scope", "scope"]) || "Scope bulunamadÄ±.";
+          normalizeObjectValue(cert, ["Scope", "scope"]) || "Scope bulunamadı.";
       if (els.logo)
         els.logo.value = normalizeObjectValue(cert, ["Logo", "logo"]);
       if (els.kod)
@@ -1993,7 +1991,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           normalizeObjectValue(cert, ["Akredite", "akredite"]) || "Medicert";
       if (els.dan)
         els.dan.value = normalizeObjectValue(cert, [
-          "DanÄ±ÅŸman",
+          "Danışman",
           "Danisman",
           "dan",
           "danisman",
@@ -2002,7 +2000,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
         els.durum.value = normalizeObjectValue(cert, ["Durum", "durum"]);
       if (els.not) els.not.value = normalizeObjectValue(cert, ["Not", "not"]);
       const gozetimValue = normalizeObjectValue(cert, [
-        "GÃ¶zetim Conf.",
+        "Gözetim Conf.",
         "gozetimConfirmed",
         "gozetimConf",
         "gozetim",
@@ -2166,7 +2164,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           const res = await api.translate(els.kapsam.value, true);
           if (res.success && els.scope)
             els.scope.value = String(res.data || "");
-          else toast.error(`Ã‡eviri hatasÄ±: ${res.error}`);
+          else toast.error(`Çeviri hatası: ${res.error}`);
         };
       }
 
@@ -2179,7 +2177,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           const res = await api.translate(els.scope.value, false);
           if (res.success && els.kapsam)
             els.kapsam.value = String(res.data || "");
-          else toast.error(`Ã‡eviri hatasÄ±: ${res.error}`);
+          else toast.error(`Çeviri hatası: ${res.error}`);
         };
       }
 
@@ -2207,7 +2205,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           if (!editId || !companyContext || !els.deleteBtn) return;
           if (
             !confirm(
-              `Bu sertifika kaydÄ±nÄ± silmek istediÄŸinizden emin misiniz? (#${editId})`,
+              `Bu sertifika kaydını silmek istediğinizden emin misiniz? (#${editId})`,
             )
           )
             return;
@@ -2220,7 +2218,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           if (response.success) {
             await SyncManager.checkAndSync();
             toast.success(
-              "Sertifika kaydÄ± silindi. Firma profiline yÃ¶nlendiriliyorsunuz.",
+              "Sertifika kaydı silindi. Firma profiline yönlendiriliyorsunuz.",
               { duration: 2500 },
             );
             setTimeout(() => {
@@ -2229,7 +2227,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
             return;
           }
 
-          toast.error(`Silme hatasÄ±: ${response.error}`);
+          toast.error(`Silme hatası: ${response.error}`);
           els.deleteBtn.disabled = false;
           els.deleteBtn.innerHTML = original;
         };
@@ -2243,12 +2241,12 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           const selected = els.standSelect.selectedOptions[0];
           const standardText = selected?.textContent?.trim() || "";
           if (!standardText) {
-            toast.error("LÃ¼tfen bir standart seÃ§in.");
+            toast.error("Lütfen bir standart seçin.");
             return;
           }
 
           const certInfo = {
-            nick: companyContext.nick || getEditingValue("Firma AdÄ±", "nick"),
+            nick: companyContext.nick || getEditingValue("Firma Adı", "nick"),
             firma_no:
               companyContext.firmaId ||
               getEditingValue("Firma No", "firma_no", "firmaNo"),
@@ -2293,13 +2291,13 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           if (response.success) {
             await SyncManager.checkAndSync();
             const successMessage = editId
-              ? "Sertifika baÅŸarÄ±yla gÃ¼ncellendi."
+              ? "Sertifika başarıyla güncellendi."
               : cloneId
-                ? "GÃ¶zetim sertifikasÄ± baÅŸarÄ±yla oluÅŸturuldu."
-                : "Sertifika baÅŸarÄ±yla eklendi.";
-            els.submit.innerHTML = "BaÅŸarÄ±lÄ±, yÃ¶nlendiriliyor...";
+                ? "Gözetim sertifikası başarıyla oluşturuldu."
+                : "Sertifika başarıyla eklendi.";
+            els.submit.innerHTML = "Başarılı, yönlendiriliyor...";
             toast.success(
-              `${successMessage} Firma profiline yÃ¶nlendiriliyorsunuz.`,
+              `${successMessage} Firma profiline yönlendiriliyorsunuz.`,
               { duration: 2500 },
             );
             setTimeout(() => {
@@ -2318,9 +2316,10 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
 
     async function prepareCompanyPicker() {
       await setupOperationCompanyPicker({
-        idPrefix: 'cert',
-        onSelect: (c: any) => {
-          activeFirmaId = String(c?.['Firma No'] || c?.FirmaNo || c?.firmaNo || c?.id || c?.ID || '').trim();
+        prefix: 'cert',
+        registerCleanup,
+        onSelected: ({ id }) => {
+          activeFirmaId = id;
           void loadScreen();
         },
         onShowPicker: () => {
@@ -2335,89 +2334,6 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
 
 
 
-
-        if (res.success && Array.isArray(res.data)) {
-          $companies.set(res.data);
-        }
-      }
-
-      if (els.companySearch) {
-
-          if (event.key === "ArrowDown") {
-            event.preventDefault();
-            if (els.companyList?.classList.contains("hidden")) {
-              renderCompanySuggestions(els.companySearch?.value || "", {
-                forceOpen: true,
-              });
-              return;
-            }
-            moveCompanySelection(1);
-            return;
-          }
-          if (event.key === "ArrowUp") {
-            event.preventDefault();
-            if (!els.companyList?.classList.contains("hidden")) {
-              moveCompanySelection(-1);
-            }
-            return;
-          }
-          if (event.key === "Enter") {
-            if (
-              activeCompanyIndex >= 0 &&
-              companySuggestions[activeCompanyIndex]
-            ) {
-              event.preventDefault();
-              chooseCompany(companySuggestions[activeCompanyIndex]);
-              return;
-            }
-            selectedCompany = resolveCompanyFromInput();
-            if (selectedCompany) {
-              event.preventDefault();
-              void els.companyContinue?.click();
-            }
-            return;
-          }
-          if (event.key === "Escape") {
-            closeCompanyList();
-          }
-        };
-        els.companySearch.onblur = () => {
-          window.setTimeout(() => closeCompanyList(), 120);
-        };
-      }
-
-      els.companyList?.addEventListener("mousedown", (event) => {
-        const option = (event.target as HTMLElement).closest<HTMLButtonElement>(
-          "[data-company-option]",
-        );
-        if (!option) return;
-        event.preventDefault();
-        const matched = companySuggestions.find(
-          (company) =>
-            getCompanyId(company) === (option.dataset.companyOption || ""),
-        );
-        if (matched) chooseCompany(matched);
-      });
-
-      if (els.companyContinue) {
-
-          selectedCompany = resolveCompanyFromInput();
-          const selectedId = selectedCompany
-            ? getCompanyId(selectedCompany)
-            : "";
-          if (!selectedId) {
-            setSelectStatus(
-              "Devam etmek iÃ§in listeden geÃ§erli bir firma seÃ§.",
-              true,
-            );
-            return;
-          }
-          activeFirmaId = selectedId;
-          await loadScreen();
-        };
-      }
-
-
     async function loadScreen() {
       if (!activeFirmaId) {
         await prepareCompanyPicker();
@@ -2426,10 +2342,10 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       }
 
       try {
-        // TÃ¼m baÄŸÄ±msÄ±z istekleri aynÄ± anda baÅŸlat.
-        // api.call() inFlightRequests ile deduplicate ettiÄŸi iÃ§in
-        // loadExistingCertificate iÃ§indeki getCertificateById Ã§aÄŸrÄ±sÄ±
-        // burada baÅŸlayan isteÄŸin sonucunu kullanÄ±r, ekstra round-trip olmaz.
+        // Tüm bağımsız istekleri aynı anda başlat.
+        // api.call() inFlightRequests ile deduplicate ettiği için
+        // loadExistingCertificate içindeki getCertificateById çağrısı
+        // burada başlayan isteğin sonucunu kullanır, ekstra round-trip olmaz.
         if (editId || cloneId) {
           api.getCertificateById(editId || cloneId);
         }
@@ -2443,7 +2359,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
 
         companyContext = ctx;
         if (!companyContext) {
-          showError("Firma baÄŸlamÄ± yÃ¼klenemedi.", `Firma ID: ${activeFirmaId}`);
+          showError("Firma bağlamı yüklenemedi.", `Firma ID: ${activeFirmaId}`);
           return;
         }
 
@@ -2458,7 +2374,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       } catch (error: any) {
         console.error("Certificate add screen failed:", error);
         showError(
-          "Sertifika ekranÄ± yÃ¼klenemedi.",
+          "Sertifika ekranı yüklenemedi.",
           error?.message || String(error || "Bilinmeyen hata"),
         );
       }
