@@ -543,10 +543,18 @@ export default {
     const formatIsoToDots = (value) => {
       const raw = String(value ?? "").trim();
       if (!raw) return "";
+      // Zaten noktalıysa döndür
       if (/^\d{2}\.\d{2}\.\d{4}$/.test(raw)) return raw;
+      // ISO ise noktalıya çevir
       if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
         const [year, month, day] = raw.split("-");
         return `${day}.${month}.${year}`;
+      }
+      // Diğer durumlarda (örn. 2026/03/02) temizlemeye çalış
+      const parts = raw.split(/[-./ ]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        if (parts[2].length === 4) return `${parts[0]}.${parts[1]}.${parts[2]}`;
       }
       return raw;
     };
@@ -592,6 +600,10 @@ export default {
         a1Bitis: formatIsoToDots(canonical.a1_bitis),
         a1Baslav2: formatIsoToDots(canonical.a1_baslangic),
         a1Bitisv2: formatIsoToDots(canonical.a1_bitis),
+        // Ekstra varyasyonlar (boşluklu veya farklı isimlendirmeler için)
+        "A1 Basla": formatIsoToDots(canonical.a1_baslangic),
+        "A1 Bitiş": formatIsoToDots(canonical.a1_bitis),
+        "A1 Bitis": formatIsoToDots(canonical.a1_bitis),
         a1_manday: canonical.a1_manday,
         a1Md: canonical.a1_manday,
         a1_bas_denetci: canonical.a1_bas_denetci,
@@ -608,6 +620,10 @@ export default {
         a2Bitis: formatIsoToDots(canonical.a2_bitis),
         a2Baslav2: formatIsoToDots(canonical.a2_baslangic),
         a2Bitisv2: formatIsoToDots(canonical.a2_bitis),
+        // Ekstra varyasyonlar
+        "A2 Basla": formatIsoToDots(canonical.a2_baslangic),
+        "A2 Bitiş": formatIsoToDots(canonical.a2_bitis),
+        "A2 Bitis": formatIsoToDots(canonical.a2_bitis),
         a2_manday: canonical.a2_manday,
         a2Md: canonical.a2_manday,
         a2_bas_denetci: canonical.a2_bas_denetci,
