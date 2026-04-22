@@ -366,7 +366,7 @@ export default {
 
         const stats = {
           totalCompanies: companies.length,
-          totalCertificates: certificates.length,
+          totalCertificates: 0,
           activeCertificates: 0,
           pendingSurveillance: 0,
           lastSync: Date.now()
@@ -401,14 +401,11 @@ export default {
           if (!c) return;
 
           const firmaNoStr = String(c.firma_no || "");
-          if (firmaNoStr && foreignCompanies.has(firmaNoStr)) return;
-
-          if (firmaNoStr) uniqueCompanies.add(firmaNoStr);
-
+          const durumNorm = normalizeTR(c.durum || "AKTIF");
+          
           const certDate = parseTRDate(c.sertifika_tarihi);
           const gozDate = parseTRDate(c.gozetim_tarihi);
           const gozNotConfirmed = c.gozetim_confirmed !== 1;
-          const durumNorm = normalizeTR(c.durum || "AKTIF");
           const isActiveStatus = durumNorm !== "PASIF" && durumNorm !== "IPTAL";
 
           const isActive = isActiveStatus && certDate !== null && gozDate !== null &&
@@ -416,8 +413,7 @@ export default {
             gozNotConfirmed;
           if (isActive) stats.activeCertificates++;
 
-          // Bekleyen gözetim: geçen ay + bu ay + gelecek ay penceresi,
-          // onaylanmamış VE durum aktif
+          // Bekleyen gözetim
           const surveillanceWindowStart = new Date(currentYear, currentMonth - 1, 1);
           const surveillanceWindowEnd = new Date(currentYear, currentMonth + 2, 0);
           let isPending = false;
@@ -442,13 +438,16 @@ export default {
           if (isActive) entry.activeCerts++;
           if (isPending) entry.pendingSurveillance++;
           if (dan !== "Atanmamış") entry.consultants.add(dan);
-          if (firmaNoStr) entry.totalCompanies.add(firmaNoStr);
+          if (firmaNoStr) {
+            uniqueCompanies.add(firmaNoStr);
+            entry.totalCompanies.add(firmaNoStr);
+          }
           if (entry.nicknames.length < 15) entry.nicknames.push(c.nickname || "");
 
           charts.cityDensity[city] = (charts.cityDensity[city] || 0) + 1;
         });
 
-        // stats.totalCompanies = uniqueCompanies.size; // Bu satır gerçek sayımı bozuyordu, devre dışı bırakıldı
+        stats.totalCertificates = certificates.length;
 
         cityMap.forEach((entry, city) => {
           charts.cities[city] = {

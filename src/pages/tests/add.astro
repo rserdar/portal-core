@@ -3,51 +3,408 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import CompanyPicker from '../../components/CompanyPicker.astro';
 ---
 
-<DashboardLayout title="Test Ekle">
+<DashboardLayout title="Test"  >
   <div class="max-w-5xl mx-auto pb-24 space-y-6">
+
+    <div class="flex items-center gap-3">
+      <a id="test-back-link" href="/company"
+        class="flex items-center gap-2 text-xs font-bold text-muted hover:text-primary transition-colors group">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+          class="group-hover:-translate-x-1 transition-transform">
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+        Firma Profili
+      </a>
+      <span class="text-border-main">/</span>
+      <span class="text-xs font-bold text-muted" id="test-header-breadcrumb">Test</span>
+    </div>
+
     <section class="bg-surface border border-border-main shadow-xl rounded-[2rem]">
-      <div id="test-add-skeleton" class="p-6 sm:p-8 animate-pulse space-y-4">
-        <div class="h-3 w-28 rounded bg-surface-hover"></div>
-        <div class="h-8 w-72 rounded bg-surface-hover"></div>
-        <div class="h-24 rounded-3xl bg-surface-hover"></div>
+
+      <!-- Skeleton -->
+      <div id="test-page-skeleton" class="p-6 sm:p-8 animate-pulse space-y-4">
+        <div class="flex gap-2">
+          <div class="h-5 w-12 rounded-full bg-surface-hover"></div>
+          <div class="h-5 w-20 rounded-full bg-surface-hover"></div>
+        </div>
+        <div class="h-8 w-72 rounded-lg bg-surface-hover"></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="h-24 rounded-3xl bg-surface-hover"></div>
+          <div class="h-24 rounded-3xl bg-surface-hover"></div>
+        </div>
       </div>
 
-      <div id="test-add-picker" class="hidden p-6 sm:p-8">
+      <!-- Company Picker -->
+      <div id="test-page-select" class="hidden p-6 sm:p-8">
         <CompanyPicker
           prefix="test"
-          eyebrow="Test Modülü"
+          eyebrow="Test Merkezi"
           title="Firma Seçerek Devam Et"
           description="Test eklemek istediğiniz firmayı seçin."
         />
       </div>
 
-      <div id="test-add-shell" class="hidden">
-        <div class="p-6 sm:p-8 border-b border-border-main space-y-4">
-          <div class="flex flex-wrap items-center gap-2">
-            <span id="test-company-id" class="text-[10px] font-black uppercase tracking-[0.24em] px-2.5 py-1 rounded-full border border-violet-500/20 bg-violet-500/10 text-violet-300">M0</span>
-            <span id="test-company-nick" class="text-[10px] font-black uppercase tracking-[0.24em] px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Firma</span>
-          </div>
-          <div class="space-y-2">
-            <h1 id="test-company-unvan" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-main">Firma yükleniyor...</h1>
-            <p class="text-sm leading-relaxed text-muted max-w-3xl">Test ekleme akışını ayrı domain altında topluyoruz. Form ve rapor mantığı bir sonraki adımda bu sayfaya taşınacak.</p>
-          </div>
-        </div>
-
-        <div class="p-6 sm:p-8">
-          <div class="rounded-[1.5rem] border border-border-main bg-surface-hover p-5 sm:p-6 space-y-3">
-            <p class="text-[10px] font-black uppercase tracking-[0.24em] text-violet-400">Hazırlık</p>
-            <h2 class="text-lg font-black tracking-tight text-main">Test Modülü İçin İlk Giriş Hazır</h2>
-            <p id="test-context-summary" class="text-sm leading-relaxed text-muted">Firma bağlamı yüklendiğinde bu ekran gerçek test formunu barındıracak.</p>
-            <div class="flex flex-wrap gap-2 pt-2">
-              <a id="test-back-company" href="/search" class="inline-flex items-center justify-center rounded-xl border border-border-main bg-surface px-4 py-2 text-xs font-black uppercase tracking-wide text-main hover:bg-surface-hover transition-colors">Firma Profili</a>
-              <a href="/tests" class="inline-flex items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 px-4 py-2 text-xs font-black uppercase tracking-wide text-violet-300 hover:bg-violet-500/15 transition-colors">Test Merkezi</a>
-            </div>
-          </div>
-        </div>
+      <!-- Error -->
+      <div id="test-page-error" class="hidden p-8 space-y-2">
+        <p class="text-sm font-bold text-rose-400">Firma bağlamı yüklenemedi.</p>
+        <p id="test-page-error-detail" class="hidden text-xs font-semibold text-muted"></p>
       </div>
 
-      <div id="test-add-error" class="hidden p-8">
-        <p class="text-sm font-bold text-rose-400">Firma bağlamı yüklenemedi.</p>
+      <!-- Shell -->
+      <div id="test-page-shell" class="hidden">
+
+        <!-- Company Header -->
+        <div class="p-6 sm:p-8 border-b border-border-main space-y-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="test-company-id"
+              class="text-[10px] font-black uppercase tracking-[0.24em] px-2.5 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400">M0</span>
+            <span id="test-company-nick"
+              class="text-[10px] font-black uppercase tracking-[0.24em] px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Firma</span>
+          </div>
+          <div class="space-y-1 min-w-0">
+            <h1 id="test-company-unvan" class="truncate text-2xl sm:text-3xl font-extrabold tracking-tight text-main">
+              Firma yükleniyor...</h1>
+            <p id="test-company-stats" class="text-sm font-semibold text-muted">—</p>
+          </div>
+        </div>
+
+        <!-- Form Body -->
+        <div class="p-6 sm:p-8 space-y-6">
+
+          <!-- 1. Ürün Bilgisi -->
+          <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-sm font-black uppercase tracking-widest text-main">Ürün Bilgisi</h2>
+              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 1</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="space-y-2">
+                <label for="ta-marka" class="text-[11px] font-bold uppercase tracking-widest text-muted">Marka</label>
+                <input id="ta-marka" type="text" placeholder="Marka adı"
+                  class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+              </div>
+              <div class="col-span-1 sm:col-span-2 space-y-2">
+                <label for="ta-urun" class="text-[11px] font-bold uppercase tracking-widest text-muted">Ürün Adı</label>
+                <input id="ta-urun" type="text" placeholder="Ürün adı"
+                  class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="space-y-2">
+                <label for="ta-urun-kodu" class="text-[11px] font-bold uppercase tracking-widest text-muted">Ürün Kısa Kodu</label>
+                <input id="ta-urun-kodu" type="text" placeholder="Kısa kod"
+                  class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+              </div>
+              <div class="space-y-2">
+                <label for="ta-urun-no" class="text-[11px] font-bold uppercase tracking-widest text-muted">Ürün No</label>
+                <input id="ta-urun-no" type="text" placeholder="Ürün numarası"
+                  class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+              </div>
+              <div class="space-y-2">
+                <label for="ta-lot" class="text-[11px] font-bold uppercase tracking-widest text-muted">Lot</label>
+                <input id="ta-lot" type="text" placeholder="Lot numarası"
+                  class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="space-y-2">
+                <label for="ta-numune-sayisi" class="text-[11px] font-bold uppercase tracking-widest text-muted">Numune Sayısı</label>
+                <input id="ta-numune-sayisi" type="number" placeholder="0"
+                  class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+              </div>
+              <div class="space-y-2">
+                <label for="ta-uretim-tarihi" class="text-[11px] font-bold uppercase tracking-widest text-muted">Üretim Tarihi</label>
+                <input id="ta-uretim-tarihi" type="date"
+                  class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+              </div>
+              <div class="space-y-2">
+                <label for="ta-numune-skt" class="text-[11px] font-bold uppercase tracking-widest text-muted">SKT</label>
+                <input id="ta-numune-skt" type="date"
+                  class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Görsel 1</label>
+                <div class="flex gap-2">
+                  <input id="ta-gorsel-bir" type="text" placeholder="Drive ID" readonly
+                    class="flex-1 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-70 cursor-default" />
+                  <label
+                    class="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-xs font-black uppercase tracking-wide text-indigo-300 hover:bg-indigo-500/15 transition-colors cursor-pointer"
+                    title="Dosya Yükle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <input id="ta-gorsel-bir-file" type="file" accept="image/png,image/jpeg,image/gif" class="hidden" />
+                  </label>
+                </div>
+              </div>
+              <div class="space-y-2">
+                <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Görsel 2</label>
+                <div class="flex gap-2">
+                  <input id="ta-gorsel-iki" type="text" placeholder="Drive ID" readonly
+                    class="flex-1 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-70 cursor-default" />
+                  <label
+                    class="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-xs font-black uppercase tracking-wide text-indigo-300 hover:bg-indigo-500/15 transition-colors cursor-pointer"
+                    title="Dosya Yükle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <input id="ta-gorsel-iki-file" type="file" accept="image/png,image/jpeg,image/gif" class="hidden" />
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <label for="ta-urun-bilgi" class="text-[11px] font-bold uppercase tracking-widest text-muted">Ürün Bilgi</label>
+                <textarea id="ta-urun-bilgi" rows="3" placeholder="Ürün hakkında bilgi..."
+                  class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
+              </div>
+              <div class="space-y-2">
+                <label for="ta-detay" class="text-[11px] font-bold uppercase tracking-widest text-muted">Detay</label>
+                <textarea id="ta-detay" rows="3" placeholder="Ek detaylar..."
+                  class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Test Seçimi -->
+          <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-5">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-sm font-black uppercase tracking-widest text-main">Test Seçimi</h2>
+              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 2</span>
+            </div>
+
+            <!-- Dropdown triosu + ekle butonu tek satırda -->
+            <div class="flex flex-col sm:flex-row gap-3 items-end">
+              <div class="flex-1 space-y-2 min-w-0">
+                <label for="ta-test-kategori" class="text-[11px] font-bold uppercase tracking-widest text-muted">Kategori</label>
+                <div class="relative">
+                  <select id="ta-test-kategori"
+                    class="w-full appearance-none rounded-2xl border border-border-main bg-surface-hover px-4 py-3 pr-9 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500">
+                    <option disabled selected>Yükleniyor...</option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1 space-y-2 min-w-0">
+                <label for="ta-test-dropdown" class="text-[11px] font-bold uppercase tracking-widest text-muted">Test Açıklaması</label>
+                <div class="relative">
+                  <select id="ta-test-dropdown" disabled
+                    class="w-full appearance-none rounded-2xl border border-border-main bg-surface-hover px-4 py-3 pr-9 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <option disabled selected>Önce kategori seçin</option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1 space-y-2 min-w-0">
+                <label for="ta-test-dokuman" class="text-[11px] font-bold uppercase tracking-widest text-muted">Doküman Adı</label>
+                <div class="relative">
+                  <select id="ta-test-dokuman" disabled
+                    class="w-full appearance-none rounded-2xl border border-border-main bg-surface-hover px-4 py-3 pr-9 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <option disabled selected>Önce test seçin</option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="shrink-0 pb-0.5">
+                <button id="ta-add-test-btn" type="button"
+                  class="inline-flex items-center gap-2 rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-5 py-3 text-xs font-black uppercase tracking-wide text-indigo-300 hover:bg-indigo-500/15 transition-colors whitespace-nowrap">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" /><path d="M12 8v8M8 12h8" />
+                  </svg>
+                  Ekle
+                </button>
+              </div>
+            </div>
+
+            <!-- Selected Tests List -->
+            <ul id="ta-selected-test-list" class="space-y-2"></ul>
+
+            <!-- "En Uzun Testi Göster" — yalnızca liste doluyken görünür -->
+            <div id="ta-selected-tests-actions" class="hidden">
+              <div class="flex items-center justify-between gap-4 pt-1 border-t border-border-main">
+                <p class="text-[11px] font-semibold text-muted">
+                  Seçilen testler ↓ düğmesiyle "Test Süreci" alanını doldurur.
+                </p>
+                <button id="ta-hesapla-btn" type="button"
+                  class="inline-flex items-center gap-2 rounded-2xl border border-border-main bg-surface-hover px-4 py-2.5 text-xs font-black uppercase tracking-wide text-muted hover:text-main hover:bg-surface transition-colors whitespace-nowrap">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                  En Uzun Testi Göster
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Test Süreci -->
+          <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-5">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-sm font-black uppercase tracking-widest text-main">Test Süreci</h2>
+              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 3</span>
+            </div>
+
+            <!-- Grup A: Ürün Kabul ←→ En Uzun Test Günü ←→ Rapor Tarihi + Kabul Saati -->
+            <div class="rounded-2xl border border-border-main bg-surface-hover/50 p-4 space-y-3">
+              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Kabul & Rapor</p>
+              <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr_1fr] gap-3 items-end">
+                <div class="space-y-2">
+                  <label for="ta-urun-kabul" class="text-[11px] font-bold uppercase tracking-widest text-muted">Ürün Kabul Tarihi</label>
+                  <input id="ta-urun-kabul" type="date"
+                    class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+
+                <!-- Hesaplama köprüsü -->
+                <div class="space-y-2">
+                  <label for="ta-max-gun" class="text-[11px] font-bold uppercase tracking-widest text-muted text-center block">Gün</label>
+                  <div class="flex items-center gap-1">
+                    <button id="ta-uktislem-btn" type="button" title="Kabul tarihini hesapla (Rapor → Kabul)"
+                      class="inline-flex items-center justify-center w-11 h-11 shrink-0 rounded-xl border border-border-main bg-surface text-muted hover:text-indigo-300 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    </button>
+                    <input id="ta-max-gun" type="text" readonly placeholder="—"
+                      class="w-14 rounded-xl border border-border-main bg-surface px-2 py-3 text-sm text-main opacity-70 cursor-default text-center" />
+                    <button id="ta-rtislem-btn" type="button" title="Rapor tarihini hesapla (Kabul → Rapor)"
+                      class="inline-flex items-center justify-center w-11 h-11 shrink-0 rounded-xl border border-border-main bg-surface text-muted hover:text-indigo-300 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="space-y-2">
+                  <label for="ta-rapor-tarihi" class="text-[11px] font-bold uppercase tracking-widest text-muted">Rapor Tarihi</label>
+                  <input id="ta-rapor-tarihi" type="date"
+                    class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+                <div class="space-y-2">
+                  <label for="ta-kabul-saat" class="text-[11px] font-bold uppercase tracking-widest text-muted">Kabul Saati</label>
+                  <input id="ta-kabul-saat" type="time"
+                    class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Grup B: Test Başlangıç ←→ Seçilen Gün ←→ Test Bitiş + Rapor No -->
+            <div class="rounded-2xl border border-border-main bg-surface-hover/50 p-4 space-y-3">
+              <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Test Tarihleri</p>
+              <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr_1fr] gap-3 items-end">
+                <div class="space-y-2">
+                  <label for="ta-test-baslangic" class="text-[11px] font-bold uppercase tracking-widest text-muted">Test Başlangıç</label>
+                  <input id="ta-test-baslangic" type="date"
+                    class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+
+                <!-- Hesaplama köprüsü -->
+                <div class="space-y-2">
+                  <label for="ta-secilen-test-gunu" class="text-[11px] font-bold uppercase tracking-widest text-muted text-center block">Gün</label>
+                  <div class="flex items-center gap-1">
+                    <button id="ta-testbaislem-btn" type="button" title="Başlangıç tarihini hesapla (Bitiş → Başlangıç)"
+                      class="inline-flex items-center justify-center w-11 h-11 shrink-0 rounded-xl border border-border-main bg-surface text-muted hover:text-indigo-300 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    </button>
+                    <input id="ta-secilen-test-gunu" type="text" readonly placeholder="—"
+                      class="w-14 rounded-xl border border-border-main bg-surface px-2 py-3 text-sm text-main opacity-70 cursor-default text-center" />
+                    <button id="ta-testbiislem-btn" type="button" title="Bitiş tarihini hesapla (Başlangıç → Bitiş)"
+                      class="inline-flex items-center justify-center w-11 h-11 shrink-0 rounded-xl border border-border-main bg-surface text-muted hover:text-indigo-300 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="space-y-2">
+                  <label for="ta-test-bitis" class="text-[11px] font-bold uppercase tracking-widest text-muted">Test Bitiş</label>
+                  <input id="ta-test-bitis" type="date"
+                    class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+                <div class="space-y-2">
+                  <label for="ta-rapor-no" class="text-[11px] font-bold uppercase tracking-widest text-muted">Rapor No</label>
+                  <input id="ta-rapor-no" type="text" placeholder="Rapor numarası"
+                    class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Test Adı & Öneri No -->
+          <div class="rounded-3xl border border-border-main bg-surface p-5 sm:p-6 space-y-4">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-sm font-black uppercase tracking-widest text-main">Test Adı & Rapor No</h2>
+              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Adım 4</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="col-span-1 sm:col-span-2 space-y-2">
+                <label for="ta-secilen-test-adi" class="text-[11px] font-bold uppercase tracking-widest text-muted">Test Adı</label>
+                <input id="ta-secilen-test-adi" type="text" readonly
+                  class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-70 cursor-default" />
+              </div>
+              <div class="space-y-2">
+                <label for="ta-suggested-test-no" class="text-[11px] font-bold uppercase tracking-widest text-muted">Öneri Test No</label>
+                <div class="flex gap-2">
+                  <input id="ta-suggested-test-no" type="text" readonly
+                    class="flex-1 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-70 cursor-default" />
+                  <button id="ta-generate-no-btn" type="button" title="Rapor No Oluştur"
+                    class="inline-flex items-center justify-center w-12 shrink-0 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m5 12 7-7 7 7" />
+                      <path d="M12 19V5" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Save / Delete Buttons -->
+          <div class="flex items-center justify-between gap-4 pt-2">
+            <div class="flex gap-3">
+              <button id="ta-delete-btn" type="button"
+                class="hidden items-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-5 py-3 text-xs font-black uppercase tracking-wide text-rose-400 hover:bg-rose-500/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+                Sil
+              </button>
+            </div>
+            <div class="flex gap-3 ml-auto">
+              <a href="/tests" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-border-main bg-surface px-5 py-3 text-xs font-black uppercase tracking-wide text-muted hover:text-main hover:bg-surface-hover transition-colors">
+                İptal
+              </a>
+              <button id="ta-save-btn" type="button"
+                class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-wide text-white hover:bg-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17 21 17 13 7 13 7 21" />
+                  <polyline points="7 3 7 8 15 8" />
+                </svg>
+                <span id="ta-save-label">Testi Kaydet</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
       </div>
     </section>
   </div>
@@ -55,36 +412,445 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
 
 <script>
   import { api } from '../../lib/api';
-  import { $companies } from '../../lib/store';
-  import { SyncManager } from '../../lib/sync';
+  import { toast } from '../../lib/toast';
   import { loadCompanyOperationContext } from '../../features/context';
   import { setupOperationCompanyPicker } from '../../features/company-picker';
+  import { $tests } from '../../lib/store';
 
   const params = new URLSearchParams(location.search);
   let activeFirmaId = params.get('firmaId') || params.get('id') || '';
+  let activeTestId = params.get('testId') || '';
+  let isEditMode = Boolean(activeTestId);
+  let activeContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
+
+  // Dropdown data: { [kategori]: { [aciklama]: [{dokuman, gun, kisaltma, kisaltma2}] } }
+  let dropdownData: Record<string, Record<string, Array<{dokuman: string; gun: number; kisaltma: string; kisaltma2: string}>>> = {};
+
+  // Selected tests list
+  let selectedTests: Array<{kategori: string; test: string; dokuman: string; gun: number; kisaltma: string; kisaltma2: string; key: string}> = [];
 
   const els = {
-    skeleton: document.getElementById('test-add-skeleton'),
-    picker: document.getElementById('test-add-picker'),
-    shell: document.getElementById('test-add-shell'),
-    error: document.getElementById('test-add-error'),
+    skeleton: document.getElementById('test-page-skeleton')!,
+    select: document.getElementById('test-page-select')!,
+    error: document.getElementById('test-page-error')!,
+    errorDetail: document.getElementById('test-page-error-detail') as HTMLElement,
+    shell: document.getElementById('test-page-shell')!,
+    companyId: document.getElementById('test-company-id')!,
+    companyNick: document.getElementById('test-company-nick')!,
+    companyUnvan: document.getElementById('test-company-unvan')!,
+    companyStats: document.getElementById('test-company-stats')!,
+    backLink: document.getElementById('test-back-link') as HTMLAnchorElement,
+    breadcrumb: document.getElementById('test-header-breadcrumb')!,
+
+    // Product
+    marka: document.getElementById('ta-marka') as HTMLInputElement,
+    urun: document.getElementById('ta-urun') as HTMLInputElement,
+    urunKodu: document.getElementById('ta-urun-kodu') as HTMLInputElement,
+    urunNo: document.getElementById('ta-urun-no') as HTMLInputElement,
+    lot: document.getElementById('ta-lot') as HTMLInputElement,
+    numuneSayisi: document.getElementById('ta-numune-sayisi') as HTMLInputElement,
+    uretimTarihi: document.getElementById('ta-uretim-tarihi') as HTMLInputElement,
+    numuneSKT: document.getElementById('ta-numune-skt') as HTMLInputElement,
+    gorselBir: document.getElementById('ta-gorsel-bir') as HTMLInputElement,
+    gorselBirFile: document.getElementById('ta-gorsel-bir-file') as HTMLInputElement,
+    gorselIki: document.getElementById('ta-gorsel-iki') as HTMLInputElement,
+    gorselIkiFile: document.getElementById('ta-gorsel-iki-file') as HTMLInputElement,
+    urunBilgi: document.getElementById('ta-urun-bilgi') as HTMLTextAreaElement,
+    detay: document.getElementById('ta-detay') as HTMLTextAreaElement,
+
+    // Test selection dropdowns
+    testKategori: document.getElementById('ta-test-kategori') as HTMLSelectElement,
+    testDropdown: document.getElementById('ta-test-dropdown') as HTMLSelectElement,
+    testDokuman: document.getElementById('ta-test-dokuman') as HTMLSelectElement,
+    addTestBtn: document.getElementById('ta-add-test-btn')!,
+    selectedTestList: document.getElementById('ta-selected-test-list')!,
+    selectedTestsActions: document.getElementById('ta-selected-tests-actions')!,
+    hesaplaBtn: document.getElementById('ta-hesapla-btn')!,
+
+    // Test process
+    raporTarihi: document.getElementById('ta-rapor-tarihi') as HTMLInputElement,
+    maxGun: document.getElementById('ta-max-gun') as HTMLInputElement,
+    rtislemBtn: document.getElementById('ta-rtislem-btn')!,
+    uktislemBtn: document.getElementById('ta-uktislem-btn')!,
+    urunKabul: document.getElementById('ta-urun-kabul') as HTMLInputElement,
+    kabulSaat: document.getElementById('ta-kabul-saat') as HTMLInputElement,
+    testBaslangic: document.getElementById('ta-test-baslangic') as HTMLInputElement,
+    secilenTestGunu: document.getElementById('ta-secilen-test-gunu') as HTMLInputElement,
+    testbaislemBtn: document.getElementById('ta-testbaislem-btn')!,
+    testbiislemBtn: document.getElementById('ta-testbiislem-btn')!,
+    testBitis: document.getElementById('ta-test-bitis') as HTMLInputElement,
+    raporNo: document.getElementById('ta-rapor-no') as HTMLInputElement,
+
+    // Test name
+    secilenTestAdi: document.getElementById('ta-secilen-test-adi') as HTMLInputElement,
+    suggestedTestNo: document.getElementById('ta-suggested-test-no') as HTMLInputElement,
+    generateNoBtn: document.getElementById('ta-generate-no-btn')!,
+
+    // Submit
+    saveBtn: document.getElementById('ta-save-btn')!,
+    saveLabel: document.getElementById('ta-save-label')!,
+    deleteBtn: document.getElementById('ta-delete-btn')!,
   };
 
-  async function initPicker() {
-    await setupOperationCompanyPicker({
-      prefix: 'test',
-      onSelected: ({ id }) => {
-        activeFirmaId = id;
-        void renderWithContext();
-      },
-      onShowPicker: () => {
-        els.skeleton?.classList.add('hidden');
-        els.error?.classList.add('hidden');
-        els.shell?.classList.add('hidden');
-        els.picker?.classList.remove('hidden');
-      }
-    });
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  function showShells(which: 'skeleton' | 'select' | 'shell' | 'error') {
+    els.skeleton.classList.toggle('hidden', which !== 'skeleton');
+    els.select.classList.toggle('hidden', which !== 'select');
+    els.shell.classList.toggle('hidden', which !== 'shell');
+    els.error.classList.toggle('hidden', which !== 'error');
   }
+
+  function dateToIso(val: string): string {
+    return val?.trim() || '';
+  }
+
+  function isoToDate(isoStr: string): Date | null {
+    if (!isoStr) return null;
+    const d = new Date(isoStr);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function formatDate(d: Date): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  // ── Dropdown Build ───────────────────────────────────────────────────────────
+
+  async function loadTestDropdownData() {
+    const res = await api.getMasterData('testdocs');
+    if (!res.success || !res.data?.dataset) return;
+
+    const { headers, rows } = res.data.dataset as { headers: string[]; rows: unknown[][] };
+    const docs = rows.map((row: unknown[]) => {
+      const obj: Record<string, unknown> = {};
+      headers.forEach((h, i) => (obj[h] = row[i]));
+      return obj;
+    });
+
+    dropdownData = {};
+    docs.forEach((doc) => {
+      const kategori = String(doc.kategori || '').trim();
+      const aciklama = String(doc.aciklama || '').trim();
+      const dokumanAdi = String(doc.dokuman_adi || '').trim();
+      const gunSayisi = Number(doc.gun_sayisi) || 0;
+      const kisaltma = String(doc.kisaltma || '').trim();
+      const kisaltma2 = String(doc.kisaltma2 || '').trim();
+      if (!kategori || !aciklama || !dokumanAdi) return;
+      if (!dropdownData[kategori]) dropdownData[kategori] = {};
+      if (!dropdownData[kategori][aciklama]) dropdownData[kategori][aciklama] = [];
+      dropdownData[kategori][aciklama].push({ dokuman: dokumanAdi, gun: gunSayisi, kisaltma, kisaltma2 });
+    });
+
+    els.testKategori.innerHTML =
+      '<option disabled selected>Seçiniz</option>' +
+      Object.keys(dropdownData).map(k => `<option value="${k}">${k}</option>`).join('');
+  }
+
+  function onKategoriChange() {
+    const kategori = els.testKategori.value;
+    const tests = Object.keys(dropdownData[kategori] || {});
+    els.testDropdown.innerHTML =
+      '<option disabled selected>Seçiniz</option>' +
+      tests.map(t => `<option value="${t}">${t}</option>`).join('');
+    els.testDropdown.disabled = false;
+    els.testDokuman.innerHTML = '<option disabled selected>Önce test seçin</option>';
+    els.testDokuman.disabled = true;
+  }
+
+  function onTestDropdownChange() {
+    const kategori = els.testKategori.value;
+    const test = els.testDropdown.value;
+    const dokumanlar = dropdownData[kategori]?.[test] || [];
+    els.testDokuman.innerHTML =
+      '<option disabled selected>Seçiniz</option>' +
+      dokumanlar.map(d => `<option value="${d.dokuman}">${d.dokuman}</option>`).join('');
+    els.testDokuman.disabled = false;
+  }
+
+  // ── Selected Tests Management ────────────────────────────────────────────────
+
+  function addSelectedTest() {
+    const kategori = els.testKategori.value;
+    const test = els.testDropdown.value;
+    const dokuman = els.testDokuman.value;
+    if (!kategori || !test || !dokuman) {
+      toast.warning('Lütfen kategori, test açıklaması ve doküman adını seçin.');
+      return;
+    }
+    const dokumanObj = dropdownData[kategori]?.[test]?.find(d => d.dokuman === dokuman);
+    if (!dokumanObj) return;
+
+    const key = `${kategori}>${test}>${dokuman}`;
+    if (selectedTests.find(t => t.key === key)) {
+      toast.warning('Bu test zaten eklendi!');
+      return;
+    }
+    selectedTests.push({ kategori, test, dokuman, gun: dokumanObj.gun, kisaltma: dokumanObj.kisaltma, kisaltma2: dokumanObj.kisaltma2, key });
+    renderSelectedTests();
+  }
+
+  function renderSelectedTests() {
+    if (selectedTests.length === 0) {
+      els.selectedTestList.innerHTML = '';
+      els.selectedTestsActions.classList.add('hidden');
+      return;
+    }
+    els.selectedTestsActions.classList.remove('hidden');
+    els.selectedTestList.innerHTML = selectedTests.map((t, i) => `
+      <li class="flex items-start sm:items-center justify-between gap-3 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 flex-col sm:flex-row">
+        <div class="flex items-center gap-2 flex-wrap min-w-0">
+          <span class="text-xs font-semibold text-muted">${t.kategori}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-muted shrink-0"><path d="m9 18 6-6-6-6"/></svg>
+          <span class="text-xs font-semibold text-muted">${t.test}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-muted shrink-0"><path d="m9 18 6-6-6-6"/></svg>
+          <span class="text-xs font-bold text-main underline">${t.dokuman}</span>
+          <span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">${t.gun} gün</span>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button type="button" data-action="set-gun" data-index="${i}"
+            title="Bu testi seç (gün ve adı doldur)"
+            class="inline-flex items-center justify-center w-11 h-11 rounded-xl border border-border-main bg-surface text-muted hover:text-main hover:bg-surface-hover transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7 7 7-7"/><path d="M12 5v14"/></svg>
+          </button>
+          <button type="button" data-action="remove" data-index="${i}"
+            title="Listeden çıkar"
+            class="inline-flex items-center justify-center w-8 h-8 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+      </li>`).join('');
+  }
+
+  function setSelectedTestGun(index: number) {
+    const t = selectedTests[index];
+    if (!t) return;
+    els.secilenTestGunu.value = String(t.gun);
+    els.secilenTestAdi.value = t.dokuman;
+
+    const k1 = (t.kisaltma || '').trim();
+    const k2 = (t.kisaltma2 || '').trim().toLowerCase();
+    let sonuc = k1;
+    if (k1 && k2 && !['n/a', 'null', 'undefined', '-'].includes(k2)) {
+      sonuc = `${k1}-${k2.toUpperCase()}`;
+    }
+    els.suggestedTestNo.value = sonuc;
+  }
+
+  function removeSelectedTest(index: number) {
+    selectedTests.splice(index, 1);
+    renderSelectedTests();
+  }
+
+  function hesaplaEnUzunTest() {
+    if (selectedTests.length === 0) {
+      toast.warning('Test listesi boş!');
+      return;
+    }
+    const max = selectedTests.reduce((a, b) => (+a.gun > +b.gun ? a : b));
+    els.maxGun.value = String(max.gun);
+    toast.success(`En uzun test: ${max.gun} gün (${max.dokuman})`);
+  }
+
+  // ── Date Calculators ─────────────────────────────────────────────────────────
+
+  function rtislem() {
+    const urunKabul = isoToDate(els.urunKabul.value);
+    const maxGun = parseInt(els.maxGun.value);
+    if (!urunKabul || isNaN(maxGun)) {
+      toast.warning('Lütfen Ürün Kabul Tarihi ve Test Süresini girin!');
+      return;
+    }
+    urunKabul.setDate(urunKabul.getDate() + maxGun + 1);
+    els.raporTarihi.value = formatDate(urunKabul);
+  }
+
+  function uktislem() {
+    const raporTarihi = isoToDate(els.raporTarihi.value);
+    const maxGun = parseInt(els.maxGun.value);
+    if (!raporTarihi || isNaN(maxGun)) {
+      toast.warning('Lütfen Rapor Tarihi ve Test Süresini girin!');
+      return;
+    }
+    raporTarihi.setDate(raporTarihi.getDate() - (maxGun + 1));
+    els.urunKabul.value = formatDate(raporTarihi);
+  }
+
+  function testbaislem() {
+    const testBitis = isoToDate(els.testBitis.value);
+    const gun = parseInt(els.secilenTestGunu.value);
+    if (!testBitis || isNaN(gun)) {
+      toast.warning('Lütfen Test Bitiş Tarihi ve Test Gün değerini girin!');
+      return;
+    }
+    testBitis.setDate(testBitis.getDate() - (gun - 1));
+    els.testBaslangic.value = formatDate(testBitis);
+  }
+
+  function testbiislem() {
+    const testBaslangic = isoToDate(els.testBaslangic.value);
+    const gun = parseInt(els.secilenTestGunu.value);
+    if (!testBaslangic || isNaN(gun)) {
+      toast.warning('Lütfen Test Başlangıç Tarihi ve Test Gün değerini girin!');
+      return;
+    }
+    testBaslangic.setDate(testBaslangic.getDate() + (gun - 1));
+    els.testBitis.value = formatDate(testBaslangic);
+  }
+
+  function generateSuggestedTestNo() {
+    const tarih = isoToDate(els.raporTarihi.value);
+    const firmaId = activeContext?.firmaId;
+    const urunKodu = els.urunKodu.value.trim();
+    const testKod = els.suggestedTestNo.value.trim();
+
+    if (!tarih || !firmaId || !urunKodu || !testKod) {
+      toast.warning('Rapor tarihi, firma ID, ürün kodu ve test kodu gerekli!');
+      return;
+    }
+    const yyyy = tarih.getFullYear();
+    const mm = String(tarih.getMonth() + 1).padStart(2, '0');
+    els.raporNo.value = `${yyyy}-${mm}/${firmaId}-${urunKodu}/${testKod}`;
+  }
+
+  // ── Image Upload ─────────────────────────────────────────────────────────────
+
+  async function uploadImage(fileInput: HTMLInputElement, targetInput: HTMLInputElement) {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    const nick = activeContext?.nick || '';
+    if (!nick) {
+      toast.warning('Firma bağlamı yüklenmeden görsel yüklenemez.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const result = e.target?.result as string;
+      const parts = result.split(',');
+      if (parts.length < 2) { toast.error('Dosya okunamadı!'); return; }
+      const uploadObj = { fileName: file.name, mimeType: file.type, data: parts[1] };
+      toast.warning('Görsel yükleniyor...');
+      const res = await api.uploadFile(uploadObj, nick);
+      if (res.success && (res as any).fileId) {
+        targetInput.value = (res as any).fileId;
+        toast.success(`Görsel yüklendi: ${file.name}`);
+      } else {
+        toast.error('Görsel yüklenemedi: ' + ((res as any).error || 'Bilinmeyen hata'));
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── Date normalizer (dd.mm.yyyy → yyyy-mm-dd) ────────────────────────────────
+
+  function normalizeDateToIso(val: string): string {
+    if (!val) return '';
+    const trimmed = val.trim();
+    // Already ISO
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    // dd.mm.yyyy
+    const dotMatch = trimmed.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (dotMatch) return `${dotMatch[3]}-${dotMatch[2]}-${dotMatch[1]}`;
+    return trimmed;
+  }
+
+  // ── Populate form in edit mode ────────────────────────────────────────────────
+
+  function populateForm(item: any) {
+    els.marka.value = item.marka || '';
+    els.urun.value = item.urun || '';
+    els.urunKodu.value = item.urun_kodu || '';
+    els.urunNo.value = item.urun_no || '';
+    els.lot.value = item.lot || '';
+    els.numuneSayisi.value = item.numune_sayisi != null ? String(item.numune_sayisi) : '';
+    els.uretimTarihi.value = normalizeDateToIso(item.numune_ut || '');
+    els.numuneSKT.value = normalizeDateToIso(item.numune_skt || '');
+    els.gorselBir.value = item.gorsel1 || '';
+    els.gorselIki.value = item.gorsel2 || '';
+    els.urunBilgi.value = item.urun_bilgi || '';
+    els.detay.value = item.detay || '';
+    els.urunKabul.value = normalizeDateToIso(item.urun_kabul || '');
+    els.kabulSaat.value = item.kabul_saat || '';
+    els.testBaslangic.value = normalizeDateToIso(item.test_baslangic || '');
+    els.testBitis.value = normalizeDateToIso(item.test_bitis || '');
+    els.raporTarihi.value = normalizeDateToIso(item.rapor_tarihi || '');
+    els.raporNo.value = item.rapor_no || '';
+    els.secilenTestAdi.value = item.test_adi || '';
+  }
+
+  // ── Save ─────────────────────────────────────────────────────────────────────
+
+  async function saveTest() {
+    if (!activeContext) { toast.error('Firma bağlamı yok!'); return; }
+
+    const testInfo = {
+      firmaNo: String(activeContext.firmaId),
+      testAdi: els.secilenTestAdi.value.trim(),
+      marka: els.marka.value.trim(),
+      urun: els.urun.value.trim(),
+      urunKodu: els.urunKodu.value.trim(),
+      urunNo: els.urunNo.value.trim(),
+      lot: els.lot.value.trim(),
+      urunKabul: dateToIso(els.urunKabul.value),
+      kabulSaat: els.kabulSaat.value.trim(),
+      testBaslangic: dateToIso(els.testBaslangic.value),
+      testBitis: dateToIso(els.testBitis.value),
+      raporTarihi: dateToIso(els.raporTarihi.value),
+      raporNo: els.raporNo.value.trim(),
+      numuneSayisi: els.numuneSayisi.value.trim(),
+      numuneUT: dateToIso(els.uretimTarihi.value),
+      numuneSKT: dateToIso(els.numuneSKT.value),
+      urunBilgi: els.urunBilgi.value.trim(),
+      gorsel1: els.gorselBir.value.trim(),
+      gorsel2: els.gorselIki.value.trim(),
+      detay: els.detay.value.trim(),
+    };
+
+    els.saveBtn.setAttribute('disabled', 'true');
+    els.saveLabel.textContent = 'Kaydediliyor...';
+
+    const res = isEditMode
+      ? await api.updateTest(activeTestId, testInfo)
+      : await api.addTest(testInfo);
+
+    if (res.success) {
+      toast.success(isEditMode ? 'Test güncellendi!' : 'Test başarıyla kaydedildi!');
+      setTimeout(() => {
+        window.location.href = `/company?id=${activeContext!.firmaId}`;
+      }, 1200);
+    } else {
+      toast.error('Kayıt hatası: ' + (res.error || 'Bilinmeyen hata'));
+      els.saveBtn.removeAttribute('disabled');
+      els.saveLabel.textContent = isEditMode ? 'Güncelle' : 'Testi Kaydet';
+    }
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────────
+
+  async function deleteTest() {
+    if (!activeTestId) return;
+    const confirmed = window.confirm('Bu test kaydı kalıcı olarak silinecek. Onaylıyor musunuz?');
+    if (!confirmed) return;
+
+    els.deleteBtn.setAttribute('disabled', 'true');
+    const res = await api.deleteTest(activeTestId);
+    if (res.success) {
+      toast.success('Test silindi.');
+      setTimeout(() => {
+        window.location.href = activeContext
+          ? `/company?id=${activeContext.firmaId}`
+          : '/tests';
+      }, 1000);
+    } else {
+      toast.error('Silme hatası: ' + (res.error || 'Bilinmeyen hata'));
+      els.deleteBtn.removeAttribute('disabled');
+    }
+  }
+
+  // ── Context Loading ───────────────────────────────────────────────────────────
 
   async function renderWithContext() {
     if (!activeFirmaId) {
@@ -92,25 +858,89 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
       return;
     }
 
+    showShells('skeleton');
     const context = await loadCompanyOperationContext(activeFirmaId);
     if (!context) {
-      els.skeleton?.classList.add('hidden');
-      els.picker?.classList.add('hidden');
-      els.error?.classList.remove('hidden');
+      showShells('error');
       return;
     }
+    activeContext = context;
 
-    (document.getElementById('test-company-id') as HTMLElement | null)!.textContent = `M${context.firmaId}`;
-    (document.getElementById('test-company-nick') as HTMLElement | null)!.textContent = context.nick || 'Firma';
-    (document.getElementById('test-company-unvan') as HTMLElement | null)!.textContent = context.unvan || context.nick || `Firma #${context.firmaId}`;
-    (document.getElementById('test-context-summary') as HTMLElement | null)!.textContent = `${context.nick || context.unvan || 'Firma'} için test modülü başlangıç ekranı hazır. Bu firmaya ait ${context.tests.length} test ve ${context.certificates.length} sertifika kaydı bağlama alınabiliyor.`;
-    (document.getElementById('test-back-company') as HTMLAnchorElement | null)!.href = `/company?id=${encodeURIComponent(context.firmaId)}`;
+    els.companyId.textContent = `M${context.firmaId}`;
+    els.companyNick.textContent = context.nick || 'Firma';
+    els.companyUnvan.textContent = context.unvan || context.nick || `Firma #${context.firmaId}`;
+    els.companyStats.textContent = `${context.tests.length} test · ${context.certificates.length} sertifika`;
+    els.backLink.href = `/company?id=${encodeURIComponent(context.firmaId)}`;
 
-    els.skeleton?.classList.add('hidden');
-    els.picker?.classList.add('hidden');
-    els.error?.classList.add('hidden');
-    els.shell?.classList.remove('hidden');
+    if (isEditMode) {
+      els.breadcrumb.textContent = `${context.nick || context.unvan || 'Firma'} — Test Düzenle`;
+      els.saveLabel.textContent = 'Güncelle';
+      els.deleteBtn.classList.remove('hidden');
+      els.deleteBtn.classList.add('inline-flex');
+    } else {
+      els.breadcrumb.textContent = `${context.nick || context.unvan || 'Firma'} — Test Ekle`;
+    }
+
+    await loadTestDropdownData();
+
+    if (isEditMode) {
+      // Try store first to avoid extra fetch
+      let testItem: any = ($tests.get() as any[]).find((t: any) => String(t.id) === String(activeTestId));
+      if (!testItem) {
+        const res = await api.getTestsByFirmaId(context.firmaId);
+        if (res.success && Array.isArray(res.data)) {
+          testItem = (res.data as any[]).find((t: any) => String(t.id) === String(activeTestId));
+        }
+      }
+      if (testItem) {
+        populateForm(testItem);
+      } else {
+        toast.warning('Test kaydı bulunamadı, boş form açıldı.');
+      }
+    }
+
+    showShells('shell');
   }
+
+  async function initPicker() {
+    showShells('skeleton');
+    await setupOperationCompanyPicker({
+      prefix: 'test',
+      onSelected: ({ id }) => {
+        activeFirmaId = id;
+        void renderWithContext();
+      },
+      onShowPicker: () => showShells('select'),
+    });
+  }
+
+  // ── Event Listeners ───────────────────────────────────────────────────────────
+
+  els.testKategori.addEventListener('change', onKategoriChange);
+  els.testDropdown.addEventListener('change', onTestDropdownChange);
+  els.addTestBtn.addEventListener('click', addSelectedTest);
+  els.hesaplaBtn.addEventListener('click', hesaplaEnUzunTest);
+
+  els.selectedTestList.addEventListener('click', (e) => {
+    const btn = (e.target as Element).closest('[data-action]') as HTMLElement | null;
+    if (!btn) return;
+    const index = parseInt(btn.dataset.index || '0');
+    if (btn.dataset.action === 'remove') removeSelectedTest(index);
+    else if (btn.dataset.action === 'set-gun') setSelectedTestGun(index);
+  });
+
+  els.rtislemBtn.addEventListener('click', rtislem);
+  els.uktislemBtn.addEventListener('click', uktislem);
+  els.testbaislemBtn.addEventListener('click', testbaislem);
+  els.testbiislemBtn.addEventListener('click', testbiislem);
+  els.generateNoBtn.addEventListener('click', generateSuggestedTestNo);
+  els.saveBtn.addEventListener('click', saveTest);
+  els.deleteBtn.addEventListener('click', deleteTest);
+
+  els.gorselBirFile.addEventListener('change', () => uploadImage(els.gorselBirFile, els.gorselBir));
+  els.gorselIkiFile.addEventListener('change', () => uploadImage(els.gorselIkiFile, els.gorselIki));
+
+  // ── Init ──────────────────────────────────────────────────────────────────────
 
   void renderWithContext();
 </script>

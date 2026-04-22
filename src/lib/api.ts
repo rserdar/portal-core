@@ -248,6 +248,8 @@ export const api = {
   async deleteProforma(id: string | number) {
     return this.call("deleteProforma", { id });
   },
+  async addTest(testInfo: any) { return this.call("addTest", { testInfo }); },
+  async updateTest(id: string | number, testInfo: any) { return this.call("updateTest", { id, testInfo }); },
   async deleteTest(id: string | number) { return this.call("deleteTest", { id }); },
   async updateSurveillance(ids: (string | number)[], status: boolean | string, firmaId?: string | number) {
     return this.call("updateSurveillance", { ids, status, ...(firmaId !== undefined ? { firmaId } : {}) });
