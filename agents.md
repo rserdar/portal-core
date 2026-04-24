@@ -385,19 +385,19 @@ B ──┘            └── F   ├── G
 
 ---
 
-### Faz C — Ortak Bileşenler ve Astro/Tailwind Derinleştirme ⬜
+### Faz C — Ortak Bileşenler ve Astro/Tailwind Derinleştirme ✅
 > **Çıktı:** Liste sayfaları arasındaki tekrar eden kod bileşenlere taşınmış; Tailwind tutarlılığı sağlanmış.
 > **Başarı ölçütü:** `certificates`, `audits`, `tests`, `company` liste sayfaları `DataTable.astro` kullanıyor; her sayfanın satır içi `registerCleanup/runCleanups/astro:page-load` bloğu `useCleanup.ts`'e taşınmış.
 
 | # | Madde | Done Criteria |
 | :- | :--- | :--- |
-| C1 | **`DataTable.astro` bileşeni** — tablo iskelet, sayfalama, yükleme/boş durum, bulk-actions; slot tabanlı (thead ve tbody row'u dışarıdan verilir) | 4 liste sayfası bu bileşeni kullanıyor; sayfaların kendi kaynak kodunda tablo HTML'i yok |
-| C2 | **`FilterBar.astro` bileşeni** — arama input, dropdown filtreler, tarih aralığı; prop ile hangi filtrelerin görüneceği belirlenir | A1–A3 sonrası sertifika filtre paneli bu bileşene taşınmış; audits ve tests sayfaları da kullanıyor |
-| C3 | **`PageShell.astro` birleştirme** — mevcut `OperationPageShell.astro` ile birleştirilir veya genişletilir; başlık + aksiyon butonları standart prop'larla yapılandırılır | `OperationPageShell.astro` ve `PageShell.astro` tek bileşen; eski bileşen silinmiş |
-| C4 | **`useCleanup.ts` composable'ı** — `registerCleanup / runCleanups` + `astro:page-load` / `astro:before-preparation` listener kurma tek fonksiyona çekilir | Tüm liste sayfalarında satır içi cleanup pattern yok; `initPage` çağrısı tek satıra inmiş |
-| C5 | **`useTableFilter.ts` composable'ı** — `getFilteredData`, `setTableState`, `renderTable` döngüsü; sayfa kendi filtre mantığını `FilterFn` callback olarak geçer | Her sayfanın `renderTable` fonksiyonu bu composable'ı kullanıyor; duplicate `setTableState` implementasyonları yok |
-| C6 | **Astro Content Collections** — standartlar, EA kodları, NACE kodları `src/content/` altına taşınır; Zod şeması ile type-safe | `pickValue` ile yapılan sabit liste aramaları content collection query'ye dönmüş |
-| C7 | **Tailwind `@layer components`** — `btn-primary`, `card-surface`, `badge-status` gibi sık tekrarlanan utility grupları tanımlanır | Proje genelinde aynı utility kombinasyonu birden fazla yerde tekrar etmiyor |
+| ✅ C1 | **`DataTable.astro` bileşeni** — tablo iskelet, sayfalama, yükleme/boş durum, bulk-actions; slot tabanlı (thead ve tbody row'u dışarıdan verilir) | 4 liste sayfası bu bileşeni kullanıyor; sayfaların kendi kaynak kodunda tablo HTML'i yok |
+| ✅ C2 | **`FilterBar.astro` bileşeni** — arama input, dropdown filtreler, tarih aralığı; prop ile hangi filtrelerin görüneceği belirlenir | A1–A3 sonrası sertifika filtre paneli bu bileşene taşınmış; audits ve tests sayfaları da kullanıyor |
+| ✅ C3 | **`PageShell.astro` birleştirme** — mevcut `OperationPageShell.astro` ile birleştirilir veya genişletilir; başlık + aksiyon butonları standart prop'larla yapılandırılır | `OperationPageShell.astro` ve `PageShell.astro` tek bileşen; eski bileşen silinmiş |
+| ✅ C4 | **`useCleanup.ts` composable'ı** — `registerCleanup / runCleanups` + `astro:page-load` / `astro:before-preparation` listener kurma tek fonksiyona çekilir | Tüm liste sayfalarında satır içi cleanup pattern yok; `initPage` çağrısı tek satıra inmiş |
+| ✅ C5 | **`useTableFilter.ts` composable'ı** — `getFilteredData`, `setTableState`, `renderTable` döngüsü; sayfa kendi filtre mantığını `FilterFn` callback olarak geçer | Her sayfanın `renderTable` fonksiyonu bu composable'ı kullanıyor; duplicate `setTableState` implementasyonları yok |
+| ✅ C6 | **Astro Content Collections** — standartlar, EA kodları, NACE kodları `src/content/` altına taşınır; Zod şeması ile type-safe | `pickValue` ile yapılan sabit liste aramaları content collection query'ye dönmüş |
+| ✅ C7 | **Tailwind `@layer components`** — `btn-primary`, `card-surface`, `badge-status` gibi sık tekrarlanan utility grupları tanımlanır | Proje genelinde aynı utility kombinasyonu birden fazla yerde tekrar etmiyor |
 
 ---
 
