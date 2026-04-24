@@ -978,12 +978,27 @@ export default {
       url.searchParams.set("text", String(body?.params?.text || ""));
       url.searchParams.set("toEn", body?.params?.toEn ? "true" : "false");
 
-      const res = await fetch(url.toString(), { method: "GET" });
-      const text = await res.text();
-      if (!res.ok || !text.trimStart().startsWith('{')) {
-        throw new Error(`GAS_HTTP_ERROR: ${res.status} — ${text.slice(0, 200)}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+
+      try {
+        const res = await fetch(url.toString(), { method: "GET", signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        const text = await res.text();
+        if (!res.ok || !text.trimStart().startsWith('{')) {
+          const code = res.status;
+          if (code === 524 || text.includes('524')) throw new Error('GAS_TIMEOUT_524: Google Apps Script yanıt vermedi (süre aşımı). Daha küçük bir kapsam seçin veya GAS scriptini optimize edin.');
+          throw new Error(`GAS_HTTP_ERROR: ${code} — ${text.slice(0, 200)}`);
+        }
+        return JSON.parse(text);
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          return { success: false, error: "GAS_TIMEOUT" };
+        }
+        throw err;
       }
-      return JSON.parse(text);
     };
 
     const generateSqlDump = async (env, requestedTables) => {
@@ -1023,22 +1038,36 @@ export default {
 
     const fetchFromGas = async (env, body) => {
       const requestBody = JSON.stringify({ ...body, apiKey: env.API_KEY });
-      const res = await fetch(env.GAS_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: requestBody,
-      });
 
-      const text = await res.text();
-      if (!res.ok || !text.trimStart().startsWith('{')) {
-        const code = res.status;
-        if (body?.action === "translate") {
-          return await fetchFromGasViaGet(env, body);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+
+      try {
+        const res = await fetch(env.GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: requestBody,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        const text = await res.text();
+        if (!res.ok || !text.trimStart().startsWith('{')) {
+          const code = res.status;
+          if (body?.action === "translate") {
+            return await fetchFromGasViaGet(env, body);
+          }
+          if (code === 524 || text.includes('524')) throw new Error('GAS_TIMEOUT_524: Google Apps Script yanıt vermedi (süre aşımı). Daha küçük bir kapsam seçin veya GAS scriptini optimize edin.');
+          throw new Error(`GAS_HTTP_ERROR: ${code} — ${text.slice(0, 200)}`);
         }
-        if (code === 524 || text.includes('524')) throw new Error('GAS_TIMEOUT_524: Google Apps Script yanıt vermedi (süre aşımı). Daha küçük bir kapsam seçin veya GAS scriptini optimize edin.');
-        throw new Error(`GAS_HTTP_ERROR: ${code} — ${text.slice(0, 200)}`);
+        return JSON.parse(text);
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          return { success: false, error: "GAS_TIMEOUT" };
+        }
+        throw err;
       }
-      return JSON.parse(text);
     };
 
     const syncToBackup = (action, params, type, id) => {
