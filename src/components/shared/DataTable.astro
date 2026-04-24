@@ -1,0 +1,62 @@
+---
+interface Props {
+  emptyMessage?: string;
+  loadingMessage?: string;
+}
+
+const {
+  emptyMessage = "Eşleşen kayıt bulunamadı",
+  loadingMessage = "Veriler Hazırlanıyor"
+} = Astro.props;
+---
+
+<div class="card-surface">
+  <div class="w-full overflow-x-auto">
+    <table class="w-full table-fixed border-collapse">
+      <thead>
+        <tr class="bg-surface-hover border-b border-border-main">
+          <slot name="header" />
+        </tr>
+      </thead>
+      <tbody id="table-body" class="divide-y divide-border-main">
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Durum Mesajları -->
+  <div id="table-loader" class="py-24 flex flex-col items-center justify-center gap-3">
+    <div class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+    <p class="text-xs font-bold text-muted tracking-widest uppercase animate-pulse">{loadingMessage}</p>
+  </div>
+
+  <div id="empty-state" class="hidden py-24 flex flex-col items-center justify-center gap-3 text-center px-6">
+    <div class="w-14 h-14 rounded-2xl bg-surface-hover border border-border-main flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+    </div>
+    <p class="text-sm font-bold text-muted uppercase tracking-widest">{emptyMessage}</p>
+  </div>
+
+  <!-- Sayfalama (Premium Layout) -->
+  <div id="pagination-bar" class="hidden bg-surface-hover border-t border-border-main px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <span id="page-summary" class="text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 tabular-nums">1 / 1</span>
+      <div class="flex items-center gap-2 border-l border-border-main pl-3">
+        <span class="text-[10px] font-bold text-muted uppercase tracking-widest hidden sm:inline">Göster:</span>
+        <select id="page-size-select" class="bg-surface border border-border-main rounded-lg px-2 py-1 text-[11px] font-bold text-main outline-none focus:ring-1 focus:ring-primary/40 transition-all cursor-pointer">
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+       <button id="prev-page-btn" title="Önceki Sayfa" class="w-8 h-8 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+       </button>
+       <div id="page-number-list" class="flex items-center gap-1.5"></div>
+       <button id="next-page-btn" title="Sonraki Sayfa" class="w-8 h-8 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+       </button>
+    </div>
+  </div>
+</div>

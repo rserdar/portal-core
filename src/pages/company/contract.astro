@@ -1,9 +1,9 @@
 ---
-import OperationPageShell from '../../components/OperationPageShell.astro';
+import PageShell from '../../components/shared/PageShell.astro';
 import CompanyPicker from '../../components/CompanyPicker.astro';
 ---
 
-<OperationPageShell
+<PageShell
   pageKey="contract"
   title="Sözleşme"
   description="Sözleşme ücreti, tarihi ve konusu gibi alanları firma bağlamı ile birleştiren ayrı operasyon sayfasıdır."
@@ -94,7 +94,7 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
       </button>
     </div>
   </div>
-</OperationPageShell>
+</PageShell>
 
 <script>
   import { toast } from '../../lib/toast';
