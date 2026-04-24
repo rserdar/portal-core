@@ -18,7 +18,31 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         />
       </div>
 
-      <div class="flex items-center gap-2 shrink-0">
+      <div class="flex items-center gap-2 flex-wrap shrink-0 print:hidden">
+
+        <!-- A1: Date Filter -->
+        <div class="flex items-center gap-1 border border-border-main rounded-xl p-1 bg-surface-hover hidden md:flex">
+          <select id="date-column-filter" class="bg-transparent border-none text-xs font-bold text-muted outline-none focus:ring-0 cursor-pointer">
+            <option value="sertifika">Sert. Tarihi</option>
+            <option value="gozetim">Göz. Tarihi</option>
+          </select>
+          <input type="date" id="date-start" class="bg-surface border border-border-main rounded-lg px-2 py-1.5 text-xs font-bold text-main outline-none focus:ring-1 focus:ring-primary/50" />
+          <span class="text-muted text-xs font-bold">-</span>
+          <input type="date" id="date-end" class="bg-surface border border-border-main rounded-lg px-2 py-1.5 text-xs font-bold text-main outline-none focus:ring-1 focus:ring-primary/50" />
+        </div>
+
+        <!-- A2: Status Filter -->
+        <select id="status-filter" class="hidden md:block bg-surface-hover border border-border-main rounded-xl px-3 py-2.5 text-xs font-bold text-muted outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer">
+          <option value="">TÜM DURUMLAR</option>
+          <option value="TRUE">Aktif</option>
+          <option value="FALSE">Bekliyor</option>
+        </select>
+
+        <!-- A3: Consultant Filter -->
+        <select id="consultant-filter" disabled class="hidden md:block bg-surface-hover border border-border-main rounded-xl px-3 py-2.5 text-xs font-bold text-muted outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer disabled:opacity-50">
+          <option value="">TÜM DANIŞMANLAR</option>
+        </select>
+
         <select id="standard-filter" class="hidden md:block bg-surface-hover border border-border-main rounded-xl px-3 py-2.5 text-xs font-bold text-muted outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer">
           <option value="">TÜM STANDARTLAR</option>
           <option value="9001">ISO 9001</option>
@@ -40,10 +64,14 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         <button id="export-excel-btn" title="Excel Dışa Aktar" class="w-9 h-9 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-emerald-400 hover:bg-emerald-500/10 transition-all">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
         </button>
+        <!-- A6: Print Button -->
+        <button id="print-btn" title="Yazdır" class="w-9 h-9 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-sky-400 hover:bg-sky-500/10 transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+        </button>
       </div>
 
       <!-- ⚡ Toplu İşlemler Overlay (Search Bar içinde) -->
-      <div id="bulk-actions" class="hidden flex-wrap items-center gap-3 w-full sm:w-auto bg-primary/10 border border-primary/30 px-3 py-1.5 rounded-xl animate-fade-in ml-auto">
+      <div id="bulk-actions" class="hidden print:hidden flex-wrap items-center gap-3 w-full sm:w-auto bg-primary/10 border border-primary/30 px-3 py-1.5 rounded-xl animate-fade-in ml-auto">
         <span id="selected-count" class="text-[10px] font-black text-primary uppercase tracking-widest whitespace-nowrap">0 SEÇİLİ</span>
         <div class="h-4 w-px bg-primary/20 hidden sm:block"></div>
         <button id="bulk-done-btn" class="text-[10px] font-black text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest px-2 py-1 rounded-lg hover:bg-emerald-500/10 whitespace-nowrap">
@@ -94,7 +122,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       </div>
 
       <!-- Sayfalama (Premium Layout) -->
-      <div id="pagination-bar" class="hidden bg-surface-hover border-t border-border-main px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div id="pagination-bar" class="hidden print:hidden bg-surface-hover border-t border-border-main px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <span id="page-summary" class="text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 tabular-nums">1 / 1</span>
           <div class="flex items-center gap-2 border-l border-border-main pl-3">
@@ -137,7 +165,15 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     getInitials
   } from '../../lib/utils';
 
-  let filters = { search: '', standard: '' };
+  let filters = {
+  search: '',
+  standard: '',
+  status: '',
+  consultant: '',
+  dateColumn: 'sertifika',
+  dateStart: '',
+  dateEnd: ''
+};
   let currentPage = 1;
   let pageSize = 20;
   let fullCertificatesLoaded = false;
@@ -158,6 +194,11 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const tableBody = document.getElementById('cert-table-body');
     const tableLoader = document.getElementById('table-loader');
     const emptyState = document.getElementById('empty-state');
+    const consultantFilter = document.getElementById('consultant-filter') as HTMLSelectElement | null;
+    const dateColumnFilter = document.getElementById('date-column-filter') as HTMLSelectElement | null;
+    const dateStart = document.getElementById('date-start') as HTMLInputElement | null;
+    const dateEnd = document.getElementById('date-end') as HTMLInputElement | null;
+    const printBtn = document.getElementById('print-btn') as HTMLButtonElement | null;
     const globalSearch = document.getElementById('global-search') as HTMLInputElement;
     const standardFilter = document.getElementById('standard-filter') as HTMLSelectElement;
     const statusFilter = document.getElementById('status-filter') as HTMLSelectElement | null;
@@ -268,6 +309,24 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     ], "");
   }
 
+  function getUrgencyScore(item: any) {
+    const gozetimRaw = pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], "");
+    const durum = String(pickValue(item, ["gozetim_confirmed", "gozetimConfirmed", "Gözetim"], "FALSE")).toUpperCase();
+    if (durum === "TRUE") return 0; // Aktif olanları normal sırala
+
+    const gozetimDate = parseDateValue(gozetimRaw);
+    if (!gozetimDate) return 0;
+
+    const now = new Date();
+    now.setHours(0,0,0,0);
+    const diffTime = gozetimDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return 2; // Geçmiş (Kırmızı)
+    if (diffDays <= 30) return 1; // 30 gün içinde (Sarı)
+    return 0; // Normal
+  }
+
   function getSortableTimestamp(item: any, originalIndex: number) {
     const candidates = [
       getCreatedAt(item),
@@ -354,6 +413,25 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         return;
       }
       setTableState('ready');
+
+      // Populate consultants
+      if (consultantFilter && (certs || []).length > 0) {
+        const uniqueConsultants = [...new Set((certs || []).map(item => pickValue(item, ["consultant", "danisman", "dan", "Danışman"], "")).filter(Boolean))].sort();
+
+        const currentValue = consultantFilter.value;
+        consultantFilter.innerHTML = '<option value="">TÜM DANIŞMANLAR</option>';
+        uniqueConsultants.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          consultantFilter.appendChild(opt);
+        });
+        if (uniqueConsultants.includes(currentValue)) {
+          consultantFilter.value = currentValue;
+        }
+        consultantFilter.disabled = false;
+      }
+
       renderTable(certs || []);
     });
     registerCleanup(unsubCerts);
@@ -385,11 +463,40 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       const standart = normalizeStandard(item);
       const denetim = getDenetim(item);
       const danisman = pickValue(item, ["consultant", "danisman", "dan", "Danışman"]);
-      const gozetim = pickValue(item, ["gozetim_confirmed", "gozetimConfirmed", "Gözetim"], "FALSE").toUpperCase();
+
+      let gozetim = String(pickValue(item, ["gozetim_confirmed", "gozetimConfirmed", "Gözetim"], "FALSE")).toUpperCase();
+      if (gozetim === "TRUE") gozetim = "TRUE";
+      else if (gozetim === "FALSE") gozetim = "FALSE";
+
       const matchSearch = `${firma}${id}${certNo}${standart}${denetim}${danisman}`.toLowerCase().includes(filters.search.toLowerCase());
       const matchStd = !filters.standard || standart.includes(filters.standard);
       const matchStatus = !filters.status || gozetim === filters.status;
-      return matchSearch && matchStd && matchStatus;
+      const matchConsultant = !filters.consultant || danisman === filters.consultant;
+
+      let matchDate = true;
+      if (filters.dateStart || filters.dateEnd) {
+        const dateRaw = filters.dateColumn === 'sertifika'
+          ? pickValue(item, ["sertifika_tarihi", "gst", "Sertifika Tarihi"], "")
+          : pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], "");
+
+        const itemDate = parseDateValue(dateRaw);
+        if (!itemDate) {
+           matchDate = false;
+        } else {
+           if (filters.dateStart) {
+             const startD = new Date(filters.dateStart);
+             startD.setHours(0,0,0,0);
+             if (itemDate < startD) matchDate = false;
+           }
+           if (filters.dateEnd) {
+             const endD = new Date(filters.dateEnd);
+             endD.setHours(23,59,59,999);
+             if (itemDate > endD) matchDate = false;
+           }
+        }
+      }
+
+      return matchSearch && matchStd && matchStatus && matchConsultant && matchDate;
     });
   }
 
@@ -397,8 +504,13 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     if (!tableBody) return;
     try {
       const filtered = getFilteredData(data)
-        .map((item, originalIndex) => ({ item, originalIndex }))
-        .sort((a, b) => getSortableTimestamp(b.item, b.originalIndex) - getSortableTimestamp(a.item, a.originalIndex));
+        .map((item, originalIndex) => ({ item, originalIndex, urgency: getUrgencyScore(item) }))
+        .sort((a, b) => {
+          if (a.urgency !== b.urgency) {
+            return b.urgency - a.urgency;
+          }
+          return getSortableTimestamp(b.item, b.originalIndex) - getSortableTimestamp(a.item, a.originalIndex);
+        });
 
       tableBody.innerHTML = '';
       updateBulkUI();
@@ -438,8 +550,16 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           const sorgulamaLinki = normalizeLink(getQueryLink(item));
           const sertifikaLinki = normalizeLink(getCertificateLink(item));
 
+          let rowClass = 'hover:bg-surface-hover transition-colors group/row text-[11px]';
+          const urgency = getUrgencyScore(item);
+          if (urgency === 2) {
+             rowClass += ' border-l-2 border-l-rose-500 bg-rose-500/5 hover:bg-rose-500/10';
+          } else if (urgency === 1) {
+             rowClass += ' border-l-2 border-l-amber-400 bg-amber-400/5 hover:bg-amber-400/10';
+          }
+
           const tr = document.createElement('tr');
-          tr.className = 'hover:bg-surface-hover transition-colors group/row text-[11px]';
+          tr.className = rowClass;
           tr.innerHTML = `
             <td class="px-3 py-4 text-center align-middle">
               <input type="checkbox" class="cert-checkbox w-4 h-4 rounded border-gray-700 text-primary bg-transparent cursor-pointer focus:ring-offset-0 focus:ring-primary" data-id="${idAttr}">
@@ -505,6 +625,13 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                     ${sertifikaLinki ? `<a href="${escAttr(sertifikaLinki)}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline underline-offset-2">${escHtml(sertifikaLinki)}</a>` : '<span class="text-muted">—</span>'}
                   </div>
                 </div>
+              </div>
+              <!-- A5: Edit Button -->
+              <div class="mt-3 flex justify-end print:hidden">
+                ${id ? `<a href="/certificates/add?edit=${escAttr(id)}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/20 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                  DÜZENLE
+                </a>` : ''}
               </div>
             </div>
           </td>
@@ -636,6 +763,29 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       currentPage = 1;
       renderTable($certificates.get());
     });
+    consultantFilter?.addEventListener('change', (e) => {
+      filters.consultant = (e.target as HTMLSelectElement).value;
+      currentPage = 1;
+      renderTable($certificates.get());
+    });
+    dateColumnFilter?.addEventListener('change', (e) => {
+      filters.dateColumn = (e.target as HTMLSelectElement).value;
+      currentPage = 1;
+      renderTable($certificates.get());
+    });
+    dateStart?.addEventListener('change', (e) => {
+      filters.dateStart = (e.target as HTMLInputElement).value;
+      currentPage = 1;
+      renderTable($certificates.get());
+    });
+    dateEnd?.addEventListener('change', (e) => {
+      filters.dateEnd = (e.target as HTMLInputElement).value;
+      currentPage = 1;
+      renderTable($certificates.get());
+    });
+    printBtn?.addEventListener('click', () => {
+      window.print();
+    });
     pageSizeSelect?.addEventListener('change', (e) => {
       pageSize = Number((e.target as HTMLSelectElement).value) || 20;
       currentPage = 1;
@@ -697,3 +847,18 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   // Cleanup away
   document.addEventListener('astro:before-preparation', runCleanups);
 </script>
+
+<style is:global>
+  @media print {
+    body {
+      background: white !important;
+      color: black !important;
+    }
+    .print\:hidden {
+      display: none !important;
+    }
+    table {
+      width: 100% !important;
+    }
+  }
+</style>
