@@ -359,6 +359,12 @@ function doPost(e) {
         result.success = true;
         break;
 
+      case "runDailyBackup":
+        const backupStats = DailyBackupService.runDailyBackup();
+        result.data = backupStats;
+        result.success = true;
+        break;
+
       case "setupNightlyTrigger":
         SyncService.setupNightlyTrigger();
         result.success = true;

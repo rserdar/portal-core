@@ -1746,6 +1746,25 @@ export default {
           proformas: (await env.DB_D1.prepare(`SELECT * FROM proformas WHERE updated_at > ?`).bind(sinceTs).all()).results
         };
         return jsonResponse({ success: true, data: delta });
+      },
+
+      // D1 → Sheets + Drive backup (D1-Primary mimarisinde doğru yön)
+      // Cron scheduled() tarafından tetiklenir; GAS DailyBackupService.runDailyBackup()'ı çağırır
+      triggerDailyBackup: async (p, ctx, env) => {
+        try {
+          const gasResult = await fetchFromGas(env, { action: "runDailyBackup", params: {} });
+          if (!gasResult.success) {
+            await env.DB_D1.prepare(
+              `INSERT INTO sync_log (action, entity_type, status, error_message, created_at) VALUES (?, ?, ?, ?, unixepoch())`
+            ).bind("cronBackup", "all", "FAIL", gasResult.error || "GAS runDailyBackup başarısız").run();
+          }
+          return jsonResponse(gasResult);
+        } catch (err) {
+          await env.DB_D1.prepare(
+            `INSERT INTO sync_log (action, entity_type, status, error_message, created_at) VALUES (?, ?, ?, ?, unixepoch())`
+          ).bind("cronBackup", "all", "CRASH", err.message).run();
+          return jsonResponse({ success: false, error: err.message }, 502);
+        }
       }
     };
 
@@ -2347,14 +2366,15 @@ export default {
     });
   },
 
-  // Her Pazar otomatik tam bulkSync (wrangler.toml cron ile tetiklenir)
+  // Her Pazar 04:00 UTC — D1 → Sheets + Drive backup (D1-Primary yönü)
+  // Eski: GAS → D1 (bulkSync) — D1-Primary mimarisinde yanlış yöndü, kaldırıldı
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
       try {
         const fakeCtx = { waitUntil: (p) => p };
-        await SyncHandlers.bulkSync({}, fakeCtx, env);
+        await SyncHandlers.triggerDailyBackup({}, fakeCtx, env);
       } catch (e) {
-        console.error("[Cron] bulkSync hatası:", e.message);
+        console.error("[Cron] Günlük yedekleme hatası:", e.message);
       }
     })());
   },
