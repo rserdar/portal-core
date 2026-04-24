@@ -2,16 +2,18 @@
 interface Props {
   emptyMessage?: string;
   loadingMessage?: string;
+  mobileRows?: boolean;
 }
 
 const {
   emptyMessage = "Eşleşen kayıt bulunamadı",
-  loadingMessage = "Veriler Hazırlanıyor"
+  loadingMessage = "Veriler Hazırlanıyor",
+  mobileRows = false,
 } = Astro.props;
 ---
 
 <div class="card-surface">
-  <div class="w-full overflow-x-auto">
+  <div class={mobileRows ? 'hidden sm:block w-full overflow-x-auto' : 'w-full overflow-x-auto'}>
     <table class="w-full table-fixed border-collapse">
       <thead>
         <tr class="bg-surface-hover border-b border-border-main">
@@ -22,6 +24,8 @@ const {
       </tbody>
     </table>
   </div>
+
+  {mobileRows && <div id="table-body-mobile" class="sm:hidden divide-y divide-border-main"></div>}
 
   <!-- Durum Mesajları -->
   <div id="table-loader" class="py-24 flex flex-col items-center justify-center gap-3">

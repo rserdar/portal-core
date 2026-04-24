@@ -1,11 +1,24 @@
 ---
+import { getEntry } from 'astro:content';
 import DashboardLayout from "../../layouts/DashboardLayout.astro";
 import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
 import CompanyPicker from "../../components/CompanyPicker.astro";
 
+const standardsReference = (await getEntry('reference', 'standards'))?.data.items ?? [];
+const eaReference = (await getEntry('reference', 'ea-codes'))?.data.items ?? [];
+const naceReference = (await getEntry('reference', 'nace-codes'))?.data.items ?? [];
+const iso22000Reference = (await getEntry('reference', 'iso22000-categories'))?.data.items ?? [];
+const iso13485Reference = (await getEntry('reference', 'iso13485-categories'))?.data.items ?? [];
+const iso50001Reference = (await getEntry('reference', 'iso50001-categories'))?.data.items ?? [];
 ---
 
 <DashboardLayout title="Sertifika Ekle">
+  <script id="cert-standards-reference" type="application/json" set:html={JSON.stringify(standardsReference)}></script>
+  <script id="cert-ea-reference" type="application/json" set:html={JSON.stringify(eaReference)}></script>
+  <script id="cert-nace-reference" type="application/json" set:html={JSON.stringify(naceReference)}></script>
+  <script id="cert-iso22000-reference" type="application/json" set:html={JSON.stringify(iso22000Reference)}></script>
+  <script id="cert-iso13485-reference" type="application/json" set:html={JSON.stringify(iso13485Reference)}></script>
+  <script id="cert-iso50001-reference" type="application/json" set:html={JSON.stringify(iso50001Reference)}></script>
   <div class="max-w-5xl mx-auto pb-24 space-y-6">
     <div class="flex items-center gap-3">
       <a
@@ -258,6 +271,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
                   Ek Bilgiler
                 </p>
                 <span
+                  id="cert-not-label"
                   class="text-[10px] font-bold uppercase tracking-widest text-muted"
                   >Notlar</span
                 >
@@ -923,6 +937,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       ) as HTMLInputElement | null,
       durum: document.getElementById("cert-durum") as HTMLInputElement | null,
       not: document.getElementById("cert-not") as HTMLTextAreaElement | null,
+      notLabel: document.getElementById("cert-not-label"),
       prevKapsamCard: document.getElementById("cert-prev-kapsam-card"),
       prevKapsam: document.getElementById("cert-prev-kapsam"),
       prevScopeCard: document.getElementById("cert-prev-scope-card"),
@@ -943,6 +958,12 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
     let selectedCompany: any = null;
     let formBindingsReady = false;
     let recentCertificates: Record<string, any>[] = [];
+    let eaOptions: EaReferenceItem[] = [];
+    let naceOptions: NaceReferenceItem[] = [];
+    let iso22000Options: any[] = [];
+    let iso13485Options: any[] = [];
+    let iso50001Options: any[] = [];
+    let classificationSuggestions: ClassificationSuggestion[] = [];
     let consultantOptions: string[] = [];
     let consultantSuggestions: string[] = [];
     let activeConsultantIndex = -1;
@@ -1290,6 +1311,20 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       if (els.suggested)
         els.suggested.value = buildSuggestedCertPrefix(prefix, activeFirmaId);
 
+      if (els.notLabel) {
+        if (standardText.includes("27001")) {
+          els.notLabel.textContent = "SoA Tarihi / Versiyonu";
+          els.notLabel.classList.add("text-sky-400");
+          if (els.not && !els.not.value.trim()) {
+            els.not.placeholder = "Örn: SoA Tarihi: 01.01.2024, Versiyon: 1.0";
+          }
+        } else {
+          els.notLabel.textContent = "Notlar";
+          els.notLabel.classList.remove("text-sky-400");
+          if (els.not) els.not.placeholder = "Notlar";
+        }
+      }
+
       syncOtherStandardVisibility(standardText);
     }
 
@@ -1325,6 +1360,158 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       const rows = res?.data?.dataset?.rows || [];
       standards = normalizeStandards(rows);
       renderStandards();
+    }
+
+    function ensureClassificationReferences() {
+      if (eaOptions.length === 0) {
+        eaOptions = parseReferenceScript<EaReferenceItem>("cert-ea-reference");
+      }
+      if (naceOptions.length === 0) {
+        naceOptions = parseReferenceScript<NaceReferenceItem>("cert-nace-reference");
+      }
+      if (iso22000Options.length === 0) {
+        iso22000Options = parseReferenceScript<any>("cert-iso22000-reference");
+      }
+      if (iso13485Options.length === 0) {
+        iso13485Options = parseReferenceScript<any>("cert-iso13485-reference");
+      }
+      if (iso50001Options.length === 0) {
+        iso50001Options = parseReferenceScript<any>("cert-iso50001-reference");
+      }
+    }
+
+    function buildClassificationInput() {
+      const previousCert = companyContext?.certificates?.[companyContext.certificates.length - 1] || null;
+      return {
+        companyName: selectedCompany ? getCompanyNick(selectedCompany) : companyContext?.nick,
+        companyTitle: selectedCompany ? getCompanyValue(selectedCompany, "Unvan", "unvan") : companyContext?.unvan,
+        businessText: [
+          companyContext?.yapilanIs,
+          getCompanyValue(selectedCompany, "yapilan_is", "Yapılan İş", "Yapilan Is", "yapilanIs"),
+        ]
+          .filter(Boolean)
+          .join(" "),
+        facilityText: [companyContext?.alan, getCompanyValue(selectedCompany, "Alan", "alan")].filter(Boolean).join(" "),
+        departmentText: [companyContext?.departman, getCompanyValue(selectedCompany, "Departman", "departman")].filter(Boolean).join(" "),
+        currentEa: els.ea?.value.trim() || companyContext?.ea || "",
+        currentNace: els.kod?.value.trim() || companyContext?.nace || "",
+        currentKapsam: els.kapsam?.value.trim() || "",
+        currentScope: els.scope?.value.trim() || "",
+        previousKapsam: normalizeObjectValue(previousCert || {}, ["Kapsam", "kapsam"]) || "",
+        previousScope: normalizeObjectValue(previousCert || {}, ["Scope", "scope"]) || "",
+      };
+    }
+
+    async function applyClassificationSuggestion(
+      suggestion: ClassificationSuggestion,
+      options: { autoTranslate?: boolean } = {},
+    ) {
+      if (els.ea) els.ea.value = suggestion.ea || "";
+      if (els.kod) els.kod.value = suggestion.nace || "";
+
+      const kapsamText = buildKapsamText(suggestion.kapsamLines);
+      if (els.kapsam && kapsamText) {
+        const shouldReplace =
+          !els.kapsam.value.trim() ||
+          confirm("Mevcut kapsam alanı öneri ile güncellensin mi?");
+        if (shouldReplace) {
+          els.kapsam.value = kapsamText;
+        }
+      }
+
+      if (options.autoTranslate && els.scope && els.kapsam?.value.trim() && !els.scope.value.trim()) {
+        const res = await api.translate(els.kapsam.value, true);
+        if (res.success) {
+          els.scope.value = String(res.data || "");
+        }
+      }
+
+      const selectedStandard = els.standSelect?.selectedOptions[0]?.textContent?.trim() || "";
+      const labelType = selectedStandard.includes("22000") ? "Kategori" : selectedStandard.includes("13485") ? "MD Kodu" : selectedStandard.includes("50001") ? "Sektör" : "EA/NACE";
+      toast.success(`${labelType} ${suggestion.ea ? `EA ${suggestion.ea} / ` : ""}${suggestion.nace} önerisi uygulandı.`);
+    }
+
+    function renderClassificationSuggestions() {
+      ensureClassificationReferences();
+      
+      const selectedStandard = els.standSelect?.selectedOptions[0]?.textContent?.trim() || "";
+      let targetNaceItems = naceOptions;
+      let labelType = "NACE";
+
+      if (selectedStandard.includes("22000")) {
+        targetNaceItems = iso22000Options;
+        labelType = "Kategori";
+      } else if (selectedStandard.includes("13485")) {
+        targetNaceItems = iso13485Options;
+        labelType = "MD Kodu";
+      } else if (selectedStandard.includes("50001")) {
+        targetNaceItems = iso50001Options;
+        labelType = "Teknik Sektör";
+      }
+
+      classificationSuggestions = recommendClassification(eaOptions, targetNaceItems, buildClassificationInput(), 6);
+
+      if (!els.classificationPanel || !els.classificationSummary || !els.classificationList || !els.classificationApplyTop) {
+        return;
+      }
+
+      if (classificationSuggestions.length === 0) {
+        els.classificationPanel.classList.remove("hidden");
+        els.classificationSummary.textContent =
+          "Yeterli bağlam bulunamadı. Firma faaliyeti, kapsam veya mevcut NACE bilgisi eklendiğinde daha iyi öneri üretilebilir.";
+        els.classificationList.innerHTML = "";
+        els.classificationApplyTop.classList.add("hidden");
+        return;
+      }
+
+      els.classificationPanel.classList.remove("hidden");
+      els.classificationApplyTop.classList.remove("hidden");
+      els.classificationSummary.textContent =
+        `${classificationSuggestions.length} öneri bulundu. Skorlar referans tablo eşleşmesi ve mevcut bağlam üzerinden hesaplandı.`;
+
+      els.classificationList.innerHTML = classificationSuggestions
+        .map((suggestion, index) => {
+          const reasonText = suggestion.reasons.slice(0, 2).join(" · ") || "Referans eşleşmesi";
+          const lines = suggestion.kapsamLines
+            .slice(0, 3)
+            .map((line) => `<li class="text-xs text-muted leading-relaxed">${line}</li>`)
+            .join("");
+
+          return `
+            <div class="rounded-2xl border ${index === 0 ? "border-indigo-500/30 bg-indigo-500/10" : "border-border-main bg-surface"} p-4 space-y-3">
+              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="badge-status ${index === 0 ? "badge-status-success" : "badge-status-warning"}">Skor ${suggestion.score}</span>
+                    <span class="badge-status border-border-main bg-surface-hover text-main">EA ${suggestion.ea || "—"}</span>
+                    <span class="badge-status border-border-main bg-surface-hover text-main">${labelType} ${suggestion.nace}</span>
+                  </div>
+                  <p class="text-sm font-bold text-main">${suggestion.label}</p>
+                  <p class="text-xs text-muted">${reasonText}</p>
+                </div>
+                <button
+                  type="button"
+                  class="classification-apply inline-flex items-center justify-center rounded-xl border border-border-main bg-surface px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface-hover transition-colors"
+                  data-index="${index}"
+                >
+                  Uygula
+                </button>
+              </div>
+              <ul class="space-y-1">${lines}</ul>
+            </div>
+          `;
+        })
+        .join("");
+
+      els.classificationList.querySelectorAll<HTMLButtonElement>(".classification-apply").forEach((button) => {
+        const handler = async () => {
+          const index = Number(button.dataset.index || "-1");
+          const suggestion = classificationSuggestions[index];
+          if (!suggestion) return;
+          await applyClassificationSuggestion(suggestion, { autoTranslate: true });
+        };
+        button.onclick = () => void handler();
+      });
     }
 
     function normalizeConsultantName(entry: unknown) {
@@ -2185,6 +2372,40 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
         };
       }
 
+      if (els.classificationSuggest) {
+        els.classificationSuggest.onclick = () => {
+          renderClassificationSuggestions();
+        };
+      }
+
+      if (els.classificationApplyTop) {
+        els.classificationApplyTop.onclick = async () => {
+          if (!classificationSuggestions[0]) {
+            renderClassificationSuggestions();
+          }
+          if (classificationSuggestions[0]) {
+            await applyClassificationSuggestion(classificationSuggestions[0], {
+              autoTranslate: true,
+            });
+          }
+        };
+      }
+
+      const rerenderClassification = () => {
+        if (!els.classificationPanel?.classList.contains("hidden")) {
+          renderClassificationSuggestions();
+        }
+      };
+
+      els.ea?.addEventListener("input", rerenderClassification);
+      registerCleanup(() => els.ea?.removeEventListener("input", rerenderClassification));
+      els.kod?.addEventListener("input", rerenderClassification);
+      registerCleanup(() => els.kod?.removeEventListener("input", rerenderClassification));
+      els.kapsam?.addEventListener("input", rerenderClassification);
+      registerCleanup(() => els.kapsam?.removeEventListener("input", rerenderClassification));
+      els.scope?.addEventListener("input", rerenderClassification);
+      registerCleanup(() => els.scope?.removeEventListener("input", rerenderClassification));
+
       document.getElementById("cert-clear")?.addEventListener("click", () => {
         els.form?.reset();
         if (companyContext) {
@@ -2377,6 +2598,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
         hydrateHeader();
         await loadExistingCertificate();
         bindActions();
+        renderClassificationSuggestions();
 
         els.skeleton?.classList.add("hidden");
         els.error?.classList.add("hidden");

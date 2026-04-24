@@ -1,6 +1,9 @@
 ---
-import PageShell from '../../components/shared/PageShell.astro';
+import { getEntry } from 'astro:content';
+import PageShell from '../../components/PageShell.astro';
 import CompanyPicker from '../../components/CompanyPicker.astro';
+
+const standardsReference = (await getEntry('reference', 'standards'))?.data.items ?? [];
 ---
 
 <PageShell
@@ -8,6 +11,8 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
   title="Taslak Oluştur"
   description="Standart, dil ve kapsam tercihlerini belirleyerek sertifika taslağı oluşturur. Firma bilgileri otomatik yüklenir."
 >
+  <script id="draft-standards-reference" type="application/json" set:html={JSON.stringify(standardsReference)}></script>
+
   <CompanyPicker
     slot="select"
     prefix="draft"
@@ -209,12 +214,13 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
     const rows = res?.data?.dataset?.rows || [];
     standards = normalizeStandards(rows);
     if (standards.length === 0) {
-      standards = [
-        { id: '9001', prefix: 'ISO', fullName: 'ISO 9001:2015' },
-        { id: '14001', prefix: 'ISO', fullName: 'ISO 14001:2015' },
-        { id: '45001', prefix: 'ISO', fullName: 'ISO 45001:2018' },
-        { id: 'Diğer', prefix: 'ISO', fullName: 'Others' },
-      ];
+      const fallbackRaw = document.getElementById('draft-standards-reference')?.textContent || '[]';
+      const fallback = JSON.parse(fallbackRaw) as Array<{ id: string; prefix?: string; fullName?: string }>;
+      standards = fallback.map((item) => ({
+        id: item.id,
+        prefix: item.prefix || 'ISO',
+        fullName: item.fullName || item.id,
+      }));
     }
     renderStandards();
   }

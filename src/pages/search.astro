@@ -1,88 +1,19 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
+import FilterBar from '../components/FilterBar.astro';
+import DataTable from '../components/DataTable.astro';
 ---
 
 <DashboardLayout title="Firma Ara">
   <div class="space-y-4">
+    <FilterBar placeholder="Ünvan, şehir veya ID… (İpucu: Firma @ Şehir)" />
 
-    <!-- Arama Çubuğu -->
-    <div class="bg-surface border border-border-main shadow-lg p-3 sm:p-4 rounded-2xl flex items-center gap-3">
-      <div class="relative flex-1">
-        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input
-          type="search"
-          id="searchInput"
-          placeholder="Ünvan, şehir veya ID… (İpucu: Firma @ Şehir)"
-          autocomplete="off"
-          class="w-full bg-surface-hover border border-border-main rounded-xl pl-10 pr-4 py-2.5 text-main placeholder:text-muted focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm"
-        />
-      </div>
-      <div class="flex items-center gap-2 shrink-0">
-        <span id="searchCounter" class="text-xs font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-lg min-w-[2.75rem] text-center tabular-nums">0</span>
-        <div id="sync-indicator" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface-hover border border-border-main rounded-lg text-[10px] uppercase font-bold tracking-tight text-muted shrink-0">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>
-          <span class="hidden sm:inline sync-status-text">HAZIR</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tablo Kartı -->
-    <div class="bg-surface border border-border-main shadow-xl rounded-2xl overflow-hidden">
-
-      <!-- Desktop Tablo (sm ve üzeri) -->
-      <div class="hidden sm:block">
-        <table class="w-full table-fixed border-collapse">
-          <colgroup>
-            <col class="w-12" />   <!-- # -->
-            <col />                <!-- Firma — kalan tüm alanı alır -->
-            <col class="w-28" />   <!-- Şehir -->
-            <col class="w-36" />   <!-- İşlemler (3 ikon buton) -->
-          </colgroup>
-          <thead class="bg-surface-hover border-b border-border-main">
-            <tr class="text-[10px] font-black uppercase tracking-widest text-muted text-center">
-              <th class="px-4 py-3.5">#</th>
-              <th class="px-5 py-3.5 text-left">Firma</th>
-              <th class="px-4 py-3.5">Şehir</th>
-              <th class="px-4 py-3.5">İşlemler</th>
-            </tr>
-          </thead>
-          <tbody id="searchResults" class="divide-y divide-border-main"></tbody>
-        </table>
-      </div>
-
-      <!-- Mobil Liste (sm altı) -->
-      <div class="sm:hidden divide-y divide-border-main" id="searchResultsMobile"></div>
-
-      <!-- Boş durum mesajı -->
-      <div id="empty-state" class="hidden py-16 flex flex-col items-center justify-center gap-3 text-center px-6">
-        <div class="w-14 h-14 rounded-2xl bg-surface-hover border border-border-main flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        </div>
-        <p class="text-sm font-bold text-muted uppercase tracking-widest">Eşleşen kayıt bulunamadı</p>
-      </div>
-
-      <!-- Yükleniyor -->
-      <div id="table-loader" class="py-20 flex flex-col items-center justify-center gap-3">
-        <div class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-        <p class="text-xs font-bold text-muted tracking-widest uppercase animate-pulse">Veri Yükleniyor</p>
-      </div>
-
-      <!-- Sayfalama -->
-      <div id="pagination-container" class="bg-surface-hover border-t border-border-main px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 hidden">
-        <div class="flex items-center gap-3">
-          <span id="page-indicator" class="text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 tabular-nums">1 / 1</span>
-          <div class="flex items-center gap-2 border-l border-border-main pl-3">
-            <span class="text-[10px] font-bold text-muted uppercase tracking-widest hidden sm:inline">Göster:</span>
-            <select id="pageSizeSelect" class="bg-surface border border-border-main rounded-lg px-2 py-1 text-[11px] font-bold text-main outline-none focus:ring-1 focus:ring-primary/40 transition-all cursor-pointer">
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-        </div>
-        <div id="pagination-controls" class="flex items-center gap-1.5"></div>
-      </div>
-    </div>
+    <DataTable mobileRows emptyMessage="Eşleşen kayıt bulunamadı" loadingMessage="Veri Yükleniyor">
+      <th slot="header" class="w-12 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">#</th>
+      <th slot="header" class="px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left">Firma</th>
+      <th slot="header" class="w-28 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Şehir</th>
+      <th slot="header" class="w-36 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">İşlemler</th>
+    </DataTable>
   </div>
 </DashboardLayout>
 
@@ -91,126 +22,22 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   import { $companies, $syncStatus, $certificates } from '../lib/store';
   import { SyncManager } from '../lib/sync';
   import { toast } from '../lib/toast';
-  import { normalize, pickValue, getInitials, escHtml, getVisiblePageNumbers } from '../lib/utils';
+  import { normalize, pickValue, getInitials, escHtml } from '../lib/utils';
+  import { useCleanup, initPageCleanup } from '../lib/composables/useCleanup';
+  import { useTableFilter } from '../lib/composables/useTableFilter';
 
-  let currentTerm = '';
-  let currentPage = 1;
-  let pageSize = 20;
-  let cleanupFns: Array<() => void> = [];
+  const { registerCleanup, runCleanups } = useCleanup();
 
-  function registerCleanup(fn: () => void) {
-    cleanupFns.push(fn);
-  }
-
-  function runCleanups() {
-    cleanupFns.forEach(fn => fn());
-    cleanupFns = [];
-  }
-
-  // Desktop ikonları (16px)
+  // Desktop icons (16px)
   const folderSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
   const eyeSvg   = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
   const trashSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
-  // Mobil ikonları — dokunma hedefi için biraz daha büyük (18px)
+  // Mobile icons — slightly larger touch targets (18px)
   const folderSvgLg = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>`;
   const eyeSvgLg   = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
   const trashSvgLg = `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
 
-  function initPage() {
-    runCleanups();
-
-    const loader = document.getElementById('table-loader') as HTMLElement;
-    const searchInput = document.getElementById('searchInput') as HTMLInputElement;
-    const syncIndicator = document.getElementById('sync-indicator');
-    const pageSizeSelect = document.getElementById('pageSizeSelect') as HTMLSelectElement;
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const initialQuery = urlParams.get('q') || '';
-
-
-    function refreshSearchView() {
-      const data = $companies.get() || [];
-      const syncStatus = $syncStatus.get();
-      const hasData = Array.isArray(data) && data.length > 0;
-      const emptyState = document.getElementById('empty-state');
-      const loaderEl = document.getElementById('table-loader');
-
-
-      if (hasData) {
-        loaderEl?.classList.add('hidden');
-        renderResults(data, currentTerm);
-        return;
-      }
-
-      if (syncStatus === 'syncing') {
-        loaderEl?.classList.remove('hidden');
-        emptyState?.classList.add('hidden');
-        return;
-      }
-
-      // idle veya error durumu
-      loaderEl?.classList.add('hidden');
-      renderResults([], currentTerm);
-    }
-
-    const unsubCompanies = $companies.subscribe(() => {
-      refreshSearchView();
-    });
-    registerCleanup(unsubCompanies);
-
-    const unsubSync = $syncStatus.subscribe(status => {
-      if (!syncIndicator) return;
-      const dot = syncIndicator.querySelector('span');
-      const textEl = syncIndicator.querySelector('.sync-status-text');
-      if (!dot) return;
-      
-      if (status === 'syncing') {
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse';
-        if (textEl) textEl.textContent = 'GÜNCELLENİYOR';
-      } else if (status === 'error') {
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]';
-        if (textEl) textEl.textContent = 'HATA';
-      } else {
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]';
-        if (textEl) textEl.textContent = 'HAZIR';
-      }
-
-      // Sync status degisince loader/empty-state de guncellenmeli.
-      // Ancak veri varken her status degisiminde tam listeyi yeniden cizdirmiyoruz.
-      const hasData = Array.isArray($companies.get()) && $companies.get().length > 0;
-      if (!hasData || status !== 'syncing') {
-        refreshSearchView();
-      }
-    });
-    registerCleanup(unsubSync);
-
-    searchInput?.addEventListener('input', (e) => {
-      currentTerm = (e.target as HTMLInputElement).value;
-      currentPage = 1;
-      renderResults($companies.get(), currentTerm);
-    });
-
-    pageSizeSelect?.addEventListener('change', () => {
-      pageSize = parseInt(pageSizeSelect.value);
-      currentPage = 1;
-      refreshUI();
-    });
-
-    if (searchInput && initialQuery && !currentTerm) {
-      searchInput.value = initialQuery;
-      currentTerm = initialQuery;
-    }
-
-    refreshSearchView();
-    SyncManager.init().then(() => {
-      refreshSearchView();
-    });
-  }
-
-  // Helper functions used by renderResults (kept outside initPage for clarity)
-
   function mapCompany(company: any) {
-    // Worker search index uses: id, nickname, unvan, city, kapsam, scope
     const id = pickValue(company, ['id', 'ID', 'Firma No', 'FirmaNo', 'firmaNo', 'firma_no', 'no']);
     const nickname = pickValue(company, ['nickname', 'Nickname', 'nick', 'Nick', 'FirmaAdi', 'Firma Adı', 'Markası', 'Marka Adı'], '-');
     const unvan = pickValue(company, ['unvan', 'Unvan', 'UNVAN', 'firmaUnvan', 'firma_unvan'], '-');
@@ -219,189 +46,9 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     return { id, unvan, nickname, city, searchStr };
   }
 
-  function renderResults(companies: readonly any[], term: string) {
-    const resultsBody = document.getElementById('searchResults') as HTMLTableSectionElement;
-    const resultsMobile = document.getElementById('searchResultsMobile') as HTMLElement;
-    const paginationContainer = document.getElementById('pagination-container');
-    const emptyState = document.getElementById('empty-state');
-    const counter = document.getElementById('searchCounter');
-    if (!resultsBody || !resultsMobile || !counter || !paginationContainer || !emptyState) return;
-
-    const normalizedTerm = normalize(term);
-    const mapped = companies.map(mapCompany);
-
-    let filtered: ReturnType<typeof mapCompany>[];
-    if (normalizedTerm.includes('@')) {
-      const [namePart, cityPart] = normalizedTerm.split('@').map(s => s.trim());
-      filtered = mapped.filter(c => c.searchStr.includes(namePart) && normalize(c.city).includes(cityPart));
-    } else {
-      filtered = mapped.filter(c => `${c.searchStr} ${normalize(c.city)}`.includes(normalizedTerm));
-    }
-
-    counter.textContent = filtered.length.toString();
-
-    const totalPages = Math.ceil(filtered.length / pageSize) || 1;
-    if (currentPage > totalPages) currentPage = totalPages;
-    const start = (currentPage - 1) * pageSize;
-    const paginatedItems = filtered.slice(start, start + pageSize);
-
-    // Temizle
-    resultsBody.innerHTML = '';
-    resultsMobile.innerHTML = '';
-
-    if (paginatedItems.length === 0) {
-      paginationContainer.classList.add('hidden');
-      emptyState.classList.remove('hidden');
-      emptyState.classList.add('flex');
-      return;
-    }
-
-    emptyState.classList.add('hidden');
-    emptyState.classList.remove('flex');
-    paginationContainer.classList.remove('hidden');
-    renderPaginationUI(filtered.length);
-
-    const pageIndicator = document.getElementById('page-indicator');
-    if (pageIndicator) pageIndicator.textContent = `${currentPage} / ${totalPages}`;
-
-    let desktopHtml = '';
-    let mobileHtml = '';
-
-    paginatedItems.forEach((c) => {
-      const safeId = c.id || '';
-      const encodedId = encodeURIComponent(safeId);
-      const initials = getInitials(c.nickname);
-
-      // Desktop
-      desktopHtml += `
-        <tr class="hover:bg-surface-hover transition-colors group/row">
-          <td class="px-4 py-3 text-center">
-            <span class="text-[11px] font-mono font-bold text-muted">${safeId || '-'}</span>
-          </td>
-          <td class="px-5 py-3 overflow-hidden">
-            <a href="/company?id=${encodedId}" class="flex items-center gap-3 min-w-0 group/link">
-              <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 group-hover/link:bg-indigo-500/20 transition-colors">
-                <span class="text-[10px] font-black text-indigo-400 uppercase">${initials}</span>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="font-bold text-sm text-main group-hover/link:text-primary transition-colors truncate uppercase tracking-tight leading-tight">${escHtml(c.nickname || '-')}</div>
-                <div class="text-[11px] text-muted truncate mt-0.5 leading-tight">${escHtml(c.unvan || '-')}</div>
-              </div>
-            </a>
-          </td>
-          <td class="px-4 py-3 text-center">
-            <span class="inline-block text-[11px] font-bold text-muted bg-surface-hover border border-border-main px-2 py-0.5 rounded-md uppercase tracking-wide truncate max-w-full">${escHtml(c.city || '-')}</span>
-          </td>
-          <td class="px-4 py-3">
-            <div class="flex items-center justify-center gap-1.5">
-              <button class="folder-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all" data-id="${safeId}" title="Drive Klasörü">
-                ${folderSvg}
-              </button>
-              <button class="eye-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-white hover:border-primary transition-all" data-id="${safeId}" data-preview-target="search-preview-${safeId}" aria-expanded="false" title="Hızlı Önizleme">
-                ${eyeSvg}
-              </button>
-              <button class="delete-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all" data-id="${safeId}" title="Sil">
-                ${trashSvg}
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr id="search-preview-${safeId}" class="hidden border-b border-border-main">
-          <td colspan="4"></td>
-        </tr>
-      `;
-
-      // Mobile
-      mobileHtml += `
-        <div class="flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors">
-          <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-            <span class="text-xs font-black text-indigo-400 uppercase">${initials}</span>
-          </div>
-          <a href="/company?id=${encodedId}" class="flex-1 min-w-0 block">
-            <div class="font-bold text-sm text-main uppercase tracking-tight truncate">${escHtml(c.nickname || '-')}</div>
-            <div class="text-[11px] text-muted truncate mt-0.5">${escHtml(c.unvan || '-')}</div>
-            <div class="flex items-center gap-1.5 mt-1">
-              ${c.city && c.city !== '-' ? `<span class="text-[10px] font-bold text-muted uppercase">${escHtml(c.city)}</span><span class="text-muted text-[10px]">·</span>` : ''}
-              <span class="text-[10px] font-mono text-muted/70">M${safeId}</span>
-            </div>
-          </a>
-          <div class="flex items-center gap-2 shrink-0">
-            <button class="folder-btn w-11 h-11 flex items-center justify-center rounded-xl border border-border-main bg-surface-hover text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 active:scale-95 transition-all touch-manipulation" data-id="${safeId}" title="Drive Klasörü">
-              ${folderSvgLg}
-            </button>
-            <button class="eye-btn w-11 h-11 flex items-center justify-center rounded-xl border border-primary/30 bg-primary/8 text-primary hover:bg-primary hover:text-white active:scale-95 transition-all touch-manipulation" data-id="${safeId}" data-preview-target="search-preview-mob-${safeId}" aria-expanded="false" title="Hızlı Önizleme">
-              ${eyeSvgLg}
-            </button>
-            <button class="delete-btn w-11 h-11 flex items-center justify-center rounded-xl border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white active:scale-95 transition-all touch-manipulation" data-id="${safeId}" title="Sil">
-              ${trashSvgLg}
-            </button>
-          </div>
-        </div>
-        <div id="search-preview-mob-${safeId}" class="hidden border-b border-border-main"></div>
-      `;
-    });
-
-    resultsBody.innerHTML = desktopHtml;
-    resultsMobile.innerHTML = mobileHtml;
-
-    attachEvents();
-  }
-
-  function renderPaginationUI(totalCount: number) {
-    const controls = document.getElementById('pagination-controls');
-    if (!controls) return;
-    const totalPages = Math.ceil(totalCount / pageSize) || 1;
-    controls.innerHTML = '';
-
-    const prevBtn = document.createElement('button');
-    prevBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>`;
-    prevBtn.className = `p-1.5 rounded-lg border border-border-main transition-all ${currentPage > 1 ? 'text-primary hover:bg-primary/10 hover:border-primary/30' : 'text-muted opacity-30 cursor-not-allowed'}`;
-    prevBtn.disabled = currentPage <= 1;
-    prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; refreshUI(); } };
-    controls.appendChild(prevBtn);
-
-    const range = getVisiblePageNumbers(totalPages, currentPage);
-
-    let last: number | null = null;
-    range.forEach(i => {
-      if (last && i - last > 1) {
-        const dots = document.createElement('span');
-        dots.textContent = '…';
-        dots.className = 'px-1.5 text-muted text-xs';
-        controls.appendChild(dots);
-      }
-      const pageBtn = document.createElement('button');
-      pageBtn.textContent = i.toString();
-      pageBtn.className = `w-8 h-8 rounded-lg border text-xs font-black transition-all ${
-        i === currentPage
-          ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
-          : 'border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30'
-      }`;
-      pageBtn.onclick = () => { currentPage = i; refreshUI(); };
-      controls.appendChild(pageBtn);
-      last = i;
-    });
-
-    const nextBtn = document.createElement('button');
-    nextBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>`;
-    nextBtn.className = `p-1.5 rounded-lg border border-border-main transition-all ${currentPage < totalPages ? 'text-primary hover:bg-primary/10 hover:border-primary/30' : 'text-muted opacity-30 cursor-not-allowed'}`;
-    nextBtn.disabled = currentPage >= totalPages;
-    nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; refreshUI(); } };
-    controls.appendChild(nextBtn);
-  }
-
-  function refreshUI() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    renderResults($companies.get(), currentTerm);
-  }
-
-  // ── Inline Önizleme ──────────────────────────────────────────────────────────
-
-  /** Bir objeden birden fazla olası key ile değer okur (basit versiyon) */
   function gField(obj: any, ...keys: string[]): string {
     return pickValue(obj, keys);
   }
-
 
   function certBadge(standard: string): string {
     const s = standard.trim();
@@ -417,8 +64,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   }
 
   function buildPreviewContent(companyId: string): string {
-    const allCompanies = $companies.get();
-    const raw = allCompanies.find((c: any) => {
+    const raw = ($companies.get() || []).find((c: any) => {
       const id = gField(c, 'id', 'ID', 'Firma No', 'firmaNo', 'firma_no', 'no');
       return String(id) === String(companyId);
     });
@@ -427,8 +73,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     const kapsam = gField(raw, 'Türkçe Kapsam', 'Sertifika Kapsamı (TR)', 'Kapsam', 'kapsam');
     const scope  = gField(raw, 'İngilizce Kapsam', 'Sertifika Kapsamı (EN)', 'Scope', 'scope');
 
-    const allCerts = $certificates.get();
-    const firmaCerts = allCerts.filter((cert: any) => {
+    const firmaCerts = ($certificates.get() || []).filter((cert: any) => {
       const fn = gField(cert, 'Firma No', 'FirmaNo', 'firmaNo', 'firma_no');
       return String(fn) === String(companyId);
     });
@@ -447,29 +92,23 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Kapsam</p>
         <p class="text-xs text-main italic leading-relaxed">${escHtml(kapsam)}</p>
       </div>` : '';
-
     const scopeHtml = scope ? `
       <div>
         <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1">Scope</p>
         <p class="text-xs text-main italic leading-relaxed">${escHtml(scope)}</p>
       </div>` : '';
-
     const certsHtml = standards.length > 0 ? `
       <div>
         <p class="text-[10px] font-black uppercase tracking-widest text-muted mb-1.5">Sertifikalar</p>
         <div class="flex flex-wrap gap-1.5">${standards.map(certBadge).join('')}</div>
       </div>` : '';
-
     const emptyHtml = !kapsamHtml && !scopeHtml && !certsHtml
       ? '<p class="text-xs text-muted italic">Ek bilgi bulunamadı.</p>'
       : '';
 
     return `
       <div class="flex flex-wrap items-start gap-x-8 gap-y-3 px-5 sm:px-7 py-4 bg-surface-hover">
-        ${kapsamHtml}
-        ${scopeHtml}
-        ${certsHtml}
-        ${emptyHtml}
+        ${kapsamHtml}${scopeHtml}${certsHtml}${emptyHtml}
       </div>
     `;
   }
@@ -480,16 +119,13 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     if (!previewEl) return;
 
     const isHidden = previewEl.classList.contains('hidden');
-
     if (isHidden) {
       if (!previewEl.dataset.built) {
         const companyId = btn.dataset.id || '';
-        // Desktop: <tr> içinde <td colspan="4"> var, içine yaz
         const td = previewEl.querySelector('td');
         if (td) {
           td.innerHTML = buildPreviewContent(companyId);
         } else {
-          // Mobil: doğrudan div
           previewEl.innerHTML = buildPreviewContent(companyId);
         }
         previewEl.dataset.built = 'true';
@@ -505,8 +141,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       btn.classList.add('bg-primary/5', 'text-primary', 'border-primary/30');
     }
   }
-
-  // ────────────────────────────────────────────────────────────────────────────
 
   function attachEvents() {
     document.querySelectorAll('.eye-btn').forEach(el => {
@@ -551,8 +185,173 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     });
   }
 
-  // Initial load
-  document.addEventListener('astro:page-load', initPage);
-  // Cleanup away
-  document.addEventListener('astro:before-preparation', runCleanups, { once: true });
+  function initPage() {
+    runCleanups();
+
+    const initialQuery = new URLSearchParams(window.location.search).get('q') || '';
+    if (initialQuery) {
+      const searchEl = document.getElementById('global-search') as HTMLInputElement | null;
+      if (searchEl) searchEl.value = initialQuery;
+    }
+
+    const tableFilter = useTableFilter<any>({
+      data: [],
+      filterFn: (item, filters) => {
+        const term = filters.q || '';
+        const normalizedTerm = normalize(term);
+        if (!normalizedTerm) return true;
+        const c = mapCompany(item);
+        if (normalizedTerm.includes('@')) {
+          const [namePart, cityPart] = normalizedTerm.split('@').map(s => s.trim());
+          return c.searchStr.includes(namePart) && normalize(c.city).includes(cityPart);
+        }
+        return `${c.searchStr} ${normalize(c.city)}`.includes(normalizedTerm);
+      },
+      onStateChange: (state) => {
+        document.getElementById('table-loader')?.classList.toggle('hidden', state !== 'loading');
+        document.getElementById('empty-state')?.classList.toggle('hidden', state !== 'empty');
+      },
+      onRender: (items) => {
+        const tbody = document.getElementById('table-body') as HTMLTableSectionElement;
+        const mobileBody = document.getElementById('table-body-mobile') as HTMLElement;
+        if (!tbody || !mobileBody) return;
+
+        let desktopHtml = '';
+        let mobileHtml = '';
+
+        items.forEach((company) => {
+          const c = mapCompany(company);
+          const safeId = c.id || '';
+          const encodedId = encodeURIComponent(safeId);
+          const initials = getInitials(c.nickname);
+
+          desktopHtml += `
+            <tr class="hover:bg-surface-hover transition-colors group/row">
+              <td class="px-4 py-3 text-center">
+                <span class="text-[11px] font-mono font-bold text-muted">${safeId || '-'}</span>
+              </td>
+              <td class="px-5 py-3 overflow-hidden">
+                <a href="/company?id=${encodedId}" class="flex items-center gap-3 min-w-0 group/link">
+                  <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 group-hover/link:bg-indigo-500/20 transition-colors">
+                    <span class="text-[10px] font-black text-indigo-400 uppercase">${initials}</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-sm text-main group-hover/link:text-primary transition-colors truncate uppercase tracking-tight leading-tight">${escHtml(c.nickname || '-')}</div>
+                    <div class="text-[11px] text-muted truncate mt-0.5 leading-tight">${escHtml(c.unvan || '-')}</div>
+                  </div>
+                </a>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="inline-block text-[11px] font-bold text-muted bg-surface-hover border border-border-main px-2 py-0.5 rounded-md uppercase tracking-wide truncate max-w-full">${escHtml(c.city || '-')}</span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button class="folder-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all" data-id="${safeId}" title="Drive Klasörü">
+                    ${folderSvg}
+                  </button>
+                  <button class="eye-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-white hover:border-primary transition-all" data-id="${safeId}" data-preview-target="search-preview-${safeId}" aria-expanded="false" title="Hızlı Önizleme">
+                    ${eyeSvg}
+                  </button>
+                  <button class="delete-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all" data-id="${safeId}" title="Sil">
+                    ${trashSvg}
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr id="search-preview-${safeId}" class="hidden border-b border-border-main">
+              <td colspan="4"></td>
+            </tr>
+          `;
+
+          mobileHtml += `
+            <div class="flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors">
+              <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                <span class="text-xs font-black text-indigo-400 uppercase">${initials}</span>
+              </div>
+              <a href="/company?id=${encodedId}" class="flex-1 min-w-0 block">
+                <div class="font-bold text-sm text-main uppercase tracking-tight truncate">${escHtml(c.nickname || '-')}</div>
+                <div class="text-[11px] text-muted truncate mt-0.5">${escHtml(c.unvan || '-')}</div>
+                <div class="flex items-center gap-1.5 mt-1">
+                  ${c.city && c.city !== '-' ? `<span class="text-[10px] font-bold text-muted uppercase">${escHtml(c.city)}</span><span class="text-muted text-[10px]">·</span>` : ''}
+                  <span class="text-[10px] font-mono text-muted/70">M${safeId}</span>
+                </div>
+              </a>
+              <div class="flex items-center gap-2 shrink-0">
+                <button class="folder-btn w-11 h-11 flex items-center justify-center rounded-xl border border-border-main bg-surface-hover text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30 active:scale-95 transition-all touch-manipulation" data-id="${safeId}" title="Drive Klasörü">
+                  ${folderSvgLg}
+                </button>
+                <button class="eye-btn w-11 h-11 flex items-center justify-center rounded-xl border border-primary/30 bg-primary/8 text-primary hover:bg-primary hover:text-white active:scale-95 transition-all touch-manipulation" data-id="${safeId}" data-preview-target="search-preview-mob-${safeId}" aria-expanded="false" title="Hızlı Önizleme">
+                  ${eyeSvgLg}
+                </button>
+                <button class="delete-btn w-11 h-11 flex items-center justify-center rounded-xl border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white active:scale-95 transition-all touch-manipulation" data-id="${safeId}" title="Sil">
+                  ${trashSvgLg}
+                </button>
+              </div>
+            </div>
+            <div id="search-preview-mob-${safeId}" class="hidden border-b border-border-main"></div>
+          `;
+        });
+
+        tbody.innerHTML = desktopHtml;
+        mobileBody.innerHTML = mobileHtml;
+        attachEvents();
+      },
+    });
+
+    if (initialQuery) tableFilter.setFilters({ q: initialQuery });
+
+    document.getElementById('prev-page-btn')?.addEventListener('click', () => tableFilter.prevPage());
+    document.getElementById('next-page-btn')?.addEventListener('click', () => tableFilter.nextPage());
+    document.getElementById('page-size-select')?.addEventListener('change', (e) => {
+      tableFilter.setPageSize(parseInt((e.target as HTMLSelectElement).value));
+    });
+
+    document.getElementById('global-search')?.addEventListener('input', (e) => {
+      tableFilter.setFilters({ q: (e.target as HTMLInputElement).value });
+    });
+
+    function refreshSearchView() {
+      const data = $companies.get() || [];
+      const status = $syncStatus.get();
+      if (data.length > 0) {
+        document.getElementById('table-loader')?.classList.add('hidden');
+        tableFilter.updateData(data);
+      } else if (status === 'syncing') {
+        document.getElementById('table-loader')?.classList.remove('hidden');
+        document.getElementById('empty-state')?.classList.add('hidden');
+      } else {
+        tableFilter.updateData([]);
+      }
+    }
+
+    const unsubSync = $syncStatus.subscribe((status) => {
+      const syncIndicator = document.getElementById('sync-indicator');
+      if (syncIndicator) {
+        const dot = syncIndicator.querySelector('span');
+        const textEl = syncIndicator.querySelector('.sync-status-text');
+        if (dot) {
+          if (status === 'syncing') {
+            dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse';
+            if (textEl) textEl.textContent = 'GÜNCELLENİYOR';
+          } else if (status === 'error') {
+            dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]';
+            if (textEl) textEl.textContent = 'HATA';
+          } else {
+            dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]';
+            if (textEl) textEl.textContent = 'HAZIR';
+          }
+        }
+      }
+      const hasData = ($companies.get() || []).length > 0;
+      if (!hasData || status !== 'syncing') refreshSearchView();
+    });
+    registerCleanup(unsubSync);
+
+    const unsubCompanies = $companies.subscribe(() => refreshSearchView());
+    registerCleanup(unsubCompanies);
+
+    void SyncManager.init();
+  }
+
+  initPageCleanup(initPage, runCleanups);
 </script>

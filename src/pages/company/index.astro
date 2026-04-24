@@ -664,6 +664,7 @@ import {
   import { api } from '../../lib/api';
   import { SyncManager } from '../../lib/sync';
   import { toast } from '../../lib/toast';
+  import { useCleanup, initPageCleanup } from '../../lib/composables/useCleanup';
   import { toInputDateValue } from '../../features/date-format';
   import {
     normalizeKey,
@@ -1340,16 +1341,7 @@ import {
 
   const hydratedSections = (window as any).hydratedSections = (window as any).hydratedSections || new Set<string>();
   let hasFullData = false;
-  let cleanupTasks: Array<() => void> = [];
-
-  function registerCleanup(fn: () => void) {
-    cleanupTasks.push(fn);
-  }
-
-  function runCleanups() {
-    cleanupTasks.forEach(fn => { try { fn(); } catch(e) { console.error('Cleanup error:', e); } });
-    cleanupTasks = [];
-  }
+  const { registerCleanup, runCleanups } = useCleanup();
 
   async function revealSection(sectionId: string, retryCount = 0) {
     const find = (id: string) => Array.from(document.querySelectorAll(`#${id}`)) as HTMLElement[];
@@ -2214,9 +2206,5 @@ import {
     loadCertificates();
   }
 
-  document.removeEventListener('astro:page-load', initHandler);
-  document.addEventListener('astro:page-load', initHandler);
-
-  // Global cleanup on navigate away
-  document.addEventListener('astro:before-preparation', runCleanups);
+  initPageCleanup(initHandler, runCleanups);
 </script>

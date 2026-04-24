@@ -1,0 +1,12 @@
+{
+  "items": [
+    { "id": "iso50001-MD1", "standard": "ISO 50001", "code": "MD 01", "label": "MD 01 - Ticari Binalar", "text": "Ticari ve idari binalar, eğitim, sağlık ve konaklama tesisleri.", "keywords": ["bina", "ticari", "hastane", "okul", "otel", "ofis"] },
+    { "id": "iso50001-MD2", "standard": "ISO 50001", "code": "MD 02", "label": "MD 02 - Hafif ve Orta Sanayi", "text": "Gıda, tekstil, plastik, ağaç ürünleri ve genel imalat sektörü.", "keywords": ["hafif sanayi", "imalat", "tekstil", "gida", "plastik"] },
+    { "id": "iso50001-MD3", "standard": "ISO 50001", "code": "MD 03", "label": "MD 03 - Ağır Sanayi", "text": "Kimya, metalürji, çimento, kağıt ve petrol ürünleri imalatı.", "keywords": ["agir sanayi", "metalurji", "cimento", "kimya", "petrol", "demir celik"] },
+    { "id": "iso50001-MD4", "standard": "ISO 50001", "code": "MD 04", "label": "MD 04 - Madencilik", "text": "Yeraltı ve yerüstü madencilik, taş ocakçılığı.", "keywords": ["maden", "komur", "mermer", "ocak", "yerustu", "yeralti"] },
+    { "id": "iso50001-MD5", "standard": "ISO 50001", "code": "MD 05", "label": "MD 05 - Tarım", "text": "Bitkisel üretim, hayvancılık, ormancılık ve balıkçılık.", "keywords": ["tarim", "hayvancilik", "ciftlik", "orman", "balik"] },
+    { "id": "iso50001-MD6", "standard": "ISO 50001", "code": "MD 06", "label": "MD 06 - Enerji Üretimi", "text": "Elektrik, gaz, buhar ve sıcak su üretimi ve dağıtımı.", "keywords": ["enerji uretimi", "elektrik", "dogalgaz", "santral", "dagitim"] },
+    { "id": "iso50001-MD7", "standard": "ISO 50001", "code": "MD 07", "label": "MD 07 - Ulaşım", "text": "Kara, deniz, hava ve demiryolu taşımacılığı, boru hattı nakliyesi.", "keywords": ["ulasim", "tasimacilik", "lojistik", "havacilik", "denizcilik"] },
+    { "id": "iso50001-MD8", "standard": "ISO 50001", "code": "MD 08", "label": "MD 08 - Su Temini ve Arıtma", "text": "Su temini, kanalizasyon, atık yönetimi ve iyileştirme faaliyetleri.", "keywords": ["su", "aritma", "atik", "kanalizasyon", "geridonisum"] }
+  ]
+}

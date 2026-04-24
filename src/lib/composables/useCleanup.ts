@@ -19,7 +19,12 @@ export function useCleanup() {
   return { registerCleanup, runCleanups };
 }
 
-export function initPageCleanup(initFn: () => void) {
+export function initPageCleanup(initFn: () => void, cleanupFn?: () => void) {
   document.removeEventListener('astro:page-load', initFn);
   document.addEventListener('astro:page-load', initFn);
+
+  if (cleanupFn) {
+    document.removeEventListener('astro:before-preparation', cleanupFn);
+    document.addEventListener('astro:before-preparation', cleanupFn);
+  }
 }

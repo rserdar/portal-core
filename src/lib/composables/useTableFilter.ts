@@ -10,6 +10,7 @@ interface TableFilterOptions<T> {
 }
 
 export function useTableFilter<T>(options: TableFilterOptions<T>) {
+  let sourceData: readonly T[] = options.data;
   let filters: Record<string, string> = {};
   let currentPage = 1;
   let pageSize = options.pageSize || 20;
@@ -70,7 +71,7 @@ export function useTableFilter<T>(options: TableFilterOptions<T>) {
   }
 
   function getFilteredData() {
-    let filtered = options.data.filter(item => options.filterFn(item, filters));
+    let filtered = sourceData.filter(item => options.filterFn(item, filters));
     if (options.sortFn) {
       filtered = filtered.sort(options.sortFn);
     }
@@ -109,7 +110,7 @@ export function useTableFilter<T>(options: TableFilterOptions<T>) {
   }
 
   function nextPage() {
-    const totalPages = Math.max(1, Math.ceil(options.data.filter(item => options.filterFn(item, filters)).length / pageSize));
+    const totalPages = Math.max(1, Math.ceil(sourceData.filter(item => options.filterFn(item, filters)).length / pageSize));
     if (currentPage < totalPages) {
       currentPage++;
       renderTable();
@@ -124,7 +125,7 @@ export function useTableFilter<T>(options: TableFilterOptions<T>) {
   }
 
   function updateData(newData: readonly T[]) {
-    options.data = newData;
+    sourceData = newData;
     renderTable();
   }
 

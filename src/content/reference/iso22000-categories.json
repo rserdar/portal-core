@@ -1,0 +1,388 @@
+{
+  "items": [
+    {
+      "id": "iso22000-A-AI",
+      "standard": "ISO 22000",
+      "group": "A",
+      "category": "Hayvan yetiştiriciliği veya işlenmesi",
+      "code": "AI",
+      "subcategory": "Et, süt, yumurta ve bal için hayvan yetiştiriciliği",
+      "label": "A / AI - Et, süt, yumurta ve bal için hayvan yetiştiriciliği",
+      "fullName": "ISO 22000 A / AI - Et, süt, yumurta ve bal için hayvan yetiştiriciliği",
+      "text": "Et, yumurta, süt ve bal üretimi için hayvan (balık ve su ürünleri hariç) yetiştirilmesi. Avlanma noktasında kesim dahil yetiştirme, tutma, tuzaklama ve avlama faaliyetleri. Üründe değişiklik veya işleme yapılmadan gerçekleştirilen geçici paketleme faaliyetleri.",
+      "examples": [
+        "Et üretimi için hayvan yetiştirme",
+        "Yumurta üretimi için kümes hayvanı yetiştirme",
+        "Süt üretimi için hayvan yetiştirme",
+        "Bal üretimi için arıcılık",
+        "Avcılık ve tuzaklama"
+      ],
+      "keywords": ["hayvan", "yetistiriciligi", "et", "sut", "yumurta", "bal", "ciftlik", "aricilik", "avcilik"]
+    },
+    {
+      "id": "iso22000-A-AII",
+      "standard": "ISO 22000",
+      "group": "A",
+      "category": "Hayvan yetiştiriciliği veya işlenmesi",
+      "code": "AII",
+      "subcategory": "Balık ve deniz ürünleri yetiştiriciliği",
+      "label": "A / AII - Balık ve deniz ürünleri yetiştiriciliği",
+      "fullName": "ISO 22000 A / AII - Balık ve deniz ürünleri yetiştiriciliği",
+      "text": "Et üretimi için kullanılan balık ve deniz ürünlerinin yetiştirilmesi. Yakalama noktasında kesim dahil yetiştirme, tuzaklama ve balıkçılık faaliyetleri. Üründe değişiklik veya işleme yapılmadan gerçekleştirilen geçici paketleme faaliyetleri.",
+      "examples": [
+        "Balık yetiştiriciliği",
+        "Su ürünleri yetiştiriciliği",
+        "Yetiştiricilik kaynaklı deniz ürünü üretimi",
+        "Balıkçılık faaliyetleri"
+      ],
+      "keywords": ["balik", "deniz", "su", "urunleri", "akuakultur", "yetistiricilik", "balikcilik"]
+    },
+    {
+      "id": "iso22000-B-BI",
+      "standard": "ISO 22000",
+      "group": "B",
+      "category": "Bitki yetiştiriciliği veya işlenmesi",
+      "code": "BI",
+      "subcategory": "Bitki yetiştiriciliği (hububat ve baklagiller dışında)",
+      "label": "B / BI - Bitki yetiştiriciliği (hububat ve baklagiller dışında)",
+      "fullName": "ISO 22000 B / BI - Bitki yetiştiriciliği (hububat ve baklagiller dışında)",
+      "text": "Hububat ve baklagiller dışındaki bitkilerin (meyveler, sebzeler, baharatlar, mantarlar vb.) yetiştirilmesi veya hasat edilmesi. Gıda amaçlı hidrofitlerin yetiştirilmesi. Ürünlerin çiftlikteki depolanması.",
+      "examples": [
+        "Sebze yetiştiriciliği",
+        "Meyve yetiştiriciliği",
+        "Baharat yetiştiriciliği",
+        "Mantar üretimi",
+        "Su bitkileri yetiştiriciliği"
+      ],
+      "keywords": ["bitki", "sebze", "meyve", "baharat", "mantar", "tarim", "hasat", "hidrofit"]
+    },
+    {
+      "id": "iso22000-B-BII",
+      "standard": "ISO 22000",
+      "group": "B",
+      "category": "Bitki yetiştiriciliği veya işlenmesi",
+      "code": "BII",
+      "subcategory": "Hububat ve baklagil yetiştiriciliği",
+      "label": "B / BII - Hububat ve baklagil yetiştiriciliği",
+      "fullName": "ISO 22000 B / BII - Hububat ve baklagil yetiştiriciliği",
+      "text": "Gıda amaçlı hububat ve baklagillerin yetiştirilmesi veya hasat edilmesi. Ürünlerin çiftlikteki depolanması.",
+      "examples": [
+        "Buğday yetiştiriciliği",
+        "Arpa yetiştiriciliği",
+        "Mercimek ve nohut üretimi",
+        "Hububat hasadı"
+      ],
+      "keywords": ["hububat", "baklagil", "bugday", "arpa", "mercimek", "nohut", "hasat"]
+    },
+    {
+      "id": "iso22000-B-BIII",
+      "standard": "ISO 22000",
+      "group": "B",
+      "category": "Bitki yetiştiriciliği veya işlenmesi",
+      "code": "BIII",
+      "subcategory": "Bitki ürünlerinin ön işlemden geçirilmesi",
+      "label": "B / BIII - Bitki ürünlerinin ön işlemden geçirilmesi",
+      "fullName": "ISO 22000 B / BIII - Bitki ürünlerinin ön işlemden geçirilmesi",
+      "text": "Hasat edilmiş bitkilerin (meyveler, sebzeler, baharatlar, mantarlar, hidrofitler, hububat ve baklagiller dahil) orijinal bütün formunu değiştirmeyen işlemler. Temizleme, yıkama, durulama, ayıklama, derecelendirme, budama, demetleme, soğutma, mumlama, daldırma, havalandırma, paketleme, yeniden paketleme ve depolama faaliyetleri.",
+      "examples": [
+        "Meyve sebze paketleme",
+        "Hububat eleme ve temizleme",
+        "Baklagil boylama ve paketleme",
+        "Taze bitki paketleme tesisleri"
+      ],
+      "keywords": ["on islem", "temizleme", "yikama", "ayiklama", "paketleme", "sogutma", "mumlatma", "boylama"]
+    },
+    {
+      "id": "iso22000-C-C0",
+      "standard": "ISO 22000",
+      "group": "C",
+      "category": "Gıda, bileşen ve evcil hayvan maması işleme",
+      "code": "C0",
+      "subcategory": "Hayvansal - Birincil dönüştürme",
+      "label": "C / C0 - Hayvansal - Birincil dönüştürme",
+      "fullName": "ISO 22000 C / C0 - Hayvansal - Birincil dönüştürme",
+      "text": "Daha sonraki işlemler için amaçlanan hayvan karkaslarının dönüştürülmesi. Kesimhane hizmetleri, iç organların çıkarılması (eviscerasyon), dökme soğutma, dökme dondurma ve dökme depolama. Balıkların dondurulması ve av hayvanlarının parçalanması dahil.",
+      "examples": [
+        "Kesimhane ve mezbaha faaliyetleri",
+        "Karkas parçalama ve soğutma",
+        "Dökme balık dondurma",
+        "Av eti hazırlama"
+      ],
+      "keywords": ["kesimhane", "mezbaha", "karkas", "sogutma", "dondurma", "parcalama", "hayvansal"]
+    },
+    {
+      "id": "iso22000-C-CI",
+      "standard": "ISO 22000",
+      "group": "C",
+      "category": "Gıda, bileşen ve evcil hayvan maması işleme",
+      "code": "CI",
+      "subcategory": "Dayanıksız hayvansal ürün işlenmesi",
+      "label": "C / CI - Dayanıksız hayvansal ürün işlenmesi",
+      "fullName": "ISO 22000 C / CI - Dayanıksız hayvansal ürün işlenmesi",
+      "text": "Soğutulmuş veya dondurulmuş sıcaklık kontrolü gerektiren; balık, deniz ürünleri, et, yumurta, süt ve süt ürünlerinin işlenmesi ve paketlenmesi. Sadece hayvansal ürünlerden üretilen evcil hayvan mamalarını dahil.",
+      "examples": [
+        "Et işleme ve paketleme",
+        "Süt ve süt ürünleri üretimi (yoğurt, peynir vb.)",
+        "Yumurta işleme",
+        "Balık ürünleri hazırlama",
+        "Hayvansal içerikli evcil hayvan maması"
+      ],
+      "keywords": ["hayvansal", "et", "sut", "yumurta", "balik", "isleme", "dayaniksiz", "soguk zincir", "evcil hayvan mamasi"]
+    },
+    {
+      "id": "iso22000-C-CII",
+      "standard": "ISO 22000",
+      "group": "C",
+      "category": "Gıda, bileşen ve evcil hayvan maması işleme",
+      "code": "CII",
+      "subcategory": "Dayanıksız bitkisel ürün işlenmesi",
+      "label": "C / CII - Dayanıksız bitkisel ürün işlenmesi",
+      "fullName": "ISO 22000 C / CII - Dayanıksız bitkisel ürün işlenmesi",
+      "text": "Meyve, taze meyve suyu, sebze, hububat, baklagil, dondurulmuş su bazlı ürünler ve bitki bazlı et/süt alternatiflerinin işlenmesi ve paketlenmesi. Sadece bitkisel ürünlerden üretilen evcil hayvan mamalarını dahil.",
+      "examples": [
+        "Taze meyve sebze işleme",
+        "Pastörize meyve suyu üretimi",
+        "Bitki bazlı süt ve et alternatifleri",
+        "Dondurulmuş meyve sebze üretimi",
+        "Bitkisel içerikli evcil hayvan maması"
+      ],
+      "keywords": ["bitkisel", "meyve", "sebze", "meyve suyu", "baklagil", "isleme", "et alternatifi", "sut alternatifi"]
+    },
+    {
+      "id": "iso22000-C-CIII",
+      "standard": "ISO 22000",
+      "group": "C",
+      "category": "Gıda, bileşen ve evcil hayvan maması işleme",
+      "code": "CIII",
+      "subcategory": "Dayanıksız hayvansal ve bitkisel ürün işlenmesi (karışık ürünler)",
+      "label": "C / CIII - Dayanıksız hayvansal ve bitkisel ürün işlenmesi (karışık ürünler)",
+      "fullName": "ISO 22000 C / CIII - Dayanıksız hayvansal ve bitkisel ürün işlenmesi (karışık ürünler)",
+      "text": "Pizza, lazanya, sandviç, mantı ve yemeye hazır yemekler gibi hayvansal ve bitkisel bileşen içeren ürünlerin işlenmesi ve paketlenmesi. Hemen tüketime sunulmayan endüstriyel mutfaklar ve merkezi yemek üretim tesislerini dahil.",
+      "examples": [
+        "Pizza ve sandviç üretimi",
+        "Hazır yemek paketleme",
+        "Endüstriyel merkezi mutfaklar",
+        "Karışık içerikli dondurulmuş gıdalar",
+        "Karışık içerikli evcil hayvan maması"
+      ],
+      "keywords": ["karisik", "hazir yemek", "pizza", "sandvic", "manti", "merkezi mutfak", "isleme"]
+    },
+    {
+      "id": "iso22000-C-CIV",
+      "standard": "ISO 22000",
+      "group": "C",
+      "category": "Gıda, bileşen ve evcil hayvan maması işleme",
+      "code": "CIV",
+      "subcategory": "Dayanıklı ürün işlenmesi",
+      "label": "C / CIV - Dayanıklı ürün işlenmesi",
+      "fullName": "ISO 22000 C / CIV - Dayanıklı ürün işlenmesi",
+      "text": "Ortam sıcaklığında saklanan ve satılan dayanıklı ürünlerin işlenmesi ve paketlenmesi. Konserve gıdalar, bisküviler, atıştırmalıklar, yağ, içme suyu, içecekler, makarna, un, şeker ve gıda sınıfı tuzu dahil.",
+      "examples": [
+        "Konserve üretimi",
+        "Bisküvi ve çikolata üretimi",
+        "Bitkisel yağ üretimi",
+        "İçme suyu dolumu",
+        "Makarna ve un değirmenciliği",
+        "Dayanıklı evcil hayvan maması"
+      ],
+      "keywords": ["dayanikli", "konserve", "biskuvi", "yag", "icecek", "makarna", "un", "seker", "tuz", "atistirmalik"]
+    },
+    {
+      "id": "iso22000-D-DI",
+      "standard": "ISO 22000",
+      "group": "D",
+      "category": "Yem ve hayvan maması işleme",
+      "code": "DI",
+      "subcategory": "Yem üretimi",
+      "label": "D / DI - Yem üretimi",
+      "fullName": "ISO 22000 D / DI - Yem üretimi",
+      "text": "Gıda üreten ve gıda üretmeyen (evcil olmayan) hayvanlar için yem malzemesi üretimi. Tahıl, yağlı tohum küspeleri ve gıda üretim yan ürünleri dahil. Karışık yemlerin ve premikslerin üretimi.",
+      "examples": [
+        "Büyükbaş ve küçükbaş yem üretimi",
+        "Kanatlı yem üretimi",
+        "Yem premiksleri",
+        "Küspe üretimi"
+      ],
+      "keywords": ["yem", "hayvan", "besi", "premix", "karsim", "degirmen"]
+    },
+    {
+      "id": "iso22000-D-DII",
+      "standard": "ISO 22000",
+      "group": "D",
+      "category": "Yem ve hayvan maması işleme",
+      "code": "DII",
+      "subcategory": "Evcil hayvan maması üretimi",
+      "label": "D / DII - Evcil hayvan maması üretimi",
+      "fullName": "ISO 22000 D / DII - Evcil hayvan maması üretimi",
+      "text": "Evcil hayvanlar için mama üretimi. Kedi ve köpek mamaları, ödül mamaları dahil. (Ortam sıcaklığında dayanıklı veya dayanıksız tüm evcil hayvan mamaları).",
+      "examples": [
+        "Kedi maması üretimi",
+        "Köpek maması üretimi",
+        "Evcil hayvan ödül maması",
+        "Kuş yemleri"
+      ],
+      "keywords": ["evcil", "hayvan", "mama", "kedi", "kopek", "petfood"]
+    },
+    {
+      "id": "iso22000-E-E",
+      "standard": "ISO 22000",
+      "group": "E",
+      "category": "Catering / Yemek hizmeti",
+      "code": "E",
+      "subcategory": "Yemek hizmeti",
+      "label": "E - Yemek hizmeti",
+      "fullName": "ISO 22000 E - Yemek hizmeti",
+      "text": "Doğrudan tüketiciye sunulan, yerinde pişirme, karıştırma ve hazırlama faaliyetleri. Restoranlar, oteller, yemek kamyonları, kurum mutfakları (okul, fabrika kafeteryaları), yerinde hazırlanan perakende yemekler dahil.",
+      "examples": [
+        "Restoran ve kafeler",
+        "Otel mutfak hizmetleri",
+        "Okul ve fabrika yemekhaneleri",
+        "Event catering (düğün, etkinlik)",
+        "Kahve dükkanları ve barlar"
+      ],
+      "keywords": ["yemek", "hizmeti", "catering", "mutfak", "restoran", "otel", "kafe", "yerinde sunum"]
+    },
+    {
+      "id": "iso22000-F-FI",
+      "standard": "ISO 22000",
+      "group": "F",
+      "category": "Ticaret, perakende ve e-ticaret",
+      "code": "FI",
+      "subcategory": "Perakende/toptan satış",
+      "label": "F / FI - Perakende ve toptan satış",
+      "fullName": "ISO 22000 F / FI - Perakende ve toptan satış",
+      "text": "Bitmiş gıda ürünlerinin müşterilere ve tüketicilere depolanması ve sağlanması (perakende mağazaları, dükkanlar, toptancılar). Dilimleme, porsiyonlama, yeniden ısıtma gibi küçük işleme faaliyetleri dahil.",
+      "examples": [
+        "Market ve mağazalar",
+        "Gıda toptancıları",
+        "Kasap ve şarküteri perakende",
+        "Manav hizmetleri"
+      ],
+      "keywords": ["perakende", "toptan", "satis", "market", "magaza", "porsiyonlama", "dilimleme"]
+    },
+    {
+      "id": "iso22000-F-FII",
+      "standard": "ISO 22000",
+      "group": "F",
+      "category": "Ticaret, perakende ve e-ticaret",
+      "code": "FII",
+      "subcategory": "Gıda komisyonculuğu/ticareti",
+      "label": "F / FII - Gıda komisyonculuğu ve ticareti",
+      "fullName": "ISO 22000 F / FII - Gıda komisyonculuğu ve ticareti",
+      "text": "Ürünleri fiziksel olarak ele almadan, kendi hesabına veya başkaları adına gıda zincirine giren her türlü ürünün alım satımı.",
+      "examples": [
+        "Gıda komisyonculuğu",
+        "İthalat ve ihracat ticareti",
+        "Acenta aracılığıyla gıda alım satımı"
+      ],
+      "keywords": ["komisyonculuk", "ticaret", "acenta", "alim", "satim", "aracilik"]
+    },
+    {
+      "id": "iso22000-G-GI",
+      "standard": "ISO 22000",
+      "group": "G",
+      "category": "Nakliye ve depolama hizmetleri",
+      "code": "GI",
+      "subcategory": "Dayanıksız gıda ve yem için nakliye ve depolama hizmetleri",
+      "label": "G / GI - Dayanıksız gıda ve yem için nakliye ve depolama",
+      "fullName": "ISO 22000 G / GI - Dayanıksız gıda ve yem için nakliye ve depolama",
+      "text": "Sıcaklık bütünlüğünün korunması gereken bozulabilir gıda ve yem ürünleri için depolama tesisleri ve dağıtım araçlarının işletilmesi.",
+      "examples": [
+        "Soğuk zincir lojistiği",
+        "Soğuk hava deposu işletmeciliği",
+        "Dondurulmuş ürün nakliyesi"
+      ],
+      "keywords": ["dayaniksiz", "nakliye", "depolama", "soguk zincir", "lojistik", "isi kontrollu"]
+    },
+    {
+      "id": "iso22000-G-GII",
+      "standard": "ISO 22000",
+      "group": "G",
+      "category": "Nakliye ve depolama hizmetleri",
+      "code": "GII",
+      "subcategory": "Dayanıklı gıda ve yem için nakliye ve depolama hizmetleri",
+      "label": "G / GII - Dayanıklı gıda ve yem için nakliye ve depolama",
+      "fullName": "ISO 22000 G / GII - Dayanıklı gıda ve yem için nakliye ve depolama",
+      "text": "Ortam sıcaklığında saklanabilen dayanıklı gıda ve yem ürünleri ile gıda ambalaj malzemeleri için depolama ve dağıtım hizmetleri. Açık maruziyet içermeyen yeniden etiketleme/paketleme faaliyetleri dahil.",
+      "examples": [
+        "Kuru gıda lojistiği",
+        "Genel gıda deposu",
+        "Ambalaj malzemesi depolama",
+        "Yeniden etiketleme hizmetleri"
+      ],
+      "keywords": ["dayanikli", "nakliye", "depolama", "kuru gida", "ambalaj depolama", "etiketleme"]
+    },
+    {
+      "id": "iso22000-H-H",
+      "standard": "ISO 22000",
+      "group": "H",
+      "category": "Yardımcı hizmetler",
+      "code": "H",
+      "subcategory": "Hizmetler",
+      "label": "H - Yardımcı hizmetler",
+      "fullName": "ISO 22000 H - Yardımcı hizmetler",
+      "text": "Gıda ve yem güvenli üretimini destekleyen; su temini, haşere kontrolü, temizlik ve sanitasyon hizmetleri ile atık bertarafı gibi hizmetlerin tedariki.",
+      "examples": [
+        "Su temini şebekeleri",
+        "Haşere kontrol (pest kontrol)",
+        "Endüstriyel temizlik hizmetleri",
+        "Atık yönetimi ve bertarafı"
+      ],
+      "keywords": ["yardimci", "hizmet", "su", "temizlik", "sanitasyon", "pest kontrol", "atik"]
+    },
+    {
+      "id": "iso22000-I-I",
+      "standard": "ISO 22000",
+      "group": "I",
+      "category": "Gıda ambalajlaması",
+      "code": "I",
+      "subcategory": "Gıda ambalaj malzemesi üretimi",
+      "label": "I - Gıda ambalaj malzemesi üretimi",
+      "fullName": "ISO 22000 I - Gıda ambalaj malzemesi üretimi",
+      "text": "Gıda ambalaj malzemelerinin üretimi ve gıda ambalajlama faaliyetleri.",
+      "examples": [
+        "Plastik gıda ambalajı üretimi",
+        "Karton ve kağıt ambalaj",
+        "Esnek ambalaj sistemleri",
+        "Cam gıda ambalajı"
+      ],
+      "keywords": ["ambalaj", "paketleme", "malzeme", "plastik", "karton", "etiket"]
+    },
+    {
+      "id": "iso22000-J-J",
+      "standard": "ISO 22000",
+      "group": "J",
+      "category": "Donanım imalatı",
+      "code": "J",
+      "subcategory": "Gıda donanımı ve otomat üretimi",
+      "label": "J - Gıda donanımı ve otomat üretimi",
+      "fullName": "ISO 22000 J - Gıda donanımı ve otomat üretimi",
+      "text": "Gıda işleme ekipmanlarının, donanımlarının veya gıda otomatlarının geliştirilmesi ve üretimi.",
+      "examples": [
+        "Gıda makinesi imalatı",
+        "Dolum ve paketleme hatları",
+        "Gıda otomatları",
+        "Endüstriyel mutfak ekipmanı"
+      ],
+      "keywords": ["donanim", "makine", "imalat", "ekipman", "otomat", "gida isleme"]
+    },
+    {
+      "id": "iso22000-K-K",
+      "standard": "ISO 22000",
+      "group": "K",
+      "category": "Biyokimyasallar",
+      "code": "K",
+      "subcategory": "(Biyo) kimyasalların üretimi",
+      "label": "K - (Biyo) kimyasalların üretimi",
+      "fullName": "ISO 22000 K - (Biyo) kimyasalların üretimi",
+      "text": "Gıda ve yem katkıları, vitaminler, mineraller, biyokültürler, aromalar, enzimler ve proses yardımcılarının üretimi.",
+      "examples": [
+        "Katkı maddesi üretimi",
+        "Aroma ve esans üretimi",
+        "Biyokültür ve maya üretimi",
+        "Gıda enzimleri"
+      ],
+      "keywords": ["biyokimyasal", "katki", "vitamin", "mineral", "enzim", "aroma", "maya"]
+    }
+  ]
+}

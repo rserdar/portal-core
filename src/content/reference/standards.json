@@ -1,0 +1,11 @@
+{
+  "items": [
+    { "id": "9001", "label": "ISO 9001:2015", "prefix": "ISO", "fullName": "ISO 9001:2015" },
+    { "id": "14001", "label": "ISO 14001:2015", "prefix": "ISO", "fullName": "ISO 14001:2015" },
+    { "id": "45001", "label": "ISO 45001:2018", "prefix": "ISO", "fullName": "ISO 45001:2018" },
+    { "id": "22000", "label": "ISO 22000:2018", "prefix": "ISO", "fullName": "ISO 22000:2018" },
+    { "id": "27001", "label": "ISO/IEC 27001:2022", "prefix": "ISO", "fullName": "ISO/IEC 27001:2022" },
+    { "id": "13485", "label": "ISO 13485:2016", "prefix": "ISO", "fullName": "ISO 13485:2016" },
+    { "id": "Diğer", "label": "Diğer", "prefix": "ISO", "fullName": "Others" }
+  ]
+}

@@ -1,26 +1,13 @@
 ---
-import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import DataTable from "../../components/DataTable.astro";
+import FilterBar from "../../components/FilterBar.astro";
 ---
 
 <DashboardLayout title="Sertifika Yönetimi">
   <div class="space-y-4">
-
-    <!-- 🔍 Premium Arama & Aksiyon Çubuğu -->
-    <div class="bg-surface border border-border-main shadow-lg p-3 sm:p-4 rounded-2xl flex flex-wrap items-center gap-3 print:hidden">
-      <div class="relative flex-1 min-w-[200px]">
-        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input
-          type="search"
-          id="global-search"
-          placeholder="Firma, Standart veya Belge No ile ara..."
-          autocomplete="off"
-          class="w-full bg-surface-hover border border-border-main rounded-xl pl-10 pr-4 py-2.5 text-main placeholder:text-muted focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm"
-        />
-      </div>
-
-      <div class="flex items-center gap-2 flex-wrap shrink-0 print:hidden">
-
-        <!-- A1: Date Filter -->
+    <FilterBar placeholder="Firma, Standart veya Belge No ile ara...">
+      <div slot="filters" class="flex items-center gap-2 flex-wrap">
         <div class="flex items-center gap-1 border border-border-main rounded-xl p-1 bg-surface-hover hidden md:flex">
           <select id="date-column-filter" class="bg-transparent border-none text-xs font-bold text-muted outline-none focus:ring-0 cursor-pointer">
             <option value="sertifika">Sert. Tarihi</option>
@@ -31,14 +18,12 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           <input type="date" id="date-end" class="bg-surface border border-border-main rounded-lg px-2 py-1.5 text-xs font-bold text-main outline-none focus:ring-1 focus:ring-primary/50" />
         </div>
 
-        <!-- A2: Status Filter -->
         <select id="status-filter" class="hidden md:block bg-surface-hover border border-border-main rounded-xl px-3 py-2.5 text-xs font-bold text-muted outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer">
           <option value="">TÜM DURUMLAR</option>
           <option value="TRUE">Aktif</option>
           <option value="FALSE">Bekliyor</option>
         </select>
 
-        <!-- A3: Consultant Filter -->
         <select id="consultant-filter" disabled class="hidden md:block bg-surface-hover border border-border-main rounded-xl px-3 py-2.5 text-xs font-bold text-muted outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer disabled:opacity-50">
           <option value="">TÜM DANIŞMANLAR</option>
         </select>
@@ -51,109 +36,53 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           <option value="22000">ISO 22000</option>
           <option value="27001">ISO 27001</option>
         </select>
+      </div>
 
-        <span id="dataset-summary" class="text-xs font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-lg min-w-[2.75rem] text-center tabular-nums">0</span>
-        
-        <div id="sync-indicator" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface-hover border border-border-main rounded-lg text-[10px] uppercase font-bold tracking-tight text-muted shrink-0">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>
-          <span class="hidden sm:inline sync-status-text">HAZIR</span>
-        </div>
-
-        <div class="h-8 w-px bg-border-main mx-1 hidden sm:block"></div>
-        
-        <button id="export-excel-btn" title="Excel Dışa Aktar" class="w-9 h-9 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-emerald-400 hover:bg-emerald-500/10 transition-all">
+      <div slot="actions" class="flex items-center gap-2 print:hidden">
+        <button id="export-excel-btn" type="button" title="Excel Dışa Aktar" class="btn-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
         </button>
-        <!-- A6: Print Button -->
-        <button id="print-btn" title="Yazdır" class="w-9 h-9 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-sky-400 hover:bg-sky-500/10 transition-all">
+        <button id="print-btn" type="button" title="Yazdır" class="btn-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
         </button>
       </div>
 
-      <!-- ⚡ Toplu İşlemler Overlay (Search Bar içinde) -->
-      <div id="bulk-actions" class="hidden print:hidden flex-wrap items-center gap-3 w-full sm:w-auto bg-primary/10 border border-primary/30 px-3 py-1.5 rounded-xl animate-fade-in ml-auto">
+      <div slot="bulk-actions" id="bulk-actions" class="hidden print:hidden flex-wrap items-center gap-3 w-full sm:w-auto bg-primary/10 border border-primary/30 px-3 py-1.5 rounded-xl animate-fade-in ml-auto">
         <span id="selected-count" class="text-[10px] font-black text-primary uppercase tracking-widest whitespace-nowrap">0 SEÇİLİ</span>
         <div class="h-4 w-px bg-primary/20 hidden sm:block"></div>
-        <button id="bulk-done-btn" class="text-[10px] font-black text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest px-2 py-1 rounded-lg hover:bg-emerald-500/10 whitespace-nowrap">
+        <button id="bulk-done-btn" type="button" class="text-[10px] font-black text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest px-2 py-1 rounded-lg hover:bg-emerald-500/10 whitespace-nowrap">
           ✓ GÖZETİM TAMAM
         </button>
-        <button id="bulk-pending-btn" class="text-[10px] font-black text-amber-400 hover:text-amber-300 transition-colors uppercase tracking-widest px-2 py-1 rounded-lg hover:bg-amber-500/10 whitespace-nowrap">
+        <button id="bulk-pending-btn" type="button" class="text-[10px] font-black text-amber-400 hover:text-amber-300 transition-colors uppercase tracking-widest px-2 py-1 rounded-lg hover:bg-amber-500/10 whitespace-nowrap">
           ⏸ BEKLET
         </button>
       </div>
-    </div>
+    </FilterBar>
 
-    <!-- 📊 Veri Tablosu Kartı -->
-    <div class="bg-surface border border-border-main shadow-xl rounded-2xl overflow-hidden">
-      <div class="w-full overflow-x-auto">
-        <table class="w-full table-fixed border-collapse">
-          <thead>
-            <tr class="bg-surface-hover border-b border-border-main">
-              <th class="w-10 px-3 py-3.5 text-center">
-                <input type="checkbox" id="select-all" class="w-4 h-4 rounded border-gray-700 text-primary bg-transparent cursor-pointer focus:ring-offset-0 focus:ring-primary">
-              </th>
-              <th class="w-24 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap">Sert. Tarihi</th>
-              <th class="w-64 px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left">Firma Adı</th>
-              <th class="w-32 pl-6 pr-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left whitespace-nowrap">Standart</th>
-              <th class="w-24 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap">Denetim</th>
-              <th class="w-28 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap">Sert. No</th>
-              <th class="w-28 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap italic">Gözetim Tarihi</th>
-              <th class="w-24 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap">Akredite</th>
-              <th class="w-40 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap">Danışman</th>
-              <th class="w-16 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Detay</th>
-            </tr>
-          </thead>
-          <tbody id="cert-table-body" class="divide-y divide-border-main">
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Durum Mesajları -->
-      <div id="table-loader" class="py-24 flex flex-col items-center justify-center gap-3">
-        <div class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-        <p class="text-xs font-bold text-muted tracking-widest uppercase animate-pulse">Veriler Hazırlanıyor</p>
-      </div>
-
-      <div id="empty-state" class="hidden py-24 flex flex-col items-center justify-center gap-3 text-center px-6">
-        <div class="w-14 h-14 rounded-2xl bg-surface-hover border border-border-main flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
-        </div>
-        <p class="text-sm font-bold text-muted uppercase tracking-widest">Eşleşen sertifika bulunamadı</p>
-      </div>
-
-      <!-- Sayfalama (Premium Layout) -->
-      <div id="pagination-bar" class="hidden print:hidden bg-surface-hover border-t border-border-main px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <span id="page-summary" class="text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 tabular-nums">1 / 1</span>
-          <div class="flex items-center gap-2 border-l border-border-main pl-3">
-            <span class="text-[10px] font-bold text-muted uppercase tracking-widest hidden sm:inline">Göster:</span>
-            <select id="page-size-select" class="bg-surface border border-border-main rounded-lg px-2 py-1 text-[11px] font-bold text-main outline-none focus:ring-1 focus:ring-primary/40 transition-all cursor-pointer">
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-           <button id="prev-page-btn" title="Önceki Sayfa" class="w-8 h-8 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
-             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-           </button>
-           <div id="page-number-list" class="flex items-center gap-1.5"></div>
-           <button id="next-page-btn" title="Sonraki Sayfa" class="w-8 h-8 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
-             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-           </button>
-        </div>
-      </div>
-    </div>
-
+    <DataTable emptyMessage="Eşleşen sertifika bulunamadı">
+      <Fragment slot="header">
+        <th class="w-10 px-3 py-3.5 text-center">
+          <input type="checkbox" id="select-all" class="w-4 h-4 rounded border-gray-700 text-primary bg-transparent cursor-pointer focus:ring-offset-0 focus:ring-primary">
+        </th>
+        <th class="w-24 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap">Sert. Tarihi</th>
+        <th class="w-64 px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left">Firma Adı</th>
+        <th class="w-32 pl-6 pr-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left whitespace-nowrap">Standart</th>
+        <th class="w-24 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap">Denetim</th>
+        <th class="w-28 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap">Sert. No</th>
+        <th class="w-28 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap italic">Gözetim Tarihi</th>
+        <th class="w-24 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap">Akredite</th>
+        <th class="w-40 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center whitespace-nowrap">Danışman</th>
+        <th class="w-16 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Detay</th>
+      </Fragment>
+    </DataTable>
   </div>
 </DashboardLayout>
 
 <script>
-  import { api } from '../../lib/api';
-  import { $certificates, $syncStatus } from '../../lib/store';
-  import { SyncManager } from '../../lib/sync';
-  import { toast } from '../../lib/toast';
+  import { api } from "../../lib/api";
+  import { $certificates, $syncStatus } from "../../lib/store";
+  import { SyncManager } from "../../lib/sync";
+  import { toast } from "../../lib/toast";
   import {
     normalizeKey,
     pickValue,
@@ -161,651 +90,454 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     escAttr,
     parseDateValue,
     normalizeLink,
-    getVisiblePageNumbers,
-    getInitials
-  } from '../../lib/utils';
+    getInitials,
+  } from "../../lib/utils";
+  import { useCleanup, initPageCleanup } from "../../lib/composables/useCleanup";
+  import { useTableFilter } from "../../lib/composables/useTableFilter";
 
-  let filters = {
-  search: '',
-  standard: '',
-  status: '',
-  consultant: '',
-  dateColumn: 'sertifika',
-  dateStart: '',
-  dateEnd: ''
-};
-  let currentPage = 1;
-  let pageSize = 20;
-  let fullCertificatesLoaded = false;
-  let cleanupFns: Array<() => void> = [];
-
-  function registerCleanup(fn: () => void) {
-    cleanupFns.push(fn);
-  }
-
-  function runCleanups() {
-    cleanupFns.forEach(fn => fn());
-    cleanupFns = [];
-  }
+  const { registerCleanup, runCleanups } = useCleanup();
 
   function initPage() {
     runCleanups();
 
-    const tableBody = document.getElementById('cert-table-body');
-    const tableLoader = document.getElementById('table-loader');
-    const emptyState = document.getElementById('empty-state');
-    const consultantFilter = document.getElementById('consultant-filter') as HTMLSelectElement | null;
-    const dateColumnFilter = document.getElementById('date-column-filter') as HTMLSelectElement | null;
-    const dateStart = document.getElementById('date-start') as HTMLInputElement | null;
-    const dateEnd = document.getElementById('date-end') as HTMLInputElement | null;
-    const printBtn = document.getElementById('print-btn') as HTMLButtonElement | null;
-    const globalSearch = document.getElementById('global-search') as HTMLInputElement;
-    const standardFilter = document.getElementById('standard-filter') as HTMLSelectElement;
-    const statusFilter = document.getElementById('status-filter') as HTMLSelectElement | null;
-    const syncIndicator = document.getElementById('sync-indicator');
-    const exportExcelBtn = document.getElementById('export-excel-btn') as HTMLButtonElement | null;
-    const datasetSummary = document.getElementById('dataset-summary');
-    const pageSummary = document.getElementById('page-summary');
-    const pageSizeSelect = document.getElementById('page-size-select') as HTMLSelectElement;
-    const paginationBar = document.getElementById('pagination-bar');
-    const paginationMeta = document.getElementById('pagination-meta');
-    const pageNumberList = document.getElementById('page-number-list');
-    const prevPageBtn = document.getElementById('prev-page-btn') as HTMLButtonElement;
-    const nextPageBtn = document.getElementById('next-page-btn') as HTMLButtonElement;
-    const selectAll = document.getElementById('select-all') as HTMLInputElement;
-    const bulkActionsBar = document.getElementById('bulk-actions');
-    const selectedCountDisplay = document.getElementById('selected-count');
-    const bulkDoneBtn = document.getElementById('bulk-done-btn');
-    const bulkPendingBtn = document.getElementById('bulk-pending-btn');
+    const tableBody = document.getElementById("table-body");
+    const tableLoader = document.getElementById("table-loader");
+    const emptyState = document.getElementById("empty-state");
+    const consultantFilter = document.getElementById("consultant-filter") as HTMLSelectElement | null;
+    const dateColumnFilter = document.getElementById("date-column-filter") as HTMLSelectElement | null;
+    const dateStart = document.getElementById("date-start") as HTMLInputElement | null;
+    const dateEnd = document.getElementById("date-end") as HTMLInputElement | null;
+    const printBtn = document.getElementById("print-btn") as HTMLButtonElement | null;
+    const globalSearch = document.getElementById("global-search") as HTMLInputElement | null;
+    const standardFilter = document.getElementById("standard-filter") as HTMLSelectElement | null;
+    const statusFilter = document.getElementById("status-filter") as HTMLSelectElement | null;
+    const syncIndicator = document.getElementById("sync-indicator");
+    const exportExcelBtn = document.getElementById("export-excel-btn") as HTMLButtonElement | null;
+    const pageSizeSelect = document.getElementById("page-size-select") as HTMLSelectElement | null;
+    const prevPageBtn = document.getElementById("prev-page-btn") as HTMLButtonElement | null;
+    const nextPageBtn = document.getElementById("next-page-btn") as HTMLButtonElement | null;
+    const selectAll = document.getElementById("select-all") as HTMLInputElement | null;
+    const bulkActionsBar = document.getElementById("bulk-actions");
+    const selectedCountDisplay = document.getElementById("selected-count");
+    const bulkDoneBtn = document.getElementById("bulk-done-btn") as HTMLButtonElement | null;
+    const bulkPendingBtn = document.getElementById("bulk-pending-btn") as HTMLButtonElement | null;
 
-    function setTableState(state: 'loading' | 'empty' | 'ready') {
-      if (state === 'loading') {
-        tableLoader?.classList.remove('hidden');
-        emptyState?.classList.add('hidden');
-        paginationBar?.classList.add('hidden');
-        return;
-      }
-
-      tableLoader?.classList.add('hidden');
-
-      if (state === 'empty') {
-        emptyState?.classList.remove('hidden');
-        paginationBar?.classList.add('hidden');
-        return;
-      }
-
-      emptyState?.classList.add('hidden');
+    if (
+      !tableBody ||
+      !consultantFilter ||
+      !dateColumnFilter ||
+      !dateStart ||
+      !dateEnd ||
+      !printBtn ||
+      !globalSearch ||
+      !standardFilter ||
+      !statusFilter ||
+      !exportExcelBtn ||
+      !pageSizeSelect ||
+      !prevPageBtn ||
+      !nextPageBtn ||
+      !selectAll ||
+      !bulkDoneBtn ||
+      !bulkPendingBtn
+    ) {
+      return;
     }
 
-    function hasFullCertificateDataset(data: readonly any[]) {
+    let fullCertificatesLoaded = false;
+    const selectedIds = new Set<string>();
+
+    const setTableState = (state: "loading" | "empty" | "ready") => {
+      if (state === "loading") {
+        tableLoader.classList.remove("hidden");
+        emptyState?.classList.add("hidden");
+        return;
+      }
+
+      tableLoader.classList.add("hidden");
+      emptyState?.classList.toggle("hidden", state !== "empty");
+    };
+
+    const hasFullCertificateDataset = (data: readonly any[]) => {
       if (!Array.isArray(data) || data.length === 0) return false;
-      const checkKeys = ['akreditasyon', 'kapsam', 'durum'];
+      const checkKeys = ["akreditasyon", "kapsam", "durum"];
       return data.some((item: any) => {
-        if (!item || typeof item !== 'object') return false;
-        const keys = Object.keys(item).map(k => k.toLowerCase());
-        return checkKeys.some(ck => keys.includes(ck));
+        if (!item || typeof item !== "object") return false;
+        const keys = Object.keys(item).map((key) => key.toLowerCase());
+        return checkKeys.some((key) => keys.includes(key));
       });
-    }
+    };
 
+    const normalizeStandard = (item: any) => {
+      const mainStandart = pickValue(item, ["Standart", "standard"], "-");
+      const otherStandart = pickValue(
+        item,
+        ["other_standart", "Other Standard", "Other", "other", "Diğer", "diger", "Diger", "diğer", "Diğer Standart", "digerStandart"],
+        "",
+      );
+      const standardLower = mainStandart.toLowerCase().trim();
+      const isOther = standardLower === "diğer" || standardLower === "diger" || standardLower === "other";
+      return isOther && otherStandart ? otherStandart : mainStandart;
+    };
 
-  function normalizeStandard(item: any) {
-    const mainStandart = pickValue(item, ["Standart", "standard"], "-");
-    const otherStandart = pickValue(item, ["other_standart", "Other Standard", "Other", "other", "Diğer", "diger", "Diger", "diğer", "Diğer Standart", "digerStandart"], "");
-    const sLow = mainStandart.toLowerCase().trim();
-    const isOther = sLow === 'diğer' || sLow === 'diger' || sLow === 'other';
-    return (isOther && otherStandart) ? otherStandart : mainStandart;
-  }
+    const getDenetim = (item: any) => pickValue(item, ["denetim_tipi", "denetim", "Denetim Tipi", "denetimTipi"], "-");
+    const getQueryLink = (item: any) => pickValue(item, ["qr", "QR Code", "Sorgulama Linki"], "");
+    const getCertificateLink = (item: any) => pickValue(item, ["cert_link", "certLink", "Sertifika Linki"], "");
 
-  function getDenetim(item: any) {
-    return pickValue(item, ["denetim_tipi", "denetim", "Denetim Tipi", "denetimTipi"], "-");
-  }
+    const getCertificateId = (item: any, fallback = "-") => {
+      const direct = pickValue(item, ["ID", "Id", "id", "Certificate ID", "certificateId", "sertifikaId"], "");
+      if (direct) return direct;
 
-  function getOtherStandard(item: any) {
-    return pickValue(item, ["other_standart", "other", "Other Standard", "Other", "Diğer"], "-");
-  }
-
-  function getStatusLabel(item: any) {
-    const raw = pickValue(item, ["durum", "Durum", "gozetim_confirmed", "gozetimConfirmed", "Gözetim Conf."], "");
-    const normalized = String(raw).trim().toUpperCase();
-    if (normalized === "TRUE") return "Aktif";
-    if (normalized === "FALSE") return "Bekliyor";
-    return raw || "-";
-  }
-
-  function getQueryLink(item: any) {
-    return pickValue(item, ["qr", "QR Code", "Sorgulama Linki"], "");
-  }
-
-  function getCertificateLink(item: any) {
-    return pickValue(item, ["cert_link", "certLink", "Sertifika Linki"], "");
-  }
-
-
-  function getCertificateId(item: any, fallback = '-') {
-    const direct = pickValue(item, ["ID", "Id", "id", "Certificate ID", "certificateId", "sertifikaId"], "");
-    if (direct) return direct;
-
-    if (item && typeof item === 'object') {
-      const entries = Object.entries(item);
-      if (entries.length > 0) {
-        const [firstKey, firstValue] = entries[0];
-        const keyLooksUnnamed = normalizeKey(firstKey) === '';
-        const valueText = String(firstValue ?? '').trim();
-        if ((keyLooksUnnamed || entries.length > 0) && valueText) {
-          return valueText;
+      if (item && typeof item === "object") {
+        const entries = Object.entries(item);
+        if (entries.length > 0) {
+          const [firstKey, firstValue] = entries[0];
+          const keyLooksUnnamed = normalizeKey(firstKey) === "";
+          const valueText = String(firstValue ?? "").trim();
+          if (keyLooksUnnamed && valueText) return valueText;
         }
       }
-    }
 
-    return fallback;
-  }
+      return fallback;
+    };
 
+    const getStatusFlag = (item: any) => {
+      const raw = pickValue(item, ["durum", "Durum", "gozetim_confirmed", "gozetimConfirmed", "Gözetim Conf."], "");
+      const normalized = String(raw).trim().toUpperCase();
+      if (normalized === "TRUE") return "TRUE";
+      if (normalized === "FALSE") return "FALSE";
+      return "";
+    };
 
-  function getCreatedAt(item: any) {
-    return pickValue(item, [
-      "updated_at", "Kayıt Tarihi", "createdAt", "created_at",
-      "Timestamp", "timestamp"
-    ], "");
-  }
+    const getStatusLabel = (item: any) => {
+      const normalized = getStatusFlag(item);
+      if (normalized === "TRUE") return "Aktif";
+      if (normalized === "FALSE") return "Bekliyor";
+      return pickValue(item, ["durum", "Durum"], "-");
+    };
 
-  function getUrgencyScore(item: any) {
-    const gozetimRaw = pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], "");
-    const durum = String(pickValue(item, ["gozetim_confirmed", "gozetimConfirmed", "Gözetim"], "FALSE")).toUpperCase();
-    if (durum === "TRUE") return 0; // Aktif olanları normal sırala
+    const getUrgencyScore = (item: any) => {
+      const gozetimRaw = pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], "");
+      const durum = getStatusFlag(item);
+      if (durum === "TRUE") return 0;
 
-    const gozetimDate = parseDateValue(gozetimRaw);
-    if (!gozetimDate) return 0;
+      const gozetimDate = parseDateValue(gozetimRaw);
+      if (!gozetimDate) return 0;
 
-    const now = new Date();
-    now.setHours(0,0,0,0);
-    const diffTime = gozetimDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const diffTime = gozetimDate.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return 2; // Geçmiş (Kırmızı)
-    if (diffDays <= 30) return 1; // 30 gün içinde (Sarı)
-    return 0; // Normal
-  }
+      if (diffDays < 0) return 2;
+      if (diffDays <= 30) return 1;
+      return 0;
+    };
 
-  function getSortableTimestamp(item: any, originalIndex: number) {
-    const candidates = [
-      getCreatedAt(item),
-      pickValue(item, ["sertifika_tarihi", "gst", "Sertifika Tarihi"], ""),
-      pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], "")
-    ];
+    const getSortableTimestamp = (item: any) => {
+      const candidates = [
+        pickValue(item, ["updated_at", "Kayıt Tarihi", "createdAt", "created_at", "Timestamp", "timestamp"], ""),
+        pickValue(item, ["sertifika_tarihi", "gst", "Sertifika Tarihi"], ""),
+        pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], ""),
+      ];
 
-    for (const candidate of candidates) {
-      const parsed = parseDateValue(candidate);
-      if (parsed) return parsed.getTime();
-    }
-
-    const idRaw = pickValue(item, ["ID", "id"], "");
-    const idNumber = Number(String(idRaw).replace(/[^\d.-]/g, ''));
-    if (!Number.isNaN(idNumber) && String(idRaw).trim() !== '') {
-      return idNumber;
-    }
-
-    return originalIndex;
-  }
-
-  function getDetailedEntries(item: any) {
-    return Object.entries(item || {})
-      .filter(([key, value]) => {
-        if (value === undefined || value === null) return false;
-        const text = String(value).trim();
-        return text !== '';
-      })
-      .sort(([a], [b]) => a.localeCompare(b, 'tr'));
-  }
-
-
-    function updatePagination(totalItems: number) {
-      const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-      const safePage = Math.min(currentPage, totalPages);
-      currentPage = safePage;
-
-      if (pageSummary) pageSummary.textContent = `${safePage} / ${totalPages}`;
-      if (datasetSummary) datasetSummary.textContent = totalItems.toString();
-
-      if (!paginationBar || !pageNumberList || !prevPageBtn || !nextPageBtn) return;
-
-      if (totalItems === 0) {
-        paginationBar.classList.add('hidden');
-        pageNumberList.innerHTML = '';
-        return;
+      for (const candidate of candidates) {
+        const parsed = parseDateValue(candidate);
+        if (parsed) return parsed.getTime();
       }
 
-      paginationBar.classList.remove('hidden');
-      prevPageBtn.disabled = safePage <= 1;
-      nextPageBtn.disabled = safePage >= totalPages;
+      const idRaw = pickValue(item, ["ID", "id"], "");
+      const idNumber = Number(String(idRaw).replace(/[^\d.-]/g, ""));
+      return Number.isNaN(idNumber) ? 0 : idNumber;
+    };
 
-      const pages = getVisiblePageNumbers(totalPages, safePage);
-      pageNumberList.innerHTML = '';
-      pages.forEach((pageNum, index) => {
-        if (index > 0 && pages[index - 1] !== pageNum - 1) {
-          const dots = document.createElement('span');
-          dots.className = 'px-1.5 text-xs text-muted';
-          dots.textContent = '…';
-          pageNumberList.appendChild(dots);
-        }
+    const refreshBulkUI = () => {
+      selectedCountDisplay!.textContent = `${selectedIds.size} SEÇİLİ`;
+      bulkActionsBar?.classList.toggle("hidden", selectedIds.size === 0);
+      bulkActionsBar?.classList.toggle("flex", selectedIds.size > 0);
+      if (selectedIds.size === 0) selectAll.checked = false;
+    };
 
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.textContent = String(pageNum);
-        btn.className = `w-8 h-8 rounded-lg border text-xs font-black transition-all ${
-          pageNum === currentPage
-            ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
-            : 'border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30'
-        }`;
-        btn.addEventListener('click', () => {
-          currentPage = pageNum;
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          renderTable($certificates.get());
-        });
-        pageNumberList.appendChild(btn);
+    const syncSelectedCheckboxes = () => {
+      const visibleCheckboxes = Array.from(document.querySelectorAll<HTMLInputElement>(".cert-checkbox"));
+      visibleCheckboxes.forEach((checkbox) => {
+        checkbox.checked = selectedIds.has(checkbox.dataset.id || "");
       });
-    }
+      selectAll.checked = visibleCheckboxes.length > 0 && visibleCheckboxes.every((checkbox) => checkbox.checked);
+      refreshBulkUI();
+    };
 
+    const renderRows = (items: any[]) => {
+      const visibleIds = new Set(items.map((item) => getCertificateId(item, "")));
+      Array.from(selectedIds).forEach((id) => {
+        if (!visibleIds.has(id)) selectedIds.delete(id);
+      });
 
-    const unsubCerts = $certificates.subscribe(certs => {
-      if (!fullCertificatesLoaded && (certs || []).length > 0 && !hasFullCertificateDataset(certs || [])) {
-        setTableState('loading');
-        return;
-      }
-      setTableState('ready');
-
-      // Populate consultants
-      if (consultantFilter && (certs || []).length > 0) {
-        const uniqueConsultants = [...new Set((certs || []).map(item => pickValue(item, ["consultant", "danisman", "dan", "Danışman"], "")).filter(Boolean))].sort();
-
-        const currentValue = consultantFilter.value;
-        consultantFilter.innerHTML = '<option value="">TÜM DANIŞMANLAR</option>';
-        uniqueConsultants.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c;
-          opt.textContent = c;
-          consultantFilter.appendChild(opt);
-        });
-        if (uniqueConsultants.includes(currentValue)) {
-          consultantFilter.value = currentValue;
-        }
-        consultantFilter.disabled = false;
-      }
-
-      renderTable(certs || []);
-    });
-    registerCleanup(unsubCerts);
-
-    const unsubSync = $syncStatus.subscribe(status => {
-      if (!syncIndicator) return;
-      const dot = syncIndicator.querySelector('span');
-      const textEl = syncIndicator.querySelector('.sync-status-text');
-      if (!dot) return;
-      
-      if (status === 'syncing') {
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse';
-        if (textEl) textEl.textContent = 'GÜNCELLENİYOR';
-      } else if (status === 'error') {
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]';
-        if (textEl) textEl.textContent = 'HATA';
-      } else {
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]';
-        if (textEl) textEl.textContent = 'HAZIR';
-      }
-    });
-    registerCleanup(unsubSync);
-
-  function getFilteredData(data: readonly any[]) {
-    return data.filter((item: any) => {
-      const firma = pickValue(item, ["nick", "nickname", "Firma Adı"]);
-      const id = getCertificateId(item, "");
-      const certNo = pickValue(item, ["sertifika_no", "sno", "Sertifika No"]);
-      const standart = normalizeStandard(item);
-      const denetim = getDenetim(item);
-      const danisman = pickValue(item, ["consultant", "danisman", "dan", "Danışman"]);
-
-      let gozetim = String(pickValue(item, ["gozetim_confirmed", "gozetimConfirmed", "Gözetim"], "FALSE")).toUpperCase();
-      if (gozetim === "TRUE") gozetim = "TRUE";
-      else if (gozetim === "FALSE") gozetim = "FALSE";
-
-      const matchSearch = `${firma}${id}${certNo}${standart}${denetim}${danisman}`.toLowerCase().includes(filters.search.toLowerCase());
-      const matchStd = !filters.standard || standart.includes(filters.standard);
-      const matchStatus = !filters.status || gozetim === filters.status;
-      const matchConsultant = !filters.consultant || danisman === filters.consultant;
-
-      let matchDate = true;
-      if (filters.dateStart || filters.dateEnd) {
-        const dateRaw = filters.dateColumn === 'sertifika'
-          ? pickValue(item, ["sertifika_tarihi", "gst", "Sertifika Tarihi"], "")
-          : pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], "");
-
-        const itemDate = parseDateValue(dateRaw);
-        if (!itemDate) {
-           matchDate = false;
-        } else {
-           if (filters.dateStart) {
-             const startD = new Date(filters.dateStart);
-             startD.setHours(0,0,0,0);
-             if (itemDate < startD) matchDate = false;
-           }
-           if (filters.dateEnd) {
-             const endD = new Date(filters.dateEnd);
-             endD.setHours(23,59,59,999);
-             if (itemDate > endD) matchDate = false;
-           }
-        }
-      }
-
-      return matchSearch && matchStd && matchStatus && matchConsultant && matchDate;
-    });
-  }
-
-  function renderTable(data: readonly any[]) {
-    if (!tableBody) return;
-    try {
-      const filtered = getFilteredData(data)
-        .map((item, originalIndex) => ({ item, originalIndex, urgency: getUrgencyScore(item) }))
-        .sort((a, b) => {
-          if (a.urgency !== b.urgency) {
-            return b.urgency - a.urgency;
-          }
-          return getSortableTimestamp(b.item, b.originalIndex) - getSortableTimestamp(a.item, a.originalIndex);
-        });
-
-      tableBody.innerHTML = '';
-      updateBulkUI();
-
-      if (filtered.length === 0) {
-        setTableState('empty');
-        updatePagination(0);
-        return;
-      }
-      setTableState('ready');
-
-      updatePagination(filtered.length);
-      const startIndex = (currentPage - 1) * pageSize;
-      const paged = filtered.slice(startIndex, startIndex + pageSize);
-
-        paged.forEach(({ item, originalIndex }: any) => {
-          const id = getCertificateId(item, String(originalIndex + 1));
-          const firmaId = pickValue(item, ["firma_no", "firmaNo", "Firma No"], "-");
-          const idAttr = escAttr(id || String(originalIndex));
+      tableBody.innerHTML = items
+        .map((item, index) => {
+          const id = getCertificateId(item, String(index + 1));
+          const idAttr = escAttr(id);
           const sertifikaTarihi = pickValue(item, ["sertifika_tarihi", "gst", "Sertifika Tarihi"], "-");
           const firma = pickValue(item, ["nick", "nickname", "Firma Adı"], "-");
           const standart = normalizeStandard(item);
           const certNo = pickValue(item, ["sertifika_no", "sno", "Sertifika No"], "-");
           const gozetimTarihi = pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], "-");
-          const durum = getStatusLabel(item);
           const initials = getInitials(firma);
           const detailRowId = `cert-detail-${idAttr}`;
-          
           const denetim = getDenetim(item);
           const akrBody = pickValue(item, ["akreditasyon", "akrn"], "");
           const akrMark = pickValue(item, ["akredite"], "");
-          const akreditasyon = [akrBody, akrMark].filter(Boolean).join(' / ') || '-';
+          const akreditasyon = [akrBody, akrMark].filter(Boolean).join(" / ") || "-";
           const danisman = pickValue(item, ["consultant", "danisman", "dan", "Danışman"], "-");
-
-          // Robust data picking for detail view
           const notlar = pickValue(item, ["sertifika_not", "not", "Notlar"], "-");
           const sorgulamaLinki = normalizeLink(getQueryLink(item));
           const sertifikaLinki = normalizeLink(getCertificateLink(item));
-
-          let rowClass = 'hover:bg-surface-hover transition-colors group/row text-[11px]';
-          let firstCellClass = 'px-3 py-4 text-center align-middle';
           const urgency = getUrgencyScore(item);
+
+          let rowClass = "hover:bg-surface-hover transition-colors group/row text-[11px]";
+          let firstCellClass = "px-3 py-4 text-center align-middle";
           if (urgency === 2) {
-             rowClass += ' border-l-2 border-l-rose-500 bg-rose-500/5 hover:bg-rose-500/10';
-             firstCellClass += ' border-l-2 border-l-rose-500';
+            rowClass += " border-l-2 border-l-rose-500 bg-rose-500/5 hover:bg-rose-500/10";
+            firstCellClass += " border-l-2 border-l-rose-500";
           } else if (urgency === 1) {
-             rowClass += ' border-l-2 border-l-amber-400 bg-amber-400/5 hover:bg-amber-400/10';
-             firstCellClass += ' border-l-2 border-l-amber-400';
+            rowClass += " border-l-2 border-l-amber-400 bg-amber-400/5 hover:bg-amber-400/10";
+            firstCellClass += " border-l-2 border-l-amber-400";
           }
 
-          const tr = document.createElement('tr');
-          tr.className = rowClass;
-          tr.innerHTML = `
-            <td class="${firstCellClass}">
-              <input type="checkbox" class="cert-checkbox w-4 h-4 rounded border-gray-700 text-primary bg-transparent cursor-pointer focus:ring-offset-0 focus:ring-primary" data-id="${idAttr}">
-            </td>
-            <td class="px-4 py-4 text-center font-mono font-bold text-muted italic">
-              ${escHtml(sertifikaTarihi)}
-            </td>
-            <td class="px-5 py-3">
-               <div class="flex items-center gap-3">
-                 <div class="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                   <span class="text-[10px] font-black text-primary uppercase">${initials}</span>
-                 </div>
-                 <div class="min-w-0 flex-1">
-                   <div class="font-bold text-main truncate uppercase tracking-tight leading-tight">${escHtml(firma)}</div>
-                   <div class="text-[9px] text-muted font-bold mt-0.5 leading-tight truncate uppercase tracking-tight">ID: ${escHtml(id)}</div>
-                 </div>
-               </div>
-            </td>
-            <td class="pl-6 pr-4 py-4 text-left font-bold text-primary/70">${escHtml(standart.length > 30 ? standart.slice(0, 30) + '...' : standart)}</td>
-            <td class="px-4 py-4 text-center font-bold text-muted">${escHtml(denetim)}</td>
-            <td class="px-4 py-4 text-center font-mono font-bold text-main">${escHtml(certNo)}</td>
-            <td class="px-4 py-4 text-center font-mono text-muted italic">${escHtml(gozetimTarihi)}</td>
-            <td class="px-4 py-4 text-center font-medium text-muted">${escHtml(akreditasyon)}</td>
-            <td class="px-4 py-4 text-center font-medium text-muted">${escHtml(danisman)}</td>
-            <td class="px-4 py-4">
-              <div class="flex items-center justify-center gap-1.5">
-                <button
-                  class="detail-toggle-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-surface-hover transition-all duration-300"
-                  data-target="${detailRowId}"
-                  title="Detayları Gör"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-300"><path d="m6 9 6 6 6-6"/></svg>
-                </button>
-              </div>
-            </td>
+          return `
+            <tr class="${rowClass}">
+              <td class="${firstCellClass}">
+                <input type="checkbox" class="cert-checkbox w-4 h-4 rounded border-gray-700 text-primary bg-transparent cursor-pointer focus:ring-offset-0 focus:ring-primary" data-id="${idAttr}">
+              </td>
+              <td class="px-4 py-4 text-center font-mono font-bold text-muted italic">${escHtml(sertifikaTarihi)}</td>
+              <td class="px-5 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                    <span class="text-[10px] font-black text-primary uppercase">${escHtml(initials)}</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-main truncate uppercase tracking-tight leading-tight">${escHtml(firma)}</div>
+                    <div class="text-[9px] text-muted font-bold mt-0.5 leading-tight truncate uppercase tracking-tight">ID: ${escHtml(id)}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="pl-6 pr-4 py-4 text-left font-bold text-primary/70">${escHtml(standart.length > 30 ? `${standart.slice(0, 30)}...` : standart)}</td>
+              <td class="px-4 py-4 text-center font-bold text-muted">${escHtml(denetim)}</td>
+              <td class="px-4 py-4 text-center font-mono font-bold text-main">${escHtml(certNo)}</td>
+              <td class="px-4 py-4 text-center font-mono text-muted italic">${escHtml(gozetimTarihi)}</td>
+              <td class="px-4 py-4 text-center font-medium text-muted">${escHtml(akreditasyon)}</td>
+              <td class="px-4 py-4 text-center font-medium text-muted">${escHtml(danisman)}</td>
+              <td class="px-4 py-4">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button
+                    class="detail-toggle-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-surface-hover transition-all duration-300"
+                    data-target="${detailRowId}"
+                    title="Detayları Gör"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-300"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr id="${detailRowId}" class="hidden border-b border-border-main bg-surface-hover">
+              <td colspan="10" class="px-3 sm:px-6 pb-4 pt-1 align-middle">
+                <div class="rounded-xl border border-border-main bg-surface p-3 shadow-inner">
+                  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
+                    <div class="rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
+                      <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Sertifika ID</div>
+                      <div class="text-xs font-mono text-main break-all">${escHtml(id || "-")}</div>
+                    </div>
+                    <div class="rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
+                      <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Notlar</div>
+                      <div class="text-xs text-main break-words">${escHtml(notlar)}</div>
+                    </div>
+                    <div class="col-span-2 md:col-span-1 xl:col-span-1 rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
+                      <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Sorgulama Linki</div>
+                      <div class="text-xs break-all">
+                        ${sorgulamaLinki ? `<a href="${escAttr(sorgulamaLinki)}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline underline-offset-2">${escHtml(sorgulamaLinki)}</a>` : '<span class="text-muted">—</span>'}
+                      </div>
+                    </div>
+                    <div class="col-span-2 md:col-span-1 xl:col-span-1 rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
+                      <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Sertifika Linki</div>
+                      <div class="text-xs break-all">
+                        ${sertifikaLinki ? `<a href="${escAttr(sertifikaLinki)}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline underline-offset-2">${escHtml(sertifikaLinki)}</a>` : '<span class="text-muted">—</span>'}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-3 flex justify-end print:hidden">
+                    ${id ? `<a href="/certificates/add?edit=${escAttr(id)}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/20 transition-all"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>DÜZENLE</a>` : ""}
+                  </div>
+                </div>
+              </td>
+            </tr>
           `;
-          tableBody.appendChild(tr);
+        })
+        .join("");
 
-        const detailTr = document.createElement('tr');
-        detailTr.id = detailRowId;
-        detailTr.className = 'hidden border-b border-border-main bg-surface-hover';
-        detailTr.innerHTML = `
-          <td colspan="10" class="px-3 sm:px-6 pb-4 pt-1 align-middle">
-            <div class="rounded-xl border border-border-main bg-surface p-3 shadow-inner">
-              <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
-                <div class="rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
-                  <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Sertifika ID</div>
-                  <div class="text-xs font-mono text-main break-all">${escHtml(id || '-')}</div>
-                </div>
-                <div class="rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
-                  <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Notlar</div>
-                  <div class="text-xs text-main break-words">${escHtml(pickValue(item, ["sertifika_not", "not", "Notlar"], "-"))}</div>
-                </div>
-                <div class="col-span-2 md:col-span-1 xl:col-span-1 rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
-                  <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Sorgulama Linki</div>
-                  <div class="text-xs break-all">
-                    ${sorgulamaLinki ? `<a href="${escAttr(sorgulamaLinki)}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline underline-offset-2">${escHtml(sorgulamaLinki)}</a>` : '<span class="text-muted">—</span>'}
-                  </div>
-                </div>
-                <div class="col-span-2 md:col-span-1 xl:col-span-1 rounded-lg border border-border-main bg-surface-hover px-3 py-2 min-w-0">
-                  <div class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Sertifika Linki</div>
-                  <div class="text-xs break-all">
-                    ${sertifikaLinki ? `<a href="${escAttr(sertifikaLinki)}" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:text-sky-300 underline underline-offset-2">${escHtml(sertifikaLinki)}</a>` : '<span class="text-muted">—</span>'}
-                  </div>
-                </div>
-              </div>
-              <!-- A5: Edit Button -->
-              <div class="mt-3 flex justify-end print:hidden">
-                ${id ? `<a href="/certificates/add?edit=${escAttr(id)}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/20 transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-                  DÜZENLE
-                </a>` : ''}
-              </div>
-            </div>
-          </td>
-        `;
-        tableBody.appendChild(detailTr);
+      document.querySelectorAll<HTMLInputElement>(".cert-checkbox").forEach((checkbox) => {
+        const changeHandler = () => {
+          const id = checkbox.dataset.id || "";
+          if (checkbox.checked) selectedIds.add(id);
+          else selectedIds.delete(id);
+          syncSelectedCheckboxes();
+        };
+        checkbox.addEventListener("change", changeHandler);
+        registerCleanup(() => checkbox.removeEventListener("change", changeHandler));
       });
 
-      attachTableActions();
-    } catch (error) {
-      console.error('[certificates] renderTable failed:', error);
-      tableBody.innerHTML = '';
-      setTableState('empty');
-      updatePagination(0);
-    }
-  }
+      document.querySelectorAll(".detail-toggle-btn").forEach((button) => {
+        const clickHandler = (event: Event) => {
+          const current = event.currentTarget as HTMLElement;
+          const targetId = current.dataset.target;
+          if (!targetId) return;
+          const targetRow = document.getElementById(targetId);
+          if (!targetRow) return;
+          const isHidden = targetRow.classList.contains("hidden");
+          targetRow.classList.toggle("hidden");
 
-  function updateBulkUI() {
-    const checked = document.querySelectorAll('.cert-checkbox:checked');
-    if (selectedCountDisplay) selectedCountDisplay.textContent = `${checked.length} SEÇİLİ`;
-    if (checked.length > 0) {
-      bulkActionsBar?.classList.remove('hidden');
-      bulkActionsBar?.classList.add('flex');
-    } else {
-      bulkActionsBar?.classList.add('hidden');
-      bulkActionsBar?.classList.remove('flex');
-      if (selectAll) selectAll.checked = false;
-    }
-  }
+          const icon = current.querySelector("svg");
+          if (icon) icon.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+          current.classList.toggle("bg-primary/20", isHidden);
+          current.classList.toggle("text-primary", isHidden);
+          current.classList.toggle("border-primary/30", isHidden);
+        };
 
-  selectAll?.addEventListener('change', (e) => {
-    const isChecked = (e.target as HTMLInputElement).checked;
-    document.querySelectorAll('.cert-checkbox').forEach(cb => {
-      (cb as HTMLInputElement).checked = isChecked;
-    });
-    updateBulkUI();
-  });
-
-  tableBody?.addEventListener('change', (e) => {
-    if ((e.target as HTMLElement).classList.contains('cert-checkbox')) {
-      updateBulkUI();
-    }
-  });
-
-  async function callBulkUpdate(status: boolean) {
-    const checked = Array.from(document.querySelectorAll('.cert-checkbox:checked'))
-      .map(cb => (cb as HTMLElement).dataset.id);
-    if (checked.length === 0) return;
-    if (!confirm(`${checked.length} adet belgenin gözetim durumunu güncellemek istediğinizden emin misiniz?`)) return;
-    const res = await api.updateSurveillance(checked, status);
-    if (res.success) {
-      toast.success('İşlem başarılı!');
-      window.location.reload();
-    } else {
-      toast.error(`Hata: ${res.error}`);
-    }
-  }
-
-  bulkDoneBtn?.addEventListener('click', () => callBulkUpdate(true));
-  bulkPendingBtn?.addEventListener('click', () => callBulkUpdate(false));
-
-  function attachTableActions() {
-    document.querySelectorAll('.detail-toggle-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const btnEl = e.currentTarget as HTMLElement;
-        const targetId = btnEl.dataset.target;
-        if (!targetId) return;
-        const targetRow = document.getElementById(targetId);
-        if (!targetRow) return;
-        const isHidden = targetRow.classList.contains('hidden');
-        targetRow.classList.toggle('hidden');
-        
-        // Animate icon rotation instead of wiping it
-        const icon = btnEl.querySelector('svg');
-        if (icon) {
-          icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-        }
-        btnEl.classList.toggle('bg-primary/20', isHidden);
-        btnEl.classList.toggle('text-primary', isHidden);
-        btnEl.classList.toggle('border-primary/30', isHidden);
+        button.addEventListener("click", clickHandler);
+        registerCleanup(() => button.removeEventListener("click", clickHandler));
       });
-    });
-  }
 
-    async function ensureCertificatesLoaded() {
-      const current = $certificates.get() || [];
-      if (hasFullCertificateDataset(current)) {
-        fullCertificatesLoaded = true;
-        return;
-      }
+      syncSelectedCheckboxes();
+    };
 
-      setTableState('loading');
+    const certificateTable = useTableFilter<any>({
+      data: $certificates.get(),
+      pageSize: Number(pageSizeSelect.value) || 20,
+      filterFn: (item, filters) => {
+        const firma = pickValue(item, ["nick", "nickname", "Firma Adı"]);
+        const id = getCertificateId(item, "");
+        const certNo = pickValue(item, ["sertifika_no", "sno", "Sertifika No"]);
+        const standart = normalizeStandard(item);
+        const denetim = getDenetim(item);
+        const danisman = pickValue(item, ["consultant", "danisman", "dan", "Danışman"]);
+        const status = getStatusFlag(item);
 
-      try {
-        const res = await api.getCertificates();
+        const matchSearch = `${firma}${id}${certNo}${standart}${denetim}${danisman}`.toLocaleLowerCase("tr-TR").includes(
+          String(filters.search || "").toLocaleLowerCase("tr-TR"),
+        );
+        const matchStd = !filters.standard || standart.includes(filters.standard);
+        const matchStatus = !filters.status || status === filters.status;
+        const matchConsultant = !filters.consultant || danisman === filters.consultant;
 
-        if (res.success && Array.isArray(res.data)) {
-          fullCertificatesLoaded = true;
-          $certificates.set(res.data);
-        } else if (!res.success) {
-          console.warn('[certificates] getCertificates failed:', res.error);
+        let matchDate = true;
+        if (filters.dateStart || filters.dateEnd) {
+          const dateRaw =
+            filters.dateColumn === "gozetim"
+              ? pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], "")
+              : pickValue(item, ["sertifika_tarihi", "gst", "Sertifika Tarihi"], "");
+
+          const itemDate = parseDateValue(dateRaw);
+          if (!itemDate) {
+            matchDate = false;
+          } else {
+            if (filters.dateStart) {
+              const start = new Date(filters.dateStart);
+              start.setHours(0, 0, 0, 0);
+              if (itemDate < start) matchDate = false;
+            }
+            if (filters.dateEnd) {
+              const end = new Date(filters.dateEnd);
+              end.setHours(23, 59, 59, 999);
+              if (itemDate > end) matchDate = false;
+            }
+          }
         }
-      } catch (error) {
-        console.error('[certificates] ensureCertificatesLoaded failed:', error);
-      } finally {
-        if (!fullCertificatesLoaded) {
-          setTableState(($certificates.get() || []).length ? 'ready' : 'empty');
-        }
+
+        return matchSearch && matchStd && matchStatus && matchConsultant && matchDate;
+      },
+      sortFn: (a, b) => {
+        const urgencyDiff = getUrgencyScore(b) - getUrgencyScore(a);
+        if (urgencyDiff !== 0) return urgencyDiff;
+        return getSortableTimestamp(b) - getSortableTimestamp(a);
+      },
+      onStateChange: setTableState,
+      onRender: renderRows,
+    });
+
+    const hydrateConsultants = (data: readonly any[]) => {
+      const uniqueConsultants = [...new Set((data || []).map((item) => pickValue(item, ["consultant", "danisman", "dan", "Danışman"], "")).filter(Boolean))].sort();
+      consultantFilter.innerHTML = '<option value="">TÜM DANIŞMANLAR</option>';
+      uniqueConsultants.forEach((consultant) => {
+        const option = document.createElement("option");
+        option.value = consultant;
+        option.textContent = consultant;
+        consultantFilter.appendChild(option);
+      });
+      consultantFilter.disabled = uniqueConsultants.length === 0;
+    };
+
+    const unsubCerts = $certificates.subscribe((data) => {
+      hydrateConsultants(data || []);
+      certificateTable.updateData(data || []);
+    });
+    registerCleanup(unsubCerts);
+
+    const unsubSync = $syncStatus.subscribe((status) => {
+      if (!syncIndicator) return;
+      const dot = syncIndicator.querySelector("span");
+      const textEl = syncIndicator.querySelector(".sync-status-text");
+      if (!dot) return;
+
+      if (status === "syncing") {
+        dot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse";
+        if (textEl) textEl.textContent = "GÜNCELLENİYOR";
+      } else if (status === "error") {
+        dot.className = "w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]";
+        if (textEl) textEl.textContent = "HATA";
+      } else {
+        dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]";
+        if (textEl) textEl.textContent = "HAZIR";
       }
-    }
+    });
+    registerCleanup(unsubSync);
 
-    async function boot() {
-      await SyncManager.init();
-      await ensureCertificatesLoaded();
-    }
+    const bindFilter = <T extends HTMLElement>(element: T, eventName: string, callback: (event: Event) => void) => {
+      element.addEventListener(eventName, callback);
+      registerCleanup(() => element.removeEventListener(eventName, callback));
+    };
 
-    // --- Events ---
-    globalSearch?.addEventListener('input', (e) => {
-      filters.search = (e.target as HTMLInputElement).value;
-      currentPage = 1;
-      renderTable($certificates.get());
-    });
-    standardFilter?.addEventListener('change', (e) => {
-      filters.standard = (e.target as HTMLSelectElement).value;
-      currentPage = 1;
-      renderTable($certificates.get());
-    });
-    statusFilter?.addEventListener('change', (e) => {
-      filters.status = (e.target as HTMLSelectElement).value;
-      currentPage = 1;
-      renderTable($certificates.get());
-    });
-    consultantFilter?.addEventListener('change', (e) => {
-      filters.consultant = (e.target as HTMLSelectElement).value;
-      currentPage = 1;
-      renderTable($certificates.get());
-    });
-    dateColumnFilter?.addEventListener('change', (e) => {
-      filters.dateColumn = (e.target as HTMLSelectElement).value;
-      currentPage = 1;
-      renderTable($certificates.get());
-    });
-    dateStart?.addEventListener('change', (e) => {
-      filters.dateStart = (e.target as HTMLInputElement).value;
-      currentPage = 1;
-      renderTable($certificates.get());
-    });
-    dateEnd?.addEventListener('change', (e) => {
-      filters.dateEnd = (e.target as HTMLInputElement).value;
-      currentPage = 1;
-      renderTable($certificates.get());
-    });
-    printBtn?.addEventListener('click', () => {
-      window.print();
-    });
-    pageSizeSelect?.addEventListener('change', (e) => {
-      pageSize = Number((e.target as HTMLSelectElement).value) || 20;
-      currentPage = 1;
-      renderTable($certificates.get());
-    });
-    prevPageBtn?.addEventListener('click', () => {
-      if (currentPage <= 1) return;
-      currentPage -= 1;
-      renderTable($certificates.get());
-    });
-    nextPageBtn?.addEventListener('click', () => {
-      currentPage += 1;
-      renderTable($certificates.get());
+    bindFilter(globalSearch, "input", (event) => certificateTable.setFilters({ search: (event.target as HTMLInputElement).value }));
+    bindFilter(standardFilter, "change", (event) => certificateTable.setFilters({ standard: (event.target as HTMLSelectElement).value }));
+    bindFilter(statusFilter, "change", (event) => certificateTable.setFilters({ status: (event.target as HTMLSelectElement).value }));
+    bindFilter(consultantFilter, "change", (event) => certificateTable.setFilters({ consultant: (event.target as HTMLSelectElement).value }));
+    bindFilter(dateColumnFilter, "change", (event) => certificateTable.setFilters({ dateColumn: (event.target as HTMLSelectElement).value }));
+    bindFilter(dateStart, "change", (event) => certificateTable.setFilters({ dateStart: (event.target as HTMLInputElement).value }));
+    bindFilter(dateEnd, "change", (event) => certificateTable.setFilters({ dateEnd: (event.target as HTMLInputElement).value }));
+    bindFilter(pageSizeSelect, "change", (event) => certificateTable.setPageSize(Number((event.target as HTMLSelectElement).value) || 20));
+    bindFilter(prevPageBtn, "click", () => certificateTable.prevPage());
+    bindFilter(nextPageBtn, "click", () => certificateTable.nextPage());
+
+    bindFilter(selectAll, "change", (event) => {
+      const checked = (event.target as HTMLInputElement).checked;
+      document.querySelectorAll<HTMLInputElement>(".cert-checkbox").forEach((checkbox) => {
+        checkbox.checked = checked;
+        const id = checkbox.dataset.id || "";
+        if (checked) selectedIds.add(id);
+        else selectedIds.delete(id);
+      });
+      refreshBulkUI();
     });
 
-    function getExportRows() {
-      return getFilteredData($certificates.get() || []).map((item) => ({
-        id: getCertificateId(item, '-'),
+    bindFilter(printBtn, "click", () => window.print());
+
+    const toCsvValue = (value: unknown) => {
+      const text = String(value ?? "");
+      return text.includes(",") || text.includes('"') || text.includes("\n")
+        ? `"${text.replace(/"/g, '""')}"`
+        : text;
+    };
+
+    bindFilter(exportExcelBtn, "click", () => {
+      const rows = certificateTable.getFilteredData().map((item) => ({
+        id: getCertificateId(item, "-"),
         firma: pickValue(item, ["nick", "nickname", "Firma Adı"], "-"),
         standart: normalizeStandard(item),
         belgeNo: pickValue(item, ["sertifika_no", "sno", "Sertifika No"], "-"),
@@ -815,52 +547,79 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         not: pickValue(item, ["sertifika_not", "not", "Notlar"], "-"),
         danisman: pickValue(item, ["consultant", "danisman", "dan", "Danışman"], "-"),
       }));
-    }
 
-    function toCsvValue(val) {
-      const s = String(val ?? '');
-      return (s.includes(',') || s.includes('"') || s.includes('\n'))
-        ? '"' + s.replace(/"/g, '""') + '"'
-        : s;
-    }
-
-    function downloadFile(filename, content, mimeType) {
-      const blob = new Blob([content], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    if (exportExcelBtn) exportExcelBtn.onclick = () => {
-      const rows = getExportRows();
       const tableHtml = `
         <table>
           <thead>
-            <tr>
-              <th>ID</th><th>Firma</th><th>Standart</th><th>Belge No</th><th>Gözetim</th><th>Gözetim Tarihi</th><th>Sertifika Tarihi</th><th>Not</th><th>Danışman</th>
-            </tr>
+            <tr><th>ID</th><th>Firma</th><th>Standart</th><th>Belge No</th><th>Gözetim</th><th>Gözetim Tarihi</th><th>Sertifika Tarihi</th><th>Not</th><th>Danışman</th></tr>
           </thead>
           <tbody>
-            ${rows.map(r => `<tr><td>${escHtml(r.id)}</td><td>${escHtml(r.firma)}</td><td>${escHtml(r.standart)}</td><td>${escHtml(r.belgeNo)}</td><td>${escHtml(r.gozetim)}</td><td>${escHtml(r.gozetimTarihi)}</td><td>${escHtml(r.sertifikaTarihi)}</td><td>${escHtml(r.not)}</td><td>${escHtml(r.danisman)}</td></tr>`).join('')}
+            ${rows.map((row) => `<tr>${Object.values(row).map((value) => `<td>${escHtml(value)}</td>`).join("")}</tr>`).join("")}
           </tbody>
         </table>
       `;
       const html = `<html><head><meta charset="utf-8" /></head><body>${tableHtml}</body></html>`;
-      downloadFile(`Sertifikalar_${new Date().toISOString().slice(0,10)}.xls`, html, 'application/vnd.ms-excel;charset=utf-8;');
+      const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Sertifikalar_${new Date().toISOString().slice(0, 10)}.xls`;
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    const callBulkUpdate = async (status: boolean) => {
+      const checked = Array.from(selectedIds);
+      if (checked.length === 0) return;
+      if (!confirm(`${checked.length} adet belgenin gözetim durumunu güncellemek istediğinizden emin misiniz?`)) return;
+
+      const res = await api.updateSurveillance(checked, status);
+      if (res.success) {
+        toast.success("İşlem başarılı!");
+        selectedIds.clear();
+        fullCertificatesLoaded = false;
+        const refreshed = await api.getCertificates();
+        if (refreshed.success && Array.isArray(refreshed.data)) {
+          $certificates.set(refreshed.data);
+        }
+      } else {
+        toast.error(`Hata: ${res.error}`);
+      }
     };
 
-    void boot();
+    bindFilter(bulkDoneBtn, "click", () => void callBulkUpdate(true));
+    bindFilter(bulkPendingBtn, "click", () => void callBulkUpdate(false));
+
+    const ensureCertificatesLoaded = async () => {
+      const current = $certificates.get() || [];
+      if (hasFullCertificateDataset(current)) {
+        fullCertificatesLoaded = true;
+        hydrateConsultants(current);
+        certificateTable.updateData(current);
+        return;
+      }
+
+      setTableState("loading");
+      const res = await api.getCertificates();
+      if (res.success && Array.isArray(res.data)) {
+        fullCertificatesLoaded = true;
+        $certificates.set(res.data);
+      } else {
+        certificateTable.updateData(current);
+      }
+    };
+
+    setTableState("loading");
+
+    void SyncManager.init().then(async () => {
+      await ensureCertificatesLoaded();
+      if (!fullCertificatesLoaded) {
+        certificateTable.renderTable();
+      }
+    });
   }
 
-  // Initial load
-  document.addEventListener('astro:page-load', initPage);
-  // Cleanup away
-  document.addEventListener('astro:before-preparation', runCleanups);
+  initPageCleanup(initPage, runCleanups);
 </script>
 
 <style is:global>
@@ -869,24 +628,30 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
+
     body {
       background: white !important;
       color: black !important;
     }
+
     .print\:hidden {
       display: none !important;
     }
+
     .bg-surface,
     .bg-surface-hover,
     .shadow-lg,
     .shadow-xl {
       box-shadow: none !important;
     }
+
     table {
       width: 100% !important;
       table-layout: auto !important;
     }
-    th, td {
+
+    th,
+    td {
       white-space: normal !important;
     }
   }

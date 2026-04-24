@@ -178,3 +178,41 @@ h4 {
     scroll-behavior: auto !important;
   }
 }
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-[11px] font-black uppercase tracking-widest transition-all;
+  }
+
+  .btn-primary {
+    @apply border-primary bg-primary text-white hover:bg-primary-hover shadow-lg shadow-primary/20;
+  }
+
+  .btn-secondary {
+    @apply border-border-main bg-surface text-main hover:bg-surface-hover;
+  }
+
+  .btn-icon {
+    @apply h-9 w-9 rounded-lg border border-border-main bg-surface text-muted hover:bg-surface-hover hover:text-primary;
+  }
+
+  .card-surface {
+    @apply overflow-hidden rounded-2xl border border-border-main bg-surface shadow-xl;
+  }
+
+  .badge-status {
+    @apply inline-flex items-center justify-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em];
+  }
+
+  .badge-status-success {
+    @apply border-emerald-500/20 bg-emerald-500/10 text-emerald-400;
+  }
+
+  .badge-status-warning {
+    @apply border-amber-500/20 bg-amber-500/10 text-amber-400;
+  }
+
+  .badge-status-danger {
+    @apply border-rose-500/20 bg-rose-500/10 text-rose-400;
+  }
+}

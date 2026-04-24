@@ -1,234 +1,28 @@
 ---
 import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import DataTable from "../../components/DataTable.astro";
+import FilterBar from "../../components/FilterBar.astro";
 ---
 
 <DashboardLayout title="Test Yönetimi">
   <div class="space-y-4">
-    <!-- 🔍 Premium Arama Çubuğu -->
-    <div
-      class="bg-surface border border-border-main shadow-lg p-3 sm:p-4 rounded-2xl flex items-center gap-3"
-    >
-      <div class="relative flex-1">
-        <svg
-          class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none shrink-0"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          ><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"
-          ></path></svg
-        >
-        <input
-          type="search"
-          id="global-search"
-          placeholder="Firma, Test Adı veya Rapor No ile ara..."
-          autocomplete="off"
-          class="w-full bg-surface-hover border border-border-main rounded-xl pl-10 pr-4 py-2.5 text-main placeholder:text-muted focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all text-sm"
-        />
-      </div>
+    <FilterBar placeholder="Firma, Test Adı veya Rapor No ile ara...">
+      <a slot="actions" href="/tests/add" class="btn btn-primary">
+        + <span class="hidden xs:inline">YENİ TEST</span>
+      </a>
+    </FilterBar>
 
-      <div class="flex items-center gap-2 shrink-0">
-        <span
-          id="dataset-summary"
-          class="text-xs font-black text-primary bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-lg min-w-[2.75rem] text-center tabular-nums"
-          >0</span
-        >
-        <div
-          id="sync-indicator"
-          class="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface-hover border border-border-main rounded-lg text-[10px] uppercase font-bold tracking-tight text-muted shrink-0"
-        >
-          <span
-            class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
-          ></span>
-          <span class="hidden sm:inline sync-status-text">HAZIR</span>
-        </div>
-        <div class="h-8 w-px bg-border-main mx-1 hidden sm:block"></div>
-        <div class="hidden sm:flex items-center gap-1.5">
-          <button
-            id="export-csv-btn"
-            title="CSV Dışa Aktar"
-            class="w-9 h-9 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-primary/10 transition-all"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
-              ></path><polyline points="7 10 12 15 17 10"></polyline><line
-                x1="12"
-                x2="12"
-                y1="15"
-                y2="3"></line></svg
-            >
-          </button>
-        </div>
-        <a
-          href="/tests/add"
-          class="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[11px] font-black rounded-xl transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
-        >
-          + <span class="hidden xs:inline">YENİ TEST</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- 📊 Veri Tablosu Kartı -->
-    <div
-      class="bg-surface border border-border-main shadow-xl rounded-2xl overflow-hidden"
-    >
-      <div class="w-full overflow-x-auto">
-        <table class="w-full table-fixed border-collapse">
-          <thead>
-            <tr class="bg-surface-hover border-b border-border-main">
-              <th
-                class="w-24 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center italic"
-                >Rapor Tarihi</th
-              >
-              <th
-                class="w-44 px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left"
-                >Firma Adı</th
-              >
-              <th
-                class="w-48 pl-6 pr-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left"
-                >Test Adı</th
-              >
-              <th
-                class="w-24 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center"
-                >Marka</th
-              >
-              <th
-                class="w-36 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center"
-                >Ürün</th
-              >
-              <th
-                class="w-44 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left"
-                >Rapor No</th
-              >
-              <th
-                class="w-16 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center"
-                >Detay</th
-              >
-            </tr>
-          </thead>
-          <tbody id="test-table-body" class="divide-y divide-border-main">
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Durum Mesajları -->
-      <div
-        id="table-loader"
-        class="py-24 flex flex-col items-center justify-center gap-3"
-      >
-        <div
-          class="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"
-        >
-        </div>
-        <p
-          class="text-xs font-bold text-muted tracking-widest uppercase animate-pulse"
-        >
-          Veriler Hazırlanıyor
-        </p>
-      </div>
-
-      <div
-        id="empty-state"
-        class="hidden py-24 flex flex-col items-center justify-center gap-3 text-center px-6"
-      >
-        <div
-          class="w-14 h-14 rounded-2xl bg-surface-hover border border-border-main flex items-center justify-center"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            class="text-muted"
-            ><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"
-            ></path></svg
-          >
-        </div>
-        <p class="text-sm font-bold text-muted uppercase tracking-widest">
-          Eşleşen test kaydı bulunamadı
-        </p>
-      </div>
-
-      <!-- Sayfalama (Premium Layout) -->
-      <div
-        id="pagination-bar"
-        class="hidden bg-surface-hover border-t border-border-main px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3"
-      >
-        <div class="flex items-center gap-3">
-          <span
-            id="page-summary"
-            class="text-xs font-black text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 tabular-nums"
-            >1 / 1</span
-          >
-          <div class="flex items-center gap-2 border-l border-border-main pl-3">
-            <span
-              class="text-[10px] font-bold text-muted uppercase tracking-widest hidden sm:inline"
-              >Göster:</span
-            >
-            <select
-              id="page-size-select"
-              class="bg-surface border border-border-main rounded-lg px-2 py-1 text-[11px] font-bold text-main outline-none focus:ring-1 focus:ring-primary/40 transition-all cursor-pointer"
-            >
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <button
-            id="prev-page-btn"
-            title="Önceki Sayfa"
-            class="w-8 h-8 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><polyline points="15 18 9 12 15 6"></polyline></svg
-            >
-          </button>
-          <div id="page-number-list" class="flex items-center gap-1.5"></div>
-          <button
-            id="next-page-btn"
-            title="Sonraki Sayfa"
-            class="w-8 h-8 flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><polyline points="9 18 15 12 9 6"></polyline></svg
-            >
-          </button>
-        </div>
-      </div>
-    </div>
+    <DataTable emptyMessage="Eşleşen test kaydı bulunamadı">
+      <Fragment slot="header">
+        <th class="w-24 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center italic">Rapor Tarihi</th>
+        <th class="w-44 px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left">Firma Adı</th>
+        <th class="w-48 pl-6 pr-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left">Test Adı</th>
+        <th class="w-24 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Marka</th>
+        <th class="w-36 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Ürün</th>
+        <th class="w-44 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left">Rapor No</th>
+        <th class="w-16 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Detay</th>
+      </Fragment>
+    </DataTable>
   </div>
 </DashboardLayout>
 
@@ -236,300 +30,183 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
   import { api } from "../../lib/api";
   import { $tests, $companies, $syncStatus } from "../../lib/store";
   import { SyncManager } from "../../lib/sync";
-  import { toast } from "../../lib/toast";
   import { todayIso } from "../../features/date-format";
-  import {
-    pickValue,
-    escHtml,
-    escAttr,
-    parseDateValue,
-    getVisiblePageNumbers,
-    getInitials
-  } from "../../lib/utils";
+  import { escAttr, escHtml, getInitials, getCertificateRecordId, parseDateValue } from "../../lib/utils";
+  import { useCleanup, initPageCleanup } from "../../lib/composables/useCleanup";
+  import { useTableFilter } from "../../lib/composables/useTableFilter";
 
-  let filters = { search: "" };
-  let currentPage = 1;
-  let pageSize = 20;
-  let testsLoaded = false;
-  let cleanupFns: Array<() => void> = [];
-
-  function registerCleanup(fn: () => void) {
-    cleanupFns.push(fn);
-  }
-
-  function runCleanups() {
-    cleanupFns.forEach((fn) => fn());
-    cleanupFns = [];
-  }
+  const { registerCleanup, runCleanups } = useCleanup();
 
   function initPage() {
     runCleanups();
 
-    const tableBody = document.getElementById("test-table-body");
+    const tableBody = document.getElementById("table-body");
     const tableLoader = document.getElementById("table-loader");
     const emptyState = document.getElementById("empty-state");
-    const globalSearch = document.getElementById(
-      "global-search",
-    ) as HTMLInputElement;
-    const statusFilter = document.getElementById(
-      "status-filter",
-    ) as HTMLSelectElement;
+    const globalSearch = document.getElementById("global-search") as HTMLInputElement | null;
     const syncIndicator = document.getElementById("sync-indicator");
-    const exportCsvBtn = document.getElementById(
-      "export-csv-btn",
-    ) as HTMLButtonElement;
-    const exportExcelBtn = document.getElementById(
-      "export-excel-btn",
-    ) as HTMLButtonElement;
-    const datasetSummary = document.getElementById("dataset-summary");
-    const pageSummary = document.getElementById("page-summary");
-    const pageSizeSelect = document.getElementById(
-      "page-size-select",
-    ) as HTMLSelectElement;
-    const paginationBar = document.getElementById("pagination-bar");
-    const paginationMeta = document.getElementById("pagination-meta");
-    const pageNumberList = document.getElementById("page-number-list");
-    const prevPageBtn = document.getElementById(
-      "prev-page-btn",
-    ) as HTMLButtonElement;
-    const nextPageBtn = document.getElementById(
-      "next-page-btn",
-    ) as HTMLButtonElement;
+    const pageSizeSelect = document.getElementById("page-size-select") as HTMLSelectElement | null;
+    const prevPageBtn = document.getElementById("prev-page-btn") as HTMLButtonElement | null;
+    const nextPageBtn = document.getElementById("next-page-btn") as HTMLButtonElement | null;
 
+    if (!tableBody || !globalSearch || !pageSizeSelect || !prevPageBtn || !nextPageBtn) return;
 
-    function getSortableTimestamp(item: any, originalIndex: number) {
-      const dateVal = item.rapor_tarihi || item.test_bitis || item.test_baslangic;
-      const parsed = parseDateValue(dateVal);
-      if (parsed) return parsed.getTime();
-      return originalIndex;
-    }
+    const findCompany = (firmaNo: string) =>
+      ($companies.get() || []).find((company: any) => String(company.id) === String(firmaNo));
 
+    const resolveCompanyName = (item: any) => {
+      const company = findCompany(String(item.firma_no || ""));
+      return company?.nick || company?.nickname || company?.unvan || item.firma_adi || "-";
+    };
 
-    function updatePagination(totalItems: number) {
-      const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-      const safePage = Math.min(currentPage, totalPages);
-      currentPage = safePage;
-
-      if (pageSummary) pageSummary.textContent = `${safePage} / ${totalPages}`;
-      if (datasetSummary) datasetSummary.textContent = totalItems.toString();
-
-      if (!paginationBar || !pageNumberList || !prevPageBtn || !nextPageBtn)
-        return;
-
-      if (totalItems === 0) {
-        paginationBar.classList.add("hidden");
-        pageNumberList.innerHTML = "";
+    const setTableState = (state: "loading" | "empty" | "ready") => {
+      if (state === "loading") {
+        tableLoader.classList.remove("hidden");
+        emptyState?.classList.add("hidden");
         return;
       }
 
-      paginationBar.classList.remove("hidden");
-      prevPageBtn.disabled = safePage <= 1;
-      nextPageBtn.disabled = safePage >= totalPages;
+      tableLoader.classList.add("hidden");
+      emptyState?.classList.toggle("hidden", state !== "empty");
+    };
 
-      const pages = getVisiblePageNumbers(totalPages, safePage);
-      pageNumberList.innerHTML = "";
-      pages.forEach((pageNum, index) => {
-        if (index > 0 && pages[index - 1] !== pageNum - 1) {
-          const dots = document.createElement("span");
-          dots.className = "px-1.5 text-xs text-muted";
-          dots.textContent = "…";
-          pageNumberList.appendChild(dots);
-        }
-
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = String(pageNum);
-        btn.className = `w-8 h-8 rounded-lg border text-xs font-black transition-all ${
-          pageNum === currentPage
-            ? "bg-primary text-white border-primary shadow-md shadow-primary/20"
-            : "border-border-main text-muted hover:text-primary hover:bg-primary/10 hover:border-primary/30"
-        }`;
-        btn.addEventListener("click", () => {
-          currentPage = pageNum;
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          renderTable($tests.get());
-        });
-        pageNumberList.appendChild(btn);
-      });
-    }
-
-
-    function getFilteredData(data: readonly any[]) {
-      return data.filter((item: any) => {
-        const company = ($companies.get() as any[]).find(c => String(c.id) === String(item.firma_no));
-        const resolvedFirmaAdi = company?.nick || company?.unvan || item.firma_adi || "";
-        const firma = String(resolvedFirmaAdi).toLowerCase();
-        const test = String(item.test_adi || "").toLowerCase();
-        const raporNo = String(item.rapor_no || "").toLowerCase();
-        const search = filters.search.toLowerCase();
-
-        const matchSearch =
-          firma.includes(search) ||
-          test.includes(search) ||
-          raporNo.includes(search);
-        // Status filter logic can be expanded if test records have a clear status field
-        return matchSearch;
-      });
-    }
-
-    function renderTable(data: readonly any[]) {
-      if (!tableBody) return;
-      try {
-        const filtered = getFilteredData(data)
-          .map((item, originalIndex) => ({ item, originalIndex }))
-          .sort(
-            (a, b) =>
-              getSortableTimestamp(b.item, b.originalIndex) -
-              getSortableTimestamp(a.item, a.originalIndex),
-          );
-
-        tableBody.innerHTML = "";
-
-        if (filtered.length === 0) {
-          emptyState?.classList.remove("hidden");
-          updatePagination(0);
-          return;
-        }
-        emptyState?.classList.add("hidden");
-
-        updatePagination(filtered.length);
-        const startIndex = (currentPage - 1) * pageSize;
-        const paged = filtered.slice(startIndex, startIndex + pageSize);
-
-        paged.forEach(({ item }: any) => {
-          const id = item.id || "-";
-          const idAttr = escAttr(id);
+    const renderRows = (items: any[]) => {
+      tableBody.innerHTML = items
+        .map((item) => {
+          const id = getCertificateRecordId(item, "-");
           const raporTarihi = item.rapor_tarihi || "-";
-          const company = ($companies.get() as any[]).find((c: any) => String(c.id) === String(item.firma_no));
-          const firma = company?.nick || company?.unvan || item.firma_adi || "-";
+          const firma = resolveCompanyName(item);
           const firmaNo = item.firma_no || "-";
           const testAdi = item.test_adi || "-";
           const raporNo = item.rapor_no || "-";
           const marka = item.marka || "-";
           const urun = item.urun || "-";
           const initials = getInitials(firma);
-          const detailRowId = `test-detail-${idAttr}`;
+          const detailRowId = `test-detail-${escAttr(id)}`;
 
-          const tr = document.createElement("tr");
-          tr.className =
-            "hover:bg-surface-hover transition-colors group/row text-[11px]";
-          tr.innerHTML = `
-            <td class="px-4 py-4 text-center font-mono font-bold text-muted italic">
-              ${escHtml(raporTarihi)}
-            </td>
-            <td class="px-5 py-3">
-               <div class="flex items-center gap-3">
-                 <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-                   <span class="text-[10px] font-black text-indigo-400 uppercase">${initials}</span>
-                 </div>
-                 <div class="min-w-0 flex-1">
-                   <div class="font-bold text-main truncate uppercase tracking-tight leading-tight">${escHtml(firma)}</div>
-                   <div class="text-[9px] text-muted font-bold mt-0.5 leading-tight truncate uppercase tracking-tight italic">ID: ${escHtml(firmaNo)}</div>
-                 </div>
-               </div>
-            </td>
-            <td class="pl-6 pr-4 py-4 text-left font-bold text-primary/70">${escHtml(testAdi.length > 30 ? testAdi.slice(0, 30) + "..." : testAdi)}</td>
-            <td class="px-4 py-4 text-center font-bold text-muted">${escHtml(marka)}</td>
-            <td class="px-4 py-4 text-center text-muted font-medium">${escHtml(urun.length > 25 ? urun.slice(0, 25) + "..." : urun)}</td>
-            <td class="px-4 py-4 text-left font-mono font-bold text-main">${escHtml(raporNo)}</td>
-            <td class="px-4 py-4">
-              <div class="flex items-center justify-center gap-1.5">
-                <button
-                  class="detail-toggle-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-surface-hover transition-all duration-300"
-                  data-target="${detailRowId}"
-                  title="Detayları Gör"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-300"><path d="m6 9 6 6 6-6"/></svg>
-                </button>
-              </div>
-            </td>
+          return `
+            <tr class="hover:bg-surface-hover transition-colors group/row text-[11px]">
+              <td class="px-4 py-4 text-center font-mono font-bold text-muted italic">${escHtml(raporTarihi)}</td>
+              <td class="px-5 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                    <span class="text-[10px] font-black text-indigo-400 uppercase">${escHtml(initials)}</span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="font-bold text-main truncate uppercase tracking-tight leading-tight">${escHtml(firma)}</div>
+                    <div class="text-[9px] text-muted font-bold mt-0.5 leading-tight truncate uppercase tracking-tight italic">ID: ${escHtml(firmaNo)}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="pl-6 pr-4 py-4 text-left font-bold text-primary/70">${escHtml(testAdi.length > 30 ? `${testAdi.slice(0, 30)}...` : testAdi)}</td>
+              <td class="px-4 py-4 text-center font-bold text-muted">${escHtml(marka)}</td>
+              <td class="px-4 py-4 text-center text-muted font-medium">${escHtml(urun.length > 25 ? `${urun.slice(0, 25)}...` : urun)}</td>
+              <td class="px-4 py-4 text-left font-mono font-bold text-main">${escHtml(raporNo)}</td>
+              <td class="px-4 py-4">
+                <div class="flex items-center justify-center gap-1.5">
+                  <button
+                    class="detail-toggle-btn w-9 h-9 inline-flex items-center justify-center rounded-lg border border-border-main bg-surface text-muted hover:text-primary hover:bg-surface-hover transition-all duration-300"
+                    data-target="${detailRowId}"
+                    title="Detayları Gör"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-300"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr id="${detailRowId}" class="hidden border-b border-border-main bg-surface-hover">
+              <td colspan="7" class="px-3 sm:px-6 pb-4 pt-1 align-middle">
+                <div class="rounded-xl border border-border-main bg-surface p-4 shadow-inner grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div class="space-y-1">
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Test No / ID</p>
+                    <p class="text-xs font-mono text-main">${escHtml(id)}</p>
+                  </div>
+                  <div class="space-y-1">
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Rapor No</p>
+                    <p class="text-xs text-main font-semibold">${escHtml(item.rapor_no || "-")}</p>
+                  </div>
+                  <div class="space-y-1">
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Ürün Kodu</p>
+                    <p class="text-xs text-main">${escHtml(item.urun_kodu || "-")}</p>
+                  </div>
+                  <div class="space-y-1">
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Lot / Seri No</p>
+                    <p class="text-xs text-main">${escHtml(item.lot || "-")}</p>
+                  </div>
+                  <div class="space-y-1">
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Ürün Kabul</p>
+                    <p class="text-xs text-main">${escHtml(item.urun_kabul || "-")} ${escHtml(item.kabul_saat || "")}</p>
+                  </div>
+                  <div class="space-y-1">
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Test Dönemi</p>
+                    <p class="text-xs text-main">${escHtml(item.test_baslangic || "-")} — ${escHtml(item.test_bitis || "-")}</p>
+                  </div>
+                  <div class="space-y-1">
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Numune Sayısı</p>
+                    <p class="text-xs text-main">${escHtml(item.numune_sayisi || "-")}</p>
+                  </div>
+                  <div class="col-span-2 md:col-span-4 pt-2 border-t border-border-main mt-1">
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Ürün Bilgisi / Detay</p>
+                    <p class="text-xs text-muted leading-relaxed">${escHtml(item.urun_bilgi || "-")} ${escHtml(item.detay || "")}</p>
+                  </div>
+                  <div class="col-span-2 md:col-span-4 flex justify-end pt-2 mt-1">
+                    <a href="/tests/add?firmaId=${escAttr(String(item.firma_no || ""))}&testId=${escAttr(id)}"
+                      class="inline-flex items-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-4 py-2 text-[11px] font-black uppercase tracking-wide text-indigo-300 hover:bg-indigo-500/20 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      Düzenle
+                    </a>
+                  </div>
+                </div>
+              </td>
+            </tr>
           `;
-          tableBody.appendChild(tr);
+        })
+        .join("");
 
-          const detailTr = document.createElement("tr");
-          detailTr.id = detailRowId;
-          detailTr.className =
-            "hidden border-b border-border-main bg-surface-hover";
-          detailTr.innerHTML = `
-            <td colspan="7" class="px-3 sm:px-6 pb-4 pt-1 align-middle">
-              <div class="rounded-xl border border-border-main bg-surface p-4 shadow-inner grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div class="space-y-1">
-                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Test No / ID</p>
-                  <p class="text-xs font-mono text-main">${escHtml(id)}</p>
-                </div>
-                <div class="space-y-1">
-                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Rapor No</p>
-                  <p class="text-xs text-main font-semibold">${escHtml(item.rapor_no || "-")}</p>
-                </div>
-                <div class="space-y-1">
-                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Ürün Kodu</p>
-                  <p class="text-xs text-main">${escHtml(item.urun_kodu || "-")}</p>
-                </div>
-                <div class="space-y-1">
-                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Lot / Seri No</p>
-                  <p class="text-xs text-main">${escHtml(item.lot || "-")}</p>
-                </div>
-                <div class="space-y-1">
-                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Ürün Kabul</p>
-                  <p class="text-xs text-main">${escHtml(item.urun_kabul || "-")} ${escHtml(item.kabul_saat || "")}</p>
-                </div>
-                <div class="space-y-1">
-                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Test Dönemi</p>
-                  <p class="text-xs text-main">${escHtml(item.test_baslangic || "-")} — ${escHtml(item.test_bitis || "-")}</p>
-                </div>
-                <div class="space-y-1">
-                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted">Numune Sayısı</p>
-                  <p class="text-xs text-main">${escHtml(item.numune_sayisi || "-")}</p>
-                </div>
-                <div class="col-span-2 md:col-span-4 pt-2 border-t border-border-main mt-1">
-                  <p class="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">Ürün Bilgisi / Detay</p>
-                  <p class="text-xs text-muted leading-relaxed">${escHtml(item.urun_bilgi || "-")} ${escHtml(item.detay || "")}</p>
-                </div>
-                <div class="col-span-2 md:col-span-4 flex justify-end pt-2 mt-1">
-                  <a href="/tests/add?firmaId=${escAttr(String(item.firma_no))}&testId=${idAttr}"
-                    class="inline-flex items-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-4 py-2 text-[11px] font-black uppercase tracking-wide text-indigo-300 hover:bg-indigo-500/20 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    Düzenle
-                  </a>
-                </div>
-              </div>
-            </td>
-          `;
-          tableBody.appendChild(detailTr);
-        });
-
-        attachTableActions();
-      } catch (error) {
-        console.error("[tests] renderTable failed:", error);
-      }
-    }
-
-    function attachTableActions() {
       document.querySelectorAll(".detail-toggle-btn").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          const btnEl = e.currentTarget as HTMLElement;
-          const targetId = btnEl.dataset.target;
+        const handler = (event: Event) => {
+          const button = event.currentTarget as HTMLElement;
+          const targetId = button.dataset.target;
           if (!targetId) return;
-          const targetRow = document.getElementById(targetId);
-          if (!targetRow) return;
-          const isHidden = targetRow.classList.contains("hidden");
-          targetRow.classList.toggle("hidden");
+          const detailRow = document.getElementById(targetId);
+          if (!detailRow) return;
+          const isHidden = detailRow.classList.contains("hidden");
+          detailRow.classList.toggle("hidden");
 
-          // Animate icon rotation instead of wiping it
-          const icon = btnEl.querySelector("svg");
-          if (icon) {
-            icon.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
-          }
-          btnEl.classList.toggle("bg-primary/20", isHidden);
-          btnEl.classList.toggle("text-primary", isHidden);
-          btnEl.classList.toggle("border-primary/30", isHidden);
-        });
+          const icon = button.querySelector("svg");
+          if (icon) icon.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+          button.classList.toggle("bg-primary/20", isHidden);
+          button.classList.toggle("text-primary", isHidden);
+          button.classList.toggle("border-primary/30", isHidden);
+        };
+
+        btn.addEventListener("click", handler);
+        registerCleanup(() => btn.removeEventListener("click", handler));
       });
-    }
+    };
+
+    const table = useTableFilter<any>({
+      data: $tests.get(),
+      pageSize: Number(pageSizeSelect.value) || 20,
+      filterFn: (item, filters) => {
+        const firma = resolveCompanyName(item).toLocaleLowerCase("tr-TR");
+        const testAdi = String(item.test_adi || "").toLocaleLowerCase("tr-TR");
+        const raporNo = String(item.rapor_no || "").toLocaleLowerCase("tr-TR");
+        const search = String(filters.search || "").toLocaleLowerCase("tr-TR");
+
+        return !search || firma.includes(search) || testAdi.includes(search) || raporNo.includes(search);
+      },
+      sortFn: (a, b) => {
+        const dateA = parseDateValue(a.rapor_tarihi || a.test_bitis || a.test_baslangic || "")?.getTime() || 0;
+        const dateB = parseDateValue(b.rapor_tarihi || b.test_bitis || b.test_baslangic || "")?.getTime() || 0;
+        return dateB - dateA;
+      },
+      onStateChange: setTableState,
+      onRender: renderRows,
+    });
 
     const unsubTests = $tests.subscribe((data) => {
-      tableLoader?.classList.add("hidden");
-      renderTable(data || []);
+      table.updateData(data || []);
     });
     registerCleanup(unsubTests);
 
@@ -543,140 +220,98 @@ import DashboardLayout from "../../layouts/DashboardLayout.astro";
         dot.className = "w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse";
         if (textEl) textEl.textContent = "GÜNCELLENİYOR";
       } else if (status === "error") {
-        dot.className =
-          "w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]";
+        dot.className = "w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]";
         if (textEl) textEl.textContent = "HATA";
       } else {
-        dot.className =
-          "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]";
+        dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]";
         if (textEl) textEl.textContent = "HAZIR";
       }
     });
     registerCleanup(unsubSync);
 
-    globalSearch?.addEventListener("input", (e) => {
-      filters.search = (e.target as HTMLInputElement).value;
-      currentPage = 1;
-      renderTable($tests.get());
-    });
+    const searchHandler = (event: Event) => {
+      table.setFilters({ search: (event.target as HTMLInputElement).value });
+    };
+    globalSearch.addEventListener("input", searchHandler);
+    registerCleanup(() => globalSearch.removeEventListener("input", searchHandler));
 
-    pageSizeSelect?.addEventListener("change", (e) => {
-      pageSize = Number((e.target as HTMLSelectElement).value) || 20;
-      currentPage = 1;
-      renderTable($tests.get());
-    });
+    const pageSizeHandler = (event: Event) => {
+      table.setPageSize(Number((event.target as HTMLSelectElement).value) || 20);
+    };
+    pageSizeSelect.addEventListener("change", pageSizeHandler);
+    registerCleanup(() => pageSizeSelect.removeEventListener("change", pageSizeHandler));
 
-    prevPageBtn?.addEventListener("click", () => {
-      if (currentPage > 1) {
-        currentPage--;
-        renderTable($tests.get());
-      }
-    });
+    const prevHandler = () => table.prevPage();
+    prevPageBtn.addEventListener("click", prevHandler);
+    registerCleanup(() => prevPageBtn.removeEventListener("click", prevHandler));
 
-    nextPageBtn?.addEventListener("click", () => {
-      currentPage++;
-      renderTable($tests.get());
-    });
+    const nextHandler = () => table.nextPage();
+    nextPageBtn.addEventListener("click", nextHandler);
+    registerCleanup(() => nextPageBtn.removeEventListener("click", nextHandler));
 
-    // --- Export Logic ---
-    function getExportRows() {
-      return getFilteredData($tests.get()).map((t) => {
-        const company = ($companies.get() as any[]).find(c => String(c.id) === String(t.firma_no));
+    const exportCsvBtn = document.createElement("button");
+    exportCsvBtn.type = "button";
+    exportCsvBtn.title = "CSV Dışa Aktar";
+    exportCsvBtn.className = "btn-icon hidden sm:inline-flex";
+    exportCsvBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>`;
+    syncIndicator?.parentElement?.appendChild(exportCsvBtn);
+
+    const exportHandler = () => {
+      const rows = table.getFilteredData().map((item) => {
+        const company = findCompany(String(item.firma_no || ""));
         return {
-          id: t.id,
-          raporTarihi: t.rapor_tarihi,
-          firma: company?.nick || company?.unvan || t.firma_adi,
-          test: t.test_adi,
-          marka: t.marka,
-          urun: t.urun,
-          raporNo: t.rapor_no,
-          lot: t.lot,
+          id: item.id,
+          raporTarihi: item.rapor_tarihi,
+          firma: company?.nick || company?.unvan || item.firma_adi,
+          test: item.test_adi,
+          marka: item.marka,
+          urun: item.urun,
+          raporNo: item.rapor_no,
+          lot: item.lot,
         };
       });
-    }
 
-    function downloadFile(
-      filename: string,
-      content: string,
-      typeSnapshot: string,
-    ) {
-      const blob = new Blob([content], { type: typeSnapshot });
+      const csv = [
+        ["ID", "Tarih", "Firma", "Test", "Marka", "Ürün", "Rapor No", "Lot"].join(","),
+        ...rows.map((row) =>
+          Object.values(row)
+            .map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`)
+            .join(","),
+        ),
+      ].join("\n");
+
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Testler_${todayIso()}.csv`;
+      link.click();
       URL.revokeObjectURL(url);
-    }
+    };
+    exportCsvBtn.addEventListener("click", exportHandler);
+    registerCleanup(() => exportCsvBtn.removeEventListener("click", exportHandler));
+    registerCleanup(() => exportCsvBtn.remove());
 
-    if (exportCsvBtn) {
-      const handleExportCsv = () => {
-        const rows = getExportRows();
-        const headers = [
-          "ID",
-          "Tarih",
-          "Firma",
-          "Test",
-          "Marka",
-          "Ürün",
-          "Rapor No",
-          "Lot",
-        ];
-        const csv = [
-          headers.join(","),
-          ...rows.map((r) =>
-            Object.values(r)
-              .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-              .join(","),
-          ),
-        ].join("\n");
-        downloadFile(
-          `Testler_${todayIso()}.csv`,
-          "\uFEFF" + csv,
-          "text/csv;charset=utf-8;",
-        );
-      };
-      exportCsvBtn.addEventListener("click", handleExportCsv);
-      registerCleanup(() =>
-        exportCsvBtn.removeEventListener("click", handleExportCsv),
-      );
-    }
+    setTableState("loading");
 
-    if (exportExcelBtn) {
-      const handleExportExcel = () => {
-        const rows = getExportRows();
-        const tableHtml = `<table><thead><tr>${["ID", "Tarih", "Firma", "Test", "Marka", "Ürün", "Rapor No", "Lot"].map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows
-          .map(
-            (r) =>
-              `<tr>${Object.values(r)
-                .map((v) => `<td>${v}</td>`)
-                .join("")}</tr>`,
-          )
-          .join("")}</tbody></table>`;
-        const html = `<html><head><meta charset="utf-8" /></head><body>${tableHtml}</body></html>`;
-        downloadFile(
-          `Testler_${todayIso()}.xls`,
-          html,
-          "application/vnd.ms-excel;charset=utf-8;",
-        );
-      };
-      exportExcelBtn.addEventListener("click", handleExportExcel);
-      registerCleanup(() =>
-        exportExcelBtn.removeEventListener("click", handleExportExcel),
-      );
-    }
-
-    async function boot() {
-      await SyncManager.init();
-      if ($tests.get().length === 0) {
-        const res = await api.getTests();
-        if (res.success) $tests.set(res.data);
+    void SyncManager.init().then(async () => {
+      if (($companies.get() || []).length === 0) {
+        const companiesRes = await api.getCompanies();
+        if (companiesRes.success && Array.isArray(companiesRes.data)) {
+          $companies.set(companiesRes.data);
+        }
       }
-    }
 
-    void boot();
+      if (($tests.get() || []).length === 0) {
+        const testsRes = await api.getTests();
+        if (testsRes.success && Array.isArray(testsRes.data)) {
+          $tests.set(testsRes.data);
+        }
+      }
+
+      table.renderTable();
+    });
   }
 
-  document.addEventListener("astro:page-load", initPage);
-  document.addEventListener("astro:before-preparation", runCleanups);
+  initPageCleanup(initPage, runCleanups);
 </script>
