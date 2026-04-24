@@ -1,10 +1,10 @@
 ---
-import OperationPageShell from '../../components/OperationPageShell.astro';
+import PageShell from '../../components/shared/PageShell.astro';
 import CompanyPicker from '../../components/CompanyPicker.astro';
 ---
 
 
-<OperationPageShell
+<PageShell
   pageKey="proforma"
   title="Proforma"
   description="Proforma listeleme ve yeni kayıt hazırlama akışını, mobilde de rahat kullanılacak şekilde ayrı bir operasyon sayfasına taşır."
@@ -59,7 +59,7 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
       <button id="proforma-save" type="button" class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-indigo-600/40 transition-colors">Proforma Kaydet</button>
     </div>
   </div>
-</OperationPageShell>
+</PageShell>
 
 <script>
   import { api } from '../../lib/api';
