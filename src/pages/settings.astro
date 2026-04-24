@@ -164,6 +164,53 @@ const MASTER_SYNC_OPTIONS = [
       </div>
     </div>
 
+    <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+      <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">sync_log</p>
+          <h2 class="text-xl font-extrabold mt-1">Senkronizasyon İzleme</h2>
+          <p class="text-sm text-muted mt-2">
+            Son yedekleme ve senkronizasyon kayıtlarını buradan izleyebilirsin.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button id="sync-log-retry-btn" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold">
+            Başarısız Sync'leri Yeniden Dene
+          </button>
+          <select id="sync-log-status-filter" class="bg-surface-hover border border-border-main rounded-xl px-3 py-2 text-sm">
+            <option value="">Tüm Durumlar</option>
+            <option value="FAIL">FAIL</option>
+            <option value="CRASH">CRASH</option>
+            <option value="RECOVERED">RECOVERED</option>
+          </select>
+          <button id="sync-log-refresh-btn" class="px-4 py-2 rounded-xl bg-surface-hover border border-border-main text-sm font-bold">
+            Logları Yenile
+          </button>
+        </div>
+      </div>
+
+      <div id="sync-log-status-box" class="hidden rounded-xl px-3 py-2 text-sm"></div>
+
+      <div class="overflow-auto border border-border-main rounded-xl">
+        <table class="min-w-full text-sm">
+          <thead class="bg-surface-hover">
+            <tr>
+              <th class="text-left px-3 py-2 border-b border-border-main">
+                <input id="sync-log-select-all" type="checkbox" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+              </th>
+              <th class="text-left px-3 py-2 border-b border-border-main">Tarih</th>
+              <th class="text-left px-3 py-2 border-b border-border-main">Aksiyon</th>
+              <th class="text-left px-3 py-2 border-b border-border-main">Tip</th>
+              <th class="text-left px-3 py-2 border-b border-border-main">Entity</th>
+              <th class="text-left px-3 py-2 border-b border-border-main">Durum</th>
+              <th class="text-left px-3 py-2 border-b border-border-main">Hata</th>
+            </tr>
+          </thead>
+          <tbody id="sync-log-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- 🛠️ BAKIM & KURTARMA -->
     <div class="bg-surface border border-amber-500/20 rounded-2xl p-5 shadow-xl space-y-4 bg-amber-500/5">
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -203,6 +250,8 @@ const MASTER_SYNC_OPTIONS = [
   const statusBox = document.getElementById("status-box") as HTMLElement | null;
   const importFileInput = document.getElementById("import-file-input") as HTMLInputElement | null;
   const backupStatusBox = document.getElementById("backup-status-box") as HTMLElement | null;
+  const syncLogStatusBox = document.getElementById("sync-log-status-box") as HTMLElement | null;
+  const syncLogTbody = document.getElementById("sync-log-tbody") as HTMLElement | null;
 
   // ─── Lifecycle & Cleanup ─────────────────────────────────────────────────────
 
@@ -261,6 +310,75 @@ const MASTER_SYNC_OPTIONS = [
     if (type === "error") backupStatusBox.classList.add("bg-red-500/15", "text-red-400", "border-red-500/30");
     else if (type === "success") backupStatusBox.classList.add("bg-emerald-500/10", "text-emerald-400", "border-emerald-500/30");
     else backupStatusBox.classList.add("bg-indigo-500/10", "text-indigo-400", "border-indigo-500/30");
+  }
+
+  function setSyncLogStatus(message: string, type: "info" | "error" | "success" = "info") {
+    if (!syncLogStatusBox) return;
+    syncLogStatusBox.textContent = message;
+    syncLogStatusBox.classList.remove("hidden", "bg-red-500/15", "text-red-400", "bg-emerald-500/10", "text-emerald-400", "bg-indigo-500/10", "text-indigo-400");
+    if (type === "error") syncLogStatusBox.classList.add("bg-red-500/15", "text-red-400");
+    else if (type === "success") syncLogStatusBox.classList.add("bg-emerald-500/10", "text-emerald-400");
+    else syncLogStatusBox.classList.add("bg-indigo-500/10", "text-indigo-400");
+  }
+
+  function formatSyncLogDate(ts: string | number | null | undefined) {
+    const numeric = Number(ts);
+    if (!Number.isFinite(numeric) || numeric <= 0) return "-";
+    return new Date(numeric * 1000).toLocaleString("tr-TR");
+  }
+
+  function renderSyncLog(rows: any[]) {
+    if (!syncLogTbody) return;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      syncLogTbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="px-3 py-6 text-center text-sm text-muted">Kayıt bulunamadı.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    syncLogTbody.innerHTML = rows.map((row) => {
+      const status = String(row.status || "-").toUpperCase();
+      const statusClass = status === "FAIL" || status === "CRASH"
+        ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+        : status === "RECOVERED"
+          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+          : "bg-surface-hover text-muted border border-border-main";
+      return `
+        <tr class="border-b border-border-main/60">
+          <td class="px-3 py-2 whitespace-nowrap">
+            <input type="checkbox" class="sync-log-checkbox w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" data-id="${escapeHtml(row.id || "")}" ${status === "FAIL" || status === "CRASH" ? "" : "disabled"} />
+          </td>
+          <td class="px-3 py-2 whitespace-nowrap">${formatSyncLogDate(row.created_at)}</td>
+          <td class="px-3 py-2 whitespace-nowrap font-semibold">${escapeHtml(row.action || "-")}</td>
+          <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(row.entity_type || "-")}</td>
+          <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(row.entity_id || "-")}</td>
+          <td class="px-3 py-2 whitespace-nowrap"><span class="inline-flex rounded-lg px-2 py-1 text-xs font-bold ${statusClass}">${escapeHtml(status)}</span></td>
+          <td class="px-3 py-2 text-xs text-muted">${escapeHtml(row.error_message || "-")}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  async function loadSyncLog() {
+    const statusFilter = document.getElementById("sync-log-status-filter") as HTMLSelectElement | null;
+    const status = statusFilter?.value || undefined;
+    setSyncLogStatus("sync_log kayıtları yükleniyor...", "info");
+    const res = await api.getSyncLog(20, status);
+    if (!res.success) {
+      setSyncLogStatus("sync_log yüklenemedi: " + (res.error || "Bilinmeyen hata"), "error");
+      renderSyncLog([]);
+      return;
+    }
+    renderSyncLog(Array.isArray(res.data) ? res.data : []);
+    setSyncLogStatus("sync_log kayıtları güncellendi.", "success");
+  }
+
+  function getSelectedSyncLogIds(): number[] {
+    return Array.from(document.querySelectorAll(".sync-log-checkbox:checked"))
+      .map((el) => Number((el as HTMLInputElement).dataset.id || "0"))
+      .filter((id) => Number.isInteger(id) && id > 0);
   }
 
   function getScopeLabel(scope: string) {
@@ -536,6 +654,39 @@ const MASTER_SYNC_OPTIONS = [
     syncMasterParentState();
 
     addEv("refresh-btn", "click", () => loadDataset(currentType));
+    addEv("sync-log-refresh-btn", "click", () => loadSyncLog());
+    addEv("sync-log-status-filter", "change", () => loadSyncLog());
+    addEv("sync-log-select-all", "change", (e: Event) => {
+      const checked = (e.target as HTMLInputElement).checked;
+      document.querySelectorAll<HTMLInputElement>(".sync-log-checkbox:not(:disabled)").forEach((box) => {
+        box.checked = checked;
+      });
+    });
+    addEv("sync-log-retry-btn", "click", async () => {
+      const ids = getSelectedSyncLogIds();
+      if (!ids.length) {
+        setSyncLogStatus("Önce FAIL veya CRASH kayıtlarını seçin.", "error");
+        toast.warning("Yeniden denenecek en az bir kayıt seçin.");
+        return;
+      }
+
+      if (!confirm(`${ids.length} başarısız sync kaydı yeniden denenecek. Devam etmek istiyor musun?`)) {
+        return;
+      }
+
+      setSyncLogStatus("Seçili sync kayıtları yeniden deneniyor...", "info");
+      const res = await api.call("retrySyncLog", { ids });
+      if (!res.success) {
+        setSyncLogStatus("Retry başarısız: " + (res.error || "Bilinmeyen hata"), "error");
+        toast.error("Retry başarısız: " + (res.error || "Bilinmeyen hata"));
+        return;
+      }
+
+      const data = (res.data || {}) as any;
+      setSyncLogStatus(`Retry tamamlandı. RECOVERED: ${data.recovered || 0}, FAILED: ${data.failed || 0}, SKIPPED: ${data.skipped || 0}.`, "success");
+      toast.success(`Retry tamamlandı. Kurtarılan: ${data.recovered || 0}`);
+      await loadSyncLog();
+    });
 
     addEv("smart-sync-btn", "click", async () => {
       const btn = document.getElementById("smart-sync-btn") as HTMLButtonElement | null;
@@ -595,7 +746,14 @@ const MASTER_SYNC_OPTIONS = [
           if (scope === "master") {
             const masterLabel = masterTypes.map(getMasterScopeLabel).join(", ");
             setBackupStatus(`Ana veri alt başlıkları çekiliyor: ${masterLabel}`, "info");
-            const res = await api.syncMasterData(masterTypes);
+            let res = await api.syncMasterData(masterTypes);
+            if (!res.success && res.error === "BULK_SYNC_CONFIRMATION_REQUIRED") {
+              const message = `Bu işlem yaklaşık ${((res as any).rowCount || 0)} satır yazacak. D1 yazma kotası açısından ikinci onay gerekiyor. Devam edilsin mi?`;
+              if (!confirm(message)) {
+                throw new Error("Ana veri senkronizasyonu kullanıcı tarafından iptal edildi.");
+              }
+              res = await api.bulkSync({ scope: ["master"], masterTypes, forceLargeSync: true });
+            }
             if (!res.success) throw new Error("Master veri senkronizasyonu başarısız: " + (res.error || "Bilinmeyen hata"));
             const checkbox = document.querySelector(`input[name="sync-scope"][value="master"]`) as HTMLInputElement | null;
             if (checkbox) checkbox.checked = false;
@@ -604,7 +762,14 @@ const MASTER_SYNC_OPTIONS = [
           }
 
           setBackupStatus(`${label} çekiliyor...`, "info");
-          const res = await api.bulkSync({ scope: [scope] });
+          let res = await api.bulkSync({ scope: [scope] });
+          if (!res.success && res.error === "BULK_SYNC_CONFIRMATION_REQUIRED") {
+            const message = `Bu işlem yaklaşık ${((res as any).rowCount || 0)} satır yazacak. D1 yazma kotası açısından ikinci onay gerekiyor. Devam edilsin mi?`;
+            if (!confirm(message)) {
+              throw new Error(`${label} senkronizasyonu kullanıcı tarafından iptal edildi.`);
+            }
+            res = await api.bulkSync({ scope: [scope], forceLargeSync: true });
+          }
           if (!res.success) throw new Error(`${label} senkronizasyonu başarısız: ${res.error || "Bilinmeyen hata"}`);
 
           const checkbox = document.querySelector(`input[name="sync-scope"][value="${scope}"]`) as HTMLInputElement | null;
@@ -752,6 +917,7 @@ const MASTER_SYNC_OPTIONS = [
     });
 
     loadDataset(currentType);
+    loadSyncLog();
   }
 
   document.addEventListener('astro:page-load', initPage);

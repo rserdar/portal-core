@@ -27,7 +27,7 @@ const DriveService = {
   },
 
   /**
-   * Firmaya ait ana klasör ID'sini döner. Yoksa oluşturur (Eski ilkKarekter).
+   * Firmaya ait ana klasör ID'sini döner. Yoksa oluşturur.
    */
   getCompanyFolderId: function(nickname) {
     try {

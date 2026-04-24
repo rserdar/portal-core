@@ -421,6 +421,7 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
   let activeFirmaId = params.get('firmaId') || params.get('id') || '';
   let activeTestId = params.get('testId') || '';
   let isEditMode = Boolean(activeTestId);
+  let activeTestUpdatedAt = '';
   let activeContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
 
   // Dropdown data: { [kategori]: { [aciklama]: [{dokuman, gun, kisaltma, kisaltma2}] } }
@@ -760,6 +761,7 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
   // ── Populate form in edit mode ────────────────────────────────────────────────
 
   function populateForm(item: any) {
+    activeTestUpdatedAt = String(item?.updated_at || '');
     els.marka.value = item.marka || '';
     els.urun.value = item.urun || '';
     els.urunKodu.value = item.urun_kodu || '';
@@ -813,7 +815,9 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
     els.saveLabel.textContent = 'Kaydediliyor...';
 
     const res = isEditMode
-      ? await api.updateTest(activeTestId, testInfo)
+      ? await api.updateTest(activeTestId, testInfo, {
+          expected_updated_at: activeTestUpdatedAt || undefined,
+        })
       : await api.addTest(testInfo);
 
     if (res.success) {
@@ -822,7 +826,11 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
         window.location.href = `/company?id=${activeContext!.firmaId}`;
       }, 1200);
     } else {
-      toast.error('Kayıt hatası: ' + (res.error || 'Bilinmeyen hata'));
+      if (res.error === 'CONFLICT') {
+        toast.error('Bu test kaydı başka bir kullanıcı tarafından güncellendi. Sayfayı yenileyip tekrar deneyin.');
+      } else {
+        toast.error('Kayıt hatası: ' + (res.error || 'Bilinmeyen hata'));
+      }
       els.saveBtn.removeAttribute('disabled');
       els.saveLabel.textContent = isEditMode ? 'Güncelle' : 'Testi Kaydet';
     }

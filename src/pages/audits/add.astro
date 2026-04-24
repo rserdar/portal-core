@@ -280,6 +280,7 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
     let auditorRows: any[][] = [];
     let reloadCalendarView: (() => Promise<void>) | null = null;
     let pendingEditAudit: any = null;
+    let pendingEditAuditUpdatedAt = "";
 
     function isEditMode() { return Boolean(editAuditId); }
     function getCompanyId(c: any) { 
@@ -374,6 +375,7 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
       
       const audit = normalizeAuditRecord(match);
       if (!audit) return;
+      pendingEditAuditUpdatedAt = String(audit.updated_at || "");
 
       const firmaId = String(audit.firma_no || audit.firmano || '').trim();
       if (firmaId) {
@@ -503,13 +505,19 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
         })
       };
 
-      const res = isEditMode() ? await api.updateAudit(editAuditId, info) : await api.scheduleAudit(info);
+      const res = isEditMode()
+        ? await api.updateAudit(editAuditId, info, {
+            expected_updated_at: pendingEditAuditUpdatedAt || undefined,
+          })
+        : await api.scheduleAudit(info);
       if (res.success) {
         toast.success(isEditMode() ? 'Başarıyla güncellendi.' : 'Başarıyla kaydedildi.');
-        await SyncManager.checkAndSync();
+        await SyncManager.checkAndSync({ force: true });
         if (reloadCalendarView) await reloadCalendarView();
         if (preselectedFirmaId) setTimeout(() => window.location.href = returnUrl || `/company?id=${preselectedFirmaId}`, 1000);
         else if (!isEditMode()) initPage();
+      } else if (res.error === 'CONFLICT') {
+        toast.error('Bu denetim başka bir kullanıcı tarafından güncellendi. Sayfayı yenileyip tekrar deneyin.');
       } else toast.error(`Hata: ${res.error}`);
 
       saveBtn.disabled = false; saveBtn.innerHTML = orig;

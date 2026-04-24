@@ -6,7 +6,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
   <div class="space-y-4">
 
     <!-- 🔍 Premium Arama & Aksiyon Çubuğu -->
-    <div class="bg-surface border border-border-main shadow-lg p-3 sm:p-4 rounded-2xl flex flex-wrap items-center gap-3">
+    <div class="bg-surface border border-border-main shadow-lg p-3 sm:p-4 rounded-2xl flex flex-wrap items-center gap-3 print:hidden">
       <div class="relative flex-1 min-w-[200px]">
         <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted w-4 h-4 pointer-events-none shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <input
@@ -203,7 +203,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const standardFilter = document.getElementById('standard-filter') as HTMLSelectElement;
     const statusFilter = document.getElementById('status-filter') as HTMLSelectElement | null;
     const syncIndicator = document.getElementById('sync-indicator');
-    const exportCsvBtn = document.getElementById('export-csv-btn') as HTMLButtonElement | null;
     const exportExcelBtn = document.getElementById('export-excel-btn') as HTMLButtonElement | null;
     const datasetSummary = document.getElementById('dataset-summary');
     const pageSummary = document.getElementById('page-summary');
@@ -551,17 +550,20 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           const sertifikaLinki = normalizeLink(getCertificateLink(item));
 
           let rowClass = 'hover:bg-surface-hover transition-colors group/row text-[11px]';
+          let firstCellClass = 'px-3 py-4 text-center align-middle';
           const urgency = getUrgencyScore(item);
           if (urgency === 2) {
              rowClass += ' border-l-2 border-l-rose-500 bg-rose-500/5 hover:bg-rose-500/10';
+             firstCellClass += ' border-l-2 border-l-rose-500';
           } else if (urgency === 1) {
              rowClass += ' border-l-2 border-l-amber-400 bg-amber-400/5 hover:bg-amber-400/10';
+             firstCellClass += ' border-l-2 border-l-amber-400';
           }
 
           const tr = document.createElement('tr');
           tr.className = rowClass;
           tr.innerHTML = `
-            <td class="px-3 py-4 text-center align-middle">
+            <td class="${firstCellClass}">
               <input type="checkbox" class="cert-checkbox w-4 h-4 rounded border-gray-700 text-primary bg-transparent cursor-pointer focus:ring-offset-0 focus:ring-primary" data-id="${idAttr}">
             </td>
             <td class="px-4 py-4 text-center font-mono font-bold text-muted italic">
@@ -801,25 +803,38 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       renderTable($certificates.get());
     });
 
-    if (exportCsvBtn) exportCsvBtn.onclick = () => {
-      const rows = getExportRows();
-      const headers = ['ID', 'Firma', 'Standart', 'Belge No', 'Gözetim', 'Gözetim Tarihi', 'Sertifika Tarihi', 'Not', 'Danışman'];
-      const lines = [headers.join(',')];
-      rows.forEach(r => {
-        lines.push([
-          toCsvValue(r.id),
-          toCsvValue(r.firma),
-          toCsvValue(r.standart),
-          toCsvValue(r.belgeNo),
-          toCsvValue(r.gozetim),
-          toCsvValue(r.gozetimTarihi),
-          toCsvValue(r.sertifikaTarihi),
-          toCsvValue(r.not),
-          toCsvValue(r.danisman)
-        ].join(','));
-      });
-      downloadFile(`Sertifikalar_${new Date().toISOString().slice(0,10)}.csv`, '\uFEFF' + lines.join('\n'), 'text/csv;charset=utf-8;');
-    };
+    function getExportRows() {
+      return getFilteredData($certificates.get() || []).map((item) => ({
+        id: getCertificateId(item, '-'),
+        firma: pickValue(item, ["nick", "nickname", "Firma Adı"], "-"),
+        standart: normalizeStandard(item),
+        belgeNo: pickValue(item, ["sertifika_no", "sno", "Sertifika No"], "-"),
+        gozetim: getStatusLabel(item),
+        gozetimTarihi: pickValue(item, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], "-"),
+        sertifikaTarihi: pickValue(item, ["sertifika_tarihi", "gst", "Sertifika Tarihi"], "-"),
+        not: pickValue(item, ["sertifika_not", "not", "Notlar"], "-"),
+        danisman: pickValue(item, ["consultant", "danisman", "dan", "Danışman"], "-"),
+      }));
+    }
+
+    function toCsvValue(val) {
+      const s = String(val ?? '');
+      return (s.includes(',') || s.includes('"') || s.includes('\n'))
+        ? '"' + s.replace(/"/g, '""') + '"'
+        : s;
+    }
+
+    function downloadFile(filename, content, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
 
     if (exportExcelBtn) exportExcelBtn.onclick = () => {
       const rows = getExportRows();
@@ -831,7 +846,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
             </tr>
           </thead>
           <tbody>
-            ${rows.map(r => `<tr><td>${r.id}</td><td>${r.firma}</td><td>${r.standart}</td><td>${r.belgeNo}</td><td>${r.gozetim}</td><td>${r.gozetimTarihi}</td><td>${r.sertifikaTarihi}</td><td>${r.not}</td><td>${r.danisman}</td></tr>`).join('')}
+            ${rows.map(r => `<tr><td>${escHtml(r.id)}</td><td>${escHtml(r.firma)}</td><td>${escHtml(r.standart)}</td><td>${escHtml(r.belgeNo)}</td><td>${escHtml(r.gozetim)}</td><td>${escHtml(r.gozetimTarihi)}</td><td>${escHtml(r.sertifikaTarihi)}</td><td>${escHtml(r.not)}</td><td>${escHtml(r.danisman)}</td></tr>`).join('')}
           </tbody>
         </table>
       `;
@@ -850,6 +865,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <style is:global>
   @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
     body {
       background: white !important;
       color: black !important;
@@ -857,8 +876,18 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     .print\:hidden {
       display: none !important;
     }
+    .bg-surface,
+    .bg-surface-hover,
+    .shadow-lg,
+    .shadow-xl {
+      box-shadow: none !important;
+    }
     table {
       width: 100% !important;
+      table-layout: auto !important;
+    }
+    th, td {
+      white-space: normal !important;
     }
   }
 </style>

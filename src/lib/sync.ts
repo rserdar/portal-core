@@ -15,6 +15,7 @@ import { $companies, $certificates, $tests, $dashboardStats, $syncStatus, $lastS
 export const SyncManager = {
   _syncPromise: null as Promise<void> | null,
   _initPromise: null as Promise<void> | null,
+  _refreshIntervalMs: 5 * 60 * 1000,
 
   init: async function() {
     if (this._initPromise) return this._initPromise;
@@ -43,8 +44,22 @@ export const SyncManager = {
   /**
    * Sunucudaki veriyle yerel veriyi karşılaştırır ve IndexedDB'yi günceller.
    */
-  checkAndSync: async function() {
+  checkAndSync: async function(options: { force?: boolean } = {}) {
     if (this._syncPromise) return this._syncPromise;
+    const force = options.force === true;
+
+    if (!force) {
+      const lastSync = $lastSyncTime.get();
+      const hasWarmCache =
+        (($companies.get() || []).length > 0) ||
+        (($certificates.get() || []).length > 0) ||
+        (($tests.get() || []).length > 0) ||
+        Boolean($dashboardStats.get());
+
+      if (hasWarmCache && typeof lastSync === 'number' && (Date.now() - lastSync) < this._refreshIntervalMs) {
+        return Promise.resolve();
+      }
+    }
 
     this._syncPromise = (async () => {
       $syncStatus.set('syncing');
@@ -120,7 +135,7 @@ export const SyncManager = {
    */
   forceSync: async function() {
     await DB.clearAll();
-    await this.checkAndSync();
+    await this.checkAndSync({ force: true });
   },
 
   /**

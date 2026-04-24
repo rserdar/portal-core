@@ -320,7 +320,7 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
             }
           }
 
-          await SyncManager.checkAndSync();
+          await SyncManager.checkAndSync({ force: true });
           toast.success('Firma başarıyla eklendi. Firma profiline yönlendiriliyorsunuz.', { duration: 2500 });
           window.setTimeout(() => {
             window.location.href = createdId ? `/company?id=${encodeURIComponent(createdId)}` : '/search';

@@ -938,6 +938,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
     > = null;
     let standards: StandardOption[] = [];
     let editingCertificate: Record<string, any> | null = null;
+    let editingCertificateUpdatedAt = "";
     let activeFirmaId = initialFirmaId;
     let selectedCompany: any = null;
     let formBindingsReady = false;
@@ -1811,7 +1812,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
     }
 
     async function refreshContextFromKv() {
-      await SyncManager.checkAndSync();
+      await SyncManager.checkAndSync({ force: true });
       const refreshed = await loadCompanyOperationContext(activeFirmaId);
       if (refreshed) {
         companyContext = refreshed;
@@ -1855,6 +1856,9 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
       }
 
       editingCertificate = cert;
+      editingCertificateUpdatedAt = String(
+        normalizeObjectValue(cert, ["updated_at"]) || "",
+      );
 
       const standardValue = normalizeObjectValue(cert, [
         "Standart",
@@ -2216,7 +2220,7 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
 
           const response = await api.deleteCertificate(editId);
           if (response.success) {
-            await SyncManager.checkAndSync();
+            await SyncManager.checkAndSync({ force: true });
             toast.success(
               "Sertifika kaydı silindi. Firma profiline yönlendiriliyorsunuz.",
               { duration: 2500 },
@@ -2286,10 +2290,12 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
           els.submit.innerHTML = "Kaydediliyor...";
 
           const response = editId
-            ? await api.updateCertificate(editId, certInfo)
+            ? await api.updateCertificate(editId, certInfo, {
+                expected_updated_at: editingCertificateUpdatedAt || undefined,
+              })
             : await api.addCertificate(certInfo);
           if (response.success) {
-            await SyncManager.checkAndSync();
+            await SyncManager.checkAndSync({ force: true });
             const successMessage = editId
               ? "Sertifika başarıyla güncellendi."
               : cloneId
@@ -2308,7 +2314,11 @@ import CompanyPicker from "../../components/CompanyPicker.astro";
             return;
           }
 
-          toast.error(`Hata: ${response.error}`);
+          if (response.error === "CONFLICT") {
+            toast.error("Bu sertifika başka bir kullanıcı tarafından güncellendi. Sayfayı yenileyip tekrar deneyin.");
+          } else {
+            toast.error(`Hata: ${response.error}`);
+          }
           els.submit.disabled = false;
           els.submit.innerHTML = originalText;
         };

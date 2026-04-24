@@ -80,11 +80,13 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
     birim: string;
     tarih: string;
     konu: string;
+    updated_at?: string | number;
   }
 
   let activeContext: Awaited<ReturnType<typeof loadCompanyOperationContext>> = null;
   let formHandlersBound = false;
   let editingProformaId = '';
+  let editingProformaUpdatedAt = '';
   let currentRows: ProformaRow[] = [];
   let cleanupFns: Array<() => void> = [];
 
@@ -143,6 +145,7 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
 
   function clearForm() {
     editingProformaId = '';
+    editingProformaUpdatedAt = '';
     if (amountInputs.kdvsiz) amountInputs.kdvsiz.value = '';
     if (amountInputs.kdv) amountInputs.kdv.value = '';
     if (amountInputs.toplam) amountInputs.toplam.value = '';
@@ -310,12 +313,18 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
 
     if (saveButton) saveButton.disabled = true;
     const res = editingProformaId
-      ? await api.updateProforma(editingProformaId, payload.proInfo)
+      ? await api.updateProforma(editingProformaId, payload.proInfo, {
+          expected_updated_at: editingProformaUpdatedAt || undefined,
+        })
       : await api.addProforma(payload.proInfo);
     if (saveButton) saveButton.disabled = false;
 
     if (!res.success) {
-      toast.error(res.error || 'Proforma kaydedilemedi.');
+      if (res.error === 'CONFLICT') {
+        toast.error('Bu proforma başka bir kullanıcı tarafından güncellendi. Listeyi yenileyip tekrar deneyin.');
+      } else {
+        toast.error(res.error || 'Proforma kaydedilemedi.');
+      }
       return;
     }
 
@@ -335,6 +344,7 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
       return;
     }
     editingProformaId = id;
+    editingProformaUpdatedAt = String(row.updated_at || '');
     if (amountInputs.kdvsiz) amountInputs.kdvsiz.value = row.kdvsiz || '';
     if (amountInputs.oran) amountInputs.oran.value = row.kdvOran || '20';
     if (amountInputs.kdv) amountInputs.kdv.value = row.kdv || '';

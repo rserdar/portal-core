@@ -1070,17 +1070,157 @@ export default {
       }
     };
 
+    const logSyncEvent = async (action, entityType, entityId, status, errorMessage = null) => {
+      try {
+        await env.DB_D1.prepare(
+          `INSERT INTO sync_log (action, entity_type, entity_id, status, error_message, created_at)
+           VALUES (?, ?, ?, ?, ?, unixepoch())`
+        ).bind(action, entityType, entityId || null, status, errorMessage || null).run();
+      } catch (logError) {
+        console.error("[sync_log] write failed:", logError?.message || logError);
+      }
+    };
+
+    const BULK_SYNC_ROW_LIMIT = 500;
+
+    const getClientIp = (request) => {
+      const forwarded = request.headers.get("CF-Connecting-IP")
+        || request.headers.get("X-Forwarded-For")
+        || "";
+      return String(forwarded).split(",")[0].trim() || "unknown";
+    };
+
+    const checkOptimisticLock = async (table, id, expectedUpdatedAt) => {
+      if (expectedUpdatedAt === undefined || expectedUpdatedAt === null || String(expectedUpdatedAt).trim() === "") {
+        return { ok: true };
+      }
+
+      const row = await env.DB_D1.prepare(`SELECT updated_at FROM ${table} WHERE id=?`).bind(parseInt(id)).first();
+      if (!row) {
+        return { ok: false, response: jsonResponse({ success: false, error: "NOT_FOUND" }, 404) };
+      }
+
+      if (String(row.updated_at ?? "") !== String(expectedUpdatedAt)) {
+        return {
+          ok: false,
+          response: jsonResponse({
+            success: false,
+            error: "CONFLICT",
+            message: "Kayıt başkası tarafından değiştirildi.",
+            current_updated_at: row.updated_at ?? null,
+          }, 409)
+        };
+      }
+
+      return { ok: true, row };
+    };
+
+    const countBulkSyncRows = (payload, hasScope, hasMasterType) => {
+      let total = 0;
+      if (hasScope("companies")) total += Array.isArray(payload.companies) ? payload.companies.length : 0;
+      if (hasScope("certificates")) {
+        total += Array.isArray(payload.certificates) ? payload.certificates.length : 0;
+        total += Array.isArray(payload.certificateRows) ? payload.certificateRows.length : 0;
+        total += Array.isArray(payload.certs) ? payload.certs.length : 0;
+        total += Array.isArray(payload.certRows) ? payload.certRows.length : 0;
+      }
+      if (hasScope("audits")) {
+        total += Array.isArray(payload.audits) ? payload.audits.length : 0;
+        total += Array.isArray(payload.auditObjects) ? payload.auditObjects.length : 0;
+      }
+      if (hasScope("tests")) total += Array.isArray(payload.tests) ? payload.tests.length : 0;
+      if (hasScope("proformas")) total += Array.isArray(payload.proformas) ? payload.proformas.length : 0;
+      if (hasMasterType("standards")) total += Array.isArray(payload.standards) ? payload.standards.length : 0;
+      if (hasMasterType("auditors")) total += Array.isArray(payload.auditors) ? payload.auditors.length : 0;
+      if (hasMasterType("consultants")) total += Array.isArray(payload.consultants) ? payload.consultants.length : 0;
+      if (hasMasterType("testdocs")) total += Array.isArray(payload.testdocs) ? payload.testdocs.length : 0;
+      if (hasMasterType("sysdocs")) total += Array.isArray(payload.sysdocs) ? payload.sysdocs.length : 0;
+      return total;
+    };
+
+    const buildRetryPayloadForLog = async (logRow) => {
+      const action = String(logRow?.action || "").trim();
+      const entityType = String(logRow?.entity_type || "").trim();
+      const entityId = String(logRow?.entity_id || "").trim();
+      const numericId = parseInt(entityId, 10);
+
+      if (action === "cronBackup") {
+        return { kind: "direct", body: { action: "runDailyBackup", params: {} } };
+      }
+
+      if (["deleteCompany", "deleteCertificate", "deleteAudit", "deleteTest", "deleteProforma"].includes(action)) {
+        if (!entityId) throw new Error("DELETE_RETRY_ID_REQUIRED");
+        return { kind: "sync", action, params: { id: entityId } };
+      }
+
+      if (!Number.isInteger(numericId)) {
+        throw new Error("RETRY_ENTITY_ID_INVALID");
+      }
+
+      if (entityType === "companies") {
+        const row = await env.DB_D1.prepare(`SELECT * FROM companies WHERE id=?`).bind(numericId).first();
+        if (!row) throw new Error("RETRY_SOURCE_NOT_FOUND");
+        return {
+          kind: "sync",
+          action,
+          params: { id: numericId, companyInfo: createCanonicalCompany(row, { id: numericId }) }
+        };
+      }
+
+      if (entityType === "certificates") {
+        if (action === "updateSurveillance") throw new Error("RETRY_ACTION_UNSUPPORTED");
+        if (action === "updateCertificateField") throw new Error("RETRY_ACTION_UNSUPPORTED");
+        const row = await env.DB_D1.prepare(`SELECT * FROM certificates WHERE id=?`).bind(numericId).first();
+        if (!row) throw new Error("RETRY_SOURCE_NOT_FOUND");
+        return {
+          kind: "sync",
+          action,
+          params: { id: numericId, certInfo: createCanonicalCertificate(row, { id: numericId }) }
+        };
+      }
+
+      if (entityType === "tests") {
+        const row = await env.DB_D1.prepare(`SELECT * FROM tests WHERE id=?`).bind(numericId).first();
+        if (!row) throw new Error("RETRY_SOURCE_NOT_FOUND");
+        return {
+          kind: "sync",
+          action,
+          params: { id: numericId, testInfo: createTestBackupPayload(row, { id: numericId }) }
+        };
+      }
+
+      if (entityType === "proformas") {
+        const row = await env.DB_D1.prepare(`SELECT * FROM proformas WHERE id=?`).bind(numericId).first();
+        if (!row) throw new Error("RETRY_SOURCE_NOT_FOUND");
+        return {
+          kind: "sync",
+          action,
+          params: { id: numericId, proInfo: createProformaBackupPayload(row, { id: numericId }) }
+        };
+      }
+
+      if (entityType === "audits") {
+        const row = await env.DB_D1.prepare(`SELECT * FROM audits WHERE id=?`).bind(numericId).first();
+        if (!row) throw new Error("RETRY_SOURCE_NOT_FOUND");
+        return {
+          kind: "sync",
+          action,
+          params: { id: numericId, data: createAuditBackupPayload(row, { id: numericId }) }
+        };
+      }
+
+      throw new Error("RETRY_ENTITY_UNSUPPORTED");
+    };
+
     const syncToBackup = (action, params, type, id) => {
       ctx.waitUntil((async () => {
         try {
           const res = await fetchFromGas(env, { action, params });
           if (!res.success) {
-            await env.DB_D1.prepare("INSERT INTO sync_log (action, entity_type, entity_id, status, error_message) VALUES (?, ?, ?, 'FAIL', ?)")
-              .bind(action, type, id || null, res.error || "GAS_FAIL").run();
+            await logSyncEvent(action, type, id, "FAIL", res.error || "GAS_FAIL");
           }
         } catch (e) {
-          await env.DB_D1.prepare("INSERT INTO sync_log (action, entity_type, entity_id, status, error_message) VALUES (?, ?, ?, 'CRASH', ?)")
-            .bind(action, type, id || null, e.message).run();
+          await logSyncEvent(action, type, id, "CRASH", e.message);
         }
       })());
     };
@@ -1168,6 +1308,17 @@ export default {
           }
         }
 
+        const incomingRowCount = countBulkSyncRows(d, hasScope, hasMasterType);
+        if (incomingRowCount > BULK_SYNC_ROW_LIMIT && !params?.forceLargeSync) {
+          return jsonResponse({
+            success: false,
+            error: "BULK_SYNC_CONFIRMATION_REQUIRED",
+            message: `Bu işlem ${incomingRowCount} satır yazacak. İkinci onay gerekiyor.`,
+            rowCount: incomingRowCount,
+            limit: BULK_SYNC_ROW_LIMIT,
+          }, 400);
+        }
+
         // === D1 YAZMA ===
         const stats = {};
 
@@ -1223,9 +1374,9 @@ export default {
           }
         }
 
-        // FK kısıtlamaları bulk sync süresince devre dışı — tüm operasyonlar bittikten sonra tekrar aktif
         await env.DB_D1.exec('PRAGMA foreign_keys = OFF');
 
+        try {
         // === DELETE — ters FK sırasında (çocuklar önce, parent sonra) ===
         const safeRun = async (label, fn) => { try { await fn(); } catch(e) { throw new Error(`FK_DEBUG [${label}]: ${e.message}`); } };
         if (hasScope("proformas"))    await safeRun('DELETE proformas',    () => env.DB_D1.prepare(`DELETE FROM proformas`).run());
@@ -1648,6 +1799,9 @@ export default {
 
         ctx.waitUntil(rebuildDashboardStats());
         return jsonResponse({ success: true, message: "Sync Completed", stats, scope, masterTypes });
+        } finally {
+          await env.DB_D1.exec('PRAGMA foreign_keys = ON');
+        }
       },
       exportData: async (params, ctx, env) => {
         try {
@@ -1671,10 +1825,90 @@ export default {
         }
       },
       exportBackup: async (params, ctx, env) => {
+        const ip = getClientIp(request);
+        const dayKey = new Date().toISOString().slice(0, 10);
+        const rateKey = `ratelimit:exportBackup:${ip}:${dayKey}`;
+        const currentCount = parseInt(await env.DB.get(rateKey) || "0", 10);
+        const limit = 3;
+
+        if (currentCount >= limit) {
+          return jsonResponse({
+            success: false,
+            error: "EXPORT_BACKUP_RATE_LIMIT",
+            message: "Günlük dışa aktarma limiti aşıldı."
+          }, 429);
+        }
+
+        ctx.waitUntil(env.DB.put(rateKey, String(currentCount + 1), { expirationTtl: 86400 }));
         return SyncHandlers.exportData(
           { scope: ["companies", "certificates", "audits", "tests", "proformas", "master"] },
           ctx, env
         );
+      },
+      getSyncLog: async (params, ctx, env) => {
+        const limit = Math.min(Math.max(parseInt(params?.limit || "20", 10) || 20, 1), 100);
+        const status = String(params?.status || "").trim().toUpperCase();
+        const allowedStatuses = new Set(["FAIL", "CRASH", "RECOVERED"]);
+
+        let stmt;
+        if (status && allowedStatuses.has(status)) {
+          stmt = env.DB_D1.prepare(
+            `SELECT * FROM sync_log WHERE status = ? ORDER BY created_at DESC, id DESC LIMIT ?`
+          ).bind(status, limit);
+        } else {
+          stmt = env.DB_D1.prepare(
+            `SELECT * FROM sync_log ORDER BY created_at DESC, id DESC LIMIT ?`
+          ).bind(limit);
+        }
+
+        const { results } = await stmt.all();
+        return jsonResponse({ success: true, data: results || [] });
+      },
+      retrySyncLog: async (params, ctx, env) => {
+        const ids = Array.isArray(params?.ids) ? params.ids.map((id) => parseInt(id, 10)).filter((id) => Number.isInteger(id)) : [];
+        if (!ids.length) {
+          return jsonResponse({ success: false, error: "SYNC_LOG_IDS_REQUIRED" }, 400);
+        }
+
+        const summary = {
+          requested: ids.length,
+          recovered: 0,
+          failed: 0,
+          skipped: 0,
+          items: [],
+        };
+
+        for (const id of ids) {
+          const logRow = await env.DB_D1.prepare(`SELECT * FROM sync_log WHERE id=?`).bind(id).first();
+          if (!logRow) {
+            summary.skipped += 1;
+            summary.items.push({ id, status: "SKIPPED", error: "SYNC_LOG_NOT_FOUND" });
+            continue;
+          }
+
+          try {
+            const retry = await buildRetryPayloadForLog(logRow);
+            let result;
+            if (retry.kind === "direct") {
+              result = await fetchFromGas(env, retry.body);
+            } else {
+              result = await fetchFromGas(env, { action: retry.action, params: retry.params });
+            }
+
+            if (!result?.success) {
+              throw new Error(result?.error || "RETRY_FAILED");
+            }
+
+            await env.DB_D1.prepare(`UPDATE sync_log SET status='RECOVERED', error_message=NULL WHERE id=?`).bind(id).run();
+            summary.recovered += 1;
+            summary.items.push({ id, status: "RECOVERED" });
+          } catch (error) {
+            summary.failed += 1;
+            summary.items.push({ id, status: "FAILED", error: error?.message || String(error) });
+          }
+        }
+
+        return jsonResponse({ success: true, data: summary });
       },
       importBackup: async (params, ctx, env) => {
         const sqlContent = params?.sql || params?.payload;
@@ -1783,15 +2017,11 @@ export default {
         try {
           const gasResult = await fetchFromGas(env, { action: "runDailyBackup", params: {} });
           if (!gasResult.success) {
-            await env.DB_D1.prepare(
-              `INSERT INTO sync_log (action, entity_type, status, error_message, created_at) VALUES (?, ?, ?, ?, unixepoch())`
-            ).bind("cronBackup", "all", "FAIL", gasResult.error || "GAS runDailyBackup başarısız").run();
+            await logSyncEvent("cronBackup", "all", null, "FAIL", gasResult.error || "GAS runDailyBackup başarısız");
           }
           return jsonResponse(gasResult);
         } catch (err) {
-          await env.DB_D1.prepare(
-            `INSERT INTO sync_log (action, entity_type, status, error_message, created_at) VALUES (?, ?, ?, ?, unixepoch())`
-          ).bind("cronBackup", "all", "CRASH", err.message).run();
+          await logSyncEvent("cronBackup", "all", null, "CRASH", err.message);
           return jsonResponse({ success: false, error: err.message }, 502);
         }
       }
@@ -1835,15 +2065,36 @@ export default {
       updateCompany: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
-        
+
+        if (p?.expectedEtag) {
+          const currentRow = await env.DB_D1.prepare(`SELECT * FROM companies WHERE id=?`).bind(parseInt(id)).first();
+          if (!currentRow) return jsonResponse({ success: false, error: "NOT_FOUND" }, 404);
+          const currentCanonical = createCanonicalCompany(currentRow, { id });
+          if (String(currentCanonical.__etag || "") !== String(p.expectedEtag)) {
+            return jsonResponse({ success: false, error: "CONFLICT" }, 409);
+          }
+        }
+        const companyLock = await checkOptimisticLock("companies", id, p?.expected_updated_at);
+        if (!companyLock.ok) return companyLock.response;
+
         const canonical = createCanonicalCompany(p?.companyInfo || {}, { id });
         // Step 1: D1 First
         await upsertCompanyD1(canonical, parseInt(id)).run();
-        
+
+        const freshRow = await env.DB_D1.prepare(`SELECT * FROM companies WHERE id=?`).bind(parseInt(id)).first();
+        const responseCompany = freshRow ? createCanonicalCompany(freshRow, { id }) : { ...canonical, id };
+
         // Step 2: Background Sync
         syncToBackup("updateCompany", p, "companies", id);
-        
-        return jsonResponse({ success: true });
+
+        return jsonResponse({
+          success: true,
+          data: {
+            company: responseCompany,
+            etag: responseCompany.__etag || null,
+            updated_at: freshRow?.updated_at ?? null,
+          }
+        });
       },
       deleteCompany: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
@@ -1918,6 +2169,8 @@ export default {
       updateCertificate: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        const lockCheck = await checkOptimisticLock("certificates", id, p?.expected_updated_at);
+        if (!lockCheck.ok) return lockCheck.response;
 
         const canonical = createCanonicalCertificate(p?.certInfo || {}, { id });
         // Step 1: D1 First
@@ -1927,7 +2180,8 @@ export default {
         syncToBackup("updateCertificate", p, "certificates", id);
         ctx.waitUntil(rebuildDashboardStats());
 
-        return jsonResponse({ success: true });
+        const freshRow = await env.DB_D1.prepare(`SELECT updated_at FROM certificates WHERE id=?`).bind(parseInt(id)).first();
+        return jsonResponse({ success: true, data: { updated_at: freshRow?.updated_at ?? null } });
       },
       deleteCertificate: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
@@ -2107,6 +2361,8 @@ export default {
       updateTest: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        const lockCheck = await checkOptimisticLock("tests", id, p?.expected_updated_at);
+        if (!lockCheck.ok) return lockCheck.response;
 
         const canonical = createCanonicalTestRow(p?.testInfo || {}, { id });
         // Step 1: D1 First
@@ -2115,7 +2371,8 @@ export default {
         // Step 2: Background Sync
         syncToBackup("updateTest", { ...p, id, testInfo: createTestBackupPayload(canonical, { id }) }, "tests", id);
         
-        return jsonResponse({ success: true });
+        const freshRow = await env.DB_D1.prepare(`SELECT updated_at FROM tests WHERE id=?`).bind(parseInt(id)).first();
+        return jsonResponse({ success: true, data: { updated_at: freshRow?.updated_at ?? null } });
       },
       addProforma: async (p, ctx, env) => {
         const canonical = createCanonicalProformaRow(p?.proInfo || {});
@@ -2132,6 +2389,8 @@ export default {
       updateProforma: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        const lockCheck = await checkOptimisticLock("proformas", id, p?.expected_updated_at);
+        if (!lockCheck.ok) return lockCheck.response;
 
         const canonical = createCanonicalProformaRow(p?.proInfo || {}, { id });
         // Step 1: D1 First
@@ -2140,7 +2399,8 @@ export default {
         // Step 2: Background Sync
         syncToBackup("updateProforma", { ...p, id, proInfo: createProformaBackupPayload(canonical, { id }) }, "proformas", id);
         
-        return jsonResponse({ success: true });
+        const freshRow = await env.DB_D1.prepare(`SELECT updated_at FROM proformas WHERE id=?`).bind(parseInt(id)).first();
+        return jsonResponse({ success: true, data: { updated_at: freshRow?.updated_at ?? null } });
       },
       scheduleAudit: async (p, ctx, env) => {
         const canonical = createCanonicalAuditRow(p?.data || {});
@@ -2157,6 +2417,8 @@ export default {
       updateAudit: async (p, ctx, env) => {
         const id = String(p?.id || p?.auditId || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        const lockCheck = await checkOptimisticLock("audits", id, p?.expected_updated_at);
+        if (!lockCheck.ok) return lockCheck.response;
 
         const canonical = createCanonicalAuditRow(p?.data || p?.auditInfo || {}, { id });
         // Step 1: D1 First
@@ -2165,7 +2427,8 @@ export default {
         // Step 2: Background Sync
         syncToBackup("updateAudit", { ...p, id, data: createAuditBackupPayload(canonical, { id }) }, "audits", id);
         
-        return jsonResponse({ success: true });
+        const freshRow = await env.DB_D1.prepare(`SELECT updated_at FROM audits WHERE id=?`).bind(parseInt(id)).first();
+        return jsonResponse({ success: true, data: { updated_at: freshRow?.updated_at ?? null } });
       },
       deleteAudit: async (p, ctx, env) => {
         const id = String(p?.id || p?.auditId || "").trim();

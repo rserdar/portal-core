@@ -390,6 +390,7 @@ import { ArrowLeft, Save } from 'lucide-astro';
   const params = new URLSearchParams(location.search);
   const firmaId = params.get('id') || '';
   let companyEtag = '';
+  let companyUpdatedAt = '';
 
   // Update back/view links
   const btnBack = document.getElementById('btn-back') as HTMLAnchorElement | null;
@@ -469,6 +470,7 @@ import { ArrowLeft, Save } from 'lucide-astro';
       if (!isYurtdisi) setVal('f-ulke', '');
     }
     companyEtag = g(c, '__etag');
+    companyUpdatedAt = g(c, 'updated_at');
 
     const nick = g(c, 'nickname', 'nick');
     const headerNick = document.getElementById('header-nick');
@@ -539,10 +541,14 @@ import { ArrowLeft, Save } from 'lucide-astro';
     };
 
     try {
-      const res = await api.call('updateCompany', { id: firmaId, companyInfo, expectedEtag: companyEtag || undefined });
+      const res = await api.updateCompany(firmaId, companyInfo, {
+        expectedEtag: companyEtag || undefined,
+        expected_updated_at: companyUpdatedAt || undefined,
+      });
       if (res?.success) {
         const updatedData = (res as any)?.data?.company || { ...companyInfo, id: firmaId };
         companyEtag = String((res as any)?.data?.etag || companyEtag || '');
+        companyUpdatedAt = String((res as any)?.data?.updated_at || companyUpdatedAt || '');
         
         // 🔄 Yerel cache'i (Nanostore & IndexedDB) güncelle — yalnızca search alanları
         const currentList = $companies.get();

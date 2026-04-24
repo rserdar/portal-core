@@ -187,13 +187,25 @@ export const api = {
   async getCompanies() { return this.call("getCompanies"); },
   async getCompanyById(id: string | number) { return this.call("getCompanyById", { id }); },
   async addCompany(companyInfo: any) { return this.call("addCompany", { companyInfo }); },
-  async updateCompany(id: string | number, companyInfo: any) { return this.call("updateCompany", { id, companyInfo }); },
+  async updateCompany(
+    id: string | number,
+    companyInfo: any,
+    options: { expected_updated_at?: string | number; expectedEtag?: string } = {}
+  ) {
+    return this.call("updateCompany", { id, companyInfo, ...options });
+  },
   async getDashboardSummary() { return this.call("getDashboardSummary"); },
   async getCertificateSummaries() { return this.call("getCertificateSummaries"); },
   async getCertificates() { return this.call("getCertificates"); },
   async getCertificateById(id: string | number) { return this.call("getCertificateById", { id }); },
   async addCertificate(certInfo: any) { return this.call("addCertificate", { certInfo }); },
-  async updateCertificate(id: string | number, certInfo: any) { return this.call("updateCertificate", { id, certInfo }); },
+  async updateCertificate(
+    id: string | number,
+    certInfo: any,
+    options: { expected_updated_at?: string | number } = {}
+  ) {
+    return this.call("updateCertificate", { id, certInfo, ...options });
+  },
   async deleteCertificate(id: string | number) { return this.call("deleteCertificate", { id }); },
   async updateCertificateField(id: string | number, field: string, value: any) {
     return this.call("updateCertificateField", { id, field, value });
@@ -226,8 +238,12 @@ export const api = {
     return result; 
   },
   async scheduleAudit(data: any) { return this.call("scheduleAudit", { data }); },
-  async updateAudit(id: string | number, data: any) {
-    return this.call("updateAudit", { id, data });
+  async updateAudit(
+    id: string | number,
+    data: any,
+    options: { expected_updated_at?: string | number } = {}
+  ) {
+    return this.call("updateAudit", { id, data, ...options });
   },
   async getTestsByFirmaId(firmaId: string | number) { 
     return this.call("getTestsByFirmaId", { firmaId }); 
@@ -242,14 +258,24 @@ export const api = {
   async addProforma(proInfo: any) {
     return this.call("addProforma", { proInfo });
   },
-  async updateProforma(id: string | number, proInfo: any) {
-    return this.call("updateProforma", { id, proInfo });
+  async updateProforma(
+    id: string | number,
+    proInfo: any,
+    options: { expected_updated_at?: string | number } = {}
+  ) {
+    return this.call("updateProforma", { id, proInfo, ...options });
   },
   async deleteProforma(id: string | number) {
     return this.call("deleteProforma", { id });
   },
   async addTest(testInfo: any) { return this.call("addTest", { testInfo }); },
-  async updateTest(id: string | number, testInfo: any) { return this.call("updateTest", { id, testInfo }); },
+  async updateTest(
+    id: string | number,
+    testInfo: any,
+    options: { expected_updated_at?: string | number } = {}
+  ) {
+    return this.call("updateTest", { id, testInfo, ...options });
+  },
   async deleteTest(id: string | number) { return this.call("deleteTest", { id }); },
   async updateSurveillance(ids: (string | number)[], status: boolean | string, firmaId?: string | number) {
     return this.call("updateSurveillance", { ids, status, ...(firmaId !== undefined ? { firmaId } : {}) });
@@ -320,7 +346,8 @@ export const api = {
     scope?: string[],
     offset?: number,
     limit?: number,
-    masterTypes?: Array<"standards" | "auditors" | "consultants" | "testdocs" | "sysdocs">
+    masterTypes?: Array<"standards" | "auditors" | "consultants" | "testdocs" | "sysdocs">,
+    forceLargeSync?: boolean
   }) {
     return this.call("bulkSync", params || {});
   },
@@ -332,6 +359,9 @@ export const api = {
   },
   async smartSync() { return this.call("smartSync"); },
   async exportBackup() { return this.call("exportBackup"); },
+  async getSyncLog(limit: number = 20, status?: string) {
+    return this.call("getSyncLog", status ? { limit, status } : { limit });
+  },
   async exportData(
     scope: string[],
     masterTypes?: Array<"standards" | "auditors" | "consultants" | "testdocs" | "sysdocs">

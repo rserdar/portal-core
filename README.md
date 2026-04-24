@@ -57,7 +57,7 @@ Offline Cache:    Browser IndexedDB ──► sıfır gecikmeli UI açılışı
 
 ---
 
-## Backend: Google Apps Script (`src/gas/api/`)
+## Backend: Google Apps Script (`src/gas/`)
 
 | Servis | Rol |
 | :--- | :--- |
