@@ -592,12 +592,10 @@ import { ArrowLeft, Save } from 'lucide-astro';
           data: base64
         }, nick);
 
-        if (res?.success && (res as any).data?.id) {
-          targetInput.value = (res as any).data.id;
-          toast.success('Dosya başarıyla yüklendi.');
-        } else if (res?.success && (res as any).fileId) {
-          // Some API versions return fileId directly
-          targetInput.value = (res as any).fileId;
+        const fileId = (res as any).data?.id || (res as any).data?.fileId || (res as any).fileId;
+
+        if (res?.success && fileId) {
+          targetInput.value = fileId;
           toast.success('Dosya başarıyla yüklendi.');
         } else {
           console.error('[Upload] Failed:', res);
