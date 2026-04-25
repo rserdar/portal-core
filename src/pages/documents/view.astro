@@ -81,6 +81,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <script>
   import { toast } from '../../lib/toast';
+  import { $companies } from '../../lib/store';
+  import { api } from '../../lib/api';
+  import { SyncManager } from '../../lib/sync';
 
   let selectedNickname = "";
   let selectedFirmaNo = "";

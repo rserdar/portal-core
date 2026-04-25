@@ -245,6 +245,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
 <script>
   import { toast } from '../../lib/toast';
+  import { api } from '../../lib/api';
+  import { DB } from '../../lib/db';
+  import { SyncManager } from '../../lib/sync';
 
   let cleanupFns: Array<() => void> = [];
   function registerCleanup(fn: () => void) { cleanupFns.push(fn); }
