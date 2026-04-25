@@ -495,21 +495,32 @@ import { ArrowLeft, Save } from 'lucide-astro';
     const panel = document.getElementById('drive-picker-panel');
     const titleEl = document.getElementById('drive-picker-title');
     const listEl = document.getElementById('drive-picker-list');
+    const nickInput = document.getElementById('f-nick') as HTMLInputElement | null;
     
     if (panel) panel.classList.remove('hidden');
     if (titleEl) titleEl.textContent = `${title} için seçiliyor...`;
     if (listEl) listEl.innerHTML = '<p class="text-xs text-muted italic animate-pulse">Son yüklenen dosyalar getiriliyor...</p>';
 
+    const nick = nickInput?.value?.trim() || '';
+    if (!nick) {
+      if (listEl) listEl.innerHTML = '<p class="text-xs text-rose-400">Firma kısa adı (Klasör adı) gereklidir.</p>';
+      return;
+    }
+
     try {
-      const res = await api.getRecentDriveFiles('image/', 15);
-      if (res?.success && res.data?.files) {
-        if (res.data.files.length === 0) {
+      const res = await api.call('getRecentFiles', {
+        nickname: nick,
+        mimeTypes: ['image/png', 'image/jpeg', 'image/gif']
+      });
+      
+      if (res?.success && Array.isArray(res.data)) {
+        if (res.data.length === 0) {
           if (listEl) listEl.innerHTML = '<p class="text-xs text-muted">Drive klasöründe uygun dosya bulunamadı.</p>';
           return;
         }
 
         let html = '';
-        res.data.files.forEach((file: any) => {
+        res.data.forEach((file: any) => {
           html += `
             <button type="button" class="w-full flex items-center justify-between px-3 py-2 hover:bg-surface rounded-xl transition-colors text-left group" data-file-id="${file.id}">
               <div class="min-w-0 pr-3">
@@ -534,9 +545,11 @@ import { ArrowLeft, Save } from 'lucide-astro';
           });
         }
       } else {
-        if (listEl) listEl.innerHTML = '<p class="text-xs text-rose-400">Dosyalar alınamadı.</p>';
+        console.error('[Picker] Failed:', res);
+        if (listEl) listEl.innerHTML = `<p class="text-xs text-rose-400">Hata: ${res?.error || 'Dosyalar alınamadı'}</p>`;
       }
     } catch (e) {
+      console.error('[Picker] Critical Error:', e);
       if (listEl) listEl.innerHTML = '<p class="text-xs text-rose-400">Bir hata oluştu.</p>';
     }
   }
@@ -545,6 +558,7 @@ import { ArrowLeft, Save } from 'lucide-astro';
     const fileInput = document.getElementById(inputId) as HTMLInputElement | null;
     const targetInput = document.getElementById(targetId) as HTMLInputElement | null;
     const uploadBtn = document.getElementById(uploadBtnId) as HTMLButtonElement | null;
+    const nickInput = document.getElementById('f-nick') as HTMLInputElement | null;
     
     if (!fileInput || !targetInput || !uploadBtn) return;
 
@@ -552,25 +566,45 @@ import { ArrowLeft, Save } from 'lucide-astro';
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
+      const nick = nickInput?.value?.trim() || '';
+      if (!nick) {
+        toast.error('Firma kısa adı (Klasör adı) gereklidir.');
+        return;
+      }
+
       try {
         uploadBtn.disabled = true;
         uploadBtn.innerHTML = '<span class="animate-pulse">Yükleniyor...</span>';
         
         const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
-          reader.onload = () => resolve((reader.result as string).split(',')[1]);
+          reader.onload = () => {
+            const res = reader.result as string;
+            resolve(res.split(',')[1]);
+          };
           reader.onerror = reject;
           reader.readAsDataURL(file);
         });
 
-        const res = await api.uploadToDrive(file.name, file.type, base64);
-        if (res?.success && res.data?.id) {
-          targetInput.value = res.data.id;
+        const res = await api.uploadFile({
+          fileName: file.name,
+          mimeType: file.type,
+          data: base64
+        }, nick);
+
+        if (res?.success && (res as any).data?.id) {
+          targetInput.value = (res as any).data.id;
+          toast.success('Dosya başarıyla yüklendi.');
+        } else if (res?.success && (res as any).fileId) {
+          // Some API versions return fileId directly
+          targetInput.value = (res as any).fileId;
           toast.success('Dosya başarıyla yüklendi.');
         } else {
-          toast.error('Dosya yüklenemedi.');
+          console.error('[Upload] Failed:', res);
+          toast.error('Dosya yüklenemedi: ' + (res?.error || 'Bilinmeyen hata'));
         }
       } catch (err) {
+        console.error('[Upload] Critical Error:', err);
         toast.error('Yükleme sırasında hata oluştu.');
       } finally {
         fileInput.value = '';
