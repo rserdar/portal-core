@@ -486,6 +486,102 @@ import { ArrowLeft, Save } from 'lucide-astro';
     document.getElementById('save-footer')?.classList.remove('hidden');
   }
 
+  // ─── File & Drive ─────────────────────────────────────────────────────────────
+
+  let pickerTargetId: string | null = null;
+
+  async function openDrivePicker(targetInputId: string, title: string) {
+    pickerTargetId = targetInputId;
+    const panel = document.getElementById('drive-picker-panel');
+    const titleEl = document.getElementById('drive-picker-title');
+    const listEl = document.getElementById('drive-picker-list');
+    
+    if (panel) panel.classList.remove('hidden');
+    if (titleEl) titleEl.textContent = `${title} için seçiliyor...`;
+    if (listEl) listEl.innerHTML = '<p class="text-xs text-muted italic animate-pulse">Son yüklenen dosyalar getiriliyor...</p>';
+
+    try {
+      const res = await api.getRecentDriveFiles('image/', 15);
+      if (res?.success && res.data?.files) {
+        if (res.data.files.length === 0) {
+          if (listEl) listEl.innerHTML = '<p class="text-xs text-muted">Drive klasöründe uygun dosya bulunamadı.</p>';
+          return;
+        }
+
+        let html = '';
+        res.data.files.forEach((file: any) => {
+          html += `
+            <button type="button" class="w-full flex items-center justify-between px-3 py-2 hover:bg-surface rounded-xl transition-colors text-left group" data-file-id="${file.id}">
+              <div class="min-w-0 pr-3">
+                <p class="text-xs font-semibold text-main truncate">${file.name}</p>
+              </div>
+              <span class="text-[10px] font-bold text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Seç</span>
+            </button>
+          `;
+        });
+        
+        if (listEl) {
+          listEl.innerHTML = html;
+          listEl.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const fileId = btn.getAttribute('data-file-id');
+              if (fileId && pickerTargetId) {
+                setVal(pickerTargetId, fileId);
+                toast.success('Dosya seçildi.');
+                if (panel) panel.classList.add('hidden');
+              }
+            });
+          });
+        }
+      } else {
+        if (listEl) listEl.innerHTML = '<p class="text-xs text-rose-400">Dosyalar alınamadı.</p>';
+      }
+    } catch (e) {
+      if (listEl) listEl.innerHTML = '<p class="text-xs text-rose-400">Bir hata oluştu.</p>';
+    }
+  }
+
+  async function handleFileUpload(inputId: string, targetId: string, uploadBtnId: string) {
+    const fileInput = document.getElementById(inputId) as HTMLInputElement | null;
+    const targetInput = document.getElementById(targetId) as HTMLInputElement | null;
+    const uploadBtn = document.getElementById(uploadBtnId) as HTMLButtonElement | null;
+    
+    if (!fileInput || !targetInput || !uploadBtn) return;
+
+    fileInput.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<span class="animate-pulse">Yükleniyor...</span>';
+        
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const res = await api.uploadToDrive(file.name, file.type, base64);
+        if (res?.success && res.data?.id) {
+          targetInput.value = res.data.id;
+          toast.success('Dosya başarıyla yüklendi.');
+        } else {
+          toast.error('Dosya yüklenemedi.');
+        }
+      } catch (err) {
+        toast.error('Yükleme sırasında hata oluştu.');
+      } finally {
+        fileInput.value = '';
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Yükle`;
+      }
+    };
+
+    fileInput.click();
+  }
+
   // ─── Save ─────────────────────────────────────────────────────────────────────
 
   async function saveForm() {
