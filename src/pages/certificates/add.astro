@@ -836,6 +836,15 @@ const iso50001Reference = (await getEntry('reference', 'iso50001-categories'))?.
     buildCertificateQrLink,
   } from "../../features/certificate-form";
 
+  import {
+    parseReferenceScript,
+    recommendClassification,
+    buildKapsamText,
+    type EaReferenceItem,
+    type NaceReferenceItem,
+    type ClassificationSuggestion,
+  } from "../../features/classification-reference";
+
   let cleanupFns: Array<() => void> = [];
   function registerCleanup(fn: () => void) {
     cleanupFns.push(fn);
