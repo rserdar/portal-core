@@ -31,13 +31,15 @@ const DriveService = {
    * yeniden deneme (retry) mantığı ile klasör nesnesini döndürür.
    */
   _isTransientError: function(msg) {
+    const text = String(msg || "");
     // "Drive" appears in service error messages across all locales
     // e.g. TR: "Hizmet hatası: Drive", EN: "Service error: Drive", EL: "Σφάλμα υπηρεσίας: Drive"
-    return msg.indexOf("Drive") > -1
-      || msg.indexOf("Internal Error") > -1
-      || msg.indexOf("Unexpected error") > -1
-      || msg.indexOf("timeout") > -1
-      || msg.indexOf("quota") > -1;
+    return text.indexOf("Drive") > -1
+      || text.indexOf("Internal Error") > -1
+      || text.indexOf("Unexpected error") > -1
+      || text.indexOf("timeout") > -1
+      || text.indexOf("quota") > -1
+      || text.indexOf("DRIVE_EMPTY_RESPONSE") > -1;
   },
 
   safeGetFolder: function(id, label = "Klasör") {
@@ -71,6 +73,38 @@ const DriveService = {
       }
     }
     throw new Error(`${label} erişim hatası! ID: ${id}. Google Mesajı: ${lastErr.message}`);
+  },
+
+  safeCreateFolder: function(parentFolder, folderName, label = "Alt klasör") {
+    let lastErr = null;
+    for (let i = 0; i < 3; i++) {
+      try {
+        if (!parentFolder) throw new Error("Parent klasör nesnesi boş!");
+        if (!folderName) throw new Error("Klasör adı boş!");
+        return parentFolder.createFolder(folderName);
+      } catch (e) {
+        lastErr = e;
+        if (this._isTransientError(e.message)) { Utilities.sleep(1000 * (i + 1)); continue; }
+        throw e;
+      }
+    }
+    throw new Error(`${label} oluşturulamadı. Google Mesajı: ${lastErr.message}`);
+  },
+
+  safeCreateFile: function(folder, blob, label = "Dosya") {
+    let lastErr = null;
+    for (let i = 0; i < 3; i++) {
+      try {
+        if (!folder) throw new Error("Hedef klasör nesnesi boş!");
+        if (!blob) throw new Error("Kaydedilecek blob boş!");
+        return folder.createFile(blob);
+      } catch (e) {
+        lastErr = e;
+        if (this._isTransientError(e.message)) { Utilities.sleep(1000 * (i + 1)); continue; }
+        throw e;
+      }
+    }
+    throw new Error(`${label} oluşturulamadı. Google Mesajı: ${lastErr.message}`);
   },
 
   /**
@@ -126,6 +160,9 @@ const DriveService = {
           if (pageToken) query.pageToken = pageToken;
 
           const res = Drive.Files.list(query);
+          if (!res || typeof res !== "object") {
+            throw new Error("DRIVE_EMPTY_RESPONSE");
+          }
           (res.files || []).forEach(function(f) {
             if (f.mimeType === "application/vnd.google-apps.folder") {
               folders.push({ id: f.id, name: f.name, mimeType: f.mimeType, dateCreated: f.createdTime });
@@ -144,8 +181,14 @@ const DriveService = {
           continue;
         }
         BaseService.logError("listDriveContents", e, { folderId: folderId });
+        if (String(e && e.message || "").indexOf("DRIVE_EMPTY_RESPONSE") > -1) {
+          throw new Error("DRIVE_EMPTY_RESPONSE: Drive listeleme servisi boş yanıt verdi. Lütfen tekrar deneyin.");
+        }
         throw e;
       }
+    }
+    if (String(lastErr && lastErr.message || "").indexOf("DRIVE_EMPTY_RESPONSE") > -1) {
+      throw new Error("DRIVE_EMPTY_RESPONSE: Drive listeleme servisi boş yanıt verdi. Lütfen tekrar deneyin.");
     }
     throw lastErr;
   },
@@ -174,9 +217,19 @@ const DriveService = {
    * Belirtilen isimdeki klasörü bulur veya oluşturur (Helper).
    */
   getOrCreateSubFolder: function(parentFolderId, folderName) {
-    const parent = DriveApp.getFolderById(parentFolderId);
-    const folders = parent.getFoldersByName(folderName);
-    return folders.hasNext() ? folders.next() : parent.createFolder(folderName);
+    const parent = this.safeGetFolder(parentFolderId, "Üst klasör");
+    let lastErr = null;
+    for (let i = 0; i < 3; i++) {
+      try {
+        const folders = parent.getFoldersByName(folderName);
+        return folders.hasNext() ? folders.next() : this.safeCreateFolder(parent, folderName, "Alt klasör");
+      } catch (e) {
+        lastErr = e;
+        if (this._isTransientError(e.message)) { Utilities.sleep(1000 * (i + 1)); continue; }
+        throw e;
+      }
+    }
+    throw new Error(`Alt klasör erişim/oluşturma hatası! Ad: ${folderName}. Google Mesajı: ${lastErr.message}`);
   },
 
   /**
@@ -195,7 +248,7 @@ const DriveService = {
       const rawData = String(fileObj.data || "");
       const base64Data = rawData.includes(",") ? rawData.split(",").pop() : rawData;
       const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType, fileName);
-      const file = folder.createFile(blob);
+      const file = this.safeCreateFile(folder, blob, "Yüklenen dosya");
 
       return {
         success: true,

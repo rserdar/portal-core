@@ -15,6 +15,7 @@ interface ApiResponse<T = any> {
   error: string | null;
   status?: number;
   fromCache?: boolean;
+  currentFolderId?: string;
   stats?: any;
   requiresConfirmation?: boolean;
   confirmation?: {
@@ -28,6 +29,21 @@ interface ApiResponse<T = any> {
 const DEFAULT_TIMEOUT_MS = 15000;
 const LONG_TIMEOUT_MS = 180000; // bulkSync/import-export gibi ağır işlemler için 3 dk
 const inFlightRequests = new Map<string, Promise<ApiResponse<any>>>();
+const DRIVE_RETRYABLE_ACTIONS = new Set(["listDriveContents", "getRecentFiles"]);
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetriableDriveError(action: string, payload: ApiResponse<any> | null | undefined): boolean {
+  if (!DRIVE_RETRYABLE_ACTIONS.has(action)) return false;
+  const errorText = String(payload?.error || "");
+  return errorText.includes("DRIVE_EMPTY_RESPONSE")
+    || errorText.includes("GAS_INVALID_RESPONSE")
+    || errorText.includes("Empty response")
+    || errorText.includes("boş yanıt")
+    || errorText.includes("Κενή απάντηση");
+}
 
 function hasUsableAuditDates(audits: any[]): boolean {
   return audits.some((audit) => {
@@ -138,8 +154,7 @@ export const api = {
     const timeoutMs = longRunningActions.has(action) ? LONG_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
     const timeoutId = setTimeout(() => controller.abort('timeout'), timeoutMs);
 
-    const requestPromise = (async (): Promise<ApiResponse<T>> => {
-    try {
+    const performFetch = async (): Promise<ApiResponse<T>> => {
       const response = await fetch(CONFIG.WORKER_URL, {
         method: "POST",
         headers: {
@@ -161,24 +176,38 @@ export const api = {
         throw new Error(errorMsg);
       }
       return { status: response.status, ...((payload || { success: false, data: null, error: "Geçersiz yanıt" }) as ApiResponse<T>) };
-    } catch (error: any) {
-      const isTimeout = error?.name === 'AbortError' && controller.signal.reason === 'timeout';
-      const isOtherAbort = error?.name === 'AbortError' && !isTimeout;
-      
-      console.error(`[API] Call Error (${action}):`, error);
+    };
 
-      let errorMsg = error.message || "Bilinmeyen hata";
-      if (isTimeout) errorMsg = "İstek zaman aşımına uğradı (Timeout).";
-      if (isOtherAbort) errorMsg = "İstek iptal edildi (Aborted).";
+    const requestPromise = (async (): Promise<ApiResponse<T>> => {
+      try {
+        let result = await performFetch();
 
-      return { success: false, data: null, error: errorMsg };
-    } finally {
-      clearTimeout(timeoutId);
-      if (requestKey) {
-        inFlightRequests.delete(requestKey);
+        if (!result.success && isRetriableDriveError(action, result)) {
+          console.warn(`[API] ${action} transient Drive error detected, retrying once...`, result.error);
+          await sleep(900);
+          result = await performFetch();
+        }
+
+        return result;
+      } catch (error: any) {
+        const isTimeout = error?.name === 'AbortError' && controller.signal.reason === 'timeout';
+        const isOtherAbort = error?.name === 'AbortError' && !isTimeout;
+        
+        console.error(`[API] Call Error (${action}):`, error);
+
+        let errorMsg = error.message || "Bilinmeyen hata";
+        if (isTimeout) errorMsg = "İstek zaman aşımına uğradı (Timeout).";
+        if (isOtherAbort) errorMsg = "İstek iptal edildi (Aborted).";
+
+        return { success: false, data: null, error: errorMsg };
+      } finally {
+        clearTimeout(timeoutId);
+        if (requestKey) {
+          inFlightRequests.delete(requestKey);
+        }
       }
     }
-    })();
+    )();
 
     if (requestKey) {
       inFlightRequests.set(requestKey, requestPromise);
@@ -292,8 +321,11 @@ export const api = {
     return this.call("translate", { text, toEn });
   },
 
-  async docsToPdf(docId: string) {
-    return this.call("convertToPdf", { docId });
+  async docsToPdf(
+    docId: string,
+    options: { targetFolderId?: string; targetSubfolderName?: string } = {}
+  ) {
+    return this.call("convertToPdf", { docId, ...options });
   },
 
   async getStandardById(id: string | number) {

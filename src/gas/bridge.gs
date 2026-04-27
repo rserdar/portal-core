@@ -227,7 +227,10 @@ function doPost(e) {
         break;
 
       case "convertToPdf":
-        const pdfRes = PDFService.convertToPdf(params.docId);
+        const pdfRes = PDFService.convertToPdf(params.docId, {
+          targetFolderId: params.targetFolderId,
+          targetSubfolderName: params.targetSubfolderName
+        });
         result.data = pdfRes;
         result.success = pdfRes.success;
         break;

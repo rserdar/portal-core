@@ -20,15 +20,16 @@ const PDFService = {
    * Dokümanı PDF'e dönüştürür.
    * Önce lokal servisi dener, başarısız olursa iLovePDF'e geçer.
    */
-  convertToPdf: function(docId) {
+  convertToPdf: function(docId, options) {
     try {
-      const docFile = DriveApp.getFileById(docId);
+      const docFile = DriveService.safeGetFile(docId, "PDF'e çevrilecek doküman");
       const docName = docFile.getName();
+      const targetFolder = this._resolveTargetFolder(docFile, options || {});
 
-      const localResult = this._tryLocalConverter(docFile, docName);
+      const localResult = this._tryLocalConverter(docFile, docName, targetFolder);
       if (localResult.success) return localResult;
 
-      return this._tryILovePDF(docFile, docName);
+      return this._tryILovePDF(docFile, docName, targetFolder);
     } catch (e) {
       BaseService.logError("convertToPdf", e);
       return { success: false, error: e.message };
@@ -49,7 +50,27 @@ const PDFService = {
 
   // ─── Local Converter ────────────────────────────────────────────────────────
 
-  _tryLocalConverter: function(file, name) {
+  _resolveTargetFolder: function(file, options) {
+    const parentFolder = file.getParents().hasNext() ? file.getParents().next() : DriveApp.getRootFolder();
+    const targetFolderId = String(options.targetFolderId || "").trim();
+    const targetSubfolderName = String(options.targetSubfolderName || "").trim();
+
+    if (targetFolderId && targetSubfolderName) {
+      return DriveService.getOrCreateSubFolder(targetFolderId, targetSubfolderName);
+    }
+
+    if (targetFolderId) {
+      return DriveService.safeGetFolder(targetFolderId, "PDF hedef klasörü");
+    }
+
+    if (targetSubfolderName) {
+      return DriveService.getOrCreateSubFolder(parentFolder.getId(), targetSubfolderName);
+    }
+
+    return parentFolder;
+  },
+
+  _tryLocalConverter: function(file, name, targetFolder) {
     try {
       const config = this.getSettings();
       if (!config.LOCAL_TOKEN) {
@@ -80,8 +101,7 @@ const PDFService = {
       }
 
       finalBlob.setName(name + ".pdf");
-      const parentFolder = file.getParents().hasNext() ? file.getParents().next() : DriveApp.getRootFolder();
-      const saved = parentFolder.createFile(finalBlob);
+      const saved = DriveService.safeCreateFile(targetFolder, finalBlob, "PDF çıktısı");
       return this._buildSavedFilePayload(saved, "local");
     } catch (e) {
       return { success: false, error: e.message };
@@ -90,12 +110,10 @@ const PDFService = {
 
   // ─── iLovePDF Fallback ──────────────────────────────────────────────────────
 
-  _tryILovePDF: function(file, name) {
+  _tryILovePDF: function(file, name, targetFolder) {
     try {
       const pdfBlob = file.getAs("application/pdf");
       pdfBlob.setName(name + "_temp_for_ilovepdf.pdf");
-
-      const parentFolder = file.getParents().hasNext() ? file.getParents().next() : DriveApp.getRootFolder();
       const sessionToken = this._ilovepdfGetToken();
 
       // Adım 1: PDF → JPG
@@ -125,7 +143,7 @@ const PDFService = {
       const finalBlob = this._ilovepdfDownload(sessionToken, imgToPdfTask.task, imgToPdfTask.server);
       finalBlob.setName(name + ".pdf");
 
-      const saved = parentFolder.createFile(finalBlob);
+      const saved = DriveService.safeCreateFile(targetFolder, finalBlob, "PDF çıktısı");
       return this._buildSavedFilePayload(saved, "ilovepdf");
     } catch (e) {
       return { success: false, error: e.message };

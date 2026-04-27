@@ -74,6 +74,14 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
             <span id="bulk-convert-label">SEÇİLENLERİ ÇEVİR</span>
           </button>
+          <button
+            id="bulk-convert-pdf-folder-btn"
+            type="button"
+            class="hidden items-center gap-2 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-black transition-colors shadow-lg shadow-sky-600/20"
+          >
+            <Folder size={13} />
+            <span id="bulk-convert-pdf-folder-label">PDF KLASÖRÜNE ÇEVİR</span>
+          </button>
           <span id="file-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400">0 ÖĞE</span>
         </div>
       </div>
@@ -166,6 +174,7 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
     let selectedDocs = new Map<string, string>(); // id → name
     let failedDocs  = new Map<string, string>(); // id → name
     let isConverting = false;
+    let lastConvertMode: 'default' | 'pdf-subfolder' = 'default';
 
     const params  = new URLSearchParams(window.location.search);
     const firmaId = params.get('id') || '';
@@ -185,6 +194,8 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
     const openFolderBtn     = document.getElementById('open-folder-btn');
     const bulkConvertBtn    = document.getElementById('bulk-convert-btn') as HTMLButtonElement;
     const bulkConvertLabel  = document.getElementById('bulk-convert-label');
+    const bulkConvertPdfFolderBtn = document.getElementById('bulk-convert-pdf-folder-btn') as HTMLButtonElement;
+    const bulkConvertPdfFolderLabel = document.getElementById('bulk-convert-pdf-folder-label');
     const selectAllCb       = document.getElementById('select-all-docs') as HTMLInputElement | null;
     const convProgress      = document.getElementById('conv-progress');
     const convBar           = document.getElementById('conv-bar') as HTMLDivElement | null;
@@ -202,8 +213,11 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
     function updateBulkBtn() {
       const n = selectedDocs.size;
       if (bulkConvertLabel) bulkConvertLabel.textContent = `SEÇİLENLERİ ÇEVİR (${n})`;
+      if (bulkConvertPdfFolderLabel) bulkConvertPdfFolderLabel.textContent = `PDF KLASÖRÜNE ÇEVİR (${n})`;
       bulkConvertBtn.classList.toggle('hidden', n === 0);
       bulkConvertBtn.classList.toggle('inline-flex', n > 0);
+      bulkConvertPdfFolderBtn.classList.toggle('hidden', n === 0);
+      bulkConvertPdfFolderBtn.classList.toggle('inline-flex', n > 0);
     }
 
     function updateSelectAll() {
@@ -237,16 +251,21 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
       }
     }
 
-    async function runBulkConvert(docs: { id: string; name: string }[]) {
+    async function runBulkConvert(
+      docs: { id: string; name: string }[],
+      options: { targetFolderId?: string; targetSubfolderName?: string; mode?: 'default' | 'pdf-subfolder' } = {}
+    ) {
       if (isConverting || docs.length === 0) return;
       isConverting = true;
       failedDocs.clear();
+      lastConvertMode = options.mode || 'default';
 
       const total = docs.length;
       let successCount = 0;
       let errorCount   = 0;
 
       bulkConvertBtn.disabled = true;
+      bulkConvertPdfFolderBtn.disabled = true;
       convRetryBtn.classList.add('hidden');
       convProgress?.classList.remove('hidden');
       if (convPercent) convPercent.textContent = '0%';
@@ -260,7 +279,11 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
         if (convCurrent) convCurrent.textContent = name;
         setDocStatus(id, 'running');
 
-        const res = await api.call('convertToPdf', { docId: id });
+        const res = await api.call('convertToPdf', {
+          docId: id,
+          targetFolderId: options.targetFolderId,
+          targetSubfolderName: options.targetSubfolderName
+        });
 
         if (res.success) {
           successCount++;
@@ -280,6 +303,7 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
 
       isConverting = false;
       bulkConvertBtn.disabled = false;
+      bulkConvertPdfFolderBtn.disabled = false;
       selectedDocs.clear();
       updateBulkBtn();
       if (selectAllCb) { selectAllCb.checked = false; selectAllCb.indeterminate = false; }
@@ -312,7 +336,10 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
         btn.className = `text-xs font-bold transition-colors ${isLast ? 'text-main cursor-default' : 'text-muted hover:text-primary'}`;
         btn.textContent = item.name;
         if (!isLast) {
-          btn.onclick = () => { pathStack.length = index + 1; loadFolder(item.id); };
+          btn.onclick = async () => {
+            const nextPathStack = pathStack.slice(0, index + 1);
+            await loadFolder(item.id, { nextPathStack });
+          };
         }
         breadcrumb.appendChild(btn);
         if (!isLast) {
@@ -325,8 +352,13 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
       breadcrumb.scrollLeft = breadcrumb.scrollWidth;
     }
 
-    async function loadFolder(folderId: string = '') {
+    async function loadFolder(
+      folderId: string = '',
+      options: { nextPathStack?: BreadcrumbItem[] } = {}
+    ) {
       if (!selectedFirmaNo) return;
+      const hadVisibleResults = !resultsContainer?.classList.contains('hidden');
+      const hadRows = (tableBody?.children.length || 0) > 0;
 
       // Reset selection state on folder navigate
       selectedDocs.clear();
@@ -348,14 +380,28 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
 
       if (res.success && res.data) {
         const { folders = [], files = [] } = res.data;
-        currentFolderId = folderId;
+        if (options.nextPathStack) {
+          pathStack = options.nextPathStack;
+        }
+        currentFolderId = typeof res.currentFolderId === 'string' && res.currentFolderId ? res.currentFolderId : folderId;
         renderItems(folders, files);
         updateBreadcrumb();
         setStatus(pathStack[pathStack.length - 1]?.name || 'Ana Dizin');
+        return true;
       } else {
+        if (hadVisibleResults && hadRows) {
+          resultsContainer?.classList.remove('hidden');
+          emptyState?.classList.add('hidden');
+        }
         toast.error(res.error || 'İçerik yüklenemedi.');
-        setStatus('Hata oluştu.');
+        setStatus(pathStack[pathStack.length - 1]?.name || 'Hata oluştu.');
+        return false;
       }
+    }
+
+    async function navigateToFolder(item: BreadcrumbItem) {
+      const nextPathStack = [...pathStack, item];
+      await loadFolder(item.id, { nextPathStack });
     }
 
     function renderItems(folders: DriveItem[], files: DriveItem[]) {
@@ -383,7 +429,7 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
       folders.forEach(f => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-surface-hover transition-colors group cursor-pointer';
-        tr.onclick = () => { pathStack.push({ id: f.id, name: f.name }); loadFolder(f.id); };
+        tr.onclick = () => { void navigateToFolder({ id: f.id, name: f.name }); };
         tr.innerHTML = `
           <td class="px-4 py-4 w-10"></td>
           <td class="px-3 py-4">
@@ -475,13 +521,33 @@ import { ArrowLeft, FolderOpen, RefreshCw, Folder } from 'lucide-astro';
       if (selectedDocs.size === 0 || isConverting) return;
       const docs = Array.from(selectedDocs.entries()).map(([id, name]) => ({ id, name }));
       if (!confirm(`${docs.length} Google Doc PDF'e çevrilecek. Devam edilsin mi?`)) return;
-      runBulkConvert(docs);
+      runBulkConvert(docs, { mode: 'default' });
+    });
+
+    bulkConvertPdfFolderBtn?.addEventListener('click', () => {
+      if (selectedDocs.size === 0 || isConverting) return;
+      if (!currentFolderId) {
+        toast.error('Hedef klasör henüz belirlenemedi. Önce klasörü tekrar yükleyin.');
+        return;
+      }
+      const docs = Array.from(selectedDocs.entries()).map(([id, name]) => ({ id, name }));
+      if (!confirm(`${docs.length} Google Doc, mevcut klasör altında oluşturulacak "pdf" klasörüne çevrilecek. Devam edilsin mi?`)) return;
+      runBulkConvert(docs, {
+        targetFolderId: currentFolderId,
+        targetSubfolderName: 'pdf',
+        mode: 'pdf-subfolder'
+      });
     });
 
     // Retry failed
     convRetryBtn?.addEventListener('click', () => {
       if (failedDocs.size === 0 || isConverting) return;
-      runBulkConvert(Array.from(failedDocs.entries()).map(([id, name]) => ({ id, name })));
+      runBulkConvert(
+        Array.from(failedDocs.entries()).map(([id, name]) => ({ id, name })),
+        lastConvertMode === 'pdf-subfolder'
+          ? { targetFolderId: currentFolderId, targetSubfolderName: 'pdf', mode: 'pdf-subfolder' }
+          : { mode: 'default' }
+      );
     });
 
     refreshBtn?.addEventListener('click', () => loadFolder(currentFolderId));
