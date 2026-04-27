@@ -1,6 +1,6 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
-import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
+import { ArrowLeft, FolderOpen, FileText, RefreshCw, ChevronRight, Folder } from 'lucide-astro';
 ---
 
 <DashboardLayout title="PDF Çevirici">
@@ -20,7 +20,7 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
         <div class="space-y-1">
           <p class="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-400">Drive Dokümanları</p>
           <h1 class="text-xl sm:text-2xl font-black tracking-tight text-main">PDF Çevirici</h1>
-          <p id="page-subtitle" class="text-sm text-muted">Firma seçildiğinde Google Drive klasöründeki dosyalar burada listelenecek.</p>
+          <p id="page-subtitle" class="text-sm text-muted">Firma klasöründe gezinebilir ve Google Docs dosyalarını PDF'e çevirebilirsiniz.</p>
         </div>
         <div class="flex flex-wrap gap-2">
           <button id="refresh-btn" type="button" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">
@@ -29,14 +29,14 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
           </button>
           <button id="open-folder-btn" type="button" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-bold transition-colors">
             <FolderOpen size={14} />
-            Klasörü Aç
+            Drive'da Aç
           </button>
         </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 items-end">
         <label class="space-y-2 block">
-          <span class="text-[10px] font-black uppercase tracking-[0.24em] text-muted">Firma</span>
+          <span class="text-[10px] font-black uppercase tracking-[0.24em] text-muted">Firma Seçimi</span>
           <input
             type="text"
             id="company-search"
@@ -47,26 +47,32 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
           <datalist id="company-list"></datalist>
         </label>
         <div class="rounded-2xl border border-border-main bg-surface-hover px-4 py-3">
-          <p class="text-[10px] font-black uppercase tracking-[0.24em] text-muted">Durum</p>
+          <p class="text-[10px] font-black uppercase tracking-[0.24em] text-muted">Konum</p>
           <p id="status-line" class="mt-1 text-sm font-bold text-main">Hazır</p>
         </div>
       </div>
     </section>
 
+    <!-- BREADCRUMB NAV -->
+    <nav id="breadcrumb" class="hidden flex items-center gap-2 px-6 py-3 rounded-2xl bg-surface border border-border-main overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <!-- Breadcrumb items will be injected here -->
+    </nav>
+
     <section class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
       <div class="flex items-center justify-between gap-3 p-4 sm:p-6 border-b border-border-main">
         <div class="space-y-1">
-          <p class="text-[10px] font-black uppercase tracking-[0.24em] text-muted">Dönüştürülebilir İçerik</p>
-          <h2 id="result-title" class="text-sm sm:text-base font-black uppercase tracking-widest text-main">Dosya Listesi</h2>
+          <p class="text-[10px] font-black uppercase tracking-[0.24em] text-muted">İçerik Gezgini</p>
+          <h2 id="result-title" class="text-sm sm:text-base font-black uppercase tracking-widest text-main">Klasör ve Dosyalar</h2>
         </div>
-        <span id="file-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400">0 DOSYA</span>
+        <span id="file-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400">0 ÖĞE</span>
       </div>
 
       <div id="pdf-convert-progress" class="hidden border-b border-border-main bg-emerald-500/[0.06] px-4 py-4 sm:px-6">
+        <!-- Progress bar content remains same but styled -->
         <div class="space-y-3">
           <div class="flex items-start justify-between gap-3">
             <div class="space-y-1">
-              <p class="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-300">PDF Dönüşüm Durumu</p>
+              <p class="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-300">Dönüşüm İşlemi</p>
               <p id="pdf-convert-status" class="text-sm font-bold text-main">Hazırlanıyor...</p>
             </div>
             <span id="pdf-convert-counts" class="rounded-full border border-emerald-500/20 bg-surface px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-300">0 / 1</span>
@@ -74,36 +80,22 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
           <div class="h-2 overflow-hidden rounded-full bg-surface-hover">
             <div id="pdf-convert-progress-bar" class="h-full w-0 rounded-full bg-emerald-500 transition-all duration-300"></div>
           </div>
-          <div class="grid grid-cols-3 gap-2 text-[10px] font-bold">
-            <div class="rounded-xl border border-border-main bg-surface px-3 py-2 text-main">
-              <span class="block text-muted uppercase tracking-wide">Başarılı</span>
-              <span id="pdf-convert-success" class="mt-1 block text-sm font-black text-emerald-300">0</span>
-            </div>
-            <div class="rounded-xl border border-border-main bg-surface px-3 py-2 text-main">
-              <span class="block text-muted uppercase tracking-wide">Başarısız</span>
-              <span id="pdf-convert-failed" class="mt-1 block text-sm font-black text-rose-300">0</span>
-            </div>
-            <div class="rounded-xl border border-border-main bg-surface px-3 py-2 text-main">
-              <span class="block text-muted uppercase tracking-wide">Durum</span>
-              <span id="pdf-convert-phase" class="mt-1 block text-sm font-black text-amber-300">Bekliyor</span>
-            </div>
-          </div>
-          <p id="pdf-convert-last-result" class="text-[11px] leading-relaxed text-muted">PDF dönüşümü başlatıldığında son durum burada görünecek.</p>
+          <p id="pdf-convert-last-result" class="text-[11px] leading-relaxed text-muted">...</p>
         </div>
       </div>
 
       <div id="table-loader" class="hidden px-8 py-20 text-center flex flex-col items-center justify-center gap-4">
         <div class="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-        <p class="text-sm text-muted animate-pulse">Drive dosyaları taranıyor...</p>
+        <p class="text-sm text-muted animate-pulse">Drive içeriği listeleniyor...</p>
       </div>
 
       <div id="empty-state" class="px-8 py-20 text-center flex flex-col items-center justify-center gap-4">
         <div class="w-14 h-14 rounded-2xl bg-surface-hover border border-border-main flex items-center justify-center text-muted">
-          <FileText size={24} />
+          <Folder size={24} />
         </div>
         <div class="space-y-1">
-          <p class="text-base font-black text-main">Henüz dosya listesi yok</p>
-          <p class="text-sm text-muted">Firma seçildiğinde ilgili klasördeki Google Docs ve PDF dosyaları burada görünecek.</p>
+          <p class="text-base font-black text-main">Klasör Boş</p>
+          <p class="text-sm text-muted">Bu klasörde desteklenen bir dosya bulunamadı.</p>
         </div>
       </div>
 
@@ -111,9 +103,8 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="border-b border-border-main bg-surface-hover text-muted">
-              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Doküman Adı</th>
+              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Ad</th>
               <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Tip</th>
-              <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Oluşturulma</th>
               <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-right">İşlemler</th>
             </tr>
           </thead>
@@ -127,365 +118,264 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw } from 'lucide-astro';
 <script>
   import { api } from '../../lib/api';
   import { $companies } from '../../lib/store';
-  import { SyncManager } from '../../lib/sync';
   import { toast } from '../../lib/toast';
+
+  interface DriveItem {
+    id: string;
+    name: string;
+    mimeType: string;
+    url?: string;
+    dateCreated?: string;
+  }
+
+  interface BreadcrumbItem {
+    id: string;
+    name: string;
+  }
 
   let selectedNickname = '';
   let selectedFirmaNo = '';
-  let hydratedFromUrl = false;
+  let currentFolderId = '';
+  let pathStack: BreadcrumbItem[] = [];
   let convertProgressTimer: number | null = null;
   let convertProgressValue = 0;
-  let currentFiles: any[] = [];
-  let cleanupFns: Array<() => void> = [];
-
-  function registerCleanup(fn: () => void) {
-    cleanupFns.push(fn);
-  }
-
-  function runCleanups() {
-    cleanupFns.forEach(fn => fn());
-    cleanupFns = [];
-  }
 
   function initPage() {
-    runCleanups();
-
     const params = new URLSearchParams(window.location.search);
     const firmaId = params.get('id') || '';
+    
     const companySearch = document.getElementById('company-search') as HTMLInputElement | null;
     const companyList = document.getElementById('company-list') as HTMLDataListElement | null;
-    const resultTitle = document.getElementById('result-title');
-    const pageSubtitle = document.getElementById('page-subtitle');
+    const breadcrumb = document.getElementById('breadcrumb');
     const statusLine = document.getElementById('status-line');
-    const fileCount = document.getElementById('file-count');
     const tableBody = document.getElementById('doc-table-body');
     const tableLoader = document.getElementById('table-loader');
     const emptyState = document.getElementById('empty-state');
     const resultsContainer = document.getElementById('results-container');
-    const refreshBtn = document.getElementById('refresh-btn') as HTMLButtonElement | null;
-    const openFolderBtn = document.getElementById('open-folder-btn') as HTMLButtonElement | null;
-    const backLink = document.getElementById('back-link') as HTMLAnchorElement | null;
+    const fileCount = document.getElementById('file-count');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const openFolderBtn = document.getElementById('open-folder-btn');
     const pdfConvertProgress = document.getElementById('pdf-convert-progress');
     const pdfConvertStatus = document.getElementById('pdf-convert-status');
-    const pdfConvertCounts = document.getElementById('pdf-convert-counts');
     const pdfConvertBar = document.getElementById('pdf-convert-progress-bar') as HTMLDivElement | null;
-    const pdfConvertSuccess = document.getElementById('pdf-convert-success');
-    const pdfConvertFailed = document.getElementById('pdf-convert-failed');
-    const pdfConvertPhase = document.getElementById('pdf-convert-phase');
     const pdfConvertLastResult = document.getElementById('pdf-convert-last-result');
 
-    function setStatus(message: string) {
-      if (statusLine) statusLine.textContent = message;
+    function setStatus(msg: string) {
+      if (statusLine) statusLine.textContent = msg;
     }
 
-  function findCompanyByInput(value: string) {
-    return $companies.get().find((company) => {
-      const nickname = String(company.nickname || company.nick || company['Firma Adı'] || '').trim();
-      const id = String(company.id || company['Firma No'] || '').trim();
-      return `${nickname} (M${id})` === value;
-    }) || null;
-  }
-
-  function normalizeFileRecord(file: any) {
-    return {
-      id: String(file?.id || file?.fileId || '').trim(),
-      name: String(file?.name || file?.fileName || '').trim(),
-      url: String(file?.url || '').trim(),
-      mimeType: String(file?.mimeType || 'application/octet-stream').trim(),
-      dateCreated: String(file?.dateCreated || new Date().toISOString()).trim()
-    };
-  }
-
-  function mergeCreatedPdfIntoList(file: any) {
-    const normalized = normalizeFileRecord(file);
-    if (!normalized.id || !normalized.name || !normalized.url) return;
-
-    const filtered = currentFiles.filter((item) => String(item.id || '') !== normalized.id);
-    currentFiles = [normalized, ...filtered].sort(
-      (a, b) => new Date(String(b.dateCreated || '')).getTime() - new Date(String(a.dateCreated || '')).getTime()
-    );
-    renderFiles(currentFiles);
-  }
-
-  function setPdfConvertProgress(
-    percent: number,
-    status: string,
-    phase: string,
-    success: number,
-    failed: number,
-    lastResult: string
-  ) {
-    if (!pdfConvertProgress || !pdfConvertStatus || !pdfConvertCounts || !pdfConvertBar || !pdfConvertSuccess || !pdfConvertFailed || !pdfConvertPhase || !pdfConvertLastResult) {
-      return;
-    }
-
-    pdfConvertProgress.classList.remove('hidden');
-    pdfConvertStatus.textContent = status;
-    pdfConvertCounts.textContent = `${success + failed} / 1`;
-    pdfConvertBar.style.width = `${Math.max(0, Math.min(percent, 100))}%`;
-    pdfConvertSuccess.textContent = String(success);
-    pdfConvertFailed.textContent = String(failed);
-    pdfConvertPhase.textContent = phase;
-    pdfConvertLastResult.textContent = lastResult;
-  }
-
-  function stopPdfConvertProgressTimer() {
-    if (convertProgressTimer !== null) {
-      window.clearInterval(convertProgressTimer);
-      convertProgressTimer = null;
-    }
-  }
-
-  function startPdfConvertProgress(fileName: string) {
-    stopPdfConvertProgressTimer();
-    convertProgressValue = 8;
-    setPdfConvertProgress(
-      convertProgressValue,
-      `${fileName} PDF'e dönüştürülüyor...`,
-      'İşleniyor',
-      0,
-      0,
-      'Dönüşüm başlatıldı. İşlem tamamlandığında liste otomatik yenilenecek.'
-    );
-
-    convertProgressTimer = window.setInterval(() => {
-      convertProgressValue = Math.min(convertProgressValue + 9, 92);
-      setPdfConvertProgress(
-        convertProgressValue,
-        `${fileName} PDF'e dönüştürülüyor...`,
-        'İşleniyor',
-        0,
-        0,
-        'Google Drive üzerinde PDF çıktısı hazırlanıyor.'
-      );
-    }, 280);
-  }
-
-  function finishPdfConvertProgress(fileName: string, ok: boolean, message: string) {
-    stopPdfConvertProgressTimer();
-    convertProgressValue = 100;
-    setPdfConvertProgress(
-      convertProgressValue,
-      ok ? `${fileName} başarıyla PDF'e çevrildi.` : `${fileName} için dönüşüm tamamlanamadı.`,
-      ok ? 'Tamamlandı' : 'Hata',
-      ok ? 1 : 0,
-      ok ? 0 : 1,
-      message
-    );
-  }
-
-  function renderFiles(files: any[]) {
-    if (!tableBody || !resultsContainer || !emptyState || !fileCount) return;
-    currentFiles = files.map((file) => normalizeFileRecord(file));
-    tableBody.innerHTML = '';
-    fileCount.textContent = `${currentFiles.length} DOSYA`;
-    emptyState.classList.add('hidden');
-    resultsContainer.classList.remove('hidden');
-
-    currentFiles.forEach((file) => {
-      const isPdf = file.mimeType === 'application/pdf';
-      const isDoc = file.mimeType === 'application/vnd.google-apps.document';
-      const tr = document.createElement('tr');
-      tr.className = 'hover:bg-surface-hover transition-colors group';
-      tr.innerHTML = `
-        <td class="px-6 py-4">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl ${isPdf ? 'bg-rose-500/10 text-rose-400' : 'bg-indigo-500/10 text-indigo-400'} flex items-center justify-center border border-border-main">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            </div>
-            <span class="text-sm font-bold text-main">${file.name}</span>
-          </div>
-        </td>
-        <td class="px-6 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-muted">${isPdf ? 'PDF' : isDoc ? 'Google Doc' : 'Dosya'}</td>
-        <td class="px-6 py-4 text-xs text-muted font-mono">${new Date(file.dateCreated).toLocaleDateString('tr-TR')}</td>
-        <td class="px-6 py-4">
-          <div class="flex items-center justify-end gap-2">
-            <a href="${file.url}" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" title="Drive'da Aç">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            </a>
-            ${isDoc ? `<button type="button" class="pdf-convert-btn inline-flex items-center justify-center h-9 w-9 rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" data-id="${file.id}" data-name="${file.name.replace(/"/g, '&quot;')}" title="PDF'e Dönüştür">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-            </button>` : ''}
-          </div>
-        </td>
-      `;
-      tableBody.appendChild(tr);
-    });
-
-    document.querySelectorAll<HTMLButtonElement>('.pdf-convert-btn').forEach((button) => {
-      button.addEventListener('click', async () => {
-        const docId = button.dataset.id || '';
-        const fileName = button.dataset.name || 'Doküman';
-        if (!docId) return;
-        const original = button.innerHTML;
-        button.disabled = true;
-        button.innerHTML = '<span class="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin"></span>';
-        startPdfConvertProgress(fileName);
-
-        const res = await api.call('convertToPdf', { docId });
-        button.disabled = false;
-        button.innerHTML = original;
-
-        if (res.success) {
-          setStatus(`${fileName} PDF'e çevrildi. Liste yenileniyor...`);
-          finishPdfConvertProgress(fileName, true, 'PDF başarıyla oluşturuldu. Güncel dosya listesi tekrar yüklendi.');
-          if (res.data?.fileId) {
-            mergeCreatedPdfIntoList({
-              id: res.data.fileId,
-              fileId: res.data.fileId,
-              name: res.data.fileName || `${fileName}.pdf`,
-              fileName: res.data.fileName || `${fileName}.pdf`,
-              url: res.data.url,
-              mimeType: res.data.mimeType || 'application/pdf',
-              dateCreated: res.data.dateCreated || new Date().toISOString()
-            });
-          }
-          toast.success('PDF başarıyla oluşturuldu. Liste yenileniyor...');
-          await loadDocuments(true);
-        } else {
-          finishPdfConvertProgress(fileName, false, res.error || 'PDF oluşturulamadı.');
-          toast.error(res.error || 'PDF oluşturulamadı.');
+    function updateBreadcrumb() {
+      if (!breadcrumb) return;
+      if (pathStack.length === 0) {
+        breadcrumb.classList.add('hidden');
+        return;
+      }
+      breadcrumb.classList.remove('hidden');
+      breadcrumb.innerHTML = '';
+      
+      pathStack.forEach((item, index) => {
+        const isLast = index === pathStack.length - 1;
+        
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `text-xs font-bold transition-colors ${isLast ? 'text-main cursor-default' : 'text-muted hover:text-primary'}`;
+        btn.textContent = item.name;
+        
+        if (!isLast) {
+          btn.onclick = () => {
+            pathStack = pathStack.slice(0, index + 1);
+            loadFolder(item.id);
+          };
+        }
+        
+        breadcrumb.appendChild(btn);
+        
+        if (!isLast) {
+          const sep = document.createElement('span');
+          sep.className = 'text-border-main';
+          sep.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
+          breadcrumb.appendChild(sep);
         }
       });
-    });
-  }
+      // Scroll to end
+      breadcrumb.scrollLeft = breadcrumb.scrollWidth;
+    }
 
-  async function loadDocuments(forceFresh = false) {
-    if (!selectedFirmaNo || !tableLoader || !emptyState || !resultsContainer || !fileCount) {
-      if (forceFresh) {
-        toast.error('Lütfen önce bir firma seçin.');
-        setStatus('Yenilemek için önce bir firma seçin.');
+    async function loadFolder(folderId: string = '') {
+      if (!selectedFirmaNo) return;
+      
+      tableLoader?.classList.remove('hidden');
+      emptyState?.classList.add('hidden');
+      resultsContainer?.classList.add('hidden');
+      setStatus(folderId ? 'Klasör açılıyor...' : 'Ana dizin yükleniyor...');
+
+      const res = await api.call('listDriveContents', {
+        id: selectedFirmaNo,
+        folderId: folderId,
+        mimeTypes: ['application/vnd.google-apps.document', 'application/pdf', 'application/vnd.google-apps.spreadsheet']
+      });
+
+      tableLoader?.classList.add('hidden');
+
+      if (res.success && res.data) {
+        const { folders = [], files = [] } = res.data;
+        currentFolderId = res.currentFolderId || folderId;
+        renderItems(folders, files);
+        updateBreadcrumb();
+        setStatus(pathStack[pathStack.length - 1]?.name || 'Ana Dizin');
+      } else {
+        toast.error(res.error || 'İçerik yüklenemedi.');
+        setStatus('Hata oluştu.');
       }
-      return;
-    }
-    tableLoader.classList.remove('hidden');
-    emptyState.classList.add('hidden');
-    resultsContainer.classList.add('hidden');
-    fileCount.textContent = 'TARANIYOR...';
-    setStatus(forceFresh ? `${selectedNickname} klasörü yeniden taranıyor...` : `${selectedNickname} klasörü taranıyor...`);
-
-    const res = await api.call('getRecentFiles', {
-      id: selectedFirmaNo,
-      mimeTypes: ['application/vnd.google-apps.document', 'application/pdf', 'application/vnd.google-apps.spreadsheet'],
-      refreshToken: forceFresh ? Date.now() : undefined
-    });
-
-    tableLoader.classList.add('hidden');
-
-    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-      setStatus(`${res.data.length} dosya listelendi.`);
-      renderFiles(res.data);
-      return;
     }
 
-    currentFiles = [];
-    fileCount.textContent = '0 DOSYA';
-    setStatus('Dosya bulunamadı.');
-    emptyState.classList.remove('hidden');
-  }
+    function renderItems(folders: DriveItem[], files: DriveItem[]) {
+      if (!tableBody || !resultsContainer || !emptyState || !fileCount) return;
+      
+      tableBody.innerHTML = '';
+      const total = folders.length + files.length;
+      fileCount.textContent = `${total} ÖĞE`;
 
-  function selectCompany(company: any) {
-    const nickname = String(company?.nickname || company?.nick || company?.['Firma Adı'] || '').trim();
-    const id = String(company?.id || company?.['Firma No'] || '').trim();
-    if (!nickname || !id) return;
-
-    selectedNickname = nickname;
-    selectedFirmaNo = id;
-    if (companySearch) companySearch.value = `${nickname} (M${id})`;
-    if (resultTitle) resultTitle.textContent = `${nickname} - PDF Çevirici`;
-    if (pageSubtitle) pageSubtitle.textContent = `${nickname} klasöründeki Google Docs dosyalarını seçip PDF'e çevirebilirsiniz.`;
-    if (backLink) backLink.href = `/company?id=${encodeURIComponent(id)}`;
-    void loadDocuments();
-  }
-
-  async function hydrateCompanyFromUrl() {
-    if (!firmaId || hydratedFromUrl) return;
-
-    hydratedFromUrl = true;
-    setStatus(`Firma #${firmaId} yükleniyor...`);
-
-    const res = await api.getCompanyById(firmaId);
-    const company = res?.data;
-
-    if (!res?.success || !company) {
-      setStatus(`Firma bulunamadı (ID: ${firmaId})`);
-      toast.error(`Firma bulunamadı (ID: ${firmaId})`);
-      return;
-    }
-
-    selectCompany(company);
-  }
-
-  function updateCompanyOptions(companies: any[]) {
-    if (!companyList) return;
-    companyList.innerHTML = '';
-    companies.forEach((company) => {
-      const nickname = String(company.nickname || company.nick || company['Firma Adı'] || '').trim();
-      const id = String(company.id || company['Firma No'] || '').trim();
-      if (!nickname || !id) return;
-      const option = document.createElement('option');
-      option.value = `${nickname} (M${id})`;
-      companyList.appendChild(option);
-    });
-  }
-
-    const unsubCompanies = $companies.subscribe((companies) => {
-      updateCompanyOptions(companies);
-      if (!selectedFirmaNo && firmaId) {
-        const company = companies.find((item) => String(item.id || item['Firma No'] || '').trim() === String(firmaId));
-        if (company) {
-          hydratedFromUrl = true;
-          selectCompany(company);
-        }
-      }
-    });
-    registerCleanup(unsubCompanies);
-
-    companySearch?.addEventListener('input', () => {
-      const company = findCompanyByInput(companySearch.value);
-      if (company) selectCompany(company);
-    });
-
-    refreshBtn?.addEventListener('click', async () => {
-      if (!selectedFirmaNo) {
-        toast.error('Lütfen önce bir firma seçin.');
-        setStatus('Yenilemek için önce bir firma seçin.');
+      if (total === 0) {
+        emptyState.classList.remove('hidden');
+        resultsContainer.classList.add('hidden');
         return;
       }
 
-      const original = refreshBtn.innerHTML;
-      refreshBtn.disabled = true;
-      refreshBtn.innerHTML = `
-        <span class="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin"></span>
-        Yenileniyor
-      `;
+      emptyState.classList.add('hidden');
+      resultsContainer.classList.remove('hidden');
 
-      try {
-        await loadDocuments(true);
-        toast.success('Dosya listesi güncellendi.');
-      } finally {
-        refreshBtn.disabled = false;
-        refreshBtn.innerHTML = original;
-      }
-    });
+      // Render Folders
+      folders.forEach(f => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-surface-hover transition-colors group cursor-pointer';
+        tr.onclick = () => {
+          pathStack.push({ id: f.id, name: f.name });
+          loadFolder(f.id);
+        };
+        tr.innerHTML = `
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-border-main">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+              </div>
+              <span class="text-sm font-bold text-main">${f.name}</span>
+            </div>
+          </td>
+          <td class="px-6 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-muted">Klasör</td>
+          <td class="px-6 py-4 text-right">
+            <ChevronRight size={14} class="inline text-muted group-hover:text-primary transition-colors" />
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
 
-    openFolderBtn?.addEventListener('click', async () => {
-      if (!selectedFirmaNo) return;
-      const res = await api.call('getFolderId', { id: selectedFirmaNo });
-      if (res.success && res.data) {
-        window.open(`https://drive.google.com/drive/folders/${res.data}`, '_blank');
+      // Render Files
+      files.forEach(f => {
+        const isPdf = f.mimeType === 'application/pdf';
+        const isDoc = f.mimeType === 'application/vnd.google-apps.document';
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-surface-hover transition-colors group';
+        tr.innerHTML = `
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl ${isPdf ? 'bg-rose-500/10 text-rose-400' : 'bg-indigo-500/10 text-indigo-400'} flex items-center justify-center border border-border-main">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <span class="text-sm font-bold text-main">${f.name}</span>
+            </div>
+          </td>
+          <td class="px-6 py-4 text-[10px] font-black uppercase tracking-[0.18em] text-muted">${isPdf ? 'PDF' : isDoc ? 'Google Doc' : 'Dosya'}</td>
+          <td class="px-6 py-4">
+            <div class="flex items-center justify-end gap-2">
+              <a href="${f.url}" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center h-9 w-9 rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" title="Drive'da Aç">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </a>
+              ${isDoc ? `<button type="button" class="pdf-convert-btn inline-flex items-center justify-center h-9 w-9 rounded-lg border border-border-main bg-surface-hover text-main hover:bg-surface transition-colors" data-id="${f.id}" data-name="${f.name.replace(/"/g, '&quot;')}" title="PDF'e Dönüştür">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </button>` : ''}
+            </div>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      // Bind buttons
+      document.querySelectorAll<HTMLButtonElement>('.pdf-convert-btn').forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const docId = btn.dataset.id || '';
+          const fileName = btn.dataset.name || 'Doküman';
+          startConvert(docId, fileName);
+        };
+      });
+    }
+
+    async function startConvert(docId: string, fileName: string) {
+      if (convertProgressTimer) return;
+      
+      pdfConvertProgress?.classList.remove('hidden');
+      if (pdfConvertStatus) pdfConvertStatus.textContent = `${fileName} işleniyor...`;
+      if (pdfConvertBar) pdfConvertBar.style.width = '10%';
+      
+      convertProgressValue = 10;
+      convertProgressTimer = window.setInterval(() => {
+        convertProgressValue = Math.min(convertProgressValue + 5, 90);
+        if (pdfConvertBar) pdfConvertBar.style.width = `${convertProgressValue}%`;
+      }, 500);
+
+      const res = await api.call('convertToPdf', { docId });
+      
+      if (convertProgressTimer) clearInterval(convertProgressTimer);
+      convertProgressTimer = null;
+      
+      if (res.success) {
+        if (pdfConvertBar) pdfConvertBar.style.width = '100%';
+        if (pdfConvertStatus) pdfConvertStatus.textContent = 'Tamamlandı!';
+        if (pdfConvertLastResult) pdfConvertLastResult.textContent = `${fileName} başarıyla çevrildi.`;
+        toast.success('PDF başarıyla oluşturuldu.');
+        loadFolder(currentFolderId);
       } else {
-        toast.error(res.error || 'Firma klasörü bulunamadı.');
+        if (pdfConvertStatus) pdfConvertStatus.textContent = 'Hata!';
+        if (pdfConvertLastResult) pdfConvertLastResult.textContent = res.error || 'Dönüşüm başarısız.';
+        toast.error(res.error || 'Dönüşüm hatası.');
       }
+      
+      setTimeout(() => pdfConvertProgress?.classList.add('hidden'), 5000);
+    }
+
+    function selectCompany(company: any) {
+      const nickname = String(company?.nickname || company?.nick || '').trim();
+      const id = String(company?.id || '').trim();
+      if (!nickname || !id) return;
+
+      selectedNickname = nickname;
+      selectedFirmaNo = id;
+      pathStack = [{ id: '', name: nickname }];
+      
+      if (companySearch) companySearch.value = `${nickname} (M${id})`;
+      loadFolder();
+    }
+
+    // Event Listeners
+    companySearch?.addEventListener('input', () => {
+      const value = companySearch.value;
+      const found = $companies.get().find(c => `${c.nickname} (M${c.id})` === value);
+      if (found) selectCompany(found);
     });
 
-    updateCompanyOptions($companies.get() as any[]);
-    SyncManager.init();
-    void hydrateCompanyFromUrl();
+    refreshBtn?.onclick = () => loadFolder(currentFolderId);
+    
+    openFolderBtn?.onclick = async () => {
+      if (!currentFolderId) return;
+      window.open(`https://drive.google.com/drive/folders/${currentFolderId}`, '_blank');
+    };
+
+    if (firmaId) {
+      const found = $companies.get().find(c => String(c.id) === String(firmaId));
+      if (found) selectCompany(found);
+    }
   }
 
-  // Initial load
   document.addEventListener('astro:page-load', initPage);
-  // Cleanup away
-  document.addEventListener('astro:before-preparation', runCleanups);
 </script>

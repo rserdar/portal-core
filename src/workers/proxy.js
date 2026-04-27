@@ -2533,7 +2533,6 @@ export default {
         const id = String(p?.id || p?.firmaId || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
 
-        // D1'den nickname çöz
         const company = await env.DB_D1.prepare("SELECT nickname FROM companies WHERE id=?").bind(parseInt(id)).first();
         const nickname = company?.nickname || "";
 
@@ -2551,7 +2550,6 @@ export default {
         const id = String(p?.id || p?.firmaId || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
         
-        // D1'den nickname çöz (Sheets yedeğine bağımlılığı bitir)
         const company = await env.DB_D1.prepare("SELECT nickname FROM companies WHERE id=?").bind(parseInt(id)).first();
         const nickname = company?.nickname || "";
         
@@ -2572,6 +2570,32 @@ export default {
         if (res.success && res.data) {
           ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(res.data), { expirationTtl: CACHE_TTL }));
         }
+        return jsonResponse(res);
+      },
+      listDriveContents: async (p, ctx, env) => {
+        const id = String(p?.id || p?.firmaId || "").trim();
+        let folderId = String(p?.folderId || "").trim();
+        const mimeTypes = Array.isArray(p?.mimeTypes) ? p.mimeTypes : undefined;
+
+        if (!folderId) {
+          if (!id) return jsonResponse({ success: false, error: "ID_OR_FOLDERID_REQUIRED" }, 400);
+          const company = await env.DB_D1.prepare("SELECT nickname FROM companies WHERE id=?").bind(parseInt(id)).first();
+          const nickname = company?.nickname || "";
+          
+          const folderRes = await fetchFromGas(env, { action: "getFolderId", params: { id, nickname } });
+          if (!folderRes.success || !folderRes.data) return jsonResponse(folderRes);
+          folderId = String(folderRes.data);
+        }
+
+        const res = await fetchFromGas(env, {
+          action: "listDriveContents",
+          params: { folderId, mimeTypes }
+        });
+        
+        if (res.success) {
+          res.currentFolderId = folderId;
+        }
+        
         return jsonResponse(res);
       },
       prepareBatchFolders: async (p, ctx, env) => {

@@ -100,6 +100,61 @@ const DriveService = {
   },
 
   /**
+   * Klasör içindeki klasör ve dosyaları listeler. (Navigasyon için)
+   */
+  listDriveContents: function(folderId, mimeTypes = []) {
+    try {
+      if (!folderId) throw new Error("listDriveContents: folderId boş!");
+      
+      const folder = this.safeGetFolder(folderId, "Drive klasörü");
+      const contents = {
+        folders: [],
+        files: []
+      };
+
+      // 1. Klasörleri al
+      const folderIter = folder.getFolders();
+      while (folderIter.hasNext()) {
+        const f = folderIter.next();
+        contents.folders.push({
+          id: f.getId(),
+          name: f.getName(),
+          mimeType: "application/vnd.google-apps.folder",
+          dateCreated: f.getDateCreated().toISOString()
+        });
+      }
+
+      // 2. Dosyaları al (Filtrele)
+      const fileIter = folder.getFiles();
+      const typeSet = new Set(mimeTypes);
+      
+      while (fileIter.hasNext()) {
+        const f = fileIter.next();
+        const m = f.getMimeType();
+        
+        if (typeSet.size === 0 || typeSet.has(m)) {
+          contents.files.push({
+            id: f.getId(),
+            name: f.getName(),
+            mimeType: m,
+            url: f.getUrl(),
+            dateCreated: f.getDateCreated().toISOString()
+          });
+        }
+      }
+
+      // İsme göre sırala
+      contents.folders.sort((a, b) => a.name.localeCompare(b.name));
+      contents.files.sort((a, b) => a.name.localeCompare(b.name));
+
+      return contents;
+    } catch (e) {
+      BaseService.logError("listDriveContents", e, { folderId: folderId });
+      throw e;
+    }
+  },
+
+  /**
    * Klasör içinde recursive olarak en yeni 20 dosyayı döner.
    */
   listRecentFiles: function(folderId, mimeTypes = []) {
