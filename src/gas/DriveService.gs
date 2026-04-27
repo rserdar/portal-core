@@ -32,19 +32,31 @@ const DriveService = {
   getCompanyFolderId: function(nickname) {
     try {
       if (!nickname) throw new Error("Nickname boş olamaz.");
+      nickname = String(nickname).trim();
+      if (!nickname) throw new Error("Nickname boş olamaz.");
       
       let char = nickname.charAt(0).toLocaleUpperCase('tr-TR');
       char = !isNaN(parseInt(char)) ? "0" : char;
 
       const rootId = this.FOLDER_MAP[char] || null;
-      if (!rootId) throw new Error(`Geçersiz başlangıç harfi: ${char}`);
+      if (!rootId) throw new Error(`Geçersiz başlangıç harfi: "${char}" (${nickname})`);
 
-      const rootFolder = DriveApp.getFolderById(rootId);
+      let rootFolder;
+      try {
+        rootFolder = DriveApp.getFolderById(rootId);
+      } catch (driveErr) {
+        throw new Error(`Drive kök klasörüne ("${char}") erişilemiyor. ID: ${rootId}. Hata: ${driveErr.message}`);
+      }
+
       const folders = rootFolder.getFoldersByName(nickname);
-
-      return folders.hasNext() ? folders.next().getId() : rootFolder.createFolder(nickname).getId();
+      if (folders.hasNext()) {
+        return folders.next().getId();
+      } else {
+        const newFolder = rootFolder.createFolder(nickname);
+        return newFolder.getId();
+      }
     } catch (e) {
-      BaseService.logError("getCompanyFolderId", e);
+      BaseService.logError("getCompanyFolderId", e, { nickname: nickname });
       throw e;
     }
   },
