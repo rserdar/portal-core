@@ -2331,7 +2331,7 @@ export default {
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
         try {
           const payload = await buildTestPayloadFromD1(id, lang);
-          const folderId = await DriveService.getCompanyFolderId(payload.fnick);
+          const folderId = await getFolderId(payload.fnick, ctx, env);
           const gasResult = await fetchFromGas(env, { 
             action: "generateTestReport", 
             params: { data: payload, folderId } 
