@@ -209,7 +209,7 @@ function doPost(e) {
 
       case "uploadFile":
       case "doUpload":
-        const uploadRes = DriveService.uploadFile(params.obj || params.fileObj || params.file, params.firmNickName || params.nickname || params.firmNickname);
+        const uploadRes = DriveService.uploadFile(params.fileInfo || params.obj || params.fileObj || params.file, params.firmNickName || params.nickname || params.firmNickname);
         result.data = uploadRes;
         result.success = uploadRes.success;
         if (!uploadRes.success) result.error = uploadRes.error;

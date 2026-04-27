@@ -2500,11 +2500,16 @@ export default {
       getFolderId: async (p, ctx, env) => {
         const id = String(p?.id || p?.firmaId || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+
+        // D1'den nickname çöz
+        const company = await env.DB_D1.prepare("SELECT nickname FROM companies WHERE id=?").bind(parseInt(id)).first();
+        const nickname = company?.nickname || "";
+
         const cacheKey = `cache:getFolderId:${stableStringify({ id })}`;
         const cached = await env.DB.get(cacheKey);
         if (cached) return jsonResponse({ success: true, data: cached, fromCache: true });
 
-        const res = await fetchFromGas(env, { action: "getFolderId", params: { id } });
+        const res = await fetchFromGas(env, { action: "getFolderId", params: { id, nickname } });
         if (res.success && res.data) {
           ctx.waitUntil(env.DB.put(cacheKey, String(res.data), { expirationTtl: CACHE_TTL }));
         }
@@ -2513,9 +2518,15 @@ export default {
       getRecentFiles: async (p, ctx, env) => {
         const id = String(p?.id || p?.firmaId || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        
+        // D1'den nickname çöz (Sheets yedeğine bağımlılığı bitir)
+        const company = await env.DB_D1.prepare("SELECT nickname FROM companies WHERE id=?").bind(parseInt(id)).first();
+        const nickname = company?.nickname || "";
+        
         const mimeTypes = Array.isArray(p?.mimeTypes) ? p.mimeTypes : undefined;
         const forceRefresh = Boolean(p?.refreshToken || p?.forceRefresh);
         const cacheKey = `cache:getRecentFiles:${stableStringify({ id })}`;
+        
         if (!forceRefresh) {
           const cached = await env.DB.get(cacheKey);
           if (cached) return jsonResponse({ success: true, data: JSON.parse(cached), fromCache: true });
@@ -2523,8 +2534,9 @@ export default {
 
         const res = await fetchFromGas(env, {
           action: "getRecentFiles",
-          params: { id, mimeTypes, refreshToken: p?.refreshToken }
+          params: { id, nickname, mimeTypes, refreshToken: p?.refreshToken }
         });
+        
         if (res.success && res.data) {
           ctx.waitUntil(env.DB.put(cacheKey, JSON.stringify(res.data), { expirationTtl: CACHE_TTL }));
         }

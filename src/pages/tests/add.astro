@@ -20,6 +20,38 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
       <span class="text-xs font-bold text-muted" id="test-header-breadcrumb">Test</span>
     </div>
 
+    <!-- Drive Picker Modal -->
+    <div id="drive-picker-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all">
+      <div class="w-full max-w-2xl bg-surface border border-border-main rounded-[2.5rem] shadow-2xl flex flex-col max-h-[80vh] overflow-hidden">
+        <div class="p-6 border-b border-border-main flex items-center justify-between bg-surface-hover/50">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-black text-main uppercase tracking-tight">Drive Dosya Seçici</h3>
+              <p class="text-xs font-bold text-muted uppercase tracking-widest" id="drive-picker-subtitle">Klasör taranıyor...</p>
+            </div>
+          </div>
+          <button onclick="closeDrivePicker()" class="w-10 h-10 rounded-2xl flex items-center justify-center text-muted hover:bg-rose-500/10 hover:text-rose-400 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        
+        <div id="drive-file-list" class="flex-1 overflow-y-auto p-4 space-y-2 min-h-[300px] bg-surface">
+          <!-- Files will be listed here -->
+          <div class="flex flex-col items-center justify-center py-12 space-y-4">
+            <div class="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
+            <p class="text-sm font-bold text-muted uppercase tracking-widest">Dosyalar getiriliyor...</p>
+          </div>
+        </div>
+
+        <div class="p-6 border-t border-border-main bg-surface-hover/30 flex justify-end gap-3">
+          <button onclick="closeDrivePicker()" class="px-6 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest text-muted hover:bg-surface-hover transition-all">Vazgeç</button>
+        </div>
+      </div>
+    </div>
+
     <section class="bg-surface border border-border-main shadow-xl rounded-[2rem]">
 
       <!-- Skeleton -->
@@ -131,16 +163,29 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
                   <input id="ta-gorsel-bir" type="text" placeholder="Drive ID" readonly
                     class="flex-1 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-70 cursor-default" />
                   <label
+                    id="ta-gorsel-bir-label"
                     class="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-xs font-black uppercase tracking-wide text-indigo-300 hover:bg-indigo-500/15 transition-colors cursor-pointer"
                     title="Dosya Yükle">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    <svg id="ta-gorsel-bir-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="17 8 12 3 7 8" />
                       <line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
+                    <span id="ta-gorsel-bir-text">Yükle</span>
                     <input id="ta-gorsel-bir-file" type="file" accept="image/png,image/jpeg,image/gif" class="hidden" />
                   </label>
+                  <button
+                    type="button"
+                    onclick="openDrivePicker('ta-gorsel-bir')"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-black uppercase tracking-wide text-amber-300 hover:bg-amber-500/15 transition-colors"
+                    title="Drive'dan Seç">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span>SEÇ</span>
+                  </button>
                 </div>
               </div>
               <div class="space-y-2">
@@ -149,16 +194,29 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
                   <input id="ta-gorsel-iki" type="text" placeholder="Drive ID" readonly
                     class="flex-1 rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main opacity-70 cursor-default" />
                   <label
+                    id="ta-gorsel-iki-label"
                     class="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-xs font-black uppercase tracking-wide text-indigo-300 hover:bg-indigo-500/15 transition-colors cursor-pointer"
                     title="Dosya Yükle">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    <svg id="ta-gorsel-iki-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="17 8 12 3 7 8" />
                       <line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
+                    <span id="ta-gorsel-iki-text">Yükle</span>
                     <input id="ta-gorsel-iki-file" type="file" accept="image/png,image/jpeg,image/gif" class="hidden" />
                   </label>
+                  <button
+                    type="button"
+                    onclick="openDrivePicker('ta-gorsel-iki')"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs font-black uppercase tracking-wide text-amber-300 hover:bg-amber-500/15 transition-colors"
+                    title="Drive'dan Seç">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                    </svg>
+                    <span>SEÇ</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -722,28 +780,142 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
   async function uploadImage(fileInput: HTMLInputElement, targetInput: HTMLInputElement) {
     const file = fileInput.files?.[0];
     if (!file) return;
+
+    const prefix = fileInput.id.includes('bir') ? 'ta-gorsel-bir' : 'ta-gorsel-iki';
+    const label = document.getElementById(`${prefix}-label`)!;
+    const text = document.getElementById(`${prefix}-text`)!;
+    const icon = document.getElementById(`${prefix}-icon`)!;
+
     const nick = activeContext?.nick || '';
     if (!nick) {
       toast.warning('Firma bağlamı yüklenmeden görsel yüklenemez.');
       return;
     }
+
+    // Start loading state
+    label.classList.add('opacity-50', 'pointer-events-none');
+    text.textContent = 'Yükleniyor...';
+    icon.classList.add('animate-spin');
+    const originalIconPath = icon.innerHTML;
+    icon.innerHTML = `<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>`;
+
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const result = e.target?.result as string;
-      const parts = result.split(',');
-      if (parts.length < 2) { toast.error('Dosya okunamadı!'); return; }
-      const uploadObj = { fileName: file.name, mimeType: file.type, data: parts[1] };
-      toast.warning('Görsel yükleniyor...');
-      const res = await api.uploadFile(uploadObj, nick);
-      if (res.success && (res as any).fileId) {
-        targetInput.value = (res as any).fileId;
-        toast.success(`Görsel yüklendi: ${file.name}`);
-      } else {
-        toast.error('Görsel yüklenemedi: ' + ((res as any).error || 'Bilinmeyen hata'));
+      try {
+        const result = e.target?.result as string;
+        const parts = result.split(',');
+        if (parts.length < 2) { 
+          toast.error('Dosya okunamadı!'); 
+          return; 
+        }
+
+        const uploadObj = { fileName: file.name, mimeType: file.type, data: parts[1] };
+        toast.info('Görsel buluta gönderiliyor, lütfen bekleyin...');
+
+        const res = await api.uploadFile(uploadObj, nick);
+        console.log('[UPLOAD] Response:', res);
+
+        if (res.success && res.data?.fileId) {
+          targetInput.value = res.data.fileId;
+          toast.success(`Görsel başarıyla yüklendi: ${file.name}`);
+        } else {
+          const errorMsg = res.error || (res as any).details || 'Bilinmeyen sunucu hatası';
+          toast.error('Görsel yüklenemedi: ' + errorMsg);
+          console.error('[UPLOAD] Error details:', res);
+        }
+      } catch (err: any) {
+        toast.error('Yükleme sırasında bir hata oluştu: ' + err.message);
+      } finally {
+        // Reset loading state
+        label.classList.remove('opacity-50', 'pointer-events-none');
+        text.textContent = 'Yükle';
+        icon.classList.remove('animate-spin');
+        icon.innerHTML = originalIconPath;
+        fileInput.value = ''; // Reset input so same file can be re-uploaded
       }
     };
     reader.readAsDataURL(file);
   }
+
+  // --- DRIVE PICKER LOGIC ---
+  let activeTargetId = '';
+
+  (window as any).openDrivePicker = async (targetId: string) => {
+    activeTargetId = targetId;
+    const modal = document.getElementById('drive-picker-modal')!;
+    const listContainer = document.getElementById('drive-file-list')!;
+    const subtitle = document.getElementById('drive-picker-subtitle')!;
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    listContainer.innerHTML = `
+      <div class="flex flex-col items-center justify-center py-12 space-y-4">
+        <div class="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
+        <p class="text-sm font-bold text-muted uppercase tracking-widest">Firma klasörü taranıyor...</p>
+      </div>
+    `;
+
+    const nick = activeContext?.nick || '';
+    if (!nick) {
+      toast.error('Firma bağlamı bulunamadı.');
+      closeDrivePicker();
+      return;
+    }
+
+    subtitle.textContent = `${nick || activeFirmaId} Klasörü`;
+
+    try {
+      const res = await api.call('getRecentFiles', { id: activeFirmaId, mimeTypes: ['image/png', 'image/jpeg', 'image/gif'] });
+      if (res.success && Array.isArray(res.data)) {
+        if (res.data.length === 0) {
+          listContainer.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-12 text-center space-y-3">
+              <div class="w-16 h-16 rounded-3xl bg-surface-hover flex items-center justify-center text-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M12 11v6"/><path d="M9 14h6"/></svg>
+              </div>
+              <p class="text-sm font-bold text-muted uppercase tracking-widest">Klasörde uygun dosya bulunamadı.</p>
+            </div>
+          `;
+          return;
+        }
+
+        listContainer.innerHTML = res.data.map((file: any) => `
+          <button onclick="selectDriveFile('${file.id}')" class="w-full flex items-center gap-4 p-3 rounded-2xl hover:bg-amber-500/5 border border-transparent hover:border-amber-500/20 transition-all group text-left">
+            <div class="w-12 h-12 rounded-xl bg-surface-hover flex items-center justify-center text-muted group-hover:bg-amber-500/10 group-hover:text-amber-400 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-main truncate uppercase tracking-tight">${file.name}</p>
+              <p class="text-[10px] font-black text-muted uppercase tracking-widest">${new Date(file.dateCreated).toLocaleDateString('tr-TR')}</p>
+            </div>
+            <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+               <span class="px-3 py-1 rounded-full bg-amber-500/10 text-[10px] font-black text-amber-400 uppercase tracking-widest border border-amber-500/20">Seç</span>
+            </div>
+          </button>
+        `).join('');
+      } else {
+        throw new Error(res.error || 'Dosyalar listelenemedi.');
+      }
+    } catch (err: any) {
+      toast.error('Drive hatası: ' + err.message);
+      closeDrivePicker();
+    }
+  };
+
+  (window as any).closeDrivePicker = () => {
+    const modal = document.getElementById('drive-picker-modal')!;
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+  };
+
+  (window as any).selectDriveFile = (fileId: string) => {
+    const target = document.getElementById(activeTargetId) as HTMLInputElement;
+    if (target) {
+      target.value = fileId;
+      toast.success('Dosya seçildi.');
+    }
+    closeDrivePicker();
+  };
 
   // ── Date normalizer (dd.mm.yyyy → yyyy-mm-dd) ────────────────────────────────
 

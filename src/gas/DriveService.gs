@@ -25,33 +25,50 @@ const DriveService = {
     "W": "1lK5X2bCFRm2FFo6rDi1GUILdbMFr-n9m", "X": "1EosnZR4JxOGdTbIl46BpDZOXL9MExcnO",
     "Y": "1I2-EIKQUjVt5_6Ho2d1ODz1KEjHpLbmK", "Z": "1EosnZR4JxOGdTbIl46BpDZOXL9MExcnO"
   },
+  
+  /**
+   * Google Drive API'deki "Hizmet hatası: Drive" (Service Error) hatalarına karşı
+   * yeniden deneme (retry) mantığı ile klasör nesnesini döndürür.
+   */
+  safeGetFolder: function(id, label = "Klasör") {
+    let lastErr = null;
+    for (let i = 0; i < 3; i++) {
+      try {
+        return DriveApp.getFolderById(id);
+      } catch (e) {
+        lastErr = e;
+        // Sadece "Hizmet hatası" veya "Internal Error" durumunda bekle ve tekrar dene
+        if (e.message.indexOf("Hizmet hatası") > -1 || e.message.indexOf("Internal Error") > -1 || e.message.indexOf("Unexpected error") > -1) {
+          Utilities.sleep(1000 * (i + 1));
+          continue;
+        }
+        throw e; // Yetki hatası vb. ise doğrudan fırlat
+      }
+    }
+    throw new Error(`${label} erişim hatası! ID: ${id}. Google Mesajı: ${lastErr.message}`);
+  },
 
   /**
    * Firmaya ait ana klasör ID'sini döner. Yoksa oluşturur.
    */
   getCompanyFolderId: function(nickname) {
     try {
-      if (!nickname) throw new Error("Nickname boş olamaz.");
+      if (!nickname) throw new Error("Firma nickname (kısa adı) boş! Context yüklenememiş olabilir.");
       nickname = String(nickname).trim();
-      if (!nickname) throw new Error("Nickname boş olamaz.");
       
       let char = nickname.charAt(0).toLocaleUpperCase('tr-TR');
       char = !isNaN(parseInt(char)) ? "0" : char;
 
       const rootId = this.FOLDER_MAP[char] || null;
-      if (!rootId) throw new Error(`Geçersiz başlangıç harfi: "${char}" (${nickname})`);
+      if (!rootId) throw new Error(`FOLDER_MAP içinde "${char}" harfi için tanımlı bir kök klasör bulunamadı. (Nickname: ${nickname})`);
 
-      let rootFolder;
-      try {
-        rootFolder = DriveApp.getFolderById(rootId);
-      } catch (driveErr) {
-        throw new Error(`Drive kök klasörüne ("${char}") erişilemiyor. ID: ${rootId}. Hata: ${driveErr.message}`);
-      }
+      const rootFolder = this.safeGetFolder(rootId, `Kök klasör (Harf: ${char})`);
 
       const folders = rootFolder.getFoldersByName(nickname);
       if (folders.hasNext()) {
         return folders.next().getId();
       } else {
+        console.log(`Yeni klasör oluşturuluyor: ${nickname} (Kök: ${char})`);
         const newFolder = rootFolder.createFolder(nickname);
         return newFolder.getId();
       }
@@ -66,7 +83,9 @@ const DriveService = {
    */
   listRecentFiles: function(folderId, mimeTypes = []) {
     try {
-      const folder = DriveApp.getFolderById(folderId);
+      if (!folderId) throw new Error("listRecentFiles: folderId boş!");
+      
+      const folder = this.safeGetFolder(folderId, "Firma klasörü");
       const fileList = this._scanRecursive(folder, mimeTypes);
       
       // Yeniden eskiye sırala
@@ -74,8 +93,8 @@ const DriveService = {
       
       return fileList.slice(0, 20);
     } catch (e) {
-      BaseService.logError("listRecentFiles", e);
-      return [];
+      BaseService.logError("listRecentFiles", e, { folderId: folderId });
+      throw e;
     }
   },
 
@@ -89,7 +108,7 @@ const DriveService = {
   },
 
   /**
-   * Base64 dosyayı firma klasörüne yükler (legacy doUpload).
+   * Base64 dosyayı firma klasörüne yükler.
    */
   uploadFile: function(fileObj, firmNickName) {
     try {
@@ -97,7 +116,7 @@ const DriveService = {
       if (!fileObj || !fileObj.data) throw new Error("Yüklenecek dosya verisi eksik.");
 
       const folderId = this.getCompanyFolderId(firmNickName);
-      const folder = DriveApp.getFolderById(folderId);
+      const folder = this.safeGetFolder(folderId, "Firma klasörü");
 
       const fileName = fileObj.fileName || fileObj.name || "upload.bin";
       const mimeType = fileObj.mimeType || "application/octet-stream";
