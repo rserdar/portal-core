@@ -1037,10 +1037,20 @@ export default {
     };
 
     const fetchFromGas = async (env, body) => {
+      const action = body?.action || "";
+      const longRunningActions = new Set([
+        "bulkSync", "smartSync", "importBackup", "exportBackup", "translate",
+        "generateIso", "generateDraftCertificate", "generateContract",
+        "generateAppForm", "generateSingleBatchDoc", "convertToPdf",
+        "uploadFile", "deepRepairIndex", "generateProforma", "getFolderId",
+        "getRecentFiles"
+      ]);
+
+      const timeoutMs = longRunningActions.has(action) ? 60000 : 20000;
       const requestBody = JSON.stringify({ ...body, apiKey: env.API_KEY });
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds timeout
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       try {
         const res = await fetch(env.GAS_API_URL, {
