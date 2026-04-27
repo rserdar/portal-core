@@ -976,22 +976,16 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
   }
 
   function resetForm() {
-    // Firma bağlamını (activeContext) koruyoruz, sadece girdi alanlarını temizliyoruz
+    // Arka arkaya girişte ürün bilgileri (Adım 1) dolu kalmalı.
+    // Sadece Adım 2'deki teste özel alanları temizliyoruz.
     els.secilenTestAdi.value = '';
-    els.marka.value = '';
-    els.urun.value = '';
-    els.urunKodu.value = '';
-    els.urunNo.value = '';
-    els.lot.value = '';
-    els.numuneSayisi.value = '';
-    els.gorselBir.value = '';
-    els.gorselIki.value = '';
-    els.detay.value = '';
     els.raporNo.value = '';
     
-    // Tarih alanlarını koruyabiliriz veya bugüne resetleyebiliriz. 
-    // Arka arkaya girişte genellikle aynı tarihler kullanılır, bu yüzden dokunmuyorum.
+    // Toast ile kullanıcıya bilgi verelim
+    toast.info('Yeni test için Adım 2 alanları temizlendi, ürün bilgileri korundu.');
     
+    // Sayfayı Adım 2'ye (Test Bilgileri) odaklayabiliriz veya en üste alabiliriz.
+    // Kullanıcı muhtemelen test adını değiştirecek, o yüzden en üste almak daha iyi.
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
