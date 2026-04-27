@@ -2092,7 +2092,7 @@ import {
   async function printSelectedTests() {
     if (selectedTestIds.size === 0) return;
     const ids = Array.from(selectedTestIds).join(',');
-    window.location.href = `/documents/add?firmaId=${firmaId}&testId=${ids}`;
+    window.location.href = `/tests/print?firmaId=${firmaId}&testId=${ids}`;
   }
 
   async function deleteSelectedTests() {
@@ -2212,7 +2212,7 @@ import {
       document.querySelectorAll<HTMLButtonElement>('.test-print-row').forEach(btn => {
         btn.addEventListener('click', () => {
           const id = btn.dataset.id || '';
-          if (id) window.location.href = `/documents/add?firmaId=${firmaId}&testId=${id}`;
+          if (id) window.location.href = `/tests/print?firmaId=${firmaId}&testId=${id}`;
         });
       });
 

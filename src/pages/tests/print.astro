@@ -1,0 +1,306 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+---
+
+<DashboardLayout title="Test Raporu Üret">
+  <div class="max-w-3xl mx-auto space-y-5 pb-20">
+
+    <!-- Breadcrumb / Header -->
+    <div class="flex items-center justify-between gap-3">
+      <a
+        id="back-link"
+        href="/company"
+        class="flex items-center gap-2 text-xs font-bold text-muted hover:text-primary transition-colors group"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-hover:-translate-x-1 transition-transform"><path d="m15 18-6-6 6-6"/></svg>
+        <span id="back-label">Firma Profili</span>
+      </a>
+      <div class="flex items-center gap-2">
+        <span id="company-badge" class="hidden text-[10px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border border-violet-500/20 bg-violet-500/10 text-violet-400"></span>
+        <span class="text-[10px] font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border border-border-main bg-surface-hover text-muted">Test Raporu Üretimi</span>
+      </div>
+    </div>
+
+    <!-- Firma + Raporlar tek kart -->
+    <section class="bg-surface border border-border-main shadow-xl rounded-3xl overflow-hidden">
+
+      <!-- Firma satırı -->
+      <div id="company-row" class="flex items-center gap-4 px-6 py-4 border-b border-border-main bg-surface-hover/40">
+        <div class="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
+          <span id="company-initials" class="text-[10px] font-black text-violet-400 uppercase">—</span>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p id="company-unvan" class="font-bold text-main text-sm truncate">Yükleniyor...</p>
+          <p id="company-meta" class="text-[10px] text-muted font-mono"></p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <label class="text-[10px] font-bold text-muted uppercase tracking-widest">Dil</label>
+          <select id="lang-select" class="bg-surface border border-border-main rounded-lg px-2.5 py-1.5 text-xs font-bold text-main outline-none focus:ring-2 focus:ring-violet-500/40">
+            <option value="TR" selected>TR</option>
+            <option value="EN">EN</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Test listesi başlığı -->
+      <div class="flex items-center justify-between px-6 py-3 border-b border-border-main">
+        <span class="text-[10px] font-black uppercase tracking-widest text-muted">Üretilecek Raporlar</span>
+        <span id="test-count-badge" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">— rapor</span>
+      </div>
+
+      <!-- Test satırları -->
+      <ul id="test-list" class="divide-y divide-border-main">
+        <li class="px-6 py-4 text-xs text-muted italic">Yükleniyor...</li>
+      </ul>
+    </section>
+
+    <!-- Üret Butonu + Progress -->
+    <section class="bg-surface border border-border-main shadow-xl p-5 rounded-3xl space-y-4">
+      <button
+        id="generate-btn"
+        disabled
+        class="w-full flex items-center justify-center gap-3 px-8 py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-30 disabled:cursor-not-allowed text-white font-black rounded-2xl shadow-lg shadow-violet-600/20 transition-all text-sm tracking-wide"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+        RAPORLARI ÜRET
+      </button>
+
+      <div id="progress-container" class="hidden space-y-3 pt-1">
+        <div class="flex justify-between items-center">
+          <div class="space-y-0.5">
+            <p id="progress-status" class="text-[10px] font-bold text-muted uppercase tracking-widest">Hazırlanıyor...</p>
+            <p id="progress-current" class="text-sm font-bold text-main"></p>
+          </div>
+          <span id="progress-percent" class="text-3xl font-black text-violet-400 tabular-nums">0%</span>
+        </div>
+        <div class="h-2.5 bg-surface-hover border border-border-main rounded-full overflow-hidden">
+          <div id="progress-bar" class="h-full bg-gradient-to-r from-violet-600 to-indigo-500 w-0 transition-all duration-500 rounded-full"></div>
+        </div>
+        <button
+          id="retry-btn"
+          class="hidden w-full flex items-center justify-center gap-2 px-6 py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-black rounded-xl transition-all"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          HATALILARI YENİDEN DENE
+        </button>
+      </div>
+    </section>
+
+  </div>
+</DashboardLayout>
+
+<script>
+  import { toast } from '../../lib/toast';
+  import { $companies, $tests } from '../../lib/store';
+  import { api } from '../../lib/api';
+  import { SyncManager } from '../../lib/sync';
+  import { useCleanup, initPageCleanup } from '../../lib/composables/useCleanup';
+
+  const { registerCleanup, runCleanups } = useCleanup();
+
+  function initPage() {
+    runCleanups();
+
+    const params = new URLSearchParams(window.location.search);
+    const firmaId = params.get('firmaId') || params.get('id') || '';
+    const rawTestIds = params.get('testId') || '';
+
+    if (!rawTestIds) {
+      toast.error('Test ID belirtilmemiş. Lütfen firma profilinden tekrar deneyin.');
+      return;
+    }
+
+    const testIds = rawTestIds.split(',').map(s => s.trim()).filter(Boolean);
+
+    // DOM refs
+    const backLink       = document.getElementById('back-link') as HTMLAnchorElement;
+    const backLabel      = document.getElementById('back-label')!;
+    const companyBadge   = document.getElementById('company-badge')!;
+    const companyInitials = document.getElementById('company-initials')!;
+    const companyUnvan   = document.getElementById('company-unvan')!;
+    const companyMeta    = document.getElementById('company-meta')!;
+    const testCountBadge = document.getElementById('test-count-badge')!;
+    const testList       = document.getElementById('test-list')!;
+    const generateBtn    = document.getElementById('generate-btn') as HTMLButtonElement;
+    const langSelect     = document.getElementById('lang-select') as HTMLSelectElement;
+    const progressContainer = document.getElementById('progress-container')!;
+    const progressBar    = document.getElementById('progress-bar') as HTMLElement;
+    const progressPercent = document.getElementById('progress-percent')!;
+    const progressStatus = document.getElementById('progress-status')!;
+    const progressCurrent = document.getElementById('progress-current')!;
+    const retryBtn       = document.getElementById('retry-btn') as HTMLButtonElement;
+
+    const INTER_REQUEST_DELAY_MS = 1500;
+    const failedIds = new Set<string>();
+
+    // Firma back link
+    if (firmaId) {
+      backLink.href = `/company?id=${firmaId}`;
+    }
+
+    // Test sayısı badge
+    testCountBadge.textContent = `${testIds.length} rapor`;
+
+    function sleep(ms: number) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Firma bilgisi
+    function renderCompany(companies: any[]) {
+      if (!firmaId) return;
+      const company = companies.find(c => String(c.id) === firmaId);
+      if (!company) return;
+
+      const nick = company.nickname || '?';
+      const unvan = company.unvan || nick;
+
+      companyInitials.textContent = nick.slice(0, 2).toUpperCase();
+      companyUnvan.textContent = unvan;
+      companyMeta.textContent = `ID: ${company.id} · ${nick}`;
+      backLabel.textContent = nick;
+
+      companyBadge.textContent = nick;
+      companyBadge.classList.remove('hidden');
+    }
+
+    // Test listesi
+    function renderTestList(tests: any[]) {
+      testList.innerHTML = testIds.map(id => {
+        const test = tests.find(t => String(t.id) === id);
+        const name = test?.test_adi || '—';
+        const sub  = test?.rapor_no ? `Rapor: ${test.rapor_no}` : `ID: ${id}`;
+        return `
+          <li id="row-${id}" class="flex items-center gap-4 px-6 py-3.5">
+            <div class="w-1.5 h-1.5 rounded-full bg-violet-400/40 shrink-0 mt-0.5"></div>
+            <div class="min-w-0 flex-1">
+              <p class="text-xs font-bold text-main truncate">${name}</p>
+              <p class="text-[10px] text-muted font-mono mt-0.5">${sub}</p>
+            </div>
+            <span id="test-status-${id}" class="text-[10px] font-bold text-muted/60 uppercase tracking-widest shrink-0">Bekliyor</span>
+          </li>`;
+      }).join('');
+
+      generateBtn.disabled = false;
+    }
+
+    function setTestStatus(id: string, status: 'running' | 'done' | 'error', driveId?: string) {
+      const statusEl = document.getElementById(`test-status-${id}`);
+      const rowEl    = document.getElementById(`row-${id}`);
+      const dot      = rowEl?.querySelector('.rounded-full') as HTMLElement | null;
+
+      if (status === 'running') {
+        if (statusEl) { statusEl.textContent = 'Üretiliyor...'; statusEl.className = 'text-[10px] font-bold text-amber-400 uppercase tracking-widest shrink-0 animate-pulse'; }
+        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 mt-0.5 animate-pulse';
+      } else if (status === 'done') {
+        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-0.5';
+        if (statusEl) {
+          if (driveId) {
+            statusEl.outerHTML = `<a id="test-status-${id}" href="https://docs.google.com/document/d/${driveId}" target="_blank" rel="noopener" class="text-[10px] font-black text-emerald-400 uppercase tracking-widest shrink-0 hover:text-emerald-300 flex items-center gap-1 transition-colors">✓ Hazır <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>`;
+          } else {
+            statusEl.textContent = '✓ Hazır'; statusEl.className = 'text-[10px] font-bold text-emerald-400 uppercase tracking-widest shrink-0';
+          }
+        }
+      } else {
+        if (statusEl) { statusEl.textContent = '✗ Hata'; statusEl.className = 'text-[10px] font-bold text-rose-400 uppercase tracking-widest shrink-0'; }
+        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0 mt-0.5';
+      }
+    }
+
+    // Store
+    const unsubCompanies = $companies.subscribe(companies => { if (companies.length > 0) renderCompany(companies); });
+    registerCleanup(unsubCompanies);
+
+    const unsubTests = $tests.subscribe(tests => { if (tests.length > 0) renderTestList(tests); });
+    registerCleanup(unsubTests);
+
+    // Üretim
+    async function runProduction(ids: string[]) {
+      const lang = langSelect?.value || 'TR';
+      const total = ids.length;
+
+      generateBtn.disabled = true;
+      retryBtn.classList.add('hidden');
+      progressContainer.classList.remove('hidden');
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let i = 0; i < total; i++) {
+        const id = ids[i];
+        const percent = Math.round(((i + 1) / total) * 100);
+        const testName = $tests.get().find(t => String(t.id) === id)?.test_adi || `Test ${id}`;
+
+        progressCurrent.textContent = testName;
+        progressStatus.textContent = `Rapor ${i + 1} / ${total} üretiliyor...`;
+        setTestStatus(id, 'running');
+
+        const res = await api.call('generateTestReport', { id, lang });
+
+        if (res.success) {
+          successCount++;
+          failedIds.delete(id);
+          progressBar.style.width = `${percent}%`;
+          progressPercent.textContent = `${percent}%`;
+          setTestStatus(id, 'done', res.data?.id);
+        } else {
+          errorCount++;
+          failedIds.add(id);
+          setTestStatus(id, 'error');
+        }
+
+        if (i < total - 1) await sleep(INTER_REQUEST_DELAY_MS);
+      }
+
+      progressStatus.textContent = errorCount === 0
+        ? '✅ Tüm raporlar başarıyla üretildi!'
+        : `⚠️ ${successCount} başarılı, ${errorCount} hatalı`;
+      progressCurrent.textContent = errorCount === 0
+        ? 'Drive klasörüne kaydedildi. Raporları açmak için satıra tıklayın.'
+        : 'Hatalı olanları yeniden deneyebilirsiniz.';
+
+      generateBtn.disabled = false;
+
+      if (errorCount > 0) {
+        retryBtn.classList.remove('hidden');
+      } else {
+        retryBtn.classList.add('hidden');
+        const confetti = (window as any).confetti;
+        if (confetti) confetti({ particleCount: 120, spread: 65, origin: { y: 0.6 }, colors: ['#7c3aed', '#4f46e5', '#06b6d4'] });
+      }
+    }
+
+    generateBtn.addEventListener('click', async () => {
+      if (!confirm(`${testIds.length} adet test raporu Drive'a kaydedilecek. Devam edilsin mi?`)) return;
+      failedIds.clear();
+      await runProduction(testIds);
+    });
+
+    retryBtn.addEventListener('click', async () => {
+      if (failedIds.size === 0) return;
+      await runProduction(Array.from(failedIds));
+    });
+
+    // Veri yükle
+    void SyncManager.init().then(async () => {
+      const promises: Promise<any>[] = [];
+
+      if (($companies.get() || []).length === 0) {
+        promises.push(api.getCompanies().then(r => { if (r.success && Array.isArray(r.data)) $companies.set(r.data); }));
+      } else {
+        renderCompany($companies.get());
+      }
+
+      if (($tests.get() || []).length === 0) {
+        promises.push(api.getTests().then(r => { if (r.success && Array.isArray(r.data)) $tests.set(r.data); }));
+      } else {
+        renderTestList($tests.get());
+      }
+
+      await Promise.all(promises);
+    });
+  }
+
+  initPageCleanup(initPage, runCleanups);
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>

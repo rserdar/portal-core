@@ -159,7 +159,6 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
 
     const params = new URLSearchParams(window.location.search);
     const urlFirmaId = params.get('firmaId') || params.get('id');
-    const urlTestIds = params.get('testId');
 
     function sleep(ms: number) {
       return new Promise(resolve => setTimeout(resolve, ms));
@@ -194,39 +193,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         companySearch.value = `${company.nickname} (M${company.id})`;
       }
       
-      if (urlTestIds) {
-        secResponsibles?.classList.add('hidden');
-        secSets?.classList.remove('opacity-50', 'pointer-events-none');
-        prepareTestMode();
-      } else {
-        [secResponsibles, secSets].forEach(sec => {
-          sec?.classList.remove('opacity-50', 'pointer-events-none');
-        });
-        loadSets();
-      }
-    }
-
-    async function prepareTestMode() {
-      if (!urlTestIds || !secSets) return;
-      
-      const title = secSets.querySelector('h2');
-      if (title) title.textContent = "Adım 3: Test Raporu Üretimi";
-      
-      const ids = urlTestIds.split(',');
-      if (setSelect) {
-        setSelect.innerHTML = `<option value="TEST_MODE" selected>${ids.length} Adet Test Raporu Hazırlanacak</option>`;
-        setSelect.disabled = true;
-      }
-
-      const infoBox = document.createElement('div');
-      infoBox.className = "p-4 bg-violet-500/5 border border-violet-500/20 rounded-2xl mb-4 test-info-box";
-      infoBox.innerHTML = `
-        <p class="text-xs font-bold text-violet-400 uppercase mb-2">Yazdırılacak Testler</p>
-        <ul class="text-xs text-main space-y-1 list-disc list-inside opacity-70">
-          ${ids.map(id => `<li>Test ID: ${id}</li>`).join('')}
-        </ul>
-      `;
-      secSets.insertBefore(infoBox, secSets.querySelector('.flex-col'));
+      [secResponsibles, secSets].forEach(sec => {
+        sec?.classList.remove('opacity-50', 'pointer-events-none');
+      });
+      loadSets();
     }
 
     // 🔍 Firma Seçimi
@@ -241,24 +211,19 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       selectedInfo?.classList.add('hidden');
       companySearch.classList.remove('hidden');
       companySearch.value = '';
-      
-      const testInfoBox = secSets?.querySelector('.test-info-box');
-      if (testInfoBox) testInfoBox.remove();
 
       [secResponsibles, secSets].forEach(sec => {
         sec?.classList.add('opacity-50', 'pointer-events-none');
-        if (sec === secResponsibles) sec.classList.remove('hidden');
       });
       if (setSelect) {
         setSelect.innerHTML = '<option value="" disabled selected>Doküman Seti Seçiniz...</option>';
         setSelect.disabled = false;
       }
-      if (secSets?.querySelector('h2')) secSets.querySelector('h2')!.textContent = "Adım 3: Set Seçimi & Üretim";
     });
 
     // 🔌 Setleri Yükle
     async function loadSets() {
-      if (setSelect.options.length > 1 || urlTestIds) return;
+      if (setSelect.options.length > 1) return;
       const res = await api.call('getAvailableSets');
       if (res.success && Array.isArray(res.data)) {
         res.data.forEach(setName => {
@@ -279,48 +244,8 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       }
       if (!selectedCompany) return;
 
-      if (setName === "TEST_MODE") {
-        await runTestProduction();
-      } else {
-        await runBatchProduction(setName);
-      }
+      await runBatchProduction(setName);
     });
-
-    async function runTestProduction() {
-      if (!urlTestIds || !selectedCompany) return;
-      const ids = urlTestIds.split(',');
-      const total = ids.length;
-
-      if (!confirm(`${total} adet test raporu üretilerek firma klasörüne kaydedilecektir. Devam edilsin mi?`)) return;
-
-      generateBtn.disabled = true;
-      progressContainer?.classList.remove('hidden');
-
-      try {
-        for (let i = 0; i < total; i++) {
-          const id = ids[i];
-          const percent = Math.round(((i + 1) / total) * 100);
-          
-          if (currentDocName) currentDocName.textContent = `Test ID: ${id} hazırlanıyor...`;
-          if (progressText) progressText.textContent = `Rapor ${i+1} / ${total} üretiliyor...`;
-          
-          const res = await api.generateTestReport(id);
-          
-          if (res.success) {
-            if (progressBar) progressBar.style.width = `${percent}%`;
-            if (progressPercent) progressPercent.textContent = `${percent}%`;
-          } else {
-            console.error(`Hata: Test ${id} üretilemedi.`, res.error);
-            toast.error(`Test ${id} üretilemedi: ${res.error}`);
-          }
-        }
-        finishProduction();
-      } catch (e: any) {
-        toast.error(`Üretim hatası: ${e.message}`);
-      } finally {
-        generateBtn.disabled = false;
-      }
-    }
 
     async function runBatchProduction(setName: string) {
       if (!selectedCompany) return;

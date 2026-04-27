@@ -1041,8 +1041,8 @@ export default {
       const longRunningActions = new Set([
         "bulkSync", "smartSync", "importBackup", "exportBackup", "translate",
         "generateIso", "generateDraftCertificate", "generateContract",
-        "generateAppForm", "generateSingleBatchDoc", "convertToPdf",
-        "uploadFile", "deepRepairIndex", "generateProforma", "getFolderId",
+        "generateAppForm", "generateSingleBatchDoc", "generateTestReport",
+        "convertToPdf", "uploadFile", "deepRepairIndex", "generateProforma", "getFolderId",
         "getRecentFiles"
       ]);
 

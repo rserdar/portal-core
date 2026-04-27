@@ -126,6 +126,7 @@ export const api = {
       "generateContract",
       "generateAppForm",
       "generateSingleBatchDoc",
+      "generateTestReport",
       "convertToPdf",
       "uploadFile",
       "deepRepairIndex",

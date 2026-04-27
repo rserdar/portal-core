@@ -225,7 +225,10 @@ const DocumentService = {
       }
 
       if (gorselbir) this._replaceImage(body, "<<Görsel1>>", gorselbir === "demo" ? this._cfg("DEMO_IMAGE") : gorselbir, 208);
+      else body.replaceText("<<Görsel1>>", "");
+
       if (gorseliki) this._replaceImage(body, "<<Görsel2>>", gorseliki === "demo" ? this._cfg("DEMO_IMAGE") : gorseliki, 208);
+      else body.replaceText("<<Görsel2>>", "");
 
       doc.saveAndClose();
       return { success: true, id: copy.getId() };
