@@ -181,8 +181,8 @@ const DocumentService = {
       const tempId = lang === "EN" ? entema : trtema;
       if (!tempId) throw new Error("Örnek Test Dosyası (tempId) eksik. Dil: " + lang);
 
-      const targetFolder = DriveService.safeGetFolder(folderId, "Hedef klasör");
-      const docTemp = DriveService.safeGetFile(tempId, "Şablon dosya");
+      const targetFolder = DriveApp.getFolderById(folderId);
+      const docTemp = DriveApp.getFileById(tempId);
       const docName = lang === "EN"
         ? `${fnick} - ${urunkod} - ${testname} EN (M${fno})`
         : `${fnick} - ${urunkod} - ${testadi} (M${fno})`;
@@ -225,10 +225,7 @@ const DocumentService = {
       }
 
       if (gorselbir) this._replaceImage(body, "<<Görsel1>>", gorselbir === "demo" ? this._cfg("DEMO_IMAGE") : gorselbir, 208);
-      else body.replaceText("<<Görsel1>>", "");
-
       if (gorseliki) this._replaceImage(body, "<<Görsel2>>", gorseliki === "demo" ? this._cfg("DEMO_IMAGE") : gorseliki, 208);
-      else body.replaceText("<<Görsel2>>", "");
 
       doc.saveAndClose();
       return { success: true, id: copy.getId() };
