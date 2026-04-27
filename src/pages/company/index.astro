@@ -572,33 +572,46 @@ import {
 
     <!-- Testler -->
     <div class="bg-surface border border-border-main shadow-xl rounded-[2rem] overflow-hidden">
-      <div class="flex items-center justify-between gap-3 p-4 sm:p-7 border-b border-border-main">
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 shrink-0">
-            <FlaskConical size={16} />
+      <div id="test-header-actions" class="flex items-center gap-3 p-4 sm:p-7 border-b border-border-main/50">
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+          <div class="w-10 h-10 rounded-2xl bg-violet-500/10 flex items-center justify-center text-violet-400 shrink-0 border border-violet-500/20 shadow-sm">
+            <FlaskConical size={20} />
           </div>
           <h3 class="text-sm font-black uppercase tracking-widest text-main truncate">Testler</h3>
           <span id="test-count" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 shrink-0"></span>
         </div>
-        <a id="btn-add-test" href="#" class="shrink-0 flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-black rounded-xl transition-all">
-          <span class="hidden sm:inline">+ Test Ekle</span>
-          <span class="sm:hidden">+ Ekle</span>
-        </a>
+        
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="test-actions-toggle" type="button" class="group flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-main bg-surface-hover hover:bg-surface text-main text-[11px] font-black tracking-widest transition-all">
+            <ChevronDown size={14} class="text-violet-400 transition-transform group-hover:rotate-180" />
+            TOPLU İŞLEMLER
+          </button>
+          <a id="btn-add-test" href="#" class="flex items-center gap-1.5 px-3 py-2.5 sm:px-4 bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-black rounded-xl transition-all shadow-lg shadow-violet-600/20">
+            <span class="hidden sm:inline">+ Test Ekle</span>
+            <span class="sm:hidden">+ Ekle</span>
+          </a>
+        </div>
       </div>
 
       <!-- Test Toplu İşlem Paneli -->
-      <div id="test-actions-wrapper" class="hidden px-4 sm:px-7 py-3 bg-violet-500/5 border-b border-violet-500/10 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <span id="test-selection-summary" class="text-[11px] font-bold text-violet-400 uppercase tracking-widest">0 test seçili</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="test-print-selected" disabled class="flex items-center gap-2 px-3 py-1.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-30 disabled:hover:bg-violet-600 text-white text-[10px] font-black rounded-lg transition-all">
-            <Printer size={12} /> Toplu Yazdır
-          </button>
-          <button id="test-delete-selected" disabled class="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-30 disabled:hover:bg-rose-500/10 text-rose-400 text-[10px] font-black rounded-lg border border-rose-500/20 transition-all">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
-            Toplu Sil
-          </button>
+      <div id="test-actions-wrapper" class="hidden px-4 sm:px-7 py-4 bg-violet-500/[0.03] border-b border-border-main animate-fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-400 border border-violet-500/20">
+              <CheckSquare size={14} />
+            </div>
+            <span id="test-selection-summary" class="text-[11px] font-bold text-violet-400 uppercase tracking-widest">Seçili test yok.</span>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="test-print-selected" disabled class="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-30 disabled:cursor-not-allowed text-white text-[10px] font-black rounded-xl transition-all shadow-md shadow-violet-600/10">
+              <Printer size={14} /> Seçilenleri Yazdır
+            </button>
+            <button id="test-delete-selected" disabled class="flex items-center gap-2 px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-30 disabled:cursor-not-allowed text-rose-400 text-[10px] font-black rounded-xl border border-rose-500/20 transition-all">
+              <Trash2 size={14} />
+              Seçilenleri Sil
+            </button>
+          </div>
         </div>
       </div>
 
@@ -2061,12 +2074,10 @@ import {
 
   function refreshTestSelectionSummary() {
     const el = document.getElementById('test-selection-summary');
-    const wrapper = document.getElementById('test-actions-wrapper');
-    if (!el || !wrapper) return;
+    if (!el) return;
 
     const selected = selectedTestIds.size;
-    el.textContent = `${selected} test seçili`;
-    wrapper.classList.toggle('hidden', selected === 0);
+    el.textContent = selected > 0 ? `${selected} test seçili` : "Seçili test yok.";
   }
 
   function refreshTestActionButtons() {
@@ -2314,6 +2325,12 @@ import {
     loadCompany();
     loadTests();
     loadCertificates();
+
+    // Toggle for Test Bulk Actions
+    document.getElementById('test-actions-toggle')?.addEventListener('click', () => {
+      const wrapper = document.getElementById('test-actions-wrapper');
+      if (wrapper) wrapper.classList.toggle('hidden');
+    });
   }
 
   initPageCleanup(initHandler, runCleanups);
