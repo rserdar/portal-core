@@ -70,48 +70,50 @@ import { ArrowLeft, Save } from 'lucide-astro';
           <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Firma Ünvanı</label>
           <input type="text" id="f-unvan" name="unvan" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Örn: ABC Teknolojileri Ltd. Şti." />
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
           <div class="space-y-2">
             <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Firma Kısa Adı (Nick / Klasör Adı)</label>
             <input type="text" id="f-nick" name="nickname" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold" placeholder="Örn: ABC Teknoloji" />
             <p class="text-[10px] text-indigo-400/70 italic leading-tight">* Google Drive klasör adı olarak kullanılır.</p>
           </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-          <!-- Logo -->
+
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Logo</label>
-            <div class="flex gap-2">
-              <input type="text" id="f-logo" name="logo" class="flex-1 bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold text-sm" placeholder="Drive dosya ID'si" />
-              <button type="button" id="btn-logo-select" title="Drive'dan Seç"
-                class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 rounded-xl text-[11px] font-black uppercase tracking-wide text-amber-400 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                Seç
-              </button>
-              <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/gif" class="hidden" />
-              <button type="button" id="btn-logo-upload" title="Bilgisayardan Yükle"
-                class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/15 rounded-xl text-[11px] font-black uppercase tracking-wide text-indigo-400 transition-all">
-                <svg id="logo-upload-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                <span id="logo-upload-text">Yükle</span>
-              </button>
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Logo</label>
+            <div class="space-y-2">
+              <input type="text" id="f-logo" name="logo" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold text-sm" placeholder="Drive dosya ID'si" />
+              <div class="flex gap-2">
+                <button type="button" id="btn-logo-select" title="Drive'dan Seç"
+                  class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 rounded-xl text-[11px] font-black uppercase tracking-wide text-amber-400 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                  Seç
+                </button>
+                <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/gif" class="hidden" />
+                <button type="button" id="btn-logo-upload" title="Bilgisayardan Yükle"
+                  class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/15 rounded-xl text-[11px] font-black uppercase tracking-wide text-indigo-400 transition-all">
+                  <svg id="logo-upload-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span id="logo-upload-text">Yükle</span>
+                </button>
+              </div>
             </div>
           </div>
-          <!-- Kaşe & İmza -->
+
           <div class="space-y-2">
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Kaşe & İmza</label>
-            <div class="flex gap-2">
-              <input type="text" id="f-kase" name="kase" class="flex-1 bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold text-sm" placeholder="Drive dosya ID'si" />
-              <button type="button" id="btn-kase-select" title="Drive'dan Seç"
-                class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 rounded-xl text-[11px] font-black uppercase tracking-wide text-amber-400 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                Seç
-              </button>
-              <input type="file" id="kase-file-input" accept="image/png,image/jpeg,image/gif" class="hidden" />
-              <button type="button" id="btn-kase-upload" title="Bilgisayardan Yükle"
-                class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/15 rounded-xl text-[11px] font-black uppercase tracking-wide text-indigo-400 transition-all">
-                <svg id="kase-upload-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                <span id="kase-upload-text">Yükle</span>
-              </button>
+            <label class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Kaşe & İmza</label>
+            <div class="space-y-2">
+              <input type="text" id="f-kase" name="kase" class="w-full bg-surface-hover border border-border-main rounded-xl px-4 py-2.5 text-main focus:ring-2 focus:ring-primary/50 transition-all font-semibold text-sm" placeholder="Drive dosya ID'si" />
+              <div class="flex gap-2">
+                <button type="button" id="btn-kase-select" title="Drive'dan Seç"
+                  class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 rounded-xl text-[11px] font-black uppercase tracking-wide text-amber-400 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                  Seç
+                </button>
+                <input type="file" id="kase-file-input" accept="image/png,image/jpeg,image/gif" class="hidden" />
+                <button type="button" id="btn-kase-upload" title="Bilgisayardan Yükle"
+                  class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/15 rounded-xl text-[11px] font-black uppercase tracking-wide text-indigo-400 transition-all">
+                  <svg id="kase-upload-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span id="kase-upload-text">Yükle</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
