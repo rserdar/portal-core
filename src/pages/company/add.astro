@@ -79,9 +79,14 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
                   <p class="text-xs font-bold text-muted uppercase tracking-widest" id="drive-picker-subtitle">Klasör taranıyor...</p>
                 </div>
               </div>
-              <button type="button" onclick="closeDrivePicker()" class="w-10 h-10 rounded-2xl flex items-center justify-center text-muted hover:bg-rose-500/10 hover:text-rose-400 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
+              <div class="flex items-center gap-2">
+                <button id="drive-picker-refresh" onclick="openDrivePicker(pickerTargetId, 'Dosya', true)" class="w-10 h-10 rounded-2xl flex items-center justify-center text-muted hover:bg-amber-500/10 hover:text-amber-400 transition-all group" title="Listeyi Yenile">
+                  <svg id="drive-refresh-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-active:rotate-180 transition-transform duration-500"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                </button>
+                <button type="button" onclick="closeDrivePicker()" class="w-10 h-10 rounded-2xl flex items-center justify-center text-muted hover:bg-rose-500/10 hover:text-rose-400 transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              </div>
             </div>
             
             <div id="drive-file-list" class="flex-1 overflow-y-auto p-4 space-y-2 min-h-[300px] bg-surface">
@@ -389,14 +394,22 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     // --- FILE & DRIVE LOGIC ---
     let pickerTargetId: string | null = null;
 
-    (window as any).openDrivePicker = async (targetId: string, title: string) => {
+    (window as any).openDrivePicker = async (targetId: string, title: string, forceRefresh = false) => {
       pickerTargetId = targetId;
       const modal = document.getElementById('drive-picker-modal')!;
       const subtitle = document.getElementById('drive-picker-subtitle')!;
       const listEl = document.getElementById('drive-file-list')!;
+      const refreshBtn = document.getElementById('drive-picker-refresh') as HTMLButtonElement;
+      const refreshIcon = document.getElementById('drive-refresh-icon');
       
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+
+      if (forceRefresh && refreshIcon) {
+        refreshIcon.classList.add('animate-spin');
+        if (refreshBtn) refreshBtn.disabled = true;
+      }
+
       subtitle.textContent = `${title} için seçiliyor...`;
       listEl.innerHTML = `
         <div class="flex flex-col items-center justify-center py-12 space-y-4">
@@ -408,19 +421,23 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       const nick = nicknameInput?.value?.trim() || '';
       if (!nick) {
         toast.error('Önce firma kısa adını (Klasör adı) girmelisiniz.');
-        closeDrivePicker();
+        (window as any).closeDrivePicker();
         return;
       }
 
       const companyId = (window as any).createdCompanyId;
       if (!companyId) {
         toast.warning('Henüz bir firma ID oluşmadı. Lütfen önce firmayı kaydedin veya bir görsel yükleyin.');
-        closeDrivePicker();
+        (window as any).closeDrivePicker();
         return;
       }
 
       try {
-        const res = await api.call('getRecentFiles', { id: companyId, mimeTypes: ['image/png', 'image/jpeg', 'image/gif'] });
+        const res = await api.call('getRecentFiles', { 
+          id: companyId, 
+          mimeTypes: ['image/png', 'image/jpeg', 'image/gif'],
+          forceRefresh: forceRefresh 
+        });
         if (res?.success && Array.isArray(res.data)) {
           if (res.data.length === 0) {
             listEl.innerHTML = `
@@ -451,9 +468,11 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         } else {
           throw new Error(res.error || 'Dosyalar listelenemedi.');
         }
-      } catch (err: any) {
-        toast.error('Drive hatası: ' + err.message);
-        closeDrivePicker();
+      } catch (e: any) {
+        toast.error('Drive hatası: ' + e.message);
+      } finally {
+        if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+        if (refreshBtn) refreshBtn.disabled = false;
       }
     };
 
