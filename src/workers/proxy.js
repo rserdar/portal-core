@@ -1046,7 +1046,7 @@ export default {
         "getRecentFiles"
       ]);
 
-      const timeoutMs = longRunningActions.has(action) ? 60000 : 20000;
+      const timeoutMs = longRunningActions.has(action) ? 120000 : 20000;
       const requestBody = JSON.stringify({ ...body, apiKey: env.API_KEY });
 
       const controller = new AbortController();

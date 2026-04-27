@@ -69,9 +69,10 @@ const DocumentService = {
         try {
           logoBlob = DriveApp.getFileById(extractedLogoId).getBlob();
         } catch(e) {
-          body.replaceText("{{Logo}}", "LOGO HATA: " + e.message);
-          body.replaceText("{{logo}}", "LOGO HATA: " + e.message);
-          body.replaceText("<<logo>>", "LOGO HATA: " + e.message);
+          const errMsg = "LOGO HATA (ID: " + extractedLogoId + "): " + e.message;
+          body.replaceText("{{Logo}}", errMsg);
+          body.replaceText("{{logo}}", errMsg);
+          body.replaceText("<<logo>>", errMsg);
         }
         
         if (logoBlob) {
