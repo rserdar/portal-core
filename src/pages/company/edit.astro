@@ -517,10 +517,10 @@ import { ArrowLeft, Save } from 'lucide-astro';
 
   // ─── File & Drive ─────────────────────────────────────────────────────────────
 
-  let pickerTargetId: string | null = null;
+  (window as any).pickerTargetId = null;
 
   async function openDrivePicker(targetInputId: string, title: string, forceRefresh = false) {
-    pickerTargetId = targetInputId;
+    (window as any).pickerTargetId = targetInputId;
     const modal = document.getElementById('drive-picker-modal')!;
     const subtitle = document.getElementById('drive-picker-subtitle')!;
     const listEl = document.getElementById('drive-file-list')!;

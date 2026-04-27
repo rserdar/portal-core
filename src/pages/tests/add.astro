@@ -843,10 +843,10 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
   }
 
   // --- DRIVE PICKER LOGIC ---
-  let activeTargetId = '';
+  (window as any).activeTargetId = '';
 
   (window as any).openDrivePicker = async (targetId: string, forceRefresh = false) => {
-    activeTargetId = targetId;
+    (window as any).activeTargetId = targetId;
     const modal = document.getElementById('drive-picker-modal')!;
     const listContainer = document.getElementById('drive-file-list')!;
     const subtitle = document.getElementById('drive-picker-subtitle')!;

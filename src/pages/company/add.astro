@@ -392,10 +392,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     }
 
     // --- FILE & DRIVE LOGIC ---
-    let pickerTargetId: string | null = null;
+    (window as any).pickerTargetId = null;
 
     (window as any).openDrivePicker = async (targetId: string, title: string, forceRefresh = false) => {
-      pickerTargetId = targetId;
+      (window as any).pickerTargetId = targetId;
       const modal = document.getElementById('drive-picker-modal')!;
       const subtitle = document.getElementById('drive-picker-subtitle')!;
       const listEl = document.getElementById('drive-file-list')!;
