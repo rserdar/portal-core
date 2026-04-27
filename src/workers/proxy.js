@@ -697,7 +697,7 @@ export default {
         sGT: cert.gecerlilik_tarihi,
         sKapsam: cert.kapsam,
         sScope: cert.scope,
-        logo: cert.logo,
+        logo: cert.logo || company.logo,
         nace: cert.nace,
         akrn: cert.akreditasyon,
         not: cert.sertifika_not,
@@ -1040,7 +1040,7 @@ export default {
       const requestBody = JSON.stringify({ ...body, apiKey: env.API_KEY });
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds timeout
 
       try {
         const res = await fetch(env.GAS_API_URL, {

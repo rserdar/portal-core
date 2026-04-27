@@ -35,7 +35,10 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
-          <h2 class="text-xl font-bold">Adres</h2>
+          <div class="flex-1 flex items-center justify-between">
+            <h2 class="text-xl font-bold">Adres</h2>
+            <button id="address-upper-btn" type="button" class="rounded-2xl border border-border-main bg-surface-hover px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-main hover:bg-surface transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50">BÜYÜK YAP</button>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -262,6 +265,9 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
     const submitIcon = document.getElementById('submit-icon');
     const loadingIcon = document.getElementById('loading-icon');
+    const adresInput = document.getElementById('adres-input') as HTMLInputElement;
+    const cityInput = document.getElementById('city-input') as HTMLInputElement;
+    const addressUpperBtn = document.getElementById('address-upper-btn');
 
     // Yurt Dışı toggle
     const yurtdisiCb = document.getElementById('yurtdisi-cb') as HTMLInputElement | null;
@@ -274,6 +280,16 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       };
       yurtdisiCb.addEventListener('change', handleYurtdisi);
       registerCleanup(() => yurtdisiCb.removeEventListener('change', handleYurtdisi));
+    }
+
+    // Adres & Şehir Büyük Yap (Türkçe)
+    if (addressUpperBtn && adresInput && cityInput) {
+      const handleUpper = () => {
+        adresInput.value = adresInput.value.toLocaleUpperCase('tr-TR');
+        cityInput.value = cityInput.value.toLocaleUpperCase('tr-TR');
+      };
+      addressUpperBtn.addEventListener('click', handleUpper);
+      registerCleanup(() => addressUpperBtn.removeEventListener('click', handleUpper));
     }
 
     // Otomatik Kısa Ad (Nickname) Üretimi

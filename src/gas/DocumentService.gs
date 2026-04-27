@@ -33,10 +33,22 @@ const DocumentService = {
       } = cert;
 
       const year = sTarihi && sTarihi.includes(".") ? sTarihi.split(".")[2] : "Diger";
-      const targetFolder = DriveService.getOrCreateSubFolder(parentFolderId, year);
+      let targetFolder;
+      try {
+        targetFolder = DriveService.getOrCreateSubFolder(parentFolderId, year);
+      } catch(e) {
+        throw new Error(`Firma klasörü veya yılına ait klasör oluşturulamadı. Drive hatası: ${e.message}`);
+      }
 
       const tempId = lang === "EN" ? entema : trtema;
-      const docTemp = DriveApp.getFileById(tempId);
+      if (!tempId) throw new Error(`Şablon eksik: '${standard}' standardı için ${lang} dilinde bir tema ID'si (tempId) bulunamadı.`);
+      
+      let docTemp;
+      try {
+        docTemp = DriveApp.getFileById(tempId);
+      } catch(e) {
+        throw new Error(`Şablon dosyasına erişilemedi. ID (${tempId}) hatalı veya silinmiş olabilir. Drive hatası: ${e.message}`);
+      }
 
       // File name: matches legacy isoBas format
       const akreditasyonFormatted = (akreditasyon === "Non-Acc" || akreditasyon === "NA") ? "" : (akreditasyon || "");
@@ -52,8 +64,20 @@ const DocumentService = {
 
       // Legacy isoBas ile uyum: logo hem header/table hem body placeholder alanlarına uygulanır.
       if (logo) {
-        this._insertLogoInHeaders(doc, logo);
-        this._insertLogoInBody(doc, logo);
+        const extractedLogoId = (String(logo).match(/[-\w]{25,}/) || [logo])[0];
+        let logoBlob = null;
+        try {
+          logoBlob = DriveApp.getFileById(extractedLogoId).getBlob();
+        } catch(e) {
+          body.replaceText("{{Logo}}", "LOGO HATA: " + e.message);
+          body.replaceText("{{logo}}", "LOGO HATA: " + e.message);
+          body.replaceText("<<logo>>", "LOGO HATA: " + e.message);
+        }
+        
+        if (logoBlob) {
+          this._insertLogoInHeaders(doc, logoBlob);
+          this._insertLogoInBody(doc, logoBlob);
+        }
       }
 
       this._processReplacements(body, {
@@ -89,7 +113,34 @@ const DocumentService = {
         }
       }
 
-      if (!logo) body.replaceText("{{Logo}}", "");
+      if (!logo) {
+        const labelVariants = ["{{logo}}", "<<logo>>", "{{Logo}}"];
+        const removeRowIfFound = (container) => {
+          if (!container) return;
+          labelVariants.forEach(label => {
+            let found = container.findText(label);
+            while (found) {
+              let elem = found.getElement();
+              let parent = elem.getParent();
+              let removed = false;
+              while (parent) {
+                if (parent.getType() === DocumentApp.ElementType.TABLE_ROW) {
+                  try { parent.removeFromParent(); removed = true; } catch(e) {}
+                  break;
+                }
+                parent = parent.getParent();
+              }
+              if (!removed) {
+                container.replaceText(label, "");
+              }
+              found = container.findText(label);
+            }
+          });
+        };
+        removeRowIfFound(body);
+        removeRowIfFound(doc.getHeader());
+        removeRowIfFound(doc.getFooter());
+      }
 
       if (select === "S") this._replaceImage(body, "{{Sign}}", this._cfg("SIGNATURE_ID"), 48);
       else body.replaceText("{{Sign}}", "");
@@ -558,102 +609,102 @@ const DocumentService = {
   /**
    * Legacy isim uyumu: insertLogoInAllHeaderSections -> _insertLogoInHeaders
    */
-  _insertLogoInHeaders: function(doc, logoId) {
-    return this._insertLogoInAllHeaderSections(doc, logoId);
+  _insertLogoInHeaders: function(doc, logoBlob) {
+    return this._insertLogoInAllHeaderSections(doc, logoBlob);
   },
 
   /**
    * Legacy isim uyumu: insertLogoInBodyAndTables -> _insertLogoInBody
    */
-  _insertLogoInBody: function(doc, logoId) {
-    return this._insertLogoInBodyAndTables(doc, logoId);
+  _insertLogoInBody: function(doc, logoBlob) {
+    return this._insertLogoInBodyAndTables(doc, logoBlob);
   },
 
-  _insertLogoInAllHeaderSections: function(doc, logoId) {
+  _insertLogoInAllHeaderSections: function(doc, logoBlob) {
     try {
       const header = doc.getHeader();
       if (!header) return;
 
-      const parent = header.getParent();
-      const blob = DriveApp.getFileById(logoId).getBlob();
-      const labelVariants = ["<<logo>>", "{{logo}}", "{{Logo}}"];
-      const maxWidthPx = 100;
+      const labelVariants = ["{{logo}}", "<<logo>>", "{{Logo}}"];
+      const targetHeightPts = 28.35; // 1 cm = 28.35 points
 
-      for (let i = 0; i < parent.getNumChildren(); i++) {
-        const section = parent.getChild(i);
-        if (section.getType() !== DocumentApp.ElementType.HEADER_SECTION) continue;
+      labelVariants.forEach(label => {
+        let found = header.findText(label);
+        while (found) {
+          const elem = found.getElement();
+          const parent = elem.getParent();
+          let targetParagraph = null;
 
-        const headerSection = section.asHeaderSection();
-        for (let j = 0; j < headerSection.getNumChildren(); j++) {
-          const element = headerSection.getChild(j);
-          const type = element.getType();
-
-          if (type === DocumentApp.ElementType.TABLE) {
-            const table = element.asTable();
-            for (let r = 0; r < table.getNumRows(); r++) {
-              const row = table.getRow(r);
-              for (let c = 0; c < row.getNumCells(); c++) {
-                const cell = row.getCell(c);
-                if (!this._containsAnyLabel(cell.getText(), labelVariants)) continue;
-                
-                // Clear placeholder but keep formatting
-                this._clearLabels(cell, labelVariants);
-                this._addFloatingImage(cell.getChild(0).asParagraph(), blob, maxWidthPx, true);
-              }
-            }
-          } else if (type === DocumentApp.ElementType.PARAGRAPH) {
-            const paragraph = element.asParagraph();
-            if (!this._containsAnyLabel(paragraph.getText(), labelVariants)) continue;
-            
-            this._clearLabels(paragraph, labelVariants);
-            this._addFloatingImage(paragraph, blob, maxWidthPx, true);
+          if (parent.getType() === DocumentApp.ElementType.TABLE_CELL) {
+            targetParagraph = parent.asTableCell().getChild(0).asParagraph();
+          } else if (parent.getType() === DocumentApp.ElementType.PARAGRAPH) {
+            targetParagraph = parent.asParagraph();
           }
+
+          if (targetParagraph) {
+            this._clearLabels(targetParagraph, [label]);
+            this._addInlineImage(targetParagraph, logoBlob, targetHeightPts);
+          } else {
+             header.replaceText(label, "");
+          }
+          found = header.findText(label);
         }
-      }
+      });
     } catch (e) {
       BaseService.logError("_insertLogoInAllHeaderSections", e);
     }
   },
 
-  _insertLogoInBodyAndTables: function(doc, logoId) {
+  _insertLogoInBodyAndTables: function(doc, logoBlob) {
     try {
       const body = doc.getBody();
       const labelVariants = ["{{logo}}", "<<logo>>", "{{Logo}}"];
-      const maxWidthPx = 100;
-      const blob = DriveApp.getFileById(logoId).getBlob();
+      const targetHeightPts = 28.35; // 1 cm
 
-      const childCount = body.getNumChildren();
-      for (let i = 0; i < childCount; i++) {
-        const element = body.getChild(i);
-        const type = element.getType();
+      labelVariants.forEach(label => {
+        let found = body.findText(label);
+        while (found) {
+          const elem = found.getElement();
+          const parent = elem.getParent();
+          let targetParagraph = null;
 
-        if (type === DocumentApp.ElementType.PARAGRAPH) {
-          const paragraph = element.asParagraph();
-          if (!this._containsAnyLabel(paragraph.getText(), labelVariants)) continue;
-          
-          this._clearLabels(paragraph, labelVariants);
-          this._addFloatingImage(paragraph, blob, maxWidthPx, true);
-        } else if (type === DocumentApp.ElementType.TABLE) {
-          const table = element.asTable();
-          for (let r = 0; r < table.getNumRows(); r++) {
-            const row = table.getRow(r);
-            for (let c = 0; c < row.getNumCells(); c++) {
-              const cell = row.getCell(c);
-              if (!this._containsAnyLabel(cell.getText(), labelVariants)) continue;
-              
-              this._clearLabels(cell, labelVariants);
-              this._addFloatingImage(cell.getChild(0).asParagraph(), blob, maxWidthPx, true);
-            }
+          if (parent.getType() === DocumentApp.ElementType.TABLE_CELL) {
+            targetParagraph = parent.asTableCell().getChild(0).asParagraph();
+          } else if (parent.getType() === DocumentApp.ElementType.PARAGRAPH) {
+            targetParagraph = parent.asParagraph();
           }
+
+          if (targetParagraph) {
+            this._clearLabels(targetParagraph, [label]);
+            this._addInlineImage(targetParagraph, logoBlob, targetHeightPts);
+          } else {
+             body.replaceText(label, "");
+          }
+          found = body.findText(label);
         }
-      }
+      });
     } catch (e) {
       BaseService.logError("_insertLogoInBodyAndTables", e);
     }
   },
 
+  _addInlineImage: function(paragraph, blob, targetHeight) {
+    try {
+      const img = paragraph.appendInlineImage(blob);
+      const ratio = targetHeight / img.getHeight();
+      img.setHeight(targetHeight);
+      img.setWidth(img.getWidth() * ratio);
+      
+      // Üst satır ile logoyu ayırmak için paragraf öncesi boşluk (12 pt)
+      paragraph.setSpacingBefore(12);
+    } catch (e) {
+      BaseService.logError("_addInlineImage", e);
+      paragraph.appendText("RESİM EKLENEMEDİ: " + e.message);
+    }
+  },
+
   /**
-   * Yeni yardımcı metod: Resme yüzer (Positioned) özellik kazandırır ve ortalar.
+   * Eski yöntem, sadece Sign vb. için korunmuştur.
    */
   _addFloatingImage: function(paragraph, blob, width, isCentered) {
     try {
@@ -711,7 +762,7 @@ const DocumentService = {
 
       paragraph.addPositionedImage(blob)
         .setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT)
-        .setLeftOffset(590)
+        .setLeftOffset(510)
         .setTopOffset(3)
         .setWidth(90)
         .setHeight(90);
