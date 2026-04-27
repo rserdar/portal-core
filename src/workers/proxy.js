@@ -2331,7 +2331,23 @@ export default {
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
         try {
           const payload = await buildTestPayloadFromD1(id, lang);
-          const folderId = await getFolderId(payload.fnick, ctx, env);
+          
+          // Inline getFolderId logic
+          const fno = payload.fno;
+          const fnick = payload.fnick;
+          const cacheKey = `cache:getFolderId:${stableStringify({ id: fno })}`;
+          let folderId = await env.DB.get(cacheKey);
+          
+          if (!folderId) {
+            const res = await fetchFromGas(env, { action: "getFolderId", params: { id: fno, nickname: fnick } });
+            if (res.success && res.data) {
+              folderId = String(res.data);
+              ctx.waitUntil(env.DB.put(cacheKey, folderId, { expirationTtl: CACHE_TTL }));
+            } else {
+              throw new Error("Klasör ID alınamadı: " + (res.error || "Bilinmeyen hata"));
+            }
+          }
+
           const gasResult = await fetchFromGas(env, { 
             action: "generateTestReport", 
             params: { data: payload, folderId } 
