@@ -975,6 +975,26 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
     els.secilenTestAdi.value = item.test_adi || '';
   }
 
+  function resetForm() {
+    // Firma bağlamını (activeContext) koruyoruz, sadece girdi alanlarını temizliyoruz
+    els.secilenTestAdi.value = '';
+    els.marka.value = '';
+    els.urun.value = '';
+    els.urunKodu.value = '';
+    els.urunNo.value = '';
+    els.lot.value = '';
+    els.numuneSayisi.value = '';
+    els.gorselBir.value = '';
+    els.gorselIki.value = '';
+    els.detay.value = '';
+    els.raporNo.value = '';
+    
+    // Tarih alanlarını koruyabiliriz veya bugüne resetleyebiliriz. 
+    // Arka arkaya girişte genellikle aynı tarihler kullanılır, bu yüzden dokunmuyorum.
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   // ── Save ─────────────────────────────────────────────────────────────────────
 
   async function saveTest() {
@@ -1014,9 +1034,17 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
 
     if (res.success) {
       toast.success(isEditMode ? 'Test güncellendi!' : 'Test başarıyla kaydedildi!');
-      setTimeout(() => {
-        window.location.href = `/company?id=${activeContext!.firmaId}`;
-      }, 1200);
+      
+      if (isEditMode) {
+        setTimeout(() => {
+          window.location.href = `/company?id=${activeContext!.firmaId}`;
+        }, 1200);
+      } else {
+        // Yeni kayıt ise sayfada kal ve formu temizle (arka arkaya kayıt için)
+        resetForm();
+        els.saveBtn.removeAttribute('disabled');
+        els.saveLabel.textContent = 'Testi Kaydet';
+      }
     } else {
       if (res.error === 'CONFLICT') {
         toast.error('Bu test kaydı başka bir kullanıcı tarafından güncellendi. Sayfayı yenileyip tekrar deneyin.');
