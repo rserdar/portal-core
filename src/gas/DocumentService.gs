@@ -181,8 +181,8 @@ const DocumentService = {
       const tempId = lang === "EN" ? entema : trtema;
       if (!tempId) throw new Error("Örnek Test Dosyası (tempId) eksik. Dil: " + lang);
 
-      const targetFolder = DriveApp.getFolderById(folderId);
-      const docTemp = DriveApp.getFileById(tempId);
+      const targetFolder = DriveService.safeGetFolder(folderId, "Hedef klasör");
+      const docTemp = DriveService.safeGetFile(tempId, "Şablon dosya");
       const docName = lang === "EN"
         ? `${fnick} - ${urunkod} - ${testname} EN (M${fno})`
         : `${fnick} - ${urunkod} - ${testadi} (M${fno})`;

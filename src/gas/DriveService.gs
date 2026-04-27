@@ -34,15 +34,36 @@ const DriveService = {
     let lastErr = null;
     for (let i = 0; i < 3; i++) {
       try {
+        if (!id) throw new Error("Klasör ID'si boş!");
         return DriveApp.getFolderById(id);
       } catch (e) {
         lastErr = e;
-        // Sadece "Hizmet hatası" veya "Internal Error" durumunda bekle ve tekrar dene
         if (e.message.indexOf("Hizmet hatası") > -1 || e.message.indexOf("Internal Error") > -1 || e.message.indexOf("Unexpected error") > -1) {
           Utilities.sleep(1000 * (i + 1));
           continue;
         }
-        throw e; // Yetki hatası vb. ise doğrudan fırlat
+        throw e;
+      }
+    }
+    throw new Error(`${label} erişim hatası! ID: ${id}. Google Mesajı: ${lastErr.message}`);
+  },
+
+  /**
+   * Dosya nesnesi için güvenli get (retry ile).
+   */
+  safeGetFile: function(id, label = "Dosya") {
+    let lastErr = null;
+    for (let i = 0; i < 3; i++) {
+      try {
+        if (!id) throw new Error("Dosya ID'si boş!");
+        return DriveApp.getFileById(id);
+      } catch (e) {
+        lastErr = e;
+        if (e.message.indexOf("Hizmet hatası") > -1 || e.message.indexOf("Internal Error") > -1 || e.message.indexOf("Unexpected error") > -1) {
+          Utilities.sleep(1000 * (i + 1));
+          continue;
+        }
+        throw e;
       }
     }
     throw new Error(`${label} erişim hatası! ID: ${id}. Google Mesajı: ${lastErr.message}`);
