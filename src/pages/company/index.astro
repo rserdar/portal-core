@@ -697,6 +697,13 @@ import {
     }
   }
 
+  function formatDate(val: any): string {
+    if (!val) return '—';
+    const d = parseDateValue(String(val));
+    if (!d || isNaN(d.getTime())) return String(val);
+    return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
 
   function getCompanyCertificateHref() {
     if (!firmaId) return '/certificates/add';
@@ -1874,11 +1881,11 @@ import {
         <td class="px-3 py-3 text-center align-middle">
           <input type="checkbox" class="cert-select-row h-4 w-4 rounded border-border-main bg-surface-hover text-emerald-500 focus:ring-emerald-500/40" value="${id}">
         </td>
-        <td class="hidden sm:table-cell px-3 sm:px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${belgeTarihi || '—'}</td>
+        <td class="hidden sm:table-cell px-3 sm:px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${formatDate(belgeTarihi)}</td>
         <td class="px-3 sm:px-4 py-3 font-bold text-main text-xs align-middle">${escHtml(standartDisplay || '—')}</td>
         <td class="hidden sm:table-cell px-3 sm:px-4 py-3 text-muted font-mono text-xs align-middle whitespace-nowrap">${escHtml(sertNo || '—')}</td>
         <td class="hidden md:table-cell px-3 sm:px-4 py-3 text-muted text-xs align-middle">${escHtml(akredite || '—')}</td>
-        <td class="hidden md:table-cell px-3 sm:px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${escHtml(gozT || '—')}</td>
+        <td class="hidden md:table-cell px-3 sm:px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${formatDate(gozT)}</td>
         <td class="hidden md:table-cell px-3 sm:px-4 py-3 text-muted text-xs align-middle">${escHtml(danisman || '—')}</td>
         <td class="px-3 sm:px-4 py-3 text-center align-middle">${statusHtml}</td>
         <td class="px-3 sm:px-4 py-3 text-center align-middle">
@@ -2057,7 +2064,7 @@ import {
           <td class="px-3 py-3 text-center align-middle">
             <input type="checkbox" class="test-select-row h-4 w-4 rounded border-border-main bg-surface-hover text-violet-500 focus:ring-violet-500/40" value="${testId}">
           </td>
-          <td class="px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${raporTarihi || '—'}</td>
+          <td class="px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${formatDate(raporTarihi)}</td>
           <td class="px-4 py-3 font-bold text-main text-xs align-middle">${escHtml(testAdi || '—')}</td>
           <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(marka || '—')}</td>
           <td class="px-4 py-3 text-muted text-xs align-middle">${escHtml(urun || '—')}</td>
