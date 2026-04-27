@@ -207,6 +207,11 @@ function doPost(e) {
         result.success = true;
         break;
 
+      case "listDriveContents":
+        result.data = DriveService.listDriveContents(params.folderId, params.mimeTypes);
+        result.success = true;
+        break;
+
       case "uploadFile":
       case "doUpload":
         const uploadRes = DriveService.uploadFile(params.fileInfo || params.obj || params.fileObj || params.file, params.firmNickName || params.nickname || params.firmNickname);

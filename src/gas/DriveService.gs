@@ -30,6 +30,16 @@ const DriveService = {
    * Google Drive API'deki "Hizmet hatası: Drive" (Service Error) hatalarına karşı
    * yeniden deneme (retry) mantığı ile klasör nesnesini döndürür.
    */
+  _isTransientError: function(msg) {
+    // "Drive" appears in service error messages across all locales
+    // e.g. TR: "Hizmet hatası: Drive", EN: "Service error: Drive", EL: "Σφάλμα υπηρεσίας: Drive"
+    return msg.indexOf("Drive") > -1
+      || msg.indexOf("Internal Error") > -1
+      || msg.indexOf("Unexpected error") > -1
+      || msg.indexOf("timeout") > -1
+      || msg.indexOf("quota") > -1;
+  },
+
   safeGetFolder: function(id, label = "Klasör") {
     let lastErr = null;
     for (let i = 0; i < 3; i++) {
@@ -38,10 +48,7 @@ const DriveService = {
         return DriveApp.getFolderById(id);
       } catch (e) {
         lastErr = e;
-        if (e.message.indexOf("Hizmet hatası") > -1 || e.message.indexOf("Internal Error") > -1 || e.message.indexOf("Unexpected error") > -1) {
-          Utilities.sleep(1000 * (i + 1));
-          continue;
-        }
+        if (this._isTransientError(e.message)) { Utilities.sleep(1000 * (i + 1)); continue; }
         throw e;
       }
     }
@@ -59,10 +66,7 @@ const DriveService = {
         return DriveApp.getFileById(id);
       } catch (e) {
         lastErr = e;
-        if (e.message.indexOf("Hizmet hatası") > -1 || e.message.indexOf("Internal Error") > -1 || e.message.indexOf("Unexpected error") > -1) {
-          Utilities.sleep(1000 * (i + 1));
-          continue;
-        }
+        if (this._isTransientError(e.message)) { Utilities.sleep(1000 * (i + 1)); continue; }
         throw e;
       }
     }
@@ -103,55 +107,47 @@ const DriveService = {
    * Klasör içindeki klasör ve dosyaları listeler. (Navigasyon için)
    */
   listDriveContents: function(folderId, mimeTypes = []) {
-    try {
-      if (!folderId) throw new Error("listDriveContents: folderId boş!");
-      
-      const folder = this.safeGetFolder(folderId, "Drive klasörü");
-      const contents = {
-        folders: [],
-        files: []
-      };
+    if (!folderId) throw new Error("listDriveContents: folderId boş!");
+    let lastErr = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const typeSet = new Set(mimeTypes);
+        const folders = [];
+        const files = [];
+        let pageToken = null;
 
-      // 1. Klasörleri al
-      const folderIter = folder.getFolders();
-      while (folderIter.hasNext()) {
-        const f = folderIter.next();
-        contents.folders.push({
-          id: f.getId(),
-          name: f.getName(),
-          mimeType: "application/vnd.google-apps.folder",
-          dateCreated: f.getDateCreated().toISOString()
-        });
-      }
+        do {
+          const query = {
+            q: `'${folderId}' in parents and trashed = false`,
+            fields: "nextPageToken, files(id, name, mimeType, webViewLink, createdTime)",
+            pageSize: 100,
+            orderBy: "name"
+          };
+          if (pageToken) query.pageToken = pageToken;
 
-      // 2. Dosyaları al (Filtrele)
-      const fileIter = folder.getFiles();
-      const typeSet = new Set(mimeTypes);
-      
-      while (fileIter.hasNext()) {
-        const f = fileIter.next();
-        const m = f.getMimeType();
-        
-        if (typeSet.size === 0 || typeSet.has(m)) {
-          contents.files.push({
-            id: f.getId(),
-            name: f.getName(),
-            mimeType: m,
-            url: f.getUrl(),
-            dateCreated: f.getDateCreated().toISOString()
+          const res = Drive.Files.list(query);
+          (res.files || []).forEach(function(f) {
+            if (f.mimeType === "application/vnd.google-apps.folder") {
+              folders.push({ id: f.id, name: f.name, mimeType: f.mimeType, dateCreated: f.createdTime });
+            } else if (typeSet.size === 0 || typeSet.has(f.mimeType)) {
+              files.push({ id: f.id, name: f.name, mimeType: f.mimeType, url: f.webViewLink, dateCreated: f.createdTime });
+            }
           });
+          pageToken = res.nextPageToken || null;
+        } while (pageToken);
+
+        return { folders, files };
+      } catch (e) {
+        lastErr = e;
+        if (attempt < 2 && this._isTransientError(e.message)) {
+          Utilities.sleep(1500 * (attempt + 1));
+          continue;
         }
+        BaseService.logError("listDriveContents", e, { folderId: folderId });
+        throw e;
       }
-
-      // İsme göre sırala
-      contents.folders.sort((a, b) => a.name.localeCompare(b.name));
-      contents.files.sort((a, b) => a.name.localeCompare(b.name));
-
-      return contents;
-    } catch (e) {
-      BaseService.logError("listDriveContents", e, { folderId: folderId });
-      throw e;
     }
+    throw lastErr;
   },
 
   /**

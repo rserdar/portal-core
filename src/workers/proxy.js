@@ -1043,7 +1043,7 @@ export default {
         "generateIso", "generateDraftCertificate", "generateContract",
         "generateAppForm", "generateSingleBatchDoc", "generateTestReport",
         "convertToPdf", "uploadFile", "deepRepairIndex", "generateProforma", "getFolderId",
-        "getRecentFiles"
+        "getRecentFiles", "listDriveContents"
       ]);
 
       const timeoutMs = longRunningActions.has(action) ? 120000 : 20000;

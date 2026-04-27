@@ -43,12 +43,7 @@ const DocumentService = {
       const tempId = lang === "EN" ? entema : trtema;
       if (!tempId) throw new Error(`Şablon eksik: '${standard}' standardı için ${lang} dilinde bir tema ID'si (tempId) bulunamadı.`);
       
-      let docTemp;
-      try {
-        docTemp = DriveApp.getFileById(tempId);
-      } catch(e) {
-        throw new Error(`Şablon dosyasına erişilemedi. ID (${tempId}) hatalı veya silinmiş olabilir. Drive hatası: ${e.message}`);
-      }
+      const docTemp = DriveService.safeGetFile(tempId, `ISO sertifika şablonu (${standard} ${lang})`);
 
       // File name: matches legacy isoBas format
       const akreditasyonFormatted = (akreditasyon === "Non-Acc" || akreditasyon === "NA") ? "" : (akreditasyon || "");
@@ -181,8 +176,8 @@ const DocumentService = {
       const tempId = lang === "EN" ? entema : trtema;
       if (!tempId) throw new Error("Örnek Test Dosyası (tempId) eksik. Dil: " + lang);
 
-      const targetFolder = DriveApp.getFolderById(folderId);
-      const docTemp = DriveApp.getFileById(tempId);
+      const targetFolder = DriveService.safeGetFolder(folderId, "Test rapor klasörü");
+      const docTemp = DriveService.safeGetFile(tempId, "Test rapor şablonu");
       const docName = lang === "EN"
         ? `${fnick} - ${urunkod} - ${testname} EN (M${fno})`
         : `${fnick} - ${urunkod} - ${testadi} (M${fno})`;
@@ -255,8 +250,8 @@ const DocumentService = {
       if (!tempId) throw new Error("Şablon ID eksik.");
 
       const folderId = DriveService.getCompanyFolderId(isim);
-      const docTemp = DriveApp.getFileById(tempId);
-      const folder = DriveApp.getFolderById(folderId);
+      const docTemp = DriveService.safeGetFile(tempId, "Draft sertifika şablonu");
+      const folder = DriveService.safeGetFolder(folderId, "Draft sertifika klasörü");
       const standardDisplay = standard === "Diğer" ? (other || standard) : standard;
       const copyName = lang === "EN"
         ? `${isim} - Draft ${standardDisplay} (M${id})`
@@ -307,7 +302,7 @@ const DocumentService = {
 
       // Legacy ile uyumlu draft arkaplan görselini Header'a ekleyerek "Metnin Arkasında" kalmasını sağlıyoruz
       const bgImageId = this._cfg("DRAFT_BG_ID");
-      const bgImage = DriveApp.getFileById(bgImageId).getBlob();
+      const bgImage = DriveService.safeGetFile(bgImageId, "Draft arka plan görseli").getBlob();
       
       let header = doc.getHeader();
       if (!header) {
@@ -348,8 +343,8 @@ const DocumentService = {
       if (!id) throw new Error("Firma ID eksik.");
 
       const folderId = DriveService.getCompanyFolderId(isim);
-      const docTemp = DriveApp.getFileById(this._cfg("CONTRACT_TEMP"));
-      const folder = DriveApp.getFolderById(folderId);
+      const docTemp = DriveService.safeGetFile(this._cfg("CONTRACT_TEMP"), "Sözleşme şablonu");
+      const folder = DriveService.safeGetFolder(folderId, "Sözleşme klasörü");
       const copy = docTemp.makeCopy(`${isim} - Medicert Sözleşme (M${id})`, folder);
       const doc = DocumentApp.openById(copy.getId());
       const body = doc.getBody();
@@ -391,8 +386,8 @@ const DocumentService = {
       if (!firmaNo) throw new Error("Firma numarasi eksik.");
 
       const folderId = DriveService.getCompanyFolderId(isim);
-      const docTemp = DriveApp.getFileById(this._cfg("PROFORMA_TEMP"));
-      const folder = DriveApp.getFolderById(folderId);
+      const docTemp = DriveService.safeGetFile(this._cfg("PROFORMA_TEMP"), "Proforma şablonu");
+      const folder = DriveService.safeGetFolder(folderId, "Proforma klasörü");
       const copy = docTemp.makeCopy(`${isim} - Proforma Fatura M${faturaNo}T(${firmaNo})`, folder);
       const doc = DocumentApp.openById(copy.getId());
       const body = doc.getBody();
@@ -439,9 +434,9 @@ const DocumentService = {
         ? this._cfg("APP_FORM_MEDICERT")
         : this._cfg("APP_FORM_INSPECT");
 
-      const folder = DriveApp.getFolderById(folderId);
+      const folder = DriveService.safeGetFolder(folderId, "Başvuru formu klasörü");
       const fileName = `${info.nickname} - ${info.nbody} Başvuru Formu (S${info.id})`;
-      const copy = DriveApp.getFileById(tempId).makeCopy(fileName, folder);
+      const copy = DriveService.safeGetFile(tempId, "Başvuru formu şablonu").makeCopy(fileName, folder);
       const doc = DocumentApp.openById(copy.getId());
       const body = doc.getBody();
 
@@ -527,9 +522,9 @@ const DocumentService = {
     try {
       const [setName, type, subFolder, code, name, tempId] = row;
       const fileName = `${code} ${name}`.trim();
-      const targetFolder = DriveApp.getFolderById(folderMap[subFolder]);
+      const targetFolder = DriveService.safeGetFolder(folderMap[subFolder], "Batch doküman klasörü");
 
-      const copy = DriveApp.getFileById(tempId).makeCopy(fileName, targetFolder);
+      const copy = DriveService.safeGetFile(tempId, "Batch doküman şablonu").makeCopy(fileName, targetFolder);
 
       if (type === "Docs") {
         const doc = DocumentApp.openById(copy.getId());
@@ -584,7 +579,7 @@ const DocumentService = {
       const range = body.findText(placeholder);
       if (!range) return;
 
-      const blob = DriveApp.getFileById(fileId).getBlob();
+      const blob = DriveService.safeGetFile(fileId, "Görsel dosyası").getBlob();
       const element = range.getElement();
       const parentParagraph = element.getParent().asParagraph();
 

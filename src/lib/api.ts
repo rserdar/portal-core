@@ -133,6 +133,7 @@ export const api = {
       "generateProforma",
       "getFolderId",
       "getRecentFiles",
+      "listDriveContents",
     ]);
     const timeoutMs = longRunningActions.has(action) ? LONG_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
     const timeoutId = setTimeout(() => controller.abort('timeout'), timeoutMs);
