@@ -183,7 +183,7 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw, ChevronRight, Folder } from
         
         if (!isLast) {
           btn.onclick = () => {
-            pathStack = pathStack.slice(0, index + 1);
+            pathStack.length = index + 1; // Diziyi bu indekse kadar buda
             loadFolder(item.id);
           };
         }
@@ -351,7 +351,8 @@ import { ArrowLeft, FolderOpen, FileText, RefreshCw, ChevronRight, Folder } from
 
       selectedNickname = nickname;
       selectedFirmaNo = id;
-      pathStack = [{ id: '', name: nickname }];
+      pathStack.length = 0;
+      pathStack.push({ id: '', name: nickname });
       
       if (companySearch) companySearch.value = `${nickname} (M${id})`;
       loadFolder();
