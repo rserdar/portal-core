@@ -370,6 +370,13 @@ function doPost(e) {
         result.success = true;
         break;
 
+      case "generateTestReport":
+        const testDocRes = DocumentService.generateTestReport(params.data || params, params.folderId);
+        result.data = testDocRes;
+        result.success = testDocRes.success;
+        if (!testDocRes.success) result.error = testDocRes.error;
+        break;
+
       default:
         throw new Error("Geçersiz eylem (Action): " + action);
     }

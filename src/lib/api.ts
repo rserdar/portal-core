@@ -317,6 +317,10 @@ export const api = {
     return this.call("buildCertPayload", { id, lang, select });
   },
 
+  async generateTestReport(id: string | number, lang: string = "TR") {
+    return this.call("generateTestReport", { id, lang });
+  },
+
   async buildTestPayload(id: string | number, lang: string = "TR") {
     return this.call("buildTestPayload", { id, lang });
   },

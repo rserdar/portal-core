@@ -586,6 +586,22 @@ import {
         </a>
       </div>
 
+      <!-- Test Toplu İşlem Paneli -->
+      <div id="test-actions-wrapper" class="hidden px-4 sm:px-7 py-3 bg-violet-500/5 border-b border-violet-500/10 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span id="test-selection-summary" class="text-[11px] font-bold text-violet-400 uppercase tracking-widest">0 test seçili</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="test-print-selected" disabled class="flex items-center gap-2 px-3 py-1.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-30 disabled:hover:bg-violet-600 text-white text-[10px] font-black rounded-lg transition-all">
+            <Printer size={12} /> Toplu Yazdır
+          </button>
+          <button id="test-delete-selected" disabled class="flex items-center gap-2 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 disabled:opacity-30 disabled:hover:bg-rose-500/10 text-rose-400 text-[10px] font-black rounded-lg border border-rose-500/20 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+            Toplu Sil
+          </button>
+        </div>
+      </div>
+
       <div id="test-skeleton" class="p-4 sm:p-7 animate-pulse space-y-4">
         {[1, 2, 3, 4].map(() => (
           <div class="flex items-center gap-4 py-2 border-b border-border-main/20">
@@ -872,6 +888,9 @@ import {
   let certSign: 'S' | 'NS' = 'S';
   let certGenerationInFlight = false;
 
+  const selectedTestIds = new Set<string>();
+  let allTestData: any[] = [];
+
   function readFirmaIdFromUrl() {
     // location.search is better than Astro.url for client-side routing persistence
     const params = new URLSearchParams(window.location.search);
@@ -894,6 +913,8 @@ import {
     certGenerationInFlight = false;
     hasFullData = false;
     hydratedSections.clear();
+    selectedTestIds.clear();
+    allTestData = [];
   }
 
   const copySuccessMarkup = `
@@ -2021,7 +2042,64 @@ import {
   function updateTestSelectAll() {
     const all = Array.from(document.querySelectorAll<HTMLInputElement>('.test-select-row'));
     const selectAll = document.getElementById('test-select-all') as HTMLInputElement | null;
-    if (selectAll) selectAll.checked = all.length > 0 && all.every(cb => cb.checked);
+    if (selectAll) {
+      const total = all.length;
+      const selectedCount = all.filter(cb => cb.checked).length;
+      selectAll.checked = total > 0 && selectedCount === total;
+      selectAll.indeterminate = selectedCount > 0 && selectedCount < total;
+    }
+    
+    // Update Set
+    all.forEach(cb => {
+      if (cb.checked) selectedTestIds.add(cb.value);
+      else selectedTestIds.delete(cb.value);
+    });
+
+    refreshTestSelectionSummary();
+    refreshTestActionButtons();
+  }
+
+  function refreshTestSelectionSummary() {
+    const el = document.getElementById('test-selection-summary');
+    const wrapper = document.getElementById('test-actions-wrapper');
+    if (!el || !wrapper) return;
+
+    const selected = selectedTestIds.size;
+    el.textContent = `${selected} test seçili`;
+    wrapper.classList.toggle('hidden', selected === 0);
+  }
+
+  function refreshTestActionButtons() {
+    const hasSelection = selectedTestIds.size > 0;
+    const printBtn = document.getElementById('test-print-selected') as HTMLButtonElement | null;
+    const deleteBtn = document.getElementById('test-delete-selected') as HTMLButtonElement | null;
+    
+    if (printBtn) printBtn.disabled = !hasSelection;
+    if (deleteBtn) deleteBtn.disabled = !hasSelection;
+  }
+
+  async function printSelectedTests() {
+    if (selectedTestIds.size === 0) return;
+    const ids = Array.from(selectedTestIds).join(',');
+    window.location.href = `/documents/add?firmaId=${firmaId}&testId=${ids}`;
+  }
+
+  async function deleteSelectedTests() {
+    if (selectedTestIds.size === 0) return;
+    if (!confirm(`${selectedTestIds.size} adet test kaydını silmek istediğinizden emin misiniz?`)) return;
+
+    const ids = Array.from(selectedTestIds);
+    toast.info(`${ids.length} test siliniyor...`);
+    
+    let success = 0;
+    for (const id of ids) {
+      const res = await api.deleteTest(id);
+      if (res.success) success++;
+    }
+
+    toast.success(`${success} test başarıyla silindi.`);
+    selectedTestIds.clear();
+    await loadTests();
   }
 
   async function loadTests() {
@@ -2060,9 +2138,11 @@ import {
         const testId = String(g(t, 'ID', 'id') || rowIdx);
         const zebraClass = rowIdx % 2 !== 0 ? 'bg-surface-hover' : '';
 
+        const isChecked = selectedTestIds.has(testId) ? 'checked' : '';
+
         return `<tr class="border-b border-border-main hover:bg-primary/5 transition-colors ${zebraClass}">
           <td class="px-3 py-3 text-center align-middle">
-            <input type="checkbox" class="test-select-row h-4 w-4 rounded border-border-main bg-surface-hover text-violet-500 focus:ring-violet-500/40" value="${testId}">
+            <input type="checkbox" class="test-select-row h-4 w-4 rounded border-border-main bg-surface-hover text-violet-500 focus:ring-violet-500/40" value="${testId}" ${isChecked}>
           </td>
           <td class="px-4 py-3 text-muted text-xs align-middle whitespace-nowrap">${formatDate(raporTarihi)}</td>
           <td class="px-4 py-3 font-bold text-main text-xs align-middle">${escHtml(testAdi || '—')}</td>
@@ -2087,13 +2167,36 @@ import {
       revealSection('test');
 
       document.querySelectorAll<HTMLInputElement>('.test-select-row').forEach(input => {
-        input.addEventListener('change', () => updateTestSelectAll());
+        input.addEventListener('change', () => {
+          if (input.checked) selectedTestIds.add(input.value);
+          else selectedTestIds.delete(input.value);
+          updateTestSelectAll();
+        });
       });
 
       document.getElementById('test-select-all')?.addEventListener('change', (e) => {
         const checked = (e.target as HTMLInputElement).checked;
-        document.querySelectorAll<HTMLInputElement>('.test-select-row').forEach(cb => { cb.checked = checked; });
+        document.querySelectorAll<HTMLInputElement>('.test-select-row').forEach(cb => { 
+          cb.checked = checked;
+          if (checked) selectedTestIds.add(cb.value);
+          else selectedTestIds.delete(cb.value);
+        });
+        refreshTestSelectionSummary();
+        refreshTestActionButtons();
       });
+
+      // Bind Action Buttons once
+      const printSelectedBtn = document.getElementById('test-print-selected');
+      if (printSelectedBtn && !printSelectedBtn.dataset.bound) {
+        printSelectedBtn.dataset.bound = 'true';
+        printSelectedBtn.addEventListener('click', () => void printSelectedTests());
+      }
+
+      const deleteSelectedBtn = document.getElementById('test-delete-selected');
+      if (deleteSelectedBtn && !deleteSelectedBtn.dataset.bound) {
+        deleteSelectedBtn.dataset.bound = 'true';
+        deleteSelectedBtn.addEventListener('click', () => void deleteSelectedTests());
+      }
 
       document.querySelectorAll<HTMLButtonElement>('.test-print-row').forEach(btn => {
         btn.addEventListener('click', () => {

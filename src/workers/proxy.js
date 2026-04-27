@@ -2325,6 +2325,22 @@ export default {
           return jsonResponse({ success: false, error: e.message }, 500);
         }
       },
+      generateTestReport: async (p, ctx, env) => {
+        const id = String(p?.id || "").trim();
+        const lang = p?.lang || "TR";
+        if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        try {
+          const payload = await buildTestPayloadFromD1(id, lang);
+          const folderId = await DriveService.getCompanyFolderId(payload.fnick);
+          const gasResult = await fetchFromGas(env, { 
+            action: "generateTestReport", 
+            params: { data: payload, folderId } 
+          });
+          return jsonResponse(gasResult);
+        } catch (e) {
+          return jsonResponse({ success: false, error: e.message }, 500);
+        }
+      },
       buildProformaPayload: async (p, ctx, env) => {
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);

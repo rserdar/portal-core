@@ -157,12 +157,13 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
     const progressText = document.getElementById('progress-text');
     const currentDocName = document.getElementById('current-doc-name');
 
-    const CHUNK_SIZE = 50;
-  const CHUNK_BREAK_MS = 5000;
+    const params = new URLSearchParams(window.location.search);
+    const urlFirmaId = params.get('firmaId') || params.get('id');
+    const urlTestIds = params.get('testId');
 
-  function sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
+    function sleep(ms: number) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
     const unsubCompanies = $companies.subscribe(companies => {
       if (companyList) {
@@ -173,28 +174,66 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           companyList.appendChild(opt);
         });
       }
+
+      if (urlFirmaId && !selectedCompany) {
+        const match = companies.find(c => String(c.id) === String(urlFirmaId));
+        if (match) {
+          selectCompany(match);
+        }
+      }
     });
     registerCleanup(unsubCompanies);
+
+    function selectCompany(company: any) {
+      selectedCompany = company;
+      if (displayUnvan) displayUnvan.textContent = company.unvan;
+      if (displayId) displayId.textContent = `Müşteri No: ${company.id} | Klasör: ${company.nickname}`;
+      selectedInfo?.classList.remove('hidden');
+      if (companySearch) {
+        companySearch.classList.add('hidden');
+        companySearch.value = `${company.nickname} (M${company.id})`;
+      }
+      
+      if (urlTestIds) {
+        secResponsibles?.classList.add('hidden');
+        secSets?.classList.remove('opacity-50', 'pointer-events-none');
+        prepareTestMode();
+      } else {
+        [secResponsibles, secSets].forEach(sec => {
+          sec?.classList.remove('opacity-50', 'pointer-events-none');
+        });
+        loadSets();
+      }
+    }
+
+    async function prepareTestMode() {
+      if (!urlTestIds || !secSets) return;
+      
+      const title = secSets.querySelector('h2');
+      if (title) title.textContent = "Adım 3: Test Raporu Üretimi";
+      
+      const ids = urlTestIds.split(',');
+      if (setSelect) {
+        setSelect.innerHTML = `<option value="TEST_MODE" selected>${ids.length} Adet Test Raporu Hazırlanacak</option>`;
+        setSelect.disabled = true;
+      }
+
+      const infoBox = document.createElement('div');
+      infoBox.className = "p-4 bg-violet-500/5 border border-violet-500/20 rounded-2xl mb-4 test-info-box";
+      infoBox.innerHTML = `
+        <p class="text-xs font-bold text-violet-400 uppercase mb-2">Yazdırılacak Testler</p>
+        <ul class="text-xs text-main space-y-1 list-disc list-inside opacity-70">
+          ${ids.map(id => `<li>Test ID: ${id}</li>`).join('')}
+        </ul>
+      `;
+      secSets.insertBefore(infoBox, secSets.querySelector('.flex-col'));
+    }
 
     // 🔍 Firma Seçimi
     companySearch?.addEventListener('input', (e) => {
       const val = (e.target as HTMLInputElement).value;
       const match = $companies.get().find(c => `${c.nickname} (M${c.id})` === val);
-      
-      if (match) {
-        selectedCompany = match;
-        if (displayUnvan) displayUnvan.textContent = match.unvan;
-        if (displayId) displayId.textContent = `Müşteri No: ${match.id} | Klasör: ${match.nickname}`;
-        selectedInfo?.classList.remove('hidden');
-        companySearch.classList.add('hidden');
-        
-        // Diğer bölümleri aç
-        [secResponsibles, secSets].forEach(sec => {
-          sec?.classList.remove('opacity-50', 'pointer-events-none');
-        });
-
-        loadSets();
-      }
+      if (match) selectCompany(match);
     });
 
     clearBtn?.addEventListener('click', () => {
@@ -202,14 +241,24 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       selectedInfo?.classList.add('hidden');
       companySearch.classList.remove('hidden');
       companySearch.value = '';
+      
+      const testInfoBox = secSets?.querySelector('.test-info-box');
+      if (testInfoBox) testInfoBox.remove();
+
       [secResponsibles, secSets].forEach(sec => {
         sec?.classList.add('opacity-50', 'pointer-events-none');
+        if (sec === secResponsibles) sec.classList.remove('hidden');
       });
+      if (setSelect) {
+        setSelect.innerHTML = '<option value="" disabled selected>Doküman Seti Seçiniz...</option>';
+        setSelect.disabled = false;
+      }
+      if (secSets?.querySelector('h2')) secSets.querySelector('h2')!.textContent = "Adım 3: Set Seçimi & Üretim";
     });
 
     // 🔌 Setleri Yükle
     async function loadSets() {
-      if (setSelect.options.length > 1) return; // Zaten yüklü
+      if (setSelect.options.length > 1 || urlTestIds) return;
       const res = await api.call('getAvailableSets');
       if (res.success && Array.isArray(res.data)) {
         res.data.forEach(setName => {
@@ -230,13 +279,57 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
       }
       if (!selectedCompany) return;
 
+      if (setName === "TEST_MODE") {
+        await runTestProduction();
+      } else {
+        await runBatchProduction(setName);
+      }
+    });
+
+    async function runTestProduction() {
+      if (!urlTestIds || !selectedCompany) return;
+      const ids = urlTestIds.split(',');
+      const total = ids.length;
+
+      if (!confirm(`${total} adet test raporu üretilerek firma klasörüne kaydedilecektir. Devam edilsin mi?`)) return;
+
+      generateBtn.disabled = true;
+      progressContainer?.classList.remove('hidden');
+
+      try {
+        for (let i = 0; i < total; i++) {
+          const id = ids[i];
+          const percent = Math.round(((i + 1) / total) * 100);
+          
+          if (currentDocName) currentDocName.textContent = `Test ID: ${id} hazırlanıyor...`;
+          if (progressText) progressText.textContent = `Rapor ${i+1} / ${total} üretiliyor...`;
+          
+          const res = await api.generateTestReport(id);
+          
+          if (res.success) {
+            if (progressBar) progressBar.style.width = `${percent}%`;
+            if (progressPercent) progressPercent.textContent = `${percent}%`;
+          } else {
+            console.error(`Hata: Test ${id} üretilemedi.`, res.error);
+            toast.error(`Test ${id} üretilemedi: ${res.error}`);
+          }
+        }
+        finishProduction();
+      } catch (e: any) {
+        toast.error(`Üretim hatası: ${e.message}`);
+      } finally {
+        generateBtn.disabled = false;
+      }
+    }
+
+    async function runBatchProduction(setName: string) {
+      if (!selectedCompany) return;
       if (!confirm(`${setName} setindeki tüm dokümanlar üretilecektir. Onaylıyor musunuz?`)) return;
 
       generateBtn.disabled = true;
       progressContainer?.classList.remove('hidden');
 
       try {
-        // 1. Klasör hazırlığı ve şablon listesi
         if (progressText) progressText.textContent = "Klasör hiyerarşisi oluşturuluyor...";
         const prepRes = await api.call('prepareBatchFolders', { 
           data: { nick: selectedCompany.nickname, setName: setName } 
@@ -248,12 +341,11 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
         const folderMap = prepRes.data.folderMap;
         const total = rows.length;
 
-        // 2. Tek tek üret (legacy "chunk + mola" modeli)
         for (let i = 0; i < total; i++) {
           const row = rows[i];
           const percent = Math.round(((i + 1) / total) * 100);
           
-          if (currentDocName) currentDocName.textContent = `${row[3]} ${row[4]}`; // Kod + İsim
+          if (currentDocName) currentDocName.textContent = `${row[3]} ${row[4]}`;
           if (progressText) progressText.textContent = `Doküman ${i+1} / ${total} yazdırılıyor...`;
           
           const genRes = await api.call('generateSingleBatchDoc', {
@@ -270,49 +362,42 @@ import DashboardLayout from '../../layouts/DashboardLayout.astro';
           if (genRes.success) {
             if (progressBar) progressBar.style.width = `${percent}%`;
             if (progressPercent) progressPercent.textContent = `${percent}%`;
-          } else {
-            console.error(`Hata: ${row[4]} üretilemedi.`, genRes.error);
           }
 
           const isChunkBoundary = (i + 1) % CHUNK_SIZE === 0;
-          const hasMore = i + 1 < total;
-          if (isChunkBoundary && hasMore) {
-            if (progressText) {
-              progressText.textContent = `Sistem molası (${CHUNK_BREAK_MS / 1000} sn)... ardından devam edilecek.`;
-            }
+          if (isChunkBoundary && (i + 1 < total)) {
+            if (progressText) progressText.textContent = `Sistem molası (${CHUNK_BREAK_MS / 1000} sn)...`;
             await sleep(CHUNK_BREAK_MS);
           }
         }
-
-        if (progressText) progressText.textContent = "✅ Tüm dokümanlar başarıyla üretildi!";
-        if (currentDocName) currentDocName.textContent = "İşlem Tamamlandı.";
-        
-        const confetti = (window as any).confetti;
-        if (confetti) {
-          confetti({
-            particleCount: 150,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#4f46e5', '#9333ea', '#f59e0b']
-          });
-        }
-
+        finishProduction();
       } catch (e: any) {
-        toast.error(`Üretim sırasında hata: ${e.message}`);
-        if (progressText) progressText.textContent = "❌ Hata oluştu.";
+        toast.error(`Hata: ${e.message}`);
       } finally {
         generateBtn.disabled = false;
       }
-    });
+    }
+
+    function finishProduction() {
+      if (progressText) progressText.textContent = "✅ İşlem Başarıyla Tamamlandı!";
+      if (currentDocName) currentDocName.textContent = "Tüm dokümanlar Drive klasörüne kaydedildi.";
+      
+      const confetti = (window as any).confetti;
+      if (confetti) {
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#4f46e5', '#9333ea', '#f59e0b']
+        });
+      }
+    }
 
     SyncManager.init();
   }
 
-  // Initial load
   document.addEventListener('astro:page-load', initPage);
-  // Cleanup away
   document.addEventListener('astro:before-preparation', runCleanups, { once: true });
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
