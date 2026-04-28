@@ -233,15 +233,7 @@ function isPathActive(target: string) {
   const HEADER_IDENTITY_CACHE_KEY = `${tenantId}.header.identity.v1`;
   const HEADER_IDENTITY_REAUTH_KEY = `${tenantId}.header.identity.reauth.v1`;
 
-  interface HeaderIdentity {
-    name?: string;
-    email?: string;
-    picture?: string;
-    initials?: string;
-    role?: string;
-  }
-
-  function computeInitials(name: string): string {
+  function computeInitials(name) {
     return String(name || '')
       .trim()
       .split(/\s+/)
@@ -252,7 +244,7 @@ function isPathActive(target: string) {
       .slice(0, 2) || defaultInitials;
   }
 
-  function roleFromEmail(email: string): string {
+  function roleFromEmail(email) {
     return adminEmails.includes(email) ? 'Admin' : defaultRole;
   }
 
@@ -277,7 +269,7 @@ function isPathActive(target: string) {
     window.location.reload();
   }
 
-  function updateHeaderIdentity(identity: HeaderIdentity) {
+  function updateHeaderIdentity(identity) {
     const desktopWrapper = document.getElementById('header-user');
     const email = identity.email || desktopWrapper?.dataset.userEmail || defaultEmail;
     const name = identity.name || desktopWrapper?.dataset.userName || defaultName;
@@ -316,7 +308,7 @@ function isPathActive(target: string) {
       roleEl.textContent = role;
       initialsEl.textContent = initials;
 
-      const imgEl = pictureEl as HTMLImageElement;
+      const imgEl = pictureEl;
       if (picture) {
         imgEl.src = picture;
         imgEl.alt = name;
@@ -406,21 +398,21 @@ function isPathActive(target: string) {
   }
 
   function initHeader() {
-    const header = document.getElementById("app-header") as HTMLElement | null;
-    const headerInner = document.getElementById("header-inner") as HTMLElement | null;
-    const mobileBtn = document.getElementById("mobile-menu-button") as HTMLButtonElement | null;
-    const mobileCloseBtn = document.getElementById("mobile-menu-close") as HTMLButtonElement | null;
-    const mobileMenu = document.getElementById("mobile-menu") as HTMLElement | null;
-    const iconOpen = document.getElementById("menu-icon-open") as HTMLElement | null;
-    const iconClose = document.getElementById("menu-icon-close") as HTMLElement | null;
+    const header = document.getElementById("app-header");
+    const headerInner = document.getElementById("header-inner");
+    const mobileBtn = document.getElementById("mobile-menu-button");
+    const mobileCloseBtn = document.getElementById("mobile-menu-close");
+    const mobileMenu = document.getElementById("mobile-menu");
+    const iconOpen = document.getElementById("menu-icon-open");
+    const iconClose = document.getElementById("menu-icon-close");
     let isCompact = false;
-    let scrollRaf: number | null = null;
+    let scrollRaf = null;
 
-    const previousController = (window as any).__appHeaderController as AbortController | undefined;
+    const previousController = window.__appHeaderController;
     previousController?.abort();
     const controller = new AbortController();
     const { signal } = controller;
-    (window as any).__appHeaderController = controller;
+    window.__appHeaderController = controller;
 
     const applyHeaderState = () => {
       if (!header || !headerInner) return;
