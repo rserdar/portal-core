@@ -8,11 +8,13 @@ const brandAppName = process.env.PUBLIC_BRAND_APP_NAME || "Portal";
 const brandShortName = process.env.PUBLIC_BRAND_SHORT_NAME || brandAppName;
 const brandDescription = process.env.PUBLIC_BRAND_DESCRIPTION || `${brandAppName} operasyon portalı`;
 
+const enablePWA = process.env.PUBLIC_ENABLE_PWA === 'true';
+
 // https://astro.build/config
 export default defineConfig({
   integrations: [
     icon(),
-    AstroPWA({
+    enablePWA && AstroPWA({
       registerType: 'autoUpdate',
       manifest: {
         name: brandAppName,
@@ -57,7 +59,7 @@ export default defineConfig({
         enabled: false, // Dev'de SW'yi devre dışı bırak — sorun çıkarır
       },
     }),
-  ],
+  ].filter(Boolean),
   vite: {
     resolve: {
       alias: {

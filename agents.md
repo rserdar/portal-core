@@ -487,46 +487,104 @@ Core: import config from '@tenant/config'
 > **Çıktı:** Google servisleri `settings.astro`'dan aç/kapat yönetilebilir; Gemini destekli form önerileri aktif; aylık gözetim email'i çalışır.
 > **Başarı ölçütü:** Google DLC kapalıyken sistem tamamen D1-only modunda çalışır, hata vermez. GAS bağlı ama kapalı → `syncToBackup` no-op.
 
-#### Feature Flag Kapsamı
+#### Faz E / F Ortak Modeli
 
+Faz E ve Faz F aynı entegrasyon mimarisini paylaşır:
+
+1. **Ortak integration registry** — Google ve Microsoft'a ait klasör / şablon / site / liste / sender gibi non-secret ID'ler tek D1 tablosunda tutulur
+2. **Stateless provider layer** — Worker provider bazlı config'i request sırasında taşır; GAS veya Graph adapter'ı hardcoded tenant bilgisi bilmez
+3. **Feature flags** — Aç/kapat kontrolü `sync_meta` içindedir
+4. **Graceful degradation** — DLC kapalıysa provider çağrıları no-op olur
+
+**Önerilen ortak tablo:**
+
+```sql
+CREATE TABLE IF NOT EXISTS integration_configs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  provider TEXT NOT NULL,        -- google | microsoft
+  service TEXT NOT NULL,         -- drive | gmail | calendar | onedrive | outlook | teams | sharepoint
+  config_key TEXT NOT NULL,      -- backup_folder_id | template_id | sender_email | site_id | list_id ...
+  config_value TEXT,
+  tenant_scope TEXT DEFAULT 'global',
+  updated_at INTEGER DEFAULT (unixepoch()),
+  UNIQUE(provider, service, config_key, tenant_scope)
+);
 ```
-Feature flag'ler: sync_meta tablosuna yazılır (key: "feature:google_dlc", "feature:google_calendar" vb.)
+
+Kural:
+
+- `integration_configs` yalnızca **non-secret** değerleri tutar
+- Secret'lar (`API_KEY`, OAuth client secret, webhook secret vb.) burada tutulmaz
+- Secret'lar CF Secrets / GAS Script Properties / provider secret store içinde kalır
+
+  | # | Madde | Done Criteria |
+  | :- | :--- | :--- |
+  | E0 | **Google provider config registry** — Google'a ait Drive klasör ID'leri, template ID'leri, sender/config mapping bilgileri `integration_configs` içinde `provider = "google"` satırları olarak tutulur | ID'ler D1'den okunur; hardcoded bağımlılık kalkar |
+  | E1 | **Stateless GAS** — GAS kodundaki tenant'a özgü hardcoded ID'ler (DocumentService CONFIG vb.) temizlenir; Worker her istekte gerekli Google config'lerini parametre olarak gönderir | GAS kodu tüm tenantlar için %100 aynı hale gelir |
+  | E2 | **Provider Config UI (Google sekmesi)** — `settings.astro` içinde Google'a ait Drive / template / sender kayıtlarını yöneten panel eklenir | ID değişikliği GAS editörüne girmeden UI üzerinden yapılabilir |
+  | E3 | **Google DLC Toggle** — `sync_meta` üzerinden `feature:google_dlc` flag'i ile Google servisleri global olarak açılır/kapanır | Flag kapalıyken Google çağrıları master-switch üzerinden no-op döner |
+  | E4 | **Graceful Degradation** — Google DLC kapalıyken `syncToBackup`, `fetchFromGas`, Calendar / Drive / Gmail side-effect'leri güvenli biçimde skip edilir | CRUD işlemleri hata vermeden tamamlanır; sync_log'a gereksiz kayıt yazılmaz |
+  | E5 | **Drive backup sub-toggle** — `feature:google_drive_backup`; Sheets backup açık iken Drive snapshot kapatılabilir | Sub-toggle kapalıyken `DailyBackupService._saveSnapshotToDrive()` çağrılmaz |
+  | E6 | **Calendar sub-toggle** — `feature:google_calendar`; DLC açık olsa da Calendar event oluşturma devre dışı bırakılabilir | Sub-toggle kapalıyken Calendar çağrısı skip eder, D1 yazma tamamlanır |
+  | E7 | **Gmail / Notification sub-toggle** — `feature:google_gmail`; gözetim email sistemi bu flag'e bağlı çalışır | Sub-toggle kapalıyken email trigger'ı çalışmaz; `settings.astro`'da uyarı gösterilir |
+  | E8 | **Gemini önerileri** — `certificates/add.astro` formuna NACE / EA / kapsam / scope önerileri eklenir; prompt firma `yapilan_is` + `standart` + mevcut alanlardan üretilir | Kullanıcı öneriyi preview'da görür, düzenler ve forma uygular |
+  | E9 | **Gözetim email sistemi** — aylık kontrol + manuel tetikleme + danışman bazlı gönderim; Worker D1 sorgusu yapar, GAS yalnızca gönderim kanalıdır | Manuel tetiklemede test email gönderilir; otomatik akışta aktif danışmanlara email düşer; gönderim loglanır |
+
+  #### Feature Flag Kapsamı
+
+  ```
+  Feature flag'ler: sync_meta tablosuna yazılır (key: "feature:google_dlc", "feature:google_calendar" vb.)
 Kapsam: DEPLOYMENT bazlı — her tenant ayrı D1 veritabanına sahip (D5).
 Sonuç: sync_meta içindeki flag otomatik olarak tenant-özel olur; ayrı tenant-ID lookup gerekmez.
-Birden fazla tenant aynı D1'i paylaşmaz — bu mimari D5 ile güvence altına alınmış.
-```
+  Birden fazla tenant aynı D1'i paylaşmaz — bu mimari D5 ile güvence altına alınmış.
+  ```
 
-**Kural:** Feature flag'ler `sync_meta` tablosuna yazılır, Worker env'e değil — böylece admin `settings.astro`'dan runtime'da değiştirebilir; deploy gerektirmez.
+  **Kural:** Feature flag'ler `sync_meta` tablosuna yazılır, Worker env'e değil — böylece admin `settings.astro`'dan runtime'da değiştirebilir; deploy gerektirmez.
 
-| # | Madde | Done Criteria |
-| :- | :--- | :--- |
-| E1 | **Google DLC feature flag** — `sync_meta`'ya `feature:google_dlc = "1"\|"0"` key'i eklenir. **Not:** Bu key şu an `sync_meta`'da mevcut değil; DLC ilk kez etkinleştirildiğinde `settings.astro` toggle'ı `INSERT OR REPLACE` ile yazar. Yokken Worker `"0"` varsayar (GAS çağrısı yapılmaz) | Flag `"0"` veya yokken Worker hiçbir GAS isteği göndermez; `settings.astro`'da toggle "Kapalı" gösterilir |
-| E2 | **`settings.astro` Google paneli** — DLC toggle + GAS URL ping testi + son backup zamanı + sync_log FAIL sayısı | Toggle değiştirildiğinde `sync_meta` güncellenir; sayfa yenilemeye gerek kalmaz |
-| E3 | **Graceful degradation** — `syncToBackup` flag `"0"` ise no-op döner; Calendar side-effect'ler skip edilir | Google DLC kapalıyken CRUD işlemleri hata vermeden tamamlanır; sync_log'a kayıt yazılmaz |
-| E4 | **Drive backup sub-toggle** — `feature:google_drive_backup`; Sheets backup açık iken Drive snapshot kapatılabilir | Sub-toggle kapalıyken `DailyBackupService._saveSnapshotToDrive()` çağrılmaz |
-| E5 | **Calendar sub-toggle** — `feature:google_calendar`; DLC açık olsa da Calendar event oluşturma devre dışı bırakılabilir | Sub-toggle kapalıyken `scheduleAudit` Calendar çağrısı skip eder, D1 yazma tamamlanır |
-| E6 | **Gmail / Notification sub-toggle** — `feature:google_gmail`; E9 mail gönderimi bu flag'e bağlı | Sub-toggle kapalıyken E9 trigger'ı çalışmaz; `settings.astro`'da uyarı gösterilir |
-| E7 | **GAS Gemini entegrasyonu** — `GeminiService.gs`; `certificates/add.astro` sertifika formuna "NACE Öner" ve "EA Öner" butonları eklenir; firma `yapilan_is` + `standart` alanından prompt oluşturulur | Buton tıklandığında GAS → Gemini API → öneri JSON döner; form alanlarına yazar; kullanıcı düzenleyebilir |
-| E8 | **Gemini kapsam önerisi** — `certificates/add.astro` formunda `kapsam` (TR) ve `scope` (EN) alanları için Gemini önerisi; düzenlenebilir preview modal | "Kapsam Öner" butonu; öneri modal'da gösterilir; "Uygula" ile forma yazılır |
-| E9 | **Gözetim email sistemi** — aylık GAS time trigger (her ayın 1'i 09:00); danışman bazlı `certificates WHERE gozetim_tarihi BETWEEN ay_baslangic AND ay_bitis` sorgusu; `sendSurv.html` tenant config ile parametrize; `settings.astro`'dan manuel tetikleme | Manuel tetiklemede test email gönderilir; otomatik trigger'da her aktif danışmana email düşer; gönderim `sync_log`'a kaydedilir |
+#### Faz E Blokları
 
----
+**E-A — Konfigürasyon ve Asset Yönetimi**
+
+- `E0` Google asset bilgisini D1'e taşır.
+- `E1` GAS'ı stateless yapar.
+- `E2` Bu bilgiyi yöneten admin UI'ı ekler.
+
+**E-B — Ana DLC Flag ve D1-Only Çalışma**
+
+- `E3` master switch'tir.
+- `E4` kapalı modda sistemin bozulmamasını garanti eder.
+
+**E-C — Alt Servis Flag'leri**
+
+- `E5` Drive backup
+- `E6` Calendar
+- `E7` Gmail / Notification
+
+**E-D — Akıllı Özellikler**
+
+  - `E8` Gemini önerileri
+  - `E9` Gözetim email sistemi
+
+  ---
 
 ### Faz F — Microsoft DLC ⬜
 > **Çıktı:** Microsoft altyapılı tenantlar Google DLC yerine veya yanı sıra OneDrive/Outlook/Teams kullanabilir.
 > **Başarı ölçütü:** `feature:microsoft_dlc = "1"` ile OneDrive'a günlük backup gönderilir; Outlook üzerinden gözetim email'i gönderilebilir.
 
-**Not:** F, E ile paralel yürütülebilir. İkisi de D tamamlandıktan sonra bağımsız geliştirilir. Feature flag kapsamı E ile aynı: `sync_meta` içinde, deployment bazlı.
+**Not:** F, E ile paralel yürütülebilir. İkisi de D tamamlandıktan sonra bağımsız geliştirilir. Faz F, Faz E'deki ortak `integration_configs` modelini Microsoft provider'ı için kullanır; ayrı `microsoft_configs` tablosu açılmaz.
 
 | # | Madde | Done Criteria |
 | :- | :--- | :--- |
-| F1 | **Microsoft DLC feature flag** — `feature:microsoft_dlc`; Google DLC ile aynı anda `"1"` olabilir; sub-service'ler ayrı flag alır | Her iki flag aynı anda açıkken sistem hem Google hem Microsoft servislerini çalıştırır |
-| F2 | **`settings.astro` Microsoft paneli** — DLC toggle + Azure app credentials alanı + Graph API ping testi | Credentials kaydedildiğinde ping testi geçer; başarısız ping'de toggle aktive edilemez |
-| F3 | **OneDrive backup** — Worker → `src/lib/msGraph.ts` → Graph API → OneDrive `.sql` snapshot; `DailyBackupService` adaptör: Google DLC açıksa Drive'a, Microsoft DLC açıksa OneDrive'a, ikisi de açıksa her ikisine yazar | Her iki DLC aynı anda açıkken backup iki hedefe gönderilir; biri başarısız olursa diğeri devam eder |
-| F4 | **SharePoint list sync** — `feature:microsoft_sharepoint` sub-toggle; D1 delta → SharePoint liste upsert | Sub-toggle kapalıyken SharePoint çağrısı yapılmaz; açıkken günlük sync gerçekleşir |
-| F5 | **Outlook gözetim email** — E9'un Outlook karşılığı; `feature:microsoft_outlook` sub-toggle; aynı `sendSurv.html` template kullanılır; Graph API `/sendMail` endpoint | E9 (`feature:google_gmail`) açıkken Outlook sub-toggle'ı da açılabilir; her ikisi de gönderilebilir veya sadece biri |
-| F6 | **Teams webhook bildirimi** — `feature:microsoft_teams`; CRUD başarı/hata bildirimleri Teams kanalına; özellikle `sync_log` FAIL → Teams alert | Webhook URL `sync_meta`'ya kaydedilir; FAIL kaydında Worker `ctx.waitUntil` içinde Teams'e POST gönderir |
-| F7 | **Birleşik DLC settings paneli** — her servis için kaynak seçimi: backup için `Google Drive \| OneDrive \| İkisi`, email için `Gmail \| Outlook \| İkisi` | Kullanıcı servis bazında tercih yapar; tercih `sync_meta`'ya kaydedilir; sayfada çakışma uyarıları gösterilir |
+| F0 | **Microsoft provider config registry** — OneDrive klasör ID'leri, SharePoint site/list ID'leri, Outlook sender identity ve Teams webhook metadata `integration_configs` içinde `provider = "microsoft"` satırları olarak tutulur | Microsoft'a ait non-secret config D1'den okunur; hardcoded bağımlılık kalkar |
+| F1 | **Stateless Microsoft adapter** — Worker → Graph adapter katmanı gerekli config'i request bazlı taşır; tenant'a özgü ID'ler koda gömülü değildir | Microsoft entegrasyonu provider-config ile çalışır; tenant overlay yalnızca başlangıç config'i yükler |
+| F2 | **Provider Config UI (Microsoft sekmesi)** — `settings.astro` içinde OneDrive / SharePoint / Outlook / Teams config kayıtlarını yöneten panel eklenir | Site/list/folder/sender değerleri UI üzerinden değiştirilebilir |
+| F3 | **Microsoft DLC feature flag** — `feature:microsoft_dlc`; Google DLC ile aynı anda `"1"` olabilir | Her iki flag aynı anda açıkken sistem hem Google hem Microsoft servislerini çalıştırır |
+| F4 | **Graceful degradation** — Microsoft DLC kapalıyken Graph / Outlook / Teams çağrıları güvenli biçimde no-op olur | Microsoft kapalıyken CRUD ve backup ana akışı bozulmaz |
+| F5 | **OneDrive backup sub-toggle** — `feature:microsoft_onedrive_backup`; D1 `.sql` snapshot OneDrive'a yazılır | Google Drive ile paralel çalışabilir; biri başarısız olursa diğeri devam eder |
+| F6 | **SharePoint sync sub-toggle** — `feature:microsoft_sharepoint`; D1 delta → SharePoint liste upsert | Sub-toggle kapalıyken SharePoint çağrısı yapılmaz; açıkken günlük sync gerçekleşir |
+| F7 | **Outlook notification sub-toggle** — `feature:microsoft_outlook`; gözetim email sisteminin Outlook karşılığıdır | Google Gmail ile paralel ya da tek başına çalışabilir |
+| F8 | **Teams alert sub-toggle** — `feature:microsoft_teams`; `sync_log` FAIL/CRASH kayıtları Teams kanalına bildirilir | Webhook metadata `integration_configs`'ten okunur; alert gönderimi `ctx.waitUntil` içinde yapılır |
+| F9 | **Birleşik provider orchestration UI** — backup için `Google Drive \| OneDrive \| İkisi`, email için `Gmail \| Outlook \| İkisi` seçimi eklenir | Kullanıcı servis bazında provider tercihi yapar; tercih `sync_meta`'ya kaydedilir; çakışma uyarıları gösterilir |
 
 ---
 

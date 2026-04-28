@@ -2,6 +2,28 @@
 
 Bu proje tenant-aware çalışacak şekilde hazırlanmıştır. Yeni tenant eklerken çekirdeği değiştirmeden aşağıdaki akışı izleyin.
 
+## Tenant Türünü Belirle
+
+Kuruluma başlamadan önce tenant'ın entegrasyon modeli netleştirilmelidir. Sistem dört çalışma modunu destekler:
+
+1. `D1-only`
+Google DLC ve Microsoft DLC kapalıdır. Tenant yalnızca çekirdek veri yönetimi modunda çalışır.
+
+2. `Google tenant`
+Tenant yalnızca Google ekosistemini kullanır. `Google DLC` açılır, `Microsoft DLC` kapalı kalır.
+
+3. `Microsoft tenant`
+Tenant yalnızca Microsoft ekosistemini kullanır. `Microsoft DLC` açılır, `Google DLC` kapalı kalır.
+
+4. `Hybrid tenant`
+Tenant hem Google hem Microsoft servislerini birlikte kullanır. İki DLC aynı anda aktif olabilir.
+
+Kural:
+
+- Ürünleme düzeyinde yalnızca iki ana paket vardır: `Google DLC` ve `Microsoft DLC`
+- Teknik düzeyde bu paketlerin alt servisleri ayrı feature flag'lerle kontrol edilir
+- Tenant tipi kurulum sırasında seçilir ama daha sonra değiştirilebilir
+
 ## 1. Tenant klasörünü oluştur
 
 `src/tenant/default/` klasörünü kopyalayın:
@@ -37,6 +59,13 @@ PUBLIC_BRAND_DESCRIPTION=Example operasyon portalı
 ```
 
 Yerelde `.dev.vars` yalnızca secret override için kullanılır. Secret değerleri `wrangler.toml` içine yazılmaz.
+
+Tenant'ın ürün tipine göre build/deploy akışında şu mantık kullanılır:
+
+- `Google tenant` → Google DLC flag'leri açılır
+- `Microsoft tenant` → Microsoft DLC flag'leri açılır
+- `Hybrid tenant` → her iki DLC de açılır
+- `D1-only` → her iki DLC kapalı kalır
 
 ## 3. Tenant wrangler dosyasını oluştur
 
@@ -123,6 +152,11 @@ Notlar:
 - Drive klasör ID'leri ve template dosya ID'leri GAS kodunda tenant'a özel kalabilir.
 - Sunucu URL'si veya API anahtarı gibi operasyonel değerler Script Properties'e alınmalıdır.
 
+Ek not:
+
+- `Google tenant` ve `Hybrid tenant` için GAS kurulumu zorunludur
+- `Microsoft tenant` veya `D1-only` tenant, Google DLC başlangıçta kapalı kalacaksa GAS kurulumunu ilk aşamada erteleyebilir
+
 ## 7. CI/CD'ye Tenant Ekle
 
 `.github/workflows/deploy.yml` dosyasındaki `matrix.include` listesine yeni blok ekleyin:
@@ -148,4 +182,6 @@ Kontrol listesi:
 - D1 migration'lar eksiksiz mi?
 - GAS `API_KEY` doğrulaması çalışıyor mu?
 - Header/logo/title/QR linkleri doğru tenant değerlerini gösteriyor mu?
+- Tenant tipi doğru mu?
+- `D1-only / Google / Microsoft / Hybrid` seçimine göre doğru DLC flag'leri aktif mi?
 - GitHub Actions deploy job'ı yeşil mi?

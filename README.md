@@ -7,6 +7,73 @@ Cloudflare Workers + Google Apps Script + Astro 6.x ile inşa edilmiştir.
 
 ---
 
+## Ürünleme Modeli
+
+Portal Core, entegrasyonları müşteri gözüyle iki ana DLC olarak konumlandırır:
+
+- **Google DLC**: Google ekosistemini kullanan müşteriler için Drive, Gmail, Calendar, Docs ve Gemini tabanlı yetenekleri açar
+- **Microsoft DLC**: Microsoft ekosistemini kullanan müşteriler için OneDrive, Outlook, Teams ve SharePoint tabanlı yetenekleri açar
+
+Bu iki DLC birbirinden bağımsızdır. Müşteri:
+
+- yalnızca **Google DLC**
+- yalnızca **Microsoft DLC**
+- veya ikisini birlikte kullanabilir
+
+Bu üçüncü durum sistem içinde **Hybrid** kullanım modeli olarak ele alınır. Hybrid bir tenant, aynı anda hem Google hem Microsoft entegrasyonlarını aktif çalıştırabilir.
+
+### Ticari Model ve Teknik Model Arasındaki Ayrım
+
+Ürün dili ile teknik mimari bilinçli olarak ayrılmıştır:
+
+- **Ticari katman** müşteriye yalnızca iki ana paket gösterir: `Google DLC` ve `Microsoft DLC`
+- **Teknik katman** ise bu paketlerin içindeki servisleri ayrı feature flag'lerle yönetir
+
+Örnek:
+
+- Müşteriye satılan paket: `Google DLC`
+- İçeride açılan teknik flag'ler: `feature:google_dlc`, `feature:google_drive_backup`, `feature:google_calendar`, `feature:google_gmail`, `feature:google_gemini`
+
+Aynı mantık Microsoft için de geçerlidir:
+
+- `feature:microsoft_dlc`
+- `feature:microsoft_onedrive_backup`
+- `feature:microsoft_sharepoint`
+- `feature:microsoft_outlook`
+- `feature:microsoft_teams`
+
+Bu yaklaşım şu avantajları sağlar:
+
+- müşteriye sade ve anlaşılır ürün sunumu yapılır
+- içeride servis bazlı esneklik korunur
+- aynı tenant için hibrit senaryolar desteklenir
+- yeni provider eklemek gerekirse çekirdek mimari bozulmaz
+
+### Entegrasyon Konfigürasyonu
+
+Google ve Microsoft için non-secret entegrasyon değerleri tek bir provider-agnostic yapı ile yönetilir. Çekirdek yaklaşım:
+
+- provider'a ait klasör ID'leri
+- şablon / template ID'leri
+- sender identity bilgileri
+- site / list / webhook metadata
+
+gibi değerleri tek bir entegrasyon konfigürasyon modeli altında toplar.
+
+Bu modelin amacı şudur:
+
+- Google ve Microsoft entegrasyonları aynı desenle çalışsın
+- tenant'a özel sabitler koda gömülmesin
+- admin panelinden yönetilebilsin
+
+Kural:
+
+- **non-secret** entegrasyon değerleri veritabanında tutulabilir
+- **secret** değerler (`API_KEY`, OAuth client secret, provider private keys vb.) veritabanında tutulmaz
+- secret'lar Cloudflare Secrets, GAS Script Properties veya ilgili provider'ın secret mekanizmasında kalır
+
+---
+
 ## Mimari (D1-Primary, v7.0)
 
 ```
@@ -66,6 +133,40 @@ Bulk:    GAS bulkSync → D1 tam yenileme  (Settings sayfası veya zamanlanmış
 
 ---
 
+## DLC ve Provider Mantığı
+
+Portal Core entegrasyon katmanını **provider tabanlı** tasarlar.
+
+Bugünkü provider'lar:
+
+- `google`
+- `microsoft`
+
+Her provider kendi DLC'si ile açılır:
+
+- `Google DLC`
+- `Microsoft DLC`
+
+Ancak provider içindeki servisler teknik olarak ayrı ayrı kontrol edilebilir. Bu tasarım kasıtlıdır:
+
+- satış ve paketleme düzeyinde iki ana DLC vardır
+- operasyon ve implementasyon düzeyinde alt servis flag'leri bulunur
+
+Bu sayede:
+
+- müşteriye sade paket yapısı sunulur
+- proje ekibi servis bazlı aç/kapat ve bakım esnekliği kazanır
+
+Örnek hibrit senaryo:
+
+- backup için `Google Drive`
+- e-posta için `Outlook`
+- uyarı/işbirliği için `Teams`
+
+Bu kullanım desteklenen ve hedeflenen bir senaryodur; sistem Google ve Microsoft'u birbirini dışlayan yapılar olarak değil, gerektiğinde paralel çalışabilen iki provider olarak ele alır.
+
+---
+
 ## Frontend: Astro 6.x + Tailwind CSS v4
 
 - **Tenant alias:** `@tenant/config` → `src/tenant/{TENANT_ID}/config.ts` (build-time env)
@@ -120,6 +221,30 @@ src/
 | `PROFORMA_TEMP` | Proforma şablon ID |
 
 > Tenant-specific değerler `gas/TenantSetup.gs` scriptiyle tek seferlik atanır.
+
+---
+
+## Tenant ve DLC İlişkisi
+
+Bir tenant için aşağıdaki kombinasyonlardan herhangi biri geçerli olabilir:
+
+1. **D1-only**
+Google DLC ve Microsoft DLC kapalıdır. Sistem yalnızca çekirdek veri yönetimi modunda çalışır.
+
+2. **Google tenant**
+`Google DLC` açıktır. Google servisleri aktif, Microsoft servisleri pasiftir.
+
+3. **Microsoft tenant**
+`Microsoft DLC` açıktır. Microsoft servisleri aktif, Google servisleri pasiftir.
+
+4. **Hybrid tenant**
+Hem `Google DLC` hem `Microsoft DLC` açıktır. İki provider aynı tenant içinde paralel çalışabilir.
+
+Bu model ürün seviyesinde nettir:
+
+- tenant bir provider'a mecbur değildir
+- provider seçimi tenant bazında yapılır
+- ihtiyaç değişirse aynı tenant sonradan hibrit moda geçirilebilir
 
 ---
 
