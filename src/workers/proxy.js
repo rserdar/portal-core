@@ -1,5 +1,7 @@
+import { renderTenantSurveillanceEmail } from "../tenant/email-registry.js";
+
 /**
- * 🛰️ Medicert Portal: Cloudflare Worker Proxy (v7.0 - D1-Primary)
+ * 🛰️ Portal Worker Proxy (v7.0 - D1-Primary)
  *
  * Mimari Özeti:
  * - Source of Truth: Cloudflare D1 — tüm yazma işlemleri doğrudan D1'e gider.
@@ -16,9 +18,15 @@
 
 export default {
   async fetch(request, env, ctx) {
+    const appName = String(env.APP_NAME || "Portal");
+    const tenantId = String(env.TENANT_ID || "default");
+    const workerLabel = String(env.WORKER_LABEL || "Portal Cloudflare Proxy");
+    const configuredOrigins = String(env.ALLOWED_ORIGINS || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
     const allowedOriginPatterns = [
-      /^https:\/\/portal\.medicert\.com\.tr$/,
-      /^https:\/\/portal\.pages\.dev$/,
+      ...configuredOrigins.map((allowed) => new RegExp(`^${allowed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`)),
       /^http:\/\/localhost(?::\d+)?$/,
       /^http:\/\/127\.0\.0\.1(?::\d+)?$/,
     ];
@@ -27,7 +35,9 @@ export default {
     const isAllowedOrigin = origin
       ? allowedOriginPatterns.some((pattern) => pattern.test(origin))
       : false;
-    const resolvedOrigin = isAllowedOrigin ? origin : "https://portal.medicert.com.tr";
+    const resolvedOrigin = isAllowedOrigin
+      ? origin
+      : String(env.APP_ORIGIN || configuredOrigins[0] || "http://localhost:4321");
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": resolvedOrigin,
@@ -248,6 +258,37 @@ export default {
     const createEtag = (value) => stableStringify(stripMeta(value));
     const pickRowValue = (record, aliases, fallback = "") => pickObjectValue(record, aliases, fallback);
     const pickCompanyValue = (record, aliases, fallback = "") => pickObjectValue(record, aliases, fallback);
+    const escapeHtml = (value) => String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+    const parseTRDate = (str) => {
+      const m = String(str || "").trim().match(/^(\d{2})[./](\d{2})[./](\d{4})$/);
+      if (!m) return null;
+      const parsed = new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+    const formatDateDots = (date) => {
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+      const dd = `0${date.getDate()}`.slice(-2);
+      const mm = `0${date.getMonth() + 1}`.slice(-2);
+      const yyyy = date.getFullYear();
+      return `${dd}.${mm}.${yyyy}`;
+    };
+    const isConfirmedFlag = (value) => {
+      const normalized = String(value ?? "").trim().toLowerCase();
+      return normalized === "true" || normalized === "1";
+    };
+    const buildSurveillanceEmailHtml = (payload) => renderTenantSurveillanceEmail(tenantId, {
+      ...payload,
+      brandName: appName,
+    });
+    const sendHtmlEmailViaGas = async (payload) => fetchFromGas(env, {
+      action: "sendSurveillanceEmail",
+      params: payload,
+    });
     const getCompanyId = (record) => pickCompanyValue(record, ["id", "ID", "firmaNo", "FirmaNo", "Firma No"]);
     const createCanonicalCompany = (source, options = {}) => {
       const input = source && typeof source === "object" && !Array.isArray(source) ? source : {};
@@ -1003,7 +1044,7 @@ export default {
 
     const generateSqlDump = async (env, requestedTables) => {
       const tables = Array.isArray(requestedTables) ? requestedTables : ["companies", "certificates", "audits", "tests", "proformas", "standards", "auditors", "consultants", "testdocs", "sysdocs"];
-      let sql = "-- Medicert Portal D1 SQL Export\n";
+      let sql = `-- ${appName} D1 SQL Export\n`;
       sql += `-- Generated: ${new Date().toISOString()}\n\n`;
 
       for (const table of tables) {
@@ -1233,9 +1274,138 @@ export default {
           await logSyncEvent(action, type, id, "CRASH", e.message);
         }
       })());
-    };
+      };
 
-    const SyncHandlers = {
+      const NotificationHandlers = {
+        sendSurveillanceEmail: async (p, ctx, env) => {
+          const rows = Array.isArray(p?.data) ? p.data : Array.isArray(p?.rows) ? p.rows : [];
+          const email = String(p?.email || "").trim();
+          if (!email) return jsonResponse({ success: false, error: "EMAIL_REQUIRED" }, 400);
+
+          const htmlBody = p?.htmlBody || buildSurveillanceEmailHtml({
+            firstName: p?.firstName || "",
+            title: p?.title || "",
+            rows,
+            startDate: p?.startDate || "",
+            endDate: p?.endDate || "",
+          });
+
+          const gasResult = await sendHtmlEmailViaGas({
+            email,
+            subject: p?.subject || "Gozetim Bilgileri",
+            htmlBody,
+            from: p?.from,
+            fromName: p?.fromName,
+            firstName: p?.firstName || "",
+            title: p?.title || "",
+          });
+          return jsonResponse(gasResult, gasResult?.success === false ? 502 : 200);
+        },
+        runMonthlyCheck: async (p, ctx, env) => {
+          const today = new Date();
+          const firstDayCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+          const startDate = new Date(firstDayCurrentMonth);
+          startDate.setMonth(startDate.getMonth() - 1);
+          const endDate = new Date(firstDayCurrentMonth);
+          endDate.setMonth(endDate.getMonth() + 2);
+
+          const [{ results: consultantRows }, { results: certificateRows }] = await Promise.all([
+            env.DB_D1.prepare(`
+              SELECT ad, mail, yetkili_adi, yetkili_soyad, hitabet
+              FROM consultants
+              ORDER BY ad
+            `).all(),
+            env.DB_D1.prepare(`
+              SELECT c.nickname, c.unvan, ce.consultant, ce.standart, ce.other_standart,
+                     ce.sertifika_no, ce.akreditasyon, ce.gozetim_tarihi, ce.gozetim_confirmed
+              FROM certificates_full ce
+              JOIN companies c ON c.id = ce.firma_no
+            `).all(),
+          ]);
+
+          const recipientsByConsultant = {};
+          for (const consultant of consultantRows || []) {
+            const key = String(consultant.ad || "").trim();
+            if (!key) continue;
+            const firstName = String(consultant.yetkili_adi || "").trim();
+            const lastName = String(consultant.yetkili_soyad || "").trim();
+            recipientsByConsultant[key] = {
+              firstName,
+              fullName: `${firstName} ${lastName}`.trim(),
+              title: String(consultant.hitabet || "").trim(),
+              email: String(consultant.mail || "").trim(),
+              rows: [],
+            };
+          }
+
+          let matchedRows = 0;
+          for (const certificate of certificateRows || []) {
+            const consultantKey = String(certificate.consultant || "").trim();
+            const recipient = recipientsByConsultant[consultantKey];
+            if (!recipient) continue;
+
+            const surveillanceDate = parseTRDate(certificate.gozetim_tarihi);
+            if (!surveillanceDate) continue;
+            if (!(surveillanceDate >= startDate && surveillanceDate < endDate)) continue;
+            if (isConfirmedFlag(certificate.gozetim_confirmed)) continue;
+
+            recipient.rows.push({
+              date: formatDateDots(surveillanceDate),
+              firm: String(certificate.nickname || certificate.unvan || "").trim(),
+              consultant: recipient.fullName || consultantKey,
+              standard: String(certificate.standart || "").trim() === "Other"
+                ? String(certificate.other_standart || "").trim()
+                : String(certificate.standart || "").trim(),
+              certificateNo: String(certificate.sertifika_no || "").trim(),
+              accreditation: String(certificate.akreditasyon || "").trim(),
+            });
+            matchedRows += 1;
+          }
+
+          const recipients = Object.values(recipientsByConsultant).filter((entry) => entry.email && entry.rows.length > 0);
+          let sent = 0;
+          const failures = [];
+
+          for (const recipient of recipients) {
+            const htmlBody = buildSurveillanceEmailHtml({
+              firstName: recipient.firstName,
+              title: recipient.title,
+              rows: recipient.rows,
+              startDate: formatDateDots(startDate),
+              endDate: formatDateDots(endDate),
+            });
+            const result = await sendHtmlEmailViaGas({
+              email: recipient.email,
+              subject: "Gozetim Bilgileri",
+              htmlBody,
+              firstName: recipient.firstName,
+              title: recipient.title,
+            });
+            if (result?.success) {
+              sent += 1;
+            } else {
+              failures.push({
+                email: recipient.email,
+                error: result?.error || "SEND_FAILED",
+              });
+            }
+          }
+
+          return jsonResponse({
+            success: failures.length === 0,
+            data: {
+              sent,
+              matchedRows,
+              recipients: recipients.length,
+              skipped: Math.max(0, recipients.length - sent),
+              failures,
+            },
+            error: failures.length ? "PARTIAL_SEND_FAILURE" : null,
+          }, failures.length ? 502 : 200);
+        },
+      };
+
+      const SyncHandlers = {
       bulkSync: async (params, ctx, env) => {
         if (!env.DB_D1) return jsonResponse({ success: false, error: "NO_D1_BINDING" }, 500);
         const scope = Array.isArray(params?.scope) ? params.scope : ["companies", "certificates", "audits", "tests", "proformas", "master"];
@@ -2703,6 +2873,7 @@ export default {
           ...CompanyHandlers,
           ...CertificateHandlers,
           ...EntityHandlers,
+          ...NotificationHandlers,
           ...MasterHandlers,
           ...DriveHandlers
         };
@@ -2731,7 +2902,7 @@ export default {
     }
 
 
-    return new Response("🚀 Medicert Cloudflare Proxy (v6.0 - Dispatcher) Active", {
+    return new Response(`🚀 ${workerLabel} Active`, {
       headers: { ...corsHeaders, "Content-Type": "text/plain" },
     });
   },

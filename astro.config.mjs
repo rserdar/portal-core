@@ -3,6 +3,11 @@ import tailwindcss from '@tailwindcss/vite';
 import icon from "astro-icon";
 import AstroPWA from '@vite-pwa/astro';
 
+const tenantId = process.env.TENANT_ID || "medicert";
+const brandAppName = process.env.PUBLIC_BRAND_APP_NAME || "Portal";
+const brandShortName = process.env.PUBLIC_BRAND_SHORT_NAME || brandAppName;
+const brandDescription = process.env.PUBLIC_BRAND_DESCRIPTION || `${brandAppName} operasyon portalı`;
+
 // https://astro.build/config
 export default defineConfig({
   integrations: [
@@ -10,9 +15,9 @@ export default defineConfig({
     AstroPWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Medicert Portal',
-        short_name: 'Medicert',
-        description: 'Medicert Profesyonel Yönetim Sistemi',
+        name: brandAppName,
+        short_name: brandShortName,
+        description: brandDescription,
         theme_color: '#6366f1',
         background_color: '#0f172a',
         display: 'standalone',
@@ -54,6 +59,11 @@ export default defineConfig({
     }),
   ],
   vite: {
+    resolve: {
+      alias: {
+        "@tenant": new URL(`./src/tenant/${tenantId}`, import.meta.url).pathname,
+      },
+    },
     plugins: [tailwindcss()],
   },
 });

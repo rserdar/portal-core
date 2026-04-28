@@ -32,3 +32,13 @@ pnpm-debug.log*
 
 # Temporary files
 .tmp_*
+
+# Tenant-specific configs and assets — live in private tenant repos.
+# Untrack existing: git rm -r --cached src/tenant/medicert/ src/assets/images/Medicert-Logo-sm.webp
+src/tenant/medicert/
+src/assets/images/Medicert-Logo-sm.webp
+wrangler.*.toml
+# Add one line per tenant as they are created (e.g. src/tenant/firma2/)
+
+# Auto-generated at build time by scripts/generate-email-registry.js
+src/tenant/email-registry.js

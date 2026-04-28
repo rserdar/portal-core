@@ -103,7 +103,7 @@ const borderClass = direction === 'up' ? "border-b-[3px] rounded-t-xl" : "border
       });
     });
 
-    if (!(window as any).__medicertThemeOutsideClickBound) {
+    if (!(window as any).__appThemeOutsideClickBound) {
       document.addEventListener('click', (e) => {
         document.querySelectorAll('[data-theme-dropdown]').forEach((dropdown) => {
           const toggle = dropdown.closest('.theme-toggle');
@@ -112,7 +112,7 @@ const borderClass = direction === 'up' ? "border-b-[3px] rounded-t-xl" : "border
           }
         });
       });
-      (window as any).__medicertThemeOutsideClickBound = true;
+      (window as any).__appThemeOutsideClickBound = true;
     }
 
     window.matchMedia('(prefers-color-scheme: dark)').onchange = (e) => {

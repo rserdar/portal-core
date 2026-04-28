@@ -1,6 +1,7 @@
 ---
 import DashboardLayout from '../../layouts/DashboardLayout.astro';
 import { ArrowLeft, Save } from 'lucide-astro';
+import { CONFIG } from '../../lib/config';
 
 /**
  * ✏️ Firma Düzenleme Sayfası
@@ -371,7 +372,7 @@ import { ArrowLeft, Save } from 'lucide-astro';
   </div>
 </DashboardLayout>
 
-<script>
+<script define:vars={{ appName: CONFIG.APP_NAME }}>
   import { api } from '../../lib/api';
   import { toast } from '../../lib/toast';
   import { DB } from '../../lib/db';
@@ -509,7 +510,7 @@ import { ArrowLeft, Save } from 'lucide-astro';
 
     const footerName = document.getElementById('footer-company-name');
     if (footerName) footerName.textContent = nick || `Firma #${firmaId}`;
-    document.title = `${nick || 'Firma'} Düzenle | Medicert Portal`;
+    document.title = `${nick || 'Firma'} Düzenle | ${appName}`;
 
     // Show form
     document.getElementById('form-skeleton')?.classList.add('hidden');

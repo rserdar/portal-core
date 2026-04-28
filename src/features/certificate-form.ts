@@ -1,4 +1,5 @@
 import { addOneYearMinusOneDay, toDotsDate } from './date-format';
+import tenant from '@tenant/config';
 
 export interface StandardOption {
   id: string;
@@ -45,5 +46,12 @@ export function buildCertificateQrLink(unvan: string, standardLabel: string, cer
     ? `${pieces[0]} ${pieces[1]}`
     : pieces[0];
 
-  return `https://sorgulama.medicert.com.tr/?firma=${encodeURIComponent(shortName.trim())}&standart=${encodeURIComponent(cleanStandard)}&numara=${encodeURIComponent(cleanCertNo)}`;
+  const lookupUrl = tenant.integrations.certificateLookupUrl;
+  if (!lookupUrl) return '';
+
+  const url = new URL(lookupUrl);
+  url.searchParams.set('firma', shortName.trim());
+  url.searchParams.set('standart', cleanStandard);
+  url.searchParams.set('numara', cleanCertNo);
+  return url.toString();
 }

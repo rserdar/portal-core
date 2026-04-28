@@ -2,14 +2,14 @@
  * 📄 PDFService: PDF Dönüştürme
  *
  * Google Dokümanlarını PDF'e dönüştürür.
- * Akıllı Fallback: Local Converter (pdf.serdar.cc) → iLovePDF
+ * Akıllı Fallback: Local Converter (LOCAL_CONVERTER_URL Script Property) → iLovePDF
  */
 
 const PDFService = {
   getSettings: function() {
     const props = PropertiesService.getScriptProperties();
     return {
-      LOCAL_URL:       "https://pdf.serdar.cc/convert",
+      LOCAL_URL:       props.getProperty("LOCAL_CONVERTER_URL")    || "",
       LOCAL_TOKEN:     props.getProperty("LOCAL_CONVERTER_TOKEN")  || "",
       ILOVEPDF_PUBLIC: props.getProperty("ILOVEPDF_PUBLIC_KEY")    || "",
       DPI: 600
@@ -73,6 +73,9 @@ const PDFService = {
   _tryLocalConverter: function(file, name, targetFolder) {
     try {
       const config = this.getSettings();
+      if (!config.LOCAL_URL) {
+        return { success: false, error: "LOCAL_CONVERTER_URL tanımlı değil." };
+      }
       if (!config.LOCAL_TOKEN) {
         return { success: false, error: "LOCAL_CONVERTER_TOKEN tanımlı değil." };
       }

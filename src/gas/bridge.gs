@@ -310,13 +310,7 @@ function doPost(e) {
       case "sendSurveillanceEmail":
       case "sendSurv":
         const sendSurvRes = NotificationService.sendSurveillanceEmail(
-          params.firstName || params.payload,
-          params.fullName,
-          params.title,
-          params.email,
-          params.data,
-          params.startDate,
-          params.endDate
+          params
         );
         result.data = sendSurvRes;
         result.success = sendSurvRes.success;

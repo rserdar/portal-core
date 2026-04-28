@@ -4,6 +4,10 @@
  * Sheets üzerinde yapılan manuel değişiklikleri D1'e göndermek için kullanılır.
  */
 const ManualSyncService = {
+  _appName: function() {
+    const value = PropertiesService.getScriptProperties().getProperty("APP_NAME");
+    return value && String(value).trim() ? String(value).trim() : "Portal";
+  },
 
   /**
    * Özel menü ekleme.
@@ -11,7 +15,7 @@ const ManualSyncService = {
   addMenu: function() {
     try {
       const ui = SpreadsheetApp.getUi();
-      ui.createMenu("🛡️ Medicert Portal")
+      ui.createMenu(`🛡️ ${this._appName()}`)
         .addItem("D1'e Senkronize Et (Sadece Bu Sayfa)", "syncCurrentSheetToD1")
         .addSeparator()
         .addItem("Gece Süpürmesini Çalıştır (D1 → Sheets)", "runDailyBackup")

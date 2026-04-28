@@ -1,4 +1,6 @@
 
+import tenant from "@tenant/config";
+
 /**
  * 🛡️ Cloudflare Access Identity Utility
  */
@@ -51,8 +53,8 @@ export function getUserIdentity(request: Request): UserIdentity | null {
     identity = decodeJWTPayload(jwt) || {};
   }
 
-  const email = identity.email || emailHeader || "unknown@medicert.com.tr";
-  const name = identity.name || "Kullanıcı";
+  const email = identity.email || emailHeader || tenant.userDefaults.email;
+  const name = identity.name || tenant.userDefaults.name;
   const picture = identity.picture || null;
 
   // Initials logic
@@ -63,10 +65,9 @@ export function getUserIdentity(request: Request): UserIdentity | null {
     .toUpperCase()
     .slice(0, 2);
 
-  // Role logic as requested
-  // r.serdar@gmail.com -> Admin
-  // Others -> Personel
-  const role = email === "r.serdar@gmail.com" ? "Admin" : "Personel";
+  const role = tenant.userDefaults.adminEmails.includes(email)
+    ? "Admin"
+    : tenant.userDefaults.role;
 
   return {
     email,

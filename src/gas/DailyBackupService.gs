@@ -59,7 +59,8 @@ const DailyBackupService = {
 
       // 2. Drive'a .sql olarak kaydet
       const dateStr = Utilities.formatDate(new Date(), "GMT+3", "yyyy-MM-dd_HH-mm");
-      const fileName = `medicert_db_backup_${dateStr}.sql`;
+      const tenantId = props.getProperty("TENANT_ID") || "tenant";
+      const fileName = `${tenantId}_db_backup_${dateStr}.sql`;
       
       const folder = DriveApp.getFolderById(folderId);
       folder.createFile(fileName, result.sql, MimeType.PLAIN_TEXT);

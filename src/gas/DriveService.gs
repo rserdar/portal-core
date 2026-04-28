@@ -6,24 +6,22 @@
  */
 
 const DriveService = {
-  // 🗺️ Harf-Klasör Eşlemesi (Modernize Edilmiş)
-  FOLDER_MAP: {
-    "0": "18tPSDNY92vRpqdCE3EUgDYLw3iWlNxZz", "A": "1WT05qLhSQC-QsN-SMN8bn5WMHsz8VHXU",
-    "B": "1VW37S54ITzxUsL5ILqU6p_Vrlc5T8PQ9", "C": "1I4uHyY7hG6DIdkNKH61IAn-jBxvlsDbT",
-    "Ç": "1I4uHyY7hG6DIdkNKH61IAn-jBxvlsDbT", "D": "1gqVlDixmhcjvk1OWAcDZ99zo9m6P_awX",
-    "E": "1wzrRdlN6Dy3BRIa4oSPFvdOLhlf-vZry", "F": "1PlUSHBex0JXmUQOt-QTcJnQNHSBTz6dZ",
-    "G": "1nvUpw-ne6spKO1LKXkPL_voA5AqwhpOx", "H": "1EkRfO29IwoINernfTBkbzRjka0REK33M",
-    "I": "1iuZiOxO_rlH8PQmZKRI43jqUrR70ZsF_", "İ": "1iuZiOxO_rlH8PQmZKRI43jqUrR70ZsF_",
-    "J": "16yuuuwTBFT8HwR0CYhyWd2yeWIgwgGKY", "K": "1-RDKBGl7ZeCwO8RQOFcVvd6JWmjI0KZD",
-    "L": "1KG6Z3lJfIRarolxVZ2osKdMnNllQ8Mvc", "M": "1DMovuyZoIk_8neYapoDJU2OClMKIwFF_",
-    "N": "18buF8FQDqKBNuVHO4O7HI6ZmaRgRT7Fi", "O": "1wx6O6fLMLEZ30QiOUIkitZpQKhfx5bLW",
-    "Ö": "1wx6O6fLMLEZ30QiOUIkitZpQKhfx5bLW", "Q": "1wx6O6fLMLEZ30QiOUIkitZpQKhfx5bLW",
-    "P": "1RKieWaPNDTjUrIhbdlYPaYSeGoz5yWe6", "R": "1TcnaTVPZVhXm0hJgXmGE2pANohBeMZF5",
-    "S": "19S4WByIy9GPLOTH0zYNaOGZxAbVxzTZ4", "Ş": "19S4WByIy9GPLOTH0zYNaOGZxAbVxzTZ4",
-    "T": "1NcNl_nJecvdbwfRc7Ef8lLQsGHVRI7pZ", "U": "1fxN-QbZxTZxPagMOfD4C4DX19LdOOhh1",
-    "Ü": "1fxN-QbZxTZxPagMOfD4C4DX19LdOOhh1", "V": "1lK5X2bCFRm2FFo6rDi1GUILdbMFr-n9m",
-    "W": "1lK5X2bCFRm2FFo6rDi1GUILdbMFr-n9m", "X": "1EosnZR4JxOGdTbIl46BpDZOXL9MExcnO",
-    "Y": "1I2-EIKQUjVt5_6Ho2d1ODz1KEjHpLbmK", "Z": "1EosnZR4JxOGdTbIl46BpDZOXL9MExcnO"
+  _folderMapCache: null,
+
+  /**
+   * Harf → Drive klasör ID eşlemesini Script Property'den yükler (instance cache).
+   * Property adı: FOLDER_MAP_JSON (JSON string, tenant kurulum scriptiyle set edilir).
+   */
+  _getFolderMap: function() {
+    if (this._folderMapCache) return this._folderMapCache;
+    const json = PropertiesService.getScriptProperties().getProperty("FOLDER_MAP_JSON");
+    if (!json) throw new Error("FOLDER_MAP_JSON Script Property eksik! Tenant kurulum scriptini çalıştırın.");
+    try {
+      this._folderMapCache = JSON.parse(json);
+      return this._folderMapCache;
+    } catch (e) {
+      throw new Error("FOLDER_MAP_JSON geçerli JSON değil: " + e.message);
+    }
   },
   
   /**
@@ -118,7 +116,8 @@ const DriveService = {
       let char = nickname.charAt(0).toLocaleUpperCase('tr-TR');
       char = !isNaN(parseInt(char)) ? "0" : char;
 
-      const rootId = this.FOLDER_MAP[char] || null;
+      const folderMap = this._getFolderMap();
+      const rootId = folderMap[char] || null;
       if (!rootId) throw new Error(`FOLDER_MAP içinde "${char}" harfi için tanımlı bir kök klasör bulunamadı. (Nickname: ${nickname})`);
 
       const rootFolder = this.safeGetFolder(rootId, `Kök klasör (Harf: ${char})`);

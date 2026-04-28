@@ -1,16 +1,14 @@
+import tenant from "@tenant/config";
+
 /**
- * 🛠️ Medicert Portal Configuration
- *
- * Cloudflare Worker endpoint ve uygulama meta bilgileri.
- * Üretimde PUBLIC_WORKER_URL zorunlu olmalı.
- * Worker URL, CORS allowlist ile uyumlu bir origin'e işaret etmelidir.
+ * Uygulama genelinde tenant-aware public config erişimi.
+ * Env değerleri tenant varsayılanlarını override edebilir.
  */
 
 export const CONFIG = {
-  // .env veya CF Pages Settings'te PUBLIC_WORKER_URL set et.
-  // Local dev ve production aynı URL'i kullanabilir (CORS localhost'a açık).
-  WORKER_URL: import.meta.env.PUBLIC_WORKER_URL || "https://portalapi.medicert.com.tr",
-
-  APP_NAME: "Medicert Portal",
+  WORKER_URL: import.meta.env.PUBLIC_WORKER_URL || tenant.integrations.workerUrl || "",
+  APP_NAME: import.meta.env.PUBLIC_BRAND_APP_NAME || tenant.brand.appName,
+  APP_SHORT_NAME: import.meta.env.PUBLIC_BRAND_SHORT_NAME || tenant.brand.shortName,
+  APP_DESCRIPTION: import.meta.env.PUBLIC_BRAND_DESCRIPTION || tenant.brand.description,
   VERSION: "5.5.0",
 };

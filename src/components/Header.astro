@@ -1,17 +1,10 @@
 ---
-import { Image } from "astro:assets";
 import { Icon } from "astro-icon/components";
-import logoImage from "../assets/images/Medicert-Logo-sm.webp";
+import tenant from "@tenant/config";
 import SearchOverlay from "./SearchOverlay.astro";
 import ThemeToggle from "./ThemeToggle.astro";
 
-const user = {
-  email: "info@medicert.com.tr",
-  name: "Kullanıcı",
-  role: "Personel",
-  initials: "MC",
-  picture: null
-};
+const user = { ...tenant.userDefaults };
 
 /**
  * 👑 Management Command Center Header (v6.8.1 - Identity Ready)
@@ -19,54 +12,7 @@ const user = {
 
 const pathname = Astro.url.pathname;
 
-const menuItems = [
-  { name: "Anasayfa", href: "/", icon: "mdi:home" },
-  {
-    name: "Firmalar",
-    href: "/search",
-    icon: "mdi:office-building",
-    dropdown: [
-      { name: "Yeni Firma Ekle", href: "/company/add", icon: "mdi:office-building-plus" },
-      { name: "Başvuru Formu", href: "/company/form", icon: "mdi:file-document-edit-outline" },
-      { name: "Proforma", href: "/company/proforma", icon: "mdi:cash-multiple" },
-      { name: "Sözleşme", href: "/company/contract", icon: "mdi:file-sign" },
-    ]
-  },
-  {
-    name: "Denetimler",
-    href: "/audits",
-    icon: "mdi:clipboard-check-outline",
-    dropdown: [
-      { name: "Denetim Planla", href: "/audits/add", icon: "mdi:calendar-plus" },
-    ]
-  },
-  {
-    name: "Sertifikalar",
-    href: "/certificates",
-    icon: "mdi:certificate-outline",
-    dropdown: [
-      { name: "Sertifika Ekle", href: "/certificates/add", icon: "mdi:plus-circle-outline" },
-      { name: "Taslak Oluştur", href: "/certificates/draft", icon: "mdi:file-document-outline" },
-    ]
-  },
-  {
-    name: "Testler",
-    href: "/tests",
-    icon: "mdi:flask-outline",
-    dropdown: [
-      { name: "Test Ekle", href: "/tests/add", icon: "mdi:plus-circle-outline" },
-    ]
-  },
-  {
-    name: "Dokümanlar",
-    href: "/documents/view",
-    icon: "mdi:file-document-box-multiple-outline",
-    dropdown: [
-      { name: "Doküman Oluştur", href: "/documents/add", icon: "mdi:file-plus-outline" },
-      { name: "PDF Çevir", href: "/documents/pdf", icon: "mdi:file-pdf-box" },
-    ]
-  },
-];
+const menuItems = tenant.navigation;
 
 function isPathActive(target: string) {
   if (target === "/") return pathname === "/";
@@ -74,13 +20,13 @@ function isPathActive(target: string) {
 }
 ---
 
-<header id="medicert-header" class="bg-header-bg/95 backdrop-blur-md border-b border-border-main fixed w-full top-0 z-50 font-sans transition-all duration-400 ease-in-out">
+<header id="app-header" class="bg-header-bg/95 backdrop-blur-md border-b border-border-main fixed w-full top-0 z-50 font-sans transition-all duration-400 ease-in-out">
   <div class="max-w-[1440px] mx-auto px-4 sm:px-6 xl:px-8">
     <div id="header-inner" class="grid grid-cols-[auto_1fr_auto] lg:grid-cols-[auto_1fr_auto] items-center h-[90px] transition-all duration-400 ease-in-out gap-x-6 xl:gap-x-10">
 
       <!-- Logo -->
       <div class="flex items-center">
-        <a href="/"><Image id="header-logo" src={logoImage} alt="Medicert Portal" class="h-12 md:h-14 w-auto transition-all duration-400 ease-in-out drop-shadow-sm" loading="eager" /></a>
+        <a href="/"><img id="header-logo" src={tenant.brand.logoSrc} alt={tenant.brand.logoAlt} class="h-12 md:h-14 w-auto transition-all duration-400 ease-in-out drop-shadow-sm" loading="eager" /></a>
       </div>
 
       <!-- Nav — ortada, kendi doğal genişliğinde -->
@@ -276,9 +222,16 @@ function isPathActive(target: string) {
 
 <SearchOverlay />
 
-<script>
-  const HEADER_IDENTITY_CACHE_KEY = 'medicert.header.identity.v1';
-  const HEADER_IDENTITY_REAUTH_KEY = 'medicert.header.identity.reauth.v1';
+<script define:vars={{
+  defaultEmail: tenant.userDefaults.email,
+  defaultName: tenant.userDefaults.name,
+  defaultRole: tenant.userDefaults.role,
+  defaultInitials: tenant.userDefaults.initials,
+  adminEmails: tenant.userDefaults.adminEmails,
+  tenantId: tenant.id,
+}}>
+  const HEADER_IDENTITY_CACHE_KEY = `${tenantId}.header.identity.v1`;
+  const HEADER_IDENTITY_REAUTH_KEY = `${tenantId}.header.identity.reauth.v1`;
 
   interface HeaderIdentity {
     name?: string;
@@ -296,11 +249,11 @@ function isPathActive(target: string) {
       .map((part) => part[0])
       .join('')
       .toUpperCase()
-      .slice(0, 2) || 'MC';
+      .slice(0, 2) || defaultInitials;
   }
 
   function roleFromEmail(email: string): string {
-    return email === 'r.serdar@gmail.com' ? 'Admin' : 'Personel';
+    return adminEmails.includes(email) ? 'Admin' : defaultRole;
   }
 
   function clearCachedHeaderIdentity() {
@@ -326,11 +279,11 @@ function isPathActive(target: string) {
 
   function updateHeaderIdentity(identity: HeaderIdentity) {
     const desktopWrapper = document.getElementById('header-user');
-    const email = identity.email || desktopWrapper?.dataset.userEmail || 'info@medicert.com.tr';
-    const name = identity.name || desktopWrapper?.dataset.userName || 'Kullanıcı';
+    const email = identity.email || desktopWrapper?.dataset.userEmail || defaultEmail;
+    const name = identity.name || desktopWrapper?.dataset.userName || defaultName;
     const role = identity.role || roleFromEmail(email);
     const picture = identity.picture || '';
-    const initials = identity.initials || computeInitials(name);
+    const initials = identity.initials || computeInitials(name) || defaultInitials;
     const targets = [
       {
         wrapper: document.getElementById('header-user'),
@@ -418,7 +371,7 @@ function isPathActive(target: string) {
         payload.nickname ||
         payload.email ||
         oidc.email ||
-        'Kullanıcı';
+        defaultName;
 
       const email =
         payload.email ||
@@ -453,7 +406,7 @@ function isPathActive(target: string) {
   }
 
   function initHeader() {
-    const header = document.getElementById("medicert-header") as HTMLElement | null;
+    const header = document.getElementById("app-header") as HTMLElement | null;
     const headerInner = document.getElementById("header-inner") as HTMLElement | null;
     const mobileBtn = document.getElementById("mobile-menu-button") as HTMLButtonElement | null;
     const mobileCloseBtn = document.getElementById("mobile-menu-close") as HTMLButtonElement | null;
@@ -463,11 +416,11 @@ function isPathActive(target: string) {
     let isCompact = false;
     let scrollRaf: number | null = null;
 
-    const previousController = (window as any).__medicertHeaderController as AbortController | undefined;
+    const previousController = (window as any).__appHeaderController as AbortController | undefined;
     previousController?.abort();
     const controller = new AbortController();
     const { signal } = controller;
-    (window as any).__medicertHeaderController = controller;
+    (window as any).__appHeaderController = controller;
 
     const applyHeaderState = () => {
       if (!header || !headerInner) return;

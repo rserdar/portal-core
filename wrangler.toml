@@ -1,21 +1,10 @@
 name = "portal-api"
 main = "src/workers/proxy.js"
 compatibility_date = "2025-01-01"
-account_id = "e2d6828ee7890229a51772bae6c27aae"
-
-[[routes]]
-pattern = "portalapi.medicert.com.tr"
-custom_domain = true
-
-[[kv_namespaces]]
-binding = "DB"
-id = "8eb0dc6ffe2947729b29f0db1c84fd52"
-
-[[d1_databases]]
-binding = "DB_D1"
-database_name = "medicert-portal"
-database_id = "94b188bb-1ea8-4b84-ba00-8f7bf91bb265"
-migrations_dir = "src/workers/migrations"
 
 [triggers]
 crons = ["0 4 * * SUN"]
+
+# Tenant-specific routes, bindings and non-secret vars live in
+# wrangler.<tenant>.toml files. Example:
+#   npx wrangler deploy --config wrangler.medicert.toml

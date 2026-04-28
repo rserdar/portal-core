@@ -8,6 +8,8 @@
 
 import { ClientRouter } from 'astro:transitions';
 import Header from '../components/Header.astro';
+import { CONFIG } from '../lib/config';
+import tenant from '@tenant/config';
 import '../styles/index.css';
 
 interface Props {
@@ -18,11 +20,11 @@ const { title } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="tr">
+<html lang={tenant.locale} data-app-name={CONFIG.APP_NAME}>
 	<head>
 		<meta charset="UTF-8" />
 		<ClientRouter />
-		<meta name="description" content="Medicert Portal - Profesyonel Yönetim Sistemi" />
+		<meta name="description" content={CONFIG.APP_DESCRIPTION} />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 		<!-- Favicon -->
@@ -35,7 +37,7 @@ const { title } = Astro.props;
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-		<meta name="apple-mobile-web-app-title" content="Medicert" />
+		<meta name="apple-mobile-web-app-title" content={CONFIG.APP_SHORT_NAME} />
 		<link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
 
 		<meta name="generator" content={Astro.generator} />
@@ -45,7 +47,7 @@ const { title } = Astro.props;
 		/>
 		<!-- PWA Service Worker Registration -->
 		{ import.meta.env.PROD && <script src="/registerSW.js" is:inline></script> }
-		<title>{title} | Medicert Portal</title>
+		<title>{title} | {CONFIG.APP_NAME}</title>
 		<script is:inline>
 			(() => {
 				const stored = localStorage.getItem('theme');
@@ -71,7 +73,7 @@ const { title } = Astro.props;
 				</div>
 
 				<footer class="mt-20 py-8 border-t border-border-main text-center text-sm text-muted">
-					<p>&copy; 2026 Medicert Portal. Tüm hakları saklıdır.</p>
+					<p>&copy; 2026 {CONFIG.APP_NAME}. {tenant.brand.footerText}</p>
 				</footer>
 			</main>
 		</div>

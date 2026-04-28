@@ -1,6 +1,9 @@
 ---
 import PageShell from '../../components/PageShell.astro';
 import CompanyPicker from '../../components/CompanyPicker.astro';
+import tenant from '@tenant/config';
+
+const defaultCertificationBody = tenant.brand.shortName;
 ---
 
 <PageShell
@@ -56,7 +59,7 @@ import CompanyPicker from '../../components/CompanyPicker.astro';
         <div class="space-y-2">
           <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Belgelendirme Firması</label>
           <select id="form-nbody" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
-            <option value="Medicert">Medicert</option>
+            <option value={defaultCertificationBody}>{defaultCertificationBody}</option>
             <option value="Inspect">Inspect</option>
           </select>
         </div>

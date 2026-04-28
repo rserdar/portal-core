@@ -6,19 +6,40 @@
  */
 
 const DocumentService = {
+  // Tüm ID'ler Script Properties'ten okunur.
+  // Medicert değerleri: medicert-portal/gas/MedicertSetup.gs → setupMedicertProperties()
   CONFIG: {
-    SIGNATURE_ID:      "1gm13q_8COlPybuOrhWGP-H7LXfKIRoF1",
-    DRAFT_BG_ID:       "1A--cr2pFxTBT5iVi5EeoQmMtR4Fgpk6a",
-    APP_FORM_MEDICERT: "1_Tg5xCBjB3Mo7wpi8gBLVgz5Ilaov9uFIPUPiGHtEUo",
-    APP_FORM_INSPECT:  "1-s53ijssKJw9d5rtpm2BmRJOxkXbfWGCx2IjsBT_xdw",
-    CONTRACT_TEMP:     "1bNlf4GOZFsDTzmYJrhTbmVrfZ17P4U_i8im5Vte2gM8",
-    PROFORMA_TEMP:     "1mgAgm0T52UwFpeE1VDgCNWgVi7_tOmn60f5lCQUsRcU",
-    DEMO_IMAGE:        "1KPC13vmsRzBt522EQOwNcyIDgMlWZeZd"
+    SIGNATURE_ID:      "",
+    DRAFT_BG_ID:       "",
+    APP_FORM_MEDICERT: "",
+    APP_FORM_INSPECT:  "",
+    CONTRACT_TEMP:     "",
+    PROFORMA_TEMP:     "",
+    DEMO_IMAGE:        ""
   },
   _cfg: function(key) {
     const props = PropertiesService.getScriptProperties();
     const override = props.getProperty(key);
     return override && String(override).trim() ? String(override).trim() : this.CONFIG[key];
+  },
+  _appFormBodies: function() {
+    return {
+      primary: this._cfg("APP_FORM_PRIMARY_LABEL") || "Primary",
+      secondary: this._cfg("APP_FORM_SECONDARY_LABEL") || "Secondary",
+    };
+  },
+  _resolveAppFormTemplate: function(nbody) {
+    const bodies = this._appFormBodies();
+    if (nbody === bodies.primary) {
+      return this._cfg("APP_FORM_MEDICERT");
+    }
+    if (nbody === bodies.secondary) {
+      return this._cfg("APP_FORM_INSPECT");
+    }
+    return "";
+  },
+  _contractLabel: function() {
+    return this._cfg("CONTRACT_BRAND_LABEL") || this._cfg("APP_FORM_PRIMARY_LABEL") || "Portal";
   },
 
   /**
@@ -345,7 +366,8 @@ const DocumentService = {
       const folderId = DriveService.getCompanyFolderId(isim);
       const docTemp = DriveService.safeGetFile(this._cfg("CONTRACT_TEMP"), "Sözleşme şablonu");
       const folder = DriveService.safeGetFolder(folderId, "Sözleşme klasörü");
-      const copy = docTemp.makeCopy(`${isim} - Medicert Sözleşme (M${id})`, folder);
+      const contractLabel = this._contractLabel();
+      const copy = docTemp.makeCopy(`${isim} - ${contractLabel} Sözleşme (M${id})`, folder);
       const doc = DocumentApp.openById(copy.getId());
       const body = doc.getBody();
 
@@ -426,13 +448,13 @@ const DocumentService = {
    */
   generateAppForm: function(info, folderId) {
     try {
-      if (info.nbody !== "Medicert" && info.nbody !== "Inspect") {
+      const supportedBodies = this._appFormBodies();
+      if (info.nbody !== supportedBodies.primary && info.nbody !== supportedBodies.secondary) {
         throw new Error("Geçersiz nbody değeri: " + info.nbody);
       }
 
-      const tempId = info.nbody === "Medicert"
-        ? this._cfg("APP_FORM_MEDICERT")
-        : this._cfg("APP_FORM_INSPECT");
+      const tempId = this._resolveAppFormTemplate(info.nbody);
+      if (!tempId) throw new Error("Başvuru formu şablonu bulunamadı: " + info.nbody);
 
       const folder = DriveService.safeGetFolder(folderId, "Başvuru formu klasörü");
       const fileName = `${info.nickname} - ${info.nbody} Başvuru Formu (S${info.id})`;

@@ -1,4 +1,4 @@
-# 🤖 Medicert Portal — AI Context (v7.1.0)
+# 🤖 Portal Core — AI Context (v8.0.0)
 
 > **GAS URL değişirse:** `.dev.vars` → `GAS_API_URL` güncelle, ardından `npx wrangler secret put GAS_API_URL`.
 
@@ -29,6 +29,37 @@ Browser → Worker (proxy.js) → D1 (Source of Truth)
 | **GAS** | Backup + Google-native (Drive, Calendar, Docs) |
 | **Sheets** | Backup View — D1'den günlük beslenir |
 | **IndexedDB** | Browser cache — anlık UI render |
+
+---
+
+## 🏛️ İki-Repo Modeli
+
+```
+portal-core (PUBLIC)                portal-tenants (PRIVATE)
+────────────────────────────        ──────────────────────────────
+Tüm uygulama mantığı                medicert/
+src/tenant/default/  (örnek)          src/tenant/medicert/config.ts
+src/tenant/types.ts                    src/tenant/medicert/email/surv.js
+scripts/generate-email-registry.js    wrangler.medicert.toml
+                                    firma2/
+                                      src/tenant/firma2/config.ts
+                                      ...
+                                    .github/workflows/deploy.yml
+```
+
+**Yayılma akışı:**
+```
+portal-core push → CI build-check (default tenant)
+                 → (notify-tenants job etkinse) portal-tenants tetiklenir
+                     → core çek + tenant overlay + build + deploy
+```
+
+**Kurallar:**
+- `portal-core`'da hiçbir tenant adı, logo, URL, email geçmez — yalnızca `default/` örnek tenant bulunur
+- Tenant ekleme = `portal-tenants` reposunda klasör + `deploy.yml` matrix satırı
+- `src/tenant/email-registry.js` commit edilmez; `scripts/generate-email-registry.js` her build'de üretir
+- Her tenant'ın kendi D1, KV, GAS projesi ve Cloudflare Pages projesi vardır
+- `portal-core` güncellenince tüm tenant'lar otomatik yeniden deploy edilir (`notify-tenants` job ile)
 
 ---
 
@@ -232,7 +263,8 @@ CREATE VIEW IF NOT EXISTS audits_full AS
 | `AuditService.gs` | Sadece backup okuma (Calendar entegrasyonu kaldırıldı) |
 | `CompanyService.gs` / `CertificateService.gs` / `TestService.gs` / `ProformaService.gs` | Sadece backup okuma |
 | `MasterDataService.gs` | updateMasterData Sheets senkronizasyonu |
-| `DriveService.gs` / `PDFService.gs` / `DocumentService.gs` / `NotificationService.gs` / `TranslationService.gs` | Google-native — dokunulmaz |
+| `DriveService.gs` / `PDFService.gs` / `DocumentService.gs` / `TranslationService.gs` | Google-native — dokunulmaz |
+| `NotificationService.gs` | Email gönderimi — `sendSurveillanceEmail` yalnızca Worker'dan gelen `htmlBody`'yi iletir; `runMonthlyCheck` D1 sorgusunu Worker'a devreder (`WORKER_URL` → `action: runMonthlyCheck`); GAS artık kendi email template'ini oluşturmaz |
 
 ---
 
@@ -250,6 +282,8 @@ CREATE VIEW IF NOT EXISTS audits_full AS
 | Mevcut migration dosyalarını düzenlemek | Her değişiklik yeni `00X_*.sql` dosyasıdır |
 | `wrangler.toml [vars]`'a secret yazmak | `[vars]` git geçmişine düşer, CF Dashboard'da plaintext görünür; tüm secret'lar Dashboard Secrets veya `.dev.vars` ile yönetilir |
 | `bulkSync` action'ını rutin olarak kullanmak | GAS→D1 yönüdür; D1-Primary'de veri kaynağı D1'dir, bu action D1'in üzerine yazar. **Yalnızca D1 verisi yok olduğunda acil kurtarma için** kullanılır — her kullanım öncesi son D1 yedeği alınmalı |
+| `portal-core`'a tenant adı / URL / logo yazmak | İki-repo modeli: core public, tenant verisi private `portal-tenants` reposunda kalır |
+| `src/tenant/email-registry.js`'i elle düzenlemek | `scripts/generate-email-registry.js` tarafından build sırasında otomatik üretilir; commit edilmez |
 
 ---
 
@@ -282,12 +316,22 @@ GAS kaynak koduna asla yazılmaz — `getProperty` ile her zaman runtime'da çek
 | Property Key | Nerede kullanılır | Zorunlu mu |
 | :--- | :--- | :--- |
 | `API_KEY` | `bridge.gs` — gelen Worker isteklerini doğrular (CF `env.API_KEY` ile aynı değer) | ✅ Zorunlu |
-| `WORKER_URL` | `SyncService`, `ManualSyncService`, `DailyBackupService` — Worker'a geri çağrı yapar | ✅ Zorunlu |
+| `WORKER_URL` | `SyncService`, `ManualSyncService`, `DailyBackupService`, `NotificationService.runMonthlyCheck` — Worker'a geri çağrı yapar | ✅ Zorunlu |
 | `SPREADSHEET_ID` | `BaseService` — Sheets backup dosyasının ID'si | ✅ Zorunlu |
 | `BACKUP_FOLDER_ID` | `DailyBackupService._saveSnapshotToDrive()` — SQL snapshot'ın kaydedileceği Drive klasörü | ✅ Zorunlu |
+| `TENANT_ID` | `DailyBackupService._saveSnapshotToDrive()` — yedek dosya adı prefix'i (`{TENANT_ID}_db_backup_…`) | ✅ Zorunlu |
+| `FOLDER_MAP_JSON` | `DriveService._getFolderMap()` — harf → Drive kök klasör ID eşlemesi; JSON string; tenant kurulum scriptiyle set edilir | ✅ Zorunlu |
+| `SIGNATURE_ID` | `DocumentService._cfg("SIGNATURE_ID")` — imza görseli Drive dosya ID'si | ✅ Zorunlu |
+| `DRAFT_BG_ID` | `DocumentService._cfg("DRAFT_BG_ID")` — taslak arka plan görseli Drive dosya ID'si | ✅ Zorunlu |
+| `APP_FORM_MEDICERT` | `DocumentService._cfg("APP_FORM_MEDICERT")` — birincil başvuru formu şablonu ID'si | ✅ Zorunlu |
+| `APP_FORM_INSPECT` | `DocumentService._cfg("APP_FORM_INSPECT")` — ikincil başvuru formu şablonu ID'si | ✅ Zorunlu |
+| `CONTRACT_TEMP` | `DocumentService._cfg("CONTRACT_TEMP")` — sözleşme şablonu ID'si | ✅ Zorunlu |
+| `PROFORMA_TEMP` | `DocumentService._cfg("PROFORMA_TEMP")` — proforma şablonu ID'si | ✅ Zorunlu |
+| `DEMO_IMAGE` | `DocumentService._cfg("DEMO_IMAGE")` — demo görsel Drive dosya ID'si | ✅ Zorunlu |
 | `LAST_BACKUP_TS` | `SyncService.reconcileFromD1()` — delta sync için son backup timestamp'i | Opsiyonel (yoksa 0 varsayılır) |
 | `LAST_UPDATE` | `bridge.gs syncCheck` action — GAS tarafı timestamp | Opsiyonel |
-| `LOCAL_CONVERTER_TOKEN` | `PDFService` — yerel PDF converter | Opsiyonel |
+| `LOCAL_CONVERTER_URL` | `PDFService` — yerel PDF converter URL'si; boşsa local converter atlanır, iLovePDF'e fallback yapılır | Opsiyonel |
+| `LOCAL_CONVERTER_TOKEN` | `PDFService` — yerel PDF converter auth token'ı | Opsiyonel |
 | `ILOVEPDF_PUBLIC_KEY` | `PDFService` — iLovePDF API | Opsiyonel |
 
 > **`API_KEY` çift taraflı:** CF Secret (`env.API_KEY`) ve GAS Script Property (`API_KEY`) değerleri **birebir aynı** olmalıdır. Birini değiştirirken diğerini de güncellemek zorunludur; uyuşmazlık tüm GAS çağrılarını `Yetkisiz Erişim` hatasıyla kırar.
@@ -401,9 +445,9 @@ B ──┘            └── F   ├── G
 
 ---
 
-### Faz D — White-Label Çekirdek / Tenant Ayrımı ⬜
-> **Çıktı:** Proje çekirdeği Medicert'e özgü hiçbir değer içermez; yeni tenant için yalnızca env + tenant dizini yeterlidir.
-> **Başarı ölçütü:** `src/lib/config.ts` ve tüm `src/` altında `"Medicert"`, `"medicert.com.tr"`, `"Serdar"` string'leri kalmamış; `src/tenant/default/` kopyalanarak yeni tenant deploy edilebilir.
+### Faz D — White-Label Çekirdek / Tenant Ayrımı ✅
+> **Çıktı:** Proje çekirdeği hiçbir tenant'a özgü değer içermez; tenant konfigürasyonları ayrı private repoda tutulur; `portal-core` push'u tüm tenant'ları otomatik yeniden deploy eder.
+> **Başarı ölçütü:** `portal-core`'da tenant adı/URL/logo kalmamış; `src/tenant/medicert/` gitignored ve private repoda; `scripts/generate-email-registry.js` build sırasında registry'yi otomatik üretiyor; private repo CI core'u çekip tenant'ı üstüne yazarak deploy ediyor.
 
 #### Tenant Çözümleme Akışı
 
@@ -432,8 +476,10 @@ Core: import config from '@tenant/config'
 | D4 | **Email template Worker'a taşınır** — `sendSurv.html` şu an GAS tarafında duruyor; her yeni tenant için GAS kodu değişikliği gerektirir. Template `src/tenant/{id}/email/surv.html` konumuna taşınır; Worker `BRAND_*` değişkenlerini inject ederek HTML render eder ve GAS'a "hazır HTML" olarak gönderir. GAS yalnızca `UrlFetchApp` ile email gönderir, template'i bilmez | GAS'ta template string'i yok; Worker'dan gelen hazır HTML doğrudan gönderilir; yeni tenant için yalnızca tenant dizinindeki template değişir, GAS kodu dokunulmaz |
 | D5 | **`wrangler.<tenant>.toml` şablonu** — tek Worker kodu, farklı binding'ler; `wrangler.medicert.toml` mevcut `wrangler.toml`'dan ayrıştırılır | `wrangler.toml` jenerik iskelet; Medicert değerleri `wrangler.medicert.toml`'da |
 | D6 | **Tenant onboarding checklist** — env ayarla, tenant dizini oluştur, D1 migration çalıştır, GAS Script Properties doldur | Checklist bir markdown dosyası olarak `docs/onboarding.md`'de; adım adım doğrulanabilir |
+| D7 | **İki-repo modeli** — `portal-core` (public) uygulama mantığını; `portal-tenants` (private) tenant config + CI'ı barındırır. `portal-core`'da `src/tenant/medicert/` gitignored; `deploy.yml` build-check + notify-tenants; `docs/private-repo-setup.md` private repo CI template'ini içeriyor | Core'da tenant adı/URL/logo yok; private repo CI core'u çekip tenant'ı overlay ederek deploy ediyor |
+| D8 | **`scripts/generate-email-registry.js`** — `src/tenant/*/email/surv.js` içeren dizinleri tarayarak `email-registry.js`'i build sırasında üretir; `package.json` `prebuild` hook'u ile otomatik çalışır | `email-registry.js` commit edilmez (gitignored); yeni tenant klasörü oluşturmak registry'ye otomatik dahil eder |
 
-> **GAS tenant özelleştirme kuralı:** Her tenant kendi bağımsız GAS projesini oluşturur. `DocumentService.gs CONFIG` (şablon dosya ID'leri: `SIGNATURE_ID`, `DRAFT_BG_ID`, `CONTRACT_TEMP` vb.) ve `DriveService.gs FOLDER_MAP` (harf → klasör ID haritası) **GAS kodu içinde hardcoded kalır** — bu değerler o tenanta ait Drive yapısını yansıtır ve Script Properties'e taşınmaz. Taşınması gereken tek operasyonel değer `PDFService.gs`'deki `LOCAL_URL` (`https://pdf.serdar.cc/convert`) gibi sunucu adresleridir; bu tür URL'ler Script Properties'e alınır veya tenant config'e girer. Kural: Drive dosya/klasör ID'si → hardcoded; sunucu URL'si veya API anahtarı → Script Properties.
+> **GAS tenant özelleştirme kuralı:** Her tenant kendi bağımsız GAS projesini oluşturur. `DocumentService.gs CONFIG` (şablon dosya ID'leri: `SIGNATURE_ID`, `DRAFT_BG_ID`, `CONTRACT_TEMP` vb.) ve `DriveService.gs FOLDER_MAP` (harf → klasör ID haritası) **Script Properties üzerinden** yönetilir — GAS koduna hardcoded yazılmaz. Tenant kurulum scripti (`medicert-portal/gas/MedicertSetup.gs` gibi) bu değerleri bir kez `setupXxxProperties()` çağrısıyla set eder. Kural: Drive dosya/klasör ID'si → `FOLDER_MAP_JSON` / şablon key'leri via Script Properties; sunucu URL'si veya API anahtarı → Script Properties. GAS kaynak kodunda tenant'a ait hiçbir ID hardcoded olmaz.
 
 ---
 
