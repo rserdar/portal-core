@@ -55,12 +55,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - tenant: medicert
-            pages_project: medicert-portal
-            brand_app_name: "Medicert Portal"
-            brand_short_name: "Medicert"
-            brand_description: "Medicert Profesyonel Yönetim Sistemi"
-            wrangler_config: medicert/wrangler.medicert.toml
+          - tenant: firma1
+            pages_project: firma1-portal
+            brand_app_name: "Firma1 Portal"
+            brand_short_name: "Firma1"
+            brand_description: "Firma1 operasyon portalı"
+            wrangler_config: firma1/wrangler.firma1.toml
 
           # Yeni tenant:
           # - tenant: firma2
@@ -129,7 +129,7 @@ jobs:
 
 1. `portal-tenants` reposunda `firma2/src/tenant/firma2/` klasörünü oluştur
 2. `config.ts` ve `email/surv.js` dosyalarını yaz (`default` tenant'ı örnek al)
-3. `firma2/wrangler.firma2.toml` dosyasını oluştur (`wrangler.medicert.toml`'dan kopyala, binding'leri güncelle)
+3. `firma2/wrangler.firma2.toml` dosyasını oluştur (mevcut tenant toml örneklerinden kopyala, binding'leri güncelle)
 4. `deploy.yml` matrix'ine yeni blok ekle
 5. Cloudflare'de D1 database + KV namespace oluştur, toml'a yaz
 6. `wrangler d1 migrations apply` çalıştır (private repo CI'dan da yapılabilir)

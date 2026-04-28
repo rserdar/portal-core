@@ -7,7 +7,7 @@
 
 const DocumentService = {
   // Tüm ID'ler Script Properties'ten okunur.
-  // Medicert değerleri: medicert-portal/gas/MedicertSetup.gs → setupMedicertProperties()
+  // Tenant değerleri ilgili setup script'i ile Script Properties'e yazılır.
   CONFIG: {
     SIGNATURE_ID:      "",
     DRAFT_BG_ID:       "",
