@@ -1,59 +1,47 @@
-# Medicert Portal (v6.2.1)
+# Portal Core
 
-Cloudflare Workers + Google Apps Script + Astro 6.x mimarisiyle çalışan kurumsal ISO belgelendirme yönetim portalı. 1.600+ firma ve 5.000+ sertifika kaydını yönetir.
+White-label, çok-tenant kurumsal yönetim portalı framework'ü.  
+Cloudflare Workers + Google Apps Script + Astro 6.x ile inşa edilmiştir.
+
+> **İki-Repo Modeli:** Bu repo herkese açık çekirdek koddur. Tenant'a özgü yapılandırma (logo, D1/KV ID'leri, GAS şablon ID'leri, CI/CD) her firma için ayrı bir **private** repoda tutulur.
 
 ---
 
-## Mimari
+## Mimari (D1-Primary, v7.0)
 
 ```
 Browser (IndexedDB + UI)
     │
     ▼
-Cloudflare Worker (proxy.js)   ◄──────────────────────┐
-    │  WRITE: Worker → GAS → D1 (senkron write-through) │
-    │  READ:  Worker → D1 → miss → boş sonuç dön        │
-    ▼                                                  │
-Cloudflare D1 (SQLite cache)         Google Sheets (Source of Truth)
-                                           ▲
-                                    Google Apps Script (GAS)
+Cloudflare Worker (proxy.js)
+    │  WRITE: Worker → D1  ──► ctx.waitUntil → GAS (Sheets backup, non-blocking)
+    │  READ:  Worker → D1 SQL
+    ▼
+Cloudflare D1 (SQLite — Source of Truth)
+                    ▲
+            GAS bulkSync / DailyBackup
+                    │
+            Google Sheets (Yedek / Raporlama)
 ```
 
 | Katman | Rol |
 | :--- | :--- |
-| **Google Sheets** | **Source of Truth** — tüm kalıcı veri burada yaşar |
-| **Cloudflare D1** | **Hızlı Cache / Index** — SQL sorgusu, JOIN, filtre, agregasyon |
-| **Cloudflare Worker** | **Secure API Proxy** — CORS, secret inject, routing |
-| **Cloudflare KV** | **Yalnızca token / lock** — auth token, mutex (operasyonel veri yok) |
-| **Google Apps Script** | **Google-native Engine** — Sheets CRUD + Drive/Calendar/Docs |
-| **IndexedDB** | **Browser Cache** — anlık UI render |
+| **Cloudflare D1** | **Source of Truth** — tüm operasyonel veri |
+| **Cloudflare Worker** | Secure API proxy — CORS, secret inject, routing |
+| **Cloudflare KV** | Yalnızca token / lock / Drive cache |
+| **Google Sheets** | Yedek & raporlama — GAS bulkSync ile senkronize |
+| **Google Apps Script** | Google-native engine — Sheets CRUD + Drive/Calendar/Docs/Gmail |
+| **IndexedDB** | Browser cache — sıfır gecikmeli UI açılışı |
 
 ---
 
-## Veri Stratejisi
+## Veri Akışı
 
 ```
-Source of Truth:  Google Sheets   ──► tüm kalıcı veri
-Cache / Index:    Cloudflare D1   ──► tüm okuma (<10ms), SQL sorguları
-Write Path:       Worker → GAS → D1  (GAS başarısız → D1'e dokunulmaz)
-Read Path:        D1 hit → dön; miss → boş sonuç (GAS fallback yok)
-Offline Cache:    Browser IndexedDB ──► sıfır gecikmeli UI açılışı
+Write:   Worker → D1 (sync)  +  ctx.waitUntil → GAS → Sheets (async backup)
+Read:    D1 hit → dön;  miss → boş sonuç  (GAS fallback yok)
+Bulk:    GAS bulkSync → D1 tam yenileme  (Settings sayfası veya zamanlanmış tetikleyici)
 ```
-
-- **Sheets write path:** Her CRUD önce GAS üzerinden Sheets'e yazılır. GAS başarısız → D1'e dokunulmaz.
-- **Google Native İstisna:** Docs, Drive, Calendar, Gmail GAS üzerinden çalışır; D1'e taşınamaz.
-- **KV:** Yalnızca `token:confirm:{uuid}` (600s) ve `lock:write:{entity}:{id}` (30s) için kullanılır.
-
----
-
-## D1 Veritabanı
-
-- **Database:** `medicert-portal`
-- **ID:** `94b188bb-1ea8-4b84-ba00-8f7bf91bb265`
-- **Bölge:** EEUR (Milano)
-- **Binding:** `env.DB_D1`
-- **Tablolar:** `companies`, `certificates`, `audits`, `tests`, `proformas`, `standards`, `auditors`, `consultants`, `testdocs`, `sysdocs`, `sync_meta`
-- **Şema:** `src/workers/migrations/003_relational_schema.sql`
 
 ---
 
@@ -63,24 +51,26 @@ Offline Cache:    Browser IndexedDB ──► sıfır gecikmeli UI açılışı
 | :--- | :--- |
 | `BaseService.gs` | Merkezi spreadsheet erişimi, logging |
 | `SyncService.gs` | `bulkSync` — Sheets → D1 toplu aktarım |
+| `ManualSyncService.gs` | El ile senkronizasyon yardımcıları |
 | `CompanyService.gs` | Firma CRUD (Sheets) |
 | `CertificateService.gs` | Sertifika CRUD (Sheets) |
 | `TestService.gs` | Test CRUD (Sheets) |
 | `ProformaService.gs` | Proforma CRUD (Sheets) |
-| `AuditService.gs` | Denetim Sheets CRUD + Google Calendar side-effect |
+| `AuditService.gs` | Denetim CRUD + Google Calendar |
 | `DocumentService.gs` | ISO/test/form belge üretimi |
-| `DriveService.gs` | Klasör/dosya yönetimi |
+| `DriveService.gs` | Klasör/dosya yönetimi; `FOLDER_MAP_JSON` Script Property'den okunur |
 | `PDFService.gs` | PDF dönüşüm |
 | `NotificationService.gs` | Gözetim e-postaları |
-| `TranslationService.gs` | ISO kapsam metni TR↔EN |
+| `DailyBackupService.gs` | Gece D1 → Sheets yedekleme + Drive SQL snapshot |
+| `bridge.gs` | GAS web app entry point (doAction dispatcher) |
 
 ---
 
 ## Frontend: Astro 6.x + Tailwind CSS v4
 
-- **Pure Tailwind:** Özel CSS utility sınıfı (`glass`, `form-input` vb.) kullanılmaz; `bg-surface` opak arka planlar zorunludur.
-- **Islands Architecture:** Yalnızca etkileşimli bileşenler client-side JS çalıştırır.
-- **State Management:** Nanostores + IndexedDB (`idb-keyval`).
+- **Tenant alias:** `@tenant/config` → `src/tenant/{TENANT_ID}/config.ts` (build-time env)
+- **State:** Nanostores + IndexedDB (`idb-keyval`)
+- **PWA:** Service Worker (SW) — sadece statik varlıklar cache'lenir; navigasyon NetworkOnly
 
 ---
 
@@ -88,73 +78,69 @@ Offline Cache:    Browser IndexedDB ──► sıfır gecikmeli UI açılışı
 
 ```
 src/
-├── gas/
-│   ├── api/          # GAS servisleri (production)
-│   └── legacy/       # Eski GAS kodu (migrasyon referansı)
+├── gas/              # GAS servisleri (tenant-agnostik çekirdek)
 ├── lib/
 │   ├── api.ts        # Worker fetch wrapper
 │   ├── sync.ts       # SyncManager
 │   ├── db.ts         # IndexedDB wrapper
 │   ├── store.ts      # Nanostores global state
-│   └── config.ts     # PUBLIC_WORKER_URL
+│   └── config.ts     # PUBLIC_WORKER_URL + tenant fallback
 ├── workers/
-│   ├── proxy.js      # Cloudflare Worker
+│   ├── proxy.js      # Cloudflare Worker (D1-Primary)
 │   └── migrations/   # D1 SQL migration dosyaları
-├── features/
-│   └── company-ops/  # Firma operasyon context, form helpers
+├── tenant/
+│   └── default/      # Boş şablon — tenant reposundaki dosyalar CI'da üstüne kopyalanır
+├── features/         # Domain-specific form/context yardımcıları
 └── pages/
     ├── index.astro         # Dashboard
     ├── search.astro        # Firma arama
-    ├── certificates.astro  # Sertifika grid & gözetim
+    ├── certificates/       # Sertifika grid & gözetim
     ├── audits/             # Denetim planlama
     ├── documents/          # Belge üretimi & Drive explorer
-    ├── company/            # Firma CRUD, proforma, sertifika
+    ├── company/            # Firma CRUD, proforma, sözleşme
     └── settings.astro      # Master data & sync paneli
 ```
 
 ---
 
-## Kurulum & Geliştirme
+## GAS Script Properties (Tenant Kurulumunda Girilmesi Gerekenler)
+
+| Property | Açıklama |
+| :--- | :--- |
+| `API_KEY` | CF Worker `API_KEY` ile birebir aynı |
+| `WORKER_URL` | Tenant'ın CF Worker URL'si |
+| `SPREADSHEET_ID` | Ana Sheets dosyasının ID'si |
+| `BACKUP_FOLDER_ID` | Drive SQL snapshot klasörünün ID'si |
+| `TENANT_ID` | Tenant kısa adı (örn: `medicert`) |
+| `FOLDER_MAP_JSON` | Harf → Drive klasör ID JSON'u |
+| `SIGNATURE_ID` | İmza doküman şablonu ID |
+| `DRAFT_BG_ID` | Taslak arkaplan ID |
+| `APP_FORM_MEDICERT` | Başvuru formu şablon ID |
+| `CONTRACT_TEMP` | Sözleşme şablon ID |
+| `PROFORMA_TEMP` | Proforma şablon ID |
+
+> Tenant-specific değerler `gas/TenantSetup.gs` scriptiyle tek seferlik atanır.
+
+---
+
+## Yeni Tenant Ekleme
+
+1. `medicert-portal` reposunu şablon olarak kullanarak yeni bir **private** repo oluştur
+2. `src/tenant/{firma}/config.ts` — marka, navigasyon, worker URL'si
+3. `wrangler.{firma}.toml` — CF D1, KV binding ID'leri, custom domain
+4. CF Dashboard'da D1 ve KV kaynaklarını oluştur
+5. GitHub Secrets ekle: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+6. `main`'e push et — CI otomatik devreye girer
+
+---
+
+## Geliştirme
 
 ```bash
 npm install
-npm run dev
+npm run dev   # TENANT_ID=medicert otomatik varsayılan
 ```
-
-### Production Dağıtımı
 
 ```bash
-# Cloudflare Worker
-wrangler deploy
-
-# Astro build → Cloudflare Pages
-astro build
+TENANT_ID=firma npm run dev   # Farklı tenant ile lokal test
 ```
-
-**Pages ortam değişkeni:**
-```
-PUBLIC_WORKER_URL=https://portalapi.medicert.com.tr
-```
-
-**Worker Secrets (`wrangler secret put`):**
-- `GAS_API_URL` — GAS exec URL
-- `API_KEY` — ⚠️ Henüz `wrangler.toml [vars]`'da düz metin; `wrangler secret put API_KEY` ile secret'a taşınması gerekiyor
-
-**İlk deploy sonrası:** Settings sayfasından "SİSTEMİ SENKRONİZE ET" butonu çalıştırılarak Sheets → D1 aktarımı yapılmalıdır.
-
----
-
-## Platform Limitleri
-
-| Limit | Değer | Notlar |
-| :--- | :--- | :--- |
-| D1 row reads/gün (free) | 5M | Güvenli bölgede |
-| D1 row writes/gün (free) | 100K | Güvenli bölgede |
-| D1 storage (free) | 500MB | Mevcut ~50MB |
-| GAS execution süresi | 6 dk (free) / 30 dk (Workspace) | bulkSync için Workspace önerilir |
-
----
-
-**Geliştirici:** Antigravity AI
-**Müşteri:** Medicert Ürün ve Sistem Belgelendirme
-**Sürüm:** 6.2.1 — Sheets-Primary + D1-Cache Architecture (Son Güncelleme: 19.04.2026)
