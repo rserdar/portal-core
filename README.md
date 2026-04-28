@@ -125,7 +125,7 @@ src/
 
 ## Yeni Tenant Ekleme
 
-1. `medicert-portal` reposunu şablon olarak kullanarak yeni bir **private** repo oluştur
+1. Yeni bir **private** repo oluştur (örn: `firma-portal`) — mevcut bir tenant reposunu şablon olarak kullan
 2. `src/tenant/{firma}/config.ts` — marka, navigasyon, worker URL'si
 3. `wrangler.{firma}.toml` — CF D1, KV binding ID'leri, custom domain
 4. CF Dashboard'da D1 ve KV kaynaklarını oluştur

@@ -1,7 +1,7 @@
 {
-  "name": "Medicert Portal",
-  "short_name": "Medicert",
-  "description": "Medicert Sertifikasyon Portal",
+  "name": "Portal",
+  "short_name": "Portal",
+  "description": "Tenant operasyon portalı",
   "theme_color": "#0f172a",
   "background_color": "#0f172a",
   "display": "standalone",
