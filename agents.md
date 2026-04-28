@@ -246,7 +246,8 @@ CREATE VIEW IF NOT EXISTS audits_full AS
 | :--- | :--- | :--- | :--- |
 | `009` | G2 | `consultants.email` sütunu + `consultant_firms` junction tablosu | Rezerve |
 | `010` | G1 | JWT signing secret için `sync_meta` key veya ayrı yapılandırma gerekirse | Rezerve |
-| `011+` | D/E/F | Tenant veya DLC bazlı şema değişiklikleri için açık slot | — |
+| `011` | E | `integration_configs` tablosu — Google ve Microsoft non-secret config registry | Rezerve |
+| `012+` | F | Microsoft DLC veya tenant bazlı şema değişiklikleri için açık slot | — |
 
 > Rezerve numaralar yalnızca planlama amaçlıdır; uygulanana kadar dosyası oluşturulmaz. Her yeni migration kendi numarasını `008`'den sonra sıralı alır — numara atlanmaz, değiştirilmez.
 
@@ -470,22 +471,24 @@ Core: import config from '@tenant/config'
 
 | # | Madde | Done Criteria |
 | :- | :--- | :--- |
-| D1 | **`src/lib/config.ts` tenant katmanı** — `APP_NAME`, `WORKER_URL`, `BRAND_*` değerleri `PUBLIC_BRAND_*` env'e çıkarılır | `config.ts`'de hardcoded Medicert/URL string'i yok; her değer `import.meta.env.*` okur |
-| D2 | **`src/tenant/medicert/`** dizini — logo, imza, disclaimer, renk paleti, email sabitleri buraya taşınır | `src/tenant/medicert/config.ts` tek export noktası; başka dosya çekirdekte Medicert string'i içermiyor |
-| D3 | **`src/tenant/default/`** dizini — placeholder değerler; `TENANT_ID=default` ile deploy edilebilir, hata vermez | `default/config.ts` tüm zorunlu key'leri boş string veya fallback ile doldurmuş |
-| D4 | **Email template Worker'a taşınır** — `sendSurv.html` şu an GAS tarafında duruyor; her yeni tenant için GAS kodu değişikliği gerektirir. Template `src/tenant/{id}/email/surv.html` konumuna taşınır; Worker `BRAND_*` değişkenlerini inject ederek HTML render eder ve GAS'a "hazır HTML" olarak gönderir. GAS yalnızca `UrlFetchApp` ile email gönderir, template'i bilmez | GAS'ta template string'i yok; Worker'dan gelen hazır HTML doğrudan gönderilir; yeni tenant için yalnızca tenant dizinindeki template değişir, GAS kodu dokunulmaz |
-| D5 | **`wrangler.<tenant>.toml` şablonu** — tek Worker kodu, farklı binding'ler; `wrangler.medicert.toml` mevcut `wrangler.toml`'dan ayrıştırılır | `wrangler.toml` jenerik iskelet; Medicert değerleri `wrangler.medicert.toml`'da |
-| D6 | **Tenant onboarding checklist** — env ayarla, tenant dizini oluştur, D1 migration çalıştır, GAS Script Properties doldur | Checklist bir markdown dosyası olarak `docs/onboarding.md`'de; adım adım doğrulanabilir |
-| D7 | **İki-repo modeli** — `portal-core` (public) uygulama mantığını; `portal-tenants` (private) tenant config + CI'ı barındırır. `portal-core`'da `src/tenant/medicert/` gitignored; `deploy.yml` build-check + notify-tenants; `docs/private-repo-setup.md` private repo CI template'ini içeriyor | Core'da tenant adı/URL/logo yok; private repo CI core'u çekip tenant'ı overlay ederek deploy ediyor |
-| D8 | **`scripts/generate-email-registry.js`** — `src/tenant/*/email/surv.js` içeren dizinleri tarayarak `email-registry.js`'i build sırasında üretir; `package.json` `prebuild` hook'u ile otomatik çalışır | `email-registry.js` commit edilmez (gitignored); yeni tenant klasörü oluşturmak registry'ye otomatik dahil eder |
+| ✅ D1 | **`src/lib/config.ts` tenant katmanı** — `APP_NAME`, `WORKER_URL`, `BRAND_*` değerleri `PUBLIC_BRAND_*` env'e çıkarılır | `config.ts`'de hardcoded Medicert/URL string'i yok; her değer `import.meta.env.*` okur |
+| ✅ D2 | **`src/tenant/medicert/`** dizini — logo, imza, disclaimer, renk paleti, email sabitleri buraya taşınır | `src/tenant/medicert/config.ts` tek export noktası; başka dosya çekirdekte Medicert string'i içermiyor |
+| ✅ D3 | **`src/tenant/default/`** dizini — placeholder değerler; `TENANT_ID=default` ile deploy edilebilir, hata vermez | `default/config.ts` tüm zorunlu key'leri boş string veya fallback ile doldurmuş |
+| ✅ D4 | **Email template Worker'a taşınır** — `sendSurv.html` şu an GAS tarafında duruyor; her yeni tenant için GAS kodu değişikliği gerektirir. Template `src/tenant/{id}/email/surv.html` konumuna taşınır; Worker `BRAND_*` değişkenlerini inject ederek HTML render eder ve GAS'a "hazır HTML" olarak gönderir. GAS yalnızca `UrlFetchApp` ile email gönderir, template'i bilmez | GAS'ta template string'i yok; Worker'dan gelen hazır HTML doğrudan gönderilir; yeni tenant için yalnızca tenant dizinindeki template değişir, GAS kodu dokunulmaz |
+| ✅ D5 | **`wrangler.<tenant>.toml` şablonu** — tek Worker kodu, farklı binding'ler; `wrangler.medicert.toml` mevcut `wrangler.toml`'dan ayrıştırılır | `wrangler.toml` jenerik iskelet; Medicert değerleri `wrangler.medicert.toml`'da |
+| ✅ D6 | **Tenant onboarding checklist** — env ayarla, tenant dizini oluştur, D1 migration çalıştır, GAS Script Properties doldur | Checklist bir markdown dosyası olarak `docs/onboarding.md`'de; adım adım doğrulanabilir |
+| ✅ D7 | **İki-repo modeli** — `portal-core` (public) uygulama mantığını; `portal-tenants` (private) tenant config + CI'ı barındırır. `portal-core`'da `src/tenant/medicert/` gitignored; `deploy.yml` build-check + notify-tenants; `docs/private-repo-setup.md` private repo CI template'ini içeriyor | Core'da tenant adı/URL/logo yok; private repo CI core'u çekip tenant'ı overlay ederek deploy ediyor |
+| ✅ D8 | **`scripts/generate-email-registry.js`** — `src/tenant/*/email/surv.js` içeren dizinleri tarayarak `email-registry.js`'i build sırasında üretir; `package.json` `prebuild` hook'u ile otomatik çalışır | `email-registry.js` commit edilmez (gitignored); yeni tenant klasörü oluşturmak registry'ye otomatik dahil eder |
 
 > **GAS tenant özelleştirme kuralı:** Her tenant kendi bağımsız GAS projesini oluşturur. `DocumentService.gs CONFIG` (şablon dosya ID'leri: `SIGNATURE_ID`, `DRAFT_BG_ID`, `CONTRACT_TEMP` vb.) ve `DriveService.gs FOLDER_MAP` (harf → klasör ID haritası) **Script Properties üzerinden** yönetilir — GAS koduna hardcoded yazılmaz. Tenant kurulum scripti (`medicert-portal/gas/MedicertSetup.gs` gibi) bu değerleri bir kez `setupXxxProperties()` çağrısıyla set eder. Kural: Drive dosya/klasör ID'si → `FOLDER_MAP_JSON` / şablon key'leri via Script Properties; sunucu URL'si veya API anahtarı → Script Properties. GAS kaynak kodunda tenant'a ait hiçbir ID hardcoded olmaz.
 
 ---
 
 ### Faz E — Google DLC ⬜
-> **Çıktı:** Google servisleri `settings.astro`'dan aç/kapat yönetilebilir; Gemini destekli form önerileri aktif; aylık gözetim email'i çalışır.
+> **Çıktı:** Google servisleri `settings.astro`'dan aç/kapat yönetilebilir; aylık gözetim email'i çalışır.
 > **Başarı ölçütü:** Google DLC kapalıyken sistem tamamen D1-only modunda çalışır, hata vermez. GAS bağlı ama kapalı → `syncToBackup` no-op.
+>
+> **Not:** Gemini önerileri (E8) bu faza bağımlı değildir — DLC altyapısına ihtiyaç duymaz. Herhangi bir fazda bağımsız olarak uygulanabilir.
 
 #### Faz E / F Ortak Modeli
 
@@ -527,8 +530,11 @@ Kural:
   | E5 | **Drive backup sub-toggle** — `feature:google_drive_backup`; Sheets backup açık iken Drive snapshot kapatılabilir | Sub-toggle kapalıyken `DailyBackupService._saveSnapshotToDrive()` çağrılmaz |
   | E6 | **Calendar sub-toggle** — `feature:google_calendar`; DLC açık olsa da Calendar event oluşturma devre dışı bırakılabilir | Sub-toggle kapalıyken Calendar çağrısı skip eder, D1 yazma tamamlanır |
   | E7 | **Gmail / Notification sub-toggle** — `feature:google_gmail`; gözetim email sistemi bu flag'e bağlı çalışır | Sub-toggle kapalıyken email trigger'ı çalışmaz; `settings.astro`'da uyarı gösterilir |
-  | E8 | **Gemini önerileri** — `certificates/add.astro` formuna NACE / EA / kapsam / scope önerileri eklenir; prompt firma `yapilan_is` + `standart` + mevcut alanlardan üretilir | Kullanıcı öneriyi preview'da görür, düzenler ve forma uygular |
   | E9 | **Gözetim email sistemi** — aylık kontrol + manuel tetikleme + danışman bazlı gönderim; Worker D1 sorgusu yapar, GAS yalnızca gönderim kanalıdır | Manuel tetiklemede test email gönderilir; otomatik akışta aktif danışmanlara email düşer; gönderim loglanır |
+
+> **E8 — Gemini önerileri (bağımsız, herhangi bir fazda uygulanabilir)**
+> `certificates/add.astro` formuna NACE / EA / kapsam / scope önerileri eklenir; prompt firma `yapilan_is` + `standart` + mevcut alanlardan üretilir. Google DLC flag'ine bağımlı değildir — E0–E7 beklenmeden başlanabilir.
+> **Done Criteria:** Kullanıcı öneriyi preview'da görür, düzenler ve forma uygular.
 
   #### Feature Flag Kapsamı
 
@@ -562,29 +568,55 @@ Sonuç: sync_meta içindeki flag otomatik olarak tenant-özel olur; ayrı tenant
 
 **E-D — Akıllı Özellikler**
 
-  - `E8` Gemini önerileri
   - `E9` Gözetim email sistemi
+  - `E8` Gemini önerileri *(bağımsız — DLC altyapısına bağımlı değil, herhangi bir fazda araya girebilir)*
 
   ---
 
-### Faz F — Microsoft DLC ⬜
+### Faz F — Microsoft DLC 🔲 Rezerve
 > **Çıktı:** Microsoft altyapılı tenantlar Google DLC yerine veya yanı sıra OneDrive/Outlook/Teams kullanabilir.
 > **Başarı ölçütü:** `feature:microsoft_dlc = "1"` ile OneDrive'a günlük backup gönderilir; Outlook üzerinden gözetim email'i gönderilebilir.
 
+> [!NOTE]
+> **Rezerve statüsü:** Şu an Microsoft gerektiren aktif bir tenant yoktur. Madde listesi ve mimari tanımlıdır; gerçek bir tenant ihtiyacı ortaya çıktığında aktifleştirilir. F9 (birleşik orchestration UI) E tamamlanmadan başlatılmaz.
+
 **Not:** F, E ile paralel yürütülebilir. İkisi de D tamamlandıktan sonra bağımsız geliştirilir. Faz F, Faz E'deki ortak `integration_configs` modelini Microsoft provider'ı için kullanır; ayrı `microsoft_configs` tablosu açılmaz.
+
+#### Microsoft Graph API OAuth Token Yönetimi
+
+GAS Google auth'u runtime'da service account üzerinden halleder — Worker'ın token yönetmesi gerekmez. Microsoft Graph API ise OAuth 2.0 gerektirir; Worker bu akışı kendisi yürütmek zorundadır:
+
+```
+CF Secrets:
+  AZURE_TENANT_ID       — Azure AD tenant ID
+  AZURE_CLIENT_ID       — App Registration client ID
+  AZURE_CLIENT_SECRET   — App Registration client secret
+
+Token akışı (client credentials grant):
+  Worker → POST https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token
+         → { access_token, expires_in }
+         → KV'ye yaz: key = "msft:token:{tenant_id}", TTL = expires_in - 60s
+
+Her Graph çağrısında:
+  1. KV'den token oku → varsa kullan
+  2. Yoksa (TTL dolmuş veya ilk istek) → yeni token al → KV'ye yaz → kullan
+
+Kural: token KV'de tutulur, D1'e yazılmaz.
+       client_secret CF Secrets'ta kalır, integration_configs'e girmez.
+```
 
 | # | Madde | Done Criteria |
 | :- | :--- | :--- |
 | F0 | **Microsoft provider config registry** — OneDrive klasör ID'leri, SharePoint site/list ID'leri, Outlook sender identity ve Teams webhook metadata `integration_configs` içinde `provider = "microsoft"` satırları olarak tutulur | Microsoft'a ait non-secret config D1'den okunur; hardcoded bağımlılık kalkar |
-| F1 | **Stateless Microsoft adapter** — Worker → Graph adapter katmanı gerekli config'i request bazlı taşır; tenant'a özgü ID'ler koda gömülü değildir | Microsoft entegrasyonu provider-config ile çalışır; tenant overlay yalnızca başlangıç config'i yükler |
-| F2 | **Provider Config UI (Microsoft sekmesi)** — `settings.astro` içinde OneDrive / SharePoint / Outlook / Teams config kayıtlarını yöneten panel eklenir | Site/list/folder/sender değerleri UI üzerinden değiştirilebilir |
+| F1 | **Graph adapter + OAuth token yönetimi** — Worker → Graph adapter katmanı; `AZURE_*` secrets CF'de tanımlı; token KV'den okunur, süresi dolduysa yenilenir; tenant'a özgü ID'ler koda gömülü değildir | Token yenileme akışı çalışır; KV'de `msft:token:{tenant_id}` key'i TTL ile saklanır; Graph çağrıları auth hatası vermez |
+| F2 | **Provider Config UI (Microsoft sekmesi)** — `settings.astro` içinde OneDrive / SharePoint / Outlook / Teams config kayıtlarını yönetan panel eklenir | Site/list/folder/sender değerleri UI üzerinden değiştirilebilir |
 | F3 | **Microsoft DLC feature flag** — `feature:microsoft_dlc`; Google DLC ile aynı anda `"1"` olabilir | Her iki flag aynı anda açıkken sistem hem Google hem Microsoft servislerini çalıştırır |
 | F4 | **Graceful degradation** — Microsoft DLC kapalıyken Graph / Outlook / Teams çağrıları güvenli biçimde no-op olur | Microsoft kapalıyken CRUD ve backup ana akışı bozulmaz |
 | F5 | **OneDrive backup sub-toggle** — `feature:microsoft_onedrive_backup`; D1 `.sql` snapshot OneDrive'a yazılır | Google Drive ile paralel çalışabilir; biri başarısız olursa diğeri devam eder |
 | F6 | **SharePoint sync sub-toggle** — `feature:microsoft_sharepoint`; D1 delta → SharePoint liste upsert | Sub-toggle kapalıyken SharePoint çağrısı yapılmaz; açıkken günlük sync gerçekleşir |
 | F7 | **Outlook notification sub-toggle** — `feature:microsoft_outlook`; gözetim email sisteminin Outlook karşılığıdır | Google Gmail ile paralel ya da tek başına çalışabilir |
 | F8 | **Teams alert sub-toggle** — `feature:microsoft_teams`; `sync_log` FAIL/CRASH kayıtları Teams kanalına bildirilir | Webhook metadata `integration_configs`'ten okunur; alert gönderimi `ctx.waitUntil` içinde yapılır |
-| F9 | **Birleşik provider orchestration UI** — backup için `Google Drive \| OneDrive \| İkisi`, email için `Gmail \| Outlook \| İkisi` seçimi eklenir | Kullanıcı servis bazında provider tercihi yapar; tercih `sync_meta`'ya kaydedilir; çakışma uyarıları gösterilir |
+| F9 | **Birleşik provider orchestration UI** — backup için `Google Drive \| OneDrive \| İkisi`, email için `Gmail \| Outlook \| İkisi` seçimi eklenir *(E tamamlanmadan başlatılmaz)* | Kullanıcı servis bazında provider tercihi yapar; tercih `sync_meta`'ya kaydedilir; çakışma uyarıları gösterilir |
 
 ---
 
@@ -700,7 +732,7 @@ settings.astro bu iki adımı yan yana gösterir:
 | 2 | **C** | Ortak bileşenler | A tamamlanmış | — |
 | 3 | **D** | White-label / tenant ayrımı | C tamamlanmış | — |
 | 4 | **E** | Google DLC | D tamamlanmış | F ile |
-| 4 | **F** | Microsoft DLC | D tamamlanmış | E ile |
+| 4 | **F** 🔲 | Microsoft DLC *(Rezerve — aktif tenant ihtiyacı olmadıkça başlatılmaz)* | D tamamlanmış | E ile |
 | 5 | **G** | Danışman portalı | D tamamlanmış (G1–G2); E9 koordineli ama bloklayıcı değil | — |
 
 **B istisnası:** B kritik bir sorun tespit edildiğinde diğer fazların herhangi bir noktasında öncelik alabilir. Bu bir "her zaman araya girebilir" kuralı, yoksa sıradaki faz değil.
