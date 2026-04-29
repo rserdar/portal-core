@@ -32,7 +32,7 @@ const { title } = Astro.props;
 		<link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
 
 		<!-- PWA -->
-		<link rel="manifest" href="/manifest.webmanifest" />
+		{ import.meta.env.PUBLIC_ENABLE_PWA === 'true' && <link rel="manifest" href="/manifest.webmanifest" /> }
 		<meta name="theme-color" content="#6366f1" />
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
@@ -46,7 +46,7 @@ const { title } = Astro.props;
 			content="identity-credentials-get=(), digital-credentials-get=(), publickey-credentials-get=(), otp-credentials=(), payment=()"
 		/>
 		<!-- PWA Service Worker Registration -->
-		{ import.meta.env.PROD && <script src="/registerSW.js" is:inline></script> }
+		{ import.meta.env.PROD && import.meta.env.PUBLIC_ENABLE_PWA === 'true' && <script src="/registerSW.js" is:inline></script> }
 		<title>{title} | {CONFIG.APP_NAME}</title>
 		<script is:inline>
 			(() => {
