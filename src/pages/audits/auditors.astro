@@ -1,0 +1,391 @@
+---
+import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import DataTable from "../../components/DataTable.astro";
+import FilterBar from "../../components/FilterBar.astro";
+---
+
+<DashboardLayout title="Denetçi Deneyim Kayıtları">
+  <div class="space-y-6">
+    <!-- Header Section with Selector -->
+    <div class="bg-surface border border-border-main rounded-2xl p-6 shadow-sm">
+      <div class="flex flex-col md:flex-row md:items-end gap-6">
+        <div class="flex-1 space-y-2">
+          <label for="auditor-select" class="text-[10px] font-black text-muted uppercase tracking-widest ml-1">DENETÇİ SEÇİNİZ</label>
+          <div class="relative group">
+            <select
+              id="auditor-select"
+              class="w-full bg-surface-hover border-2 border-border-main rounded-xl px-4 py-3.5 text-sm font-bold text-main outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all appearance-none cursor-pointer"
+            >
+              <option value="">Lütfen bir denetçi seçin...</option>
+            </select>
+            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted group-focus-within:text-primary transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 print:hidden">
+          <button id="export-excel-btn" type="button" disabled class="btn-primary py-3 px-6 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            EXCEL DIŞA AKTAR
+          </button>
+          <button id="print-btn" type="button" disabled class="bg-surface-hover border border-border-main hover:bg-surface-hover/80 text-main font-bold p-3 rounded-xl transition-all disabled:opacity-50">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Auditor Quick Info (Hidden until selected) -->
+      <div id="auditor-info" class="hidden mt-8 pt-6 border-t border-border-main/50 animate-fade-in">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-primary/5 border border-primary/10 rounded-2xl p-4">
+            <div class="text-[9px] font-black text-primary/60 uppercase tracking-widest mb-1">TOPLAM DENETİM</div>
+            <div id="stat-total-audits" class="text-2xl font-black text-primary">0</div>
+          </div>
+          <div class="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4">
+            <div class="text-[9px] font-black text-emerald-500/60 uppercase tracking-widest mb-1">TOPLAM ADAM/GÜN</div>
+            <div id="stat-total-mandays" class="text-2xl font-black text-emerald-500">0</div>
+          </div>
+          <div class="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4">
+            <div class="text-[9px] font-black text-amber-500/60 uppercase tracking-widest mb-1">BAŞ DENETÇİ ROLÜ</div>
+            <div id="stat-lead-count" class="text-2xl font-black text-amber-500">0</div>
+          </div>
+          <div class="bg-sky-500/5 border border-sky-500/10 rounded-2xl p-4">
+            <div class="text-[9px] font-black text-sky-500/60 uppercase tracking-widest mb-1">EN ÇOK DENETLENEN</div>
+            <div id="stat-top-standard" class="text-2xl font-black text-sky-500">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log Table Section -->
+    <div id="log-container" class="hidden space-y-4 animate-fade-in">
+      <FilterBar placeholder="Loglar içinde ara...">
+        <div slot="filters" class="flex items-center gap-2">
+          <select id="std-filter" class="bg-surface-hover border border-border-main rounded-xl px-3 py-2.5 text-xs font-bold text-muted outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer uppercase">
+            <option value="">TÜM STANDARTLAR</option>
+          </select>
+        </div>
+      </FilterBar>
+
+      <DataTable emptyMessage="Bu denetçi için kayıt bulunamadı">
+        <Fragment slot="header">
+          <th class="w-32 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Tarih</th>
+          <th class="px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left">Kuruluş (Firma)</th>
+          <th class="w-32 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Standart</th>
+          <th class="w-32 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Denetim Tipi</th>
+          <th class="w-28 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Rol</th>
+          <th class="w-24 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-center">Adam/Gün</th>
+          <th class="w-48 px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-muted text-left">Denetim Ekibi</th>
+        </Fragment>
+      </DataTable>
+    </div>
+
+    <!-- Initial State -->
+    <div id="initial-state" class="flex flex-col items-center justify-center py-20 bg-surface border border-border-main rounded-3xl border-dashed">
+      <div class="w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary/40"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+      </div>
+      <h3 class="text-lg font-black text-main mb-2">Denetçi Logu Oluştur</h3>
+      <p class="text-sm text-muted text-center max-w-xs leading-relaxed">
+        ISO denetim deneyim kayıtlarını görüntülemek ve dışa aktarmak için yukarıdan bir denetçi seçiniz.
+      </p>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { api } from "../../lib/api";
+  import { $companies } from "../../lib/store";
+  import { useCleanup, initPageCleanup } from "../../lib/composables/useCleanup";
+  import { useTableFilter } from "../../lib/composables/useTableFilter";
+  import {
+    pickValue,
+    escHtml,
+    escAttr,
+    parseDateValue,
+    normalize,
+    countUp
+  } from "../../lib/utils";
+
+  const { registerCleanup, runCleanups } = useCleanup();
+
+  function init() {
+    runCleanups();
+
+    const auditorSelect = document.getElementById("auditor-select") as HTMLSelectElement | null;
+    const auditorInfo = document.getElementById("auditor-info");
+    const logContainer = document.getElementById("log-container");
+    const initialState = document.getElementById("initial-state");
+    const tableBody = document.getElementById("table-body");
+    const stdFilter = document.getElementById("std-filter") as HTMLSelectElement | null;
+    const searchInput = document.getElementById("global-search") as HTMLInputElement | null;
+    const exportExcelBtn = document.getElementById("export-excel-btn") as HTMLButtonElement | null;
+    const printBtn = document.getElementById("print-btn") as HTMLButtonElement | null;
+
+    // Stat elements
+    const statTotalAudits = document.getElementById("stat-total-audits");
+    const statTotalMandays = document.getElementById("stat-total-mandays");
+    const statLeadCount = document.getElementById("stat-lead-count");
+    const statTopStandard = document.getElementById("stat-top-standard");
+
+    if (!auditorSelect || !auditorInfo || !logContainer || !initialState || !tableBody || !stdFilter || !exportExcelBtn || !printBtn) return;
+
+    let allAudits: any[] = [];
+    let currentAuditorName = "";
+
+    const findCompanyByFirmaNo = (firmaNo: string) =>
+      (($companies.get() as any[]) || []).find((company) => {
+        const companyId = pickValue(company, ["id", "ID", "firma_no", "firmaNo"], "");
+        return String(companyId) === String(firmaNo);
+      });
+
+    const getCompanyDisplayName = (firmaNo: string) => {
+      const company = findCompanyByFirmaNo(firmaNo);
+      if (!company) return firmaNo;
+      return pickValue(company, ["nickname", "nick", "unvan"], firmaNo);
+    };
+
+    const renderRows = (items: any[]) => {
+      tableBody.innerHTML = items
+        .map((item) => {
+          const date = item._logDate || "-";
+          const firma = getCompanyDisplayName(item.firma_no);
+          const standard = pickValue(item, ["standart", "standard"], "-");
+          const type = pickValue(item, ["denetim_tipi", "denetimTipi"], "-");
+          const role = item._logRole || "-";
+          const manday = item._logManday || 0;
+          const team = (item._logTeam || []).join(", ") || "-";
+
+          return `
+            <tr class="hover:bg-surface-hover transition-colors text-[11px] group/row">
+              <td class="px-4 py-4 text-center font-mono text-muted italic">${escHtml(date)}</td>
+              <td class="px-5 py-4 font-bold text-main uppercase tracking-tight">${escHtml(firma)}</td>
+              <td class="px-4 py-4 text-center font-bold text-primary/70">${escHtml(standard)}</td>
+              <td class="px-4 py-4 text-center font-black uppercase text-muted tracking-widest">${escHtml(type)}</td>
+              <td class="px-4 py-4 text-center">
+                <span class="px-2 py-1 rounded-lg font-black text-[9px] uppercase tracking-wider ${
+                  role === "Baş Denetçi" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-sky-500/10 text-sky-500 border border-sky-500/20"
+                }">
+                  ${escHtml(role)}
+                </span>
+              </td>
+              <td class="px-4 py-4 text-center font-mono font-bold text-emerald-500">${escHtml(manday)}</td>
+              <td class="px-4 py-4 text-left text-muted font-medium italic">${escHtml(team)}</td>
+            </tr>
+          `;
+        })
+        .join("");
+    };
+
+    const experienceTable = useTableFilter<any>({
+      data: [],
+      pageSize: 50,
+      filterFn: (item, filters) => {
+        const search = normalize(filters.search || "");
+        const std = filters.standard || "";
+        
+        const firma = normalize(getCompanyDisplayName(item.firma_no));
+        const standard = pickValue(item, ["standart", "standard"], "");
+        
+        const matchSearch = !search || firma.includes(search) || standard.toLowerCase().includes(search);
+        const matchStd = !std || standard === std;
+        
+        return matchSearch && matchStd;
+      },
+      sortFn: (a, b) => {
+        const dateA = parseDateValue(a._logDate)?.getTime() || 0;
+        const dateB = parseDateValue(b._logDate)?.getTime() || 0;
+        return dateB - dateA;
+      },
+      onRender: renderRows,
+    });
+
+    const updateExperienceLog = (auditorName: string) => {
+      if (!auditorName) {
+        auditorInfo.classList.add("hidden");
+        logContainer.classList.add("hidden");
+        initialState.classList.remove("hidden");
+        exportExcelBtn.disabled = true;
+        printBtn.disabled = true;
+        return;
+      }
+
+      currentAuditorName = auditorName;
+      const normalizedSearch = normalize(auditorName);
+      
+      const filtered = allAudits.filter(audit => {
+        const auditorFields = [
+          "a1_bas_denetci", "a1_denetci_2", "a1_denetci_3",
+          "a2_bas_denetci", "a2_denetci_2", "a2_denetci_3"
+        ];
+        
+        return auditorFields.some(field => {
+          const val = pickValue(audit, [field], "");
+          return normalize(val).includes(normalizedSearch);
+        });
+      }).map(audit => {
+        // Enriched fields for log
+        const isA1 = [
+          pickValue(audit, ["a1_bas_denetci"], ""),
+          pickValue(audit, ["a1_denetci_2"], ""),
+          pickValue(audit, ["a1_denetci_3"], "")
+        ].some(n => normalize(n).includes(normalizedSearch));
+
+        const isA2 = [
+          pickValue(audit, ["a2_bas_denetci"], ""),
+          pickValue(audit, ["a2_denetci_2"], ""),
+          pickValue(audit, ["a2_denetci_3"], "")
+        ].some(n => normalize(n).includes(normalizedSearch));
+
+        const isLead = [
+          pickValue(audit, ["a1_bas_denetci"], ""),
+          pickValue(audit, ["a2_bas_denetci"], "")
+        ].some(n => normalize(n).includes(normalizedSearch));
+
+        const teamMembers = [
+          pickValue(audit, ["a1_bas_denetci"], ""),
+          pickValue(audit, ["a1_denetci_2"], ""),
+          pickValue(audit, ["a1_denetci_3"], ""),
+          pickValue(audit, ["a2_bas_denetci"], ""),
+          pickValue(audit, ["a2_denetci_2"], ""),
+          pickValue(audit, ["a2_denetci_3"], "")
+        ].filter(n => n && n !== "Atanmadı" && !normalize(n).includes(normalizedSearch));
+        
+        const uniqueTeam = [...new Set(teamMembers)];
+
+        return {
+          ...audit,
+          _logRole: isLead ? "Baş Denetçi" : "Denetçi",
+          _logDate: isA2 ? pickValue(audit, ["a2_baslangic"], "-") : pickValue(audit, ["a1_baslangic"], "-"),
+          _logManday: (isA1 ? Number(pickValue(audit, ["a1_manday"], 0)) : 0) + (isA2 ? Number(pickValue(audit, ["a2_manday"], 0)) : 0),
+          _logTeam: uniqueTeam
+        };
+      });
+
+      // Update Stats
+      if (statTotalAudits) countUp(statTotalAudits, filtered.length);
+      
+      const totalMandays = filtered.reduce((acc, curr) => acc + (curr._logManday || 0), 0);
+      if (statTotalMandays) countUp(statTotalMandays, totalMandays);
+
+      const leadCount = filtered.filter(f => f._logRole === "Baş Denetçi").length;
+      if (statLeadCount) countUp(statLeadCount, leadCount);
+
+      const stdCounts = filtered.reduce((acc, curr) => {
+        const std = pickValue(curr, ["standart", "standard"], "Diğer");
+        acc[std] = (acc[std] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const topStd = Object.entries(stdCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
+      if (statTopStandard) statTopStandard.textContent = topStd;
+
+      // Update Standard Filter
+      const uniqueStds = [...new Set(filtered.map(f => pickValue(f, ["standart", "standard"], "")))].filter(Boolean).sort();
+      stdFilter.innerHTML = '<option value="">TÜM STANDARTLAR</option>';
+      uniqueStds.forEach(std => {
+        const opt = document.createElement("option");
+        opt.value = std;
+        opt.textContent = std;
+        stdFilter.appendChild(opt);
+      });
+
+      experienceTable.updateData(filtered);
+      
+      auditorInfo.classList.remove("hidden");
+      logContainer.classList.remove("hidden");
+      initialState.classList.add("hidden");
+      exportExcelBtn.disabled = filtered.length === 0;
+      printBtn.disabled = filtered.length === 0;
+    };
+
+    // Event listeners
+    auditorSelect.addEventListener("change", (e) => {
+      const name = (e.target as HTMLSelectElement).value;
+      updateExperienceLog(name);
+    });
+
+    stdFilter.addEventListener("change", (e) => {
+      experienceTable.setFilters({ standard: (e.target as HTMLSelectElement).value });
+    });
+
+    if (searchInput) {
+      searchInput.addEventListener("input", (e) => {
+        experienceTable.setFilters({ search: (e.target as HTMLInputElement).value });
+      });
+    }
+
+    printBtn.addEventListener("click", () => window.print());
+
+    exportExcelBtn.addEventListener("click", () => {
+      const data = experienceTable.getFilteredData().map(item => ({
+        Tarih: item._logDate,
+        Firma: getCompanyDisplayName(item.firma_no),
+        Standart: pickValue(item, ["standart", "standard"], "-"),
+        Tip: pickValue(item, ["denetim_tipi", "denetimTipi"], "-"),
+        Rol: item._logRole,
+        AdamGun: item._logManday,
+        Ekip: (item._logTeam || []).join(", ")
+      }));
+
+      const tableHtml = `
+        <table border="1">
+          <thead>
+            <tr style="background: #f4f4f4;">
+              ${Object.keys(data[0]).map(k => `<th>${k}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(row => `<tr>${Object.values(row).map(v => `<td>${v}</td>`).join("")}</tr>`).join("")}
+          </tbody>
+        </table>
+      `;
+
+      const blob = new Blob([`<html><head><meta charset="utf-8"/></head><body><h2>Denetçi Deneyim Logu: ${currentAuditorName}</h2>${tableHtml}</body></html>`], { type: "application/vnd.ms-excel" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `AuditLog_${normalize(currentAuditorName)}_${new Date().toISOString().slice(0, 10)}.xls`;
+      link.click();
+    });
+
+    // Initial Load
+    void (async () => {
+      // Ensure companies loaded
+      if (!(($companies.get() as any[]) || []).length) {
+        const res = await api.getCompanies();
+        if (res.success) $companies.set(res.data);
+      }
+
+      const [auditorsRes, auditsRes] = await Promise.all([
+        api.getAuditors(),
+        api.getAudits()
+      ]);
+
+      if (auditorsRes.success && Array.isArray(auditorsRes.data)) {
+        auditorsRes.data.sort((a, b) => (a.ad || "").localeCompare(b.ad || "")).forEach(auditor => {
+          const opt = document.createElement("option");
+          const fullName = `${auditor.ad || ""} ${auditor.soyad || ""}`.trim();
+          opt.value = fullName;
+          opt.textContent = fullName;
+          auditorSelect.appendChild(opt);
+        });
+      }
+
+      if (auditsRes.success && Array.isArray(auditsRes.data)) {
+        allAudits = auditsRes.data;
+      }
+    })();
+  }
+
+  initPageCleanup(init, runCleanups);
+</script>
+
+<style is:global>
+  @media print {
+    body { background: white !important; }
+    .print\:hidden { display: none !important; }
+    #auditor-info { margin-top: 0 !important; }
+  }
+</style>

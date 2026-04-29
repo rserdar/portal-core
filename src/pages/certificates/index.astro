@@ -36,6 +36,13 @@ import FilterBar from "../../components/FilterBar.astro";
           <option value="22000">ISO 22000</option>
           <option value="27001">ISO 27001</option>
         </select>
+        
+        <select id="sort-filter" class="hidden md:block bg-surface-hover border border-border-main rounded-xl px-3 py-2.5 text-xs font-bold text-muted outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer">
+          <option value="sertifika_desc">Sertifika Tarihi (Yeni → Eski)</option>
+          <option value="sertifika_asc">Sertifika Tarihi (Eski → Yeni)</option>
+          <option value="gozetim_desc">Gözetim Tarihi (Yeni → Eski)</option>
+          <option value="gozetim_asc">Gözetim Tarihi (Eski → Yeni)</option>
+        </select>
       </div>
 
       <div slot="actions" class="flex items-center gap-2 print:hidden">
@@ -110,6 +117,7 @@ import FilterBar from "../../components/FilterBar.astro";
     const printBtn = document.getElementById("print-btn") as HTMLButtonElement | null;
     const globalSearch = document.getElementById("global-search") as HTMLInputElement | null;
     const standardFilter = document.getElementById("standard-filter") as HTMLSelectElement | null;
+    const sortFilter = document.getElementById("sort-filter") as HTMLSelectElement | null;
     const statusFilter = document.getElementById("status-filter") as HTMLSelectElement | null;
     const syncIndicator = document.getElementById("sync-indicator");
     const exportExcelBtn = document.getElementById("export-excel-btn") as HTMLButtonElement | null;
@@ -131,6 +139,7 @@ import FilterBar from "../../components/FilterBar.astro";
       !printBtn ||
       !globalSearch ||
       !standardFilter ||
+      !sortFilter ||
       !statusFilter ||
       !exportExcelBtn ||
       !pageSizeSelect ||
@@ -453,10 +462,28 @@ import FilterBar from "../../components/FilterBar.astro";
 
         return matchSearch && matchStd && matchStatus && matchConsultant && matchDate;
       },
-      sortFn: (a, b) => {
-        const urgencyDiff = getUrgencyScore(b) - getUrgencyScore(a);
-        if (urgencyDiff !== 0) return urgencyDiff;
-        return getSortableTimestamp(b) - getSortableTimestamp(a);
+      sortFn: (a, b, filters) => {
+        const sortType = filters.sort || "sertifika_desc";
+        
+        // Urgency score only applies to default view (sertifika_desc)
+        if (sortType === "sertifika_desc") {
+          const urgencyDiff = getUrgencyScore(b) - getUrgencyScore(a);
+          if (urgencyDiff !== 0) return urgencyDiff;
+        }
+
+        let valA = 0;
+        let valB = 0;
+
+        if (sortType.startsWith("sertifika")) {
+          valA = parseDateValue(pickValue(a, ["sertifika_tarihi", "gst", "Sertifika Tarihi"], ""))?.getTime() || 0;
+          valB = parseDateValue(pickValue(b, ["sertifika_tarihi", "gst", "Sertifika Tarihi"], ""))?.getTime() || 0;
+        } else if (sortType.startsWith("gozetim")) {
+          valA = parseDateValue(pickValue(a, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], ""))?.getTime() || 0;
+          valB = parseDateValue(pickValue(b, ["gozetim_tarihi", "goz", "Sertifika Gözetim Tarihi"], ""))?.getTime() || 0;
+        }
+
+        if (sortType.endsWith("_desc")) return valB - valA;
+        return valA - valB;
       },
       onStateChange: setTableState,
       onRender: renderRows,
@@ -506,6 +533,7 @@ import FilterBar from "../../components/FilterBar.astro";
 
     bindFilter(globalSearch, "input", (event) => certificateTable.setFilters({ search: (event.target as HTMLInputElement).value }));
     bindFilter(standardFilter, "change", (event) => certificateTable.setFilters({ standard: (event.target as HTMLSelectElement).value }));
+    bindFilter(sortFilter, "change", (event) => certificateTable.setFilters({ sort: (event.target as HTMLSelectElement).value }));
     bindFilter(statusFilter, "change", (event) => certificateTable.setFilters({ status: (event.target as HTMLSelectElement).value }));
     bindFilter(consultantFilter, "change", (event) => certificateTable.setFilters({ consultant: (event.target as HTMLSelectElement).value }));
     bindFilter(dateColumnFilter, "change", (event) => certificateTable.setFilters({ dateColumn: (event.target as HTMLSelectElement).value }));

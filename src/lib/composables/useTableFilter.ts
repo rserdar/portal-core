@@ -4,7 +4,7 @@ interface TableFilterOptions<T> {
   data: readonly T[];
   pageSize?: number;
   filterFn: (item: T, filters: Record<string, string>) => boolean;
-  sortFn?: (a: T, b: T) => number;
+  sortFn?: (a: T, b: T, filters: Record<string, string>) => number;
   onStateChange?: (state: 'loading' | 'empty' | 'ready') => void;
   onRender: (items: T[]) => void;
 }
@@ -73,7 +73,7 @@ export function useTableFilter<T>(options: TableFilterOptions<T>) {
   function getFilteredData() {
     let filtered = sourceData.filter(item => options.filterFn(item, filters));
     if (options.sortFn) {
-      filtered = filtered.sort(options.sortFn);
+      filtered = filtered.sort((a, b) => options.sortFn!(a, b, filters));
     }
     return filtered;
   }

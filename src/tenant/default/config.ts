@@ -38,6 +38,7 @@ const tenantConfig: TenantConfig = {
       icon: "mdi:clipboard-check-outline",
       dropdown: [
         { name: "Denetim Planla", href: "/audits/add", icon: "mdi:calendar-plus" },
+        { name: "Denetçi Logu", href: "/audits/auditors", icon: "mdi:account-clock-outline" },
       ],
     },
     {
