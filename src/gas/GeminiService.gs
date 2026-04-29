@@ -129,7 +129,7 @@ const GeminiService = {
         return { success: false, error: "GEMINI_API_KEY_MISSING" };
       }
 
-      const model = this._getConfig("model", "gemini-2.5-flash");
+      const model = this._getConfig("model", "gemini-flash-latest");
       const temperature = this._parseNumber(this._getConfig("temperature", "0.25"), 0.25);
       const maxOutputTokens = Math.max(
         512,

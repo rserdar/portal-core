@@ -1,105 +1,110 @@
 /**
- * 🛠️ ManualSyncService: Sheets → D1 Manuel Senkronizasyon (Faz 7-C)
- * 
- * Sheets üzerinde yapılan manuel değişiklikleri D1'e göndermek için kullanılır.
+ * 🛠️ ManualSyncService: Bağımsız Script Destekli Servisler
  */
 const ManualSyncService = {
-  _appName: function() {
-    const value = PropertiesService.getScriptProperties().getProperty("APP_NAME");
-    return value && String(value).trim() ? String(value).trim() : "Portal";
+  /**
+   * Gemini ve diğer Google servisleri için yetkilendirme penceresini tetikler.
+   * Editörden "authorizeServices" seçilip çalıştırılmalıdır.
+   */
+  authorizeServices: function() {
+    Logger.log("🔐 Yetkilendirme işlemi başlatıldı...");
+    
+    // Google'ın onay penceresini zorla tetiklemesi için doğrudan çağırıyoruz
+    LanguageApp.translate("onay", "tr", "en");
+    UrlFetchApp.fetch("https://www.google.com", { muteHttpExceptions: true });
+    DriveApp.getRootFolder().getName();
+    GmailApp.getAliases();
+    
+    Logger.log("✅ Yetkilendirme başarıyla tamamlandı. Tüm servisler kullanıma hazır.");
   },
 
   /**
-   * Özel menü ekleme.
+   * Gemini'nin çalışıp çalışmadığını test eder ve bir örnek çıktı üretir.
    */
-  addMenu: function() {
-    try {
-      const ui = SpreadsheetApp.getUi();
-      ui.createMenu(`🛡️ ${this._appName()}`)
-        .addItem("D1'e Senkronize Et (Sadece Bu Sayfa)", "syncCurrentSheetToD1")
-        .addSeparator()
-        .addItem("Gece Süpürmesini Çalıştır (D1 → Sheets)", "runDailyBackup")
-        .addToUi();
-    } catch (e) {
-      Logger.log("Menu error (could be permission): " + e);
-    }
-  },
-
-  /**
-   * Aktif sayfadaki tüm veriyi D1'e gönderir (Basit yaklaşım).
-   * İleride sadece değişenleri bulmak için last_manual_sync_at kullanılabilir.
-   */
-  syncCurrentSheetToD1: function() {
-    const sheet = SpreadsheetApp.getActiveSheet();
-    const sheetName = sheet.getName();
+  testGemini: function() {
+    Logger.log("🚀 Gemini Testi Başlatıldı...");
     
-    // Sadece desteklenen tabloları senkronize et
-    const validSheets = ["companies", "certificates", "audits", "tests", "proformas"];
-    if (!validSheets.includes(sheetName)) {
-      SpreadsheetApp.getUi().alert("Bu sayfa otomatik senkronizasyon için desteklenmiyor.");
-      return;
-    }
-
-    const ui = SpreadsheetApp.getUi();
-    const response = ui.alert("Senkronizasyon", `${sheetName} sayfasındaki veriler Cloudflare D1 üzerine yazılacak. Emin misiniz?`, ui.ButtonSet.YES_NO);
-    
-    if (response !== ui.Button.YES) return;
-
     try {
-      const data = BaseService.getDataAsObjects(sheetName);
-      if (!data || data.length === 0) {
-        ui.alert("Gönderilecek veri bulunamadı.");
+      const apiKey = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
+      if (!apiKey) {
+        Logger.log("❌ HATA: GEMINI_API_KEY bulunamadı! Proje Ayarları -> Komut Dosyası Özellikleri kısmına ekleyin.");
         return;
       }
 
-      // Worker'a toplu gönderim
-      // Not: handleSheetEdit genelde tekil çalışır ama biz burada toplu gönderim yapacağız.
-      // Basitlik için her satırı tek tek veya Worker'da bir bulkSync endpoint'i ile güncelleyebiliriz.
-      // Şimdilik bulkSync mantığına benzer bir payload hazırlayalım.
-      
-      const props = PropertiesService.getScriptProperties();
-      const workerUrl = props.getProperty("WORKER_URL");
-      const apiKey = props.getProperty("API_KEY");
-
-      const payload = {
-        action: "bulkSync", // Mevcut bulkSync D1'e yazar
-        apiKey: apiKey,
-        params: {
-          scope: [sheetName],
-          payload: {
-            [sheetName]: data
-          }
+      const testPayload = {
+        standard: "ISO 9001:2015",
+        context: {
+          companyName: "Antigravity Teknoloji A.Ş.",
+          activity: "Yapay zeka tabanlı yazılım geliştirme ve siber güvenlik."
         }
       };
 
-      const res = UrlFetchApp.fetch(workerUrl, {
-        method: "POST",
-        contentType: "application/json",
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true
-      });
+      Logger.log("📡 Gemini'ye istek gönderiliyor...");
+      const result = GeminiService.suggestCertificateClassification(testPayload);
 
-      const result = JSON.parse(res.getContentText());
       if (result.success) {
-        ui.alert("Başarılı", `${data.length} kayıt D1 ile eşitlendi.`, ui.Button.OK);
+        const data = result.data;
+        const suggestion = data.suggestions[0] || {};
+        
+        Logger.log("✅ GEMİNİ BAĞLANTISI BAŞARILI!");
+        Logger.log("🤖 Model: " + data.model);
+        Logger.log("📝 Özet: " + data.summary);
+        Logger.log("--- Örnek Öneri ---");
+        Logger.log("🔹 EA: " + (suggestion.ea || "-"));
+        Logger.log("🔹 NACE: " + (suggestion.nace || "-"));
+        Logger.log("🔹 Kapsam Taslağı: " + (suggestion.scopeDraft || "-"));
       } else {
-        ui.alert("Hata", "D1 güncellenemedi: " + (result.error || "Bilinmeyen hata"), ui.Button.OK);
+        Logger.log("❌ Gemini Hatası: " + result.error);
       }
 
     } catch (e) {
-      BaseService.logError("syncCurrentSheetToD1", e);
-      ui.alert("Sistem Hatası: " + e.message);
+      Logger.log("❌ Sistem Hatası: " + e.message);
+    }
+  },
+
+  /**
+   * API anahtarının erişebildiği tüm modelleri listeler.
+   */
+  listModels: function() {
+    Logger.log("🔍 Erişilebilir Gemini Modelleri Taranıyor...");
+    
+    try {
+      const apiKey = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY");
+      if (!apiKey) {
+        Logger.log("❌ HATA: GEMINI_API_KEY bulunamadı!");
+        return;
+      }
+
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+      const res = UrlFetchApp.fetch(endpoint, { muteHttpExceptions: true });
+      const data = JSON.parse(res.getContentText());
+
+      if (data.models) {
+        const modelNames = data.models.map(m => m.name.replace("models/", ""));
+        Logger.log("✅ BULUNAN MODELLER:");
+        Logger.log(modelNames.join("\n"));
+        Logger.log("-------------------");
+        Logger.log("Lütfen yukarıdaki listeden 'gemini-1.5' veya 'gemini-pro' içeren birini GeminiService içindeki varsayılan model adıyla değiştirin.");
+      } else {
+        Logger.log("❌ Model listesi alınamadı: " + res.getContentText());
+      }
+    } catch (e) {
+      Logger.log("❌ Sistem Hatası: " + e.message);
     }
   }
 };
 
 /**
- * Entry points for UI
+ * Editörden çalıştırılacak giriş noktaları
  */
-function onOpen() {
-  ManualSyncService.addMenu();
+function authorizeServices() {
+  ManualSyncService.authorizeServices();
 }
 
-function syncCurrentSheetToD1() {
-  ManualSyncService.syncCurrentSheetToD1();
+function testGemini() {
+  ManualSyncService.testGemini();
+}
+
+function listModels() {
+  ManualSyncService.listModels();
 }
