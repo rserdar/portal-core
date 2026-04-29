@@ -6,6 +6,51 @@
  */
 
 const BaseService = {
+  _runtimeContext: null,
+
+  setRuntimeContext: function(params) {
+    const payload = params && typeof params === "object" ? params : {};
+    const googleConfig = payload.googleConfig && typeof payload.googleConfig === "object"
+      ? payload.googleConfig
+      : {};
+    const featureFlags = payload.featureFlags && typeof payload.featureFlags === "object"
+      ? payload.featureFlags
+      : {};
+    this._runtimeContext = { googleConfig: googleConfig, featureFlags: featureFlags };
+  },
+
+  clearRuntimeContext: function() {
+    this._runtimeContext = null;
+  },
+
+  getRuntimeContext: function() {
+    return this._runtimeContext || { googleConfig: {}, featureFlags: {} };
+  },
+
+  getGoogleConfig: function(service, key, fallback) {
+    const ctx = this.getRuntimeContext();
+    const serviceName = String(service || "").trim().toLowerCase();
+    const configKey = String(key || "").trim().toLowerCase();
+    const serviceBucket = ctx.googleConfig && ctx.googleConfig[serviceName];
+    const value = serviceBucket && Object.prototype.hasOwnProperty.call(serviceBucket, configKey)
+      ? serviceBucket[configKey]
+      : null;
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return String(value).trim();
+    }
+    return fallback;
+  },
+
+  getFeatureFlag: function(key, fallback) {
+    const ctx = this.getRuntimeContext();
+    const raw = ctx.featureFlags ? ctx.featureFlags[String(key || "").trim()] : undefined;
+    if (raw === undefined || raw === null || String(raw).trim() === "") return fallback;
+    const normalized = String(raw).trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) return true;
+    if (["0", "false", "no", "off"].includes(normalized)) return false;
+    return fallback;
+  },
+
   /**
    * Başlık + satır verisinden deterministik bir etag üretir.
    * Çakışma kontrolünde (optimistic concurrency) kullanılır.
@@ -60,7 +105,8 @@ const BaseService = {
       const active = SpreadsheetApp.getActiveSpreadsheet();
       if (active) return active;
 
-      const id = PropertiesService.getScriptProperties().getProperty("SPREADSHEET_ID");
+      const id = this.getGoogleConfig("sheets", "spreadsheet_id", null)
+        || PropertiesService.getScriptProperties().getProperty("SPREADSHEET_ID");
       if (id) return SpreadsheetApp.openById(id);
 
       throw new Error("Aktif spreadsheet bulunamadı ve SPREADSHEET_ID tanımlanmamış.");

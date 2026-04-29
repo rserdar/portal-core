@@ -1,0 +1,555 @@
+---
+import SettingsLayout from "../../layouts/SettingsLayout.astro";
+
+const SYNC_SCOPE_OPTIONS = [
+  { value: "companies", label: "Firmalar" },
+  { value: "certificates", label: "Sertifikalar" },
+  { value: "audits", label: "Denetimler" },
+  { value: "tests", label: "Testler" },
+  { value: "proformas", label: "Proformalar" },
+];
+
+const MASTER_SYNC_OPTIONS = [
+  { value: "standards", label: "Standartlar" },
+  { value: "auditors", label: "Denetçiler" },
+  { value: "consultants", label: "Danışmanlar" },
+  { value: "testdocs", label: "TestDoc" },
+  { value: "sysdocs", label: "SysDoc" },
+];
+---
+
+<SettingsLayout title="Yedekleme & Senkronizasyon">
+  <!-- Header -->
+  <div class="bg-surface border border-border-main rounded-2xl p-6 shadow-xl">
+    <div>
+      <p class="text-xs uppercase tracking-[0.2em] text-muted">Yedekleme & Senkronizasyon</p>
+      <h1 class="text-2xl font-extrabold mt-1">Yedekleme & Senkronizasyon</h1>
+      <p class="text-sm text-muted mt-2">
+        Google Sheets'ten D1'e veri çekme, SQL yedekleme/geri yükleme ve senkronizasyon izleme.
+      </p>
+    </div>
+  </div>
+
+  <!-- İşlem Kapsamı -->
+  <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+    <div class="border-b border-border-main pb-4">
+      <p class="text-xs uppercase tracking-[0.2em] text-muted">Aksiyon Kapsamı</p>
+      <h2 class="text-xl font-extrabold mt-1">İşlem Kapsamı Seçimi</h2>
+      <p class="text-sm text-muted mt-1">Aşağıdaki işlemlerin hangi tablolara uygulanacağını seçin.</p>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+      {SYNC_SCOPE_OPTIONS.map((scope) => (
+        <label class="flex items-center gap-2 p-3 rounded-xl bg-surface border border-border-main cursor-pointer hover:border-indigo-500 transition-colors">
+          <input type="checkbox" name="sync-scope" value={scope.value} checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+          <span class="text-sm font-medium">{scope.label}</span>
+        </label>
+      ))}
+    </div>
+    <div>
+      <label class="flex items-center gap-3 mb-2 cursor-pointer">
+        <input id="master-sync-all" type="checkbox" name="sync-scope" value="master" checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+        <span class="text-sm font-bold">Ana Veri</span>
+      </label>
+      <p class="text-xs text-muted ml-7 mb-2">
+        Ana Veri kutusu tüm alt başlıkları birlikte seçer. İstersen sadece belirli ana veri tablolarını güncelleyip gereksiz D1 yazımını azaltabilirsin.
+      </p>
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 ml-7">
+        {MASTER_SYNC_OPTIONS.map((scope) => (
+          <label class="flex items-center gap-2 p-3 rounded-xl bg-surface border border-border-main cursor-pointer hover:border-indigo-500 transition-colors">
+            <input type="checkbox" name="master-sync-scope" value={scope.value} checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+            <span class="text-sm font-medium">{scope.label}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- Sheets Senkronizasyonu -->
+  <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 border-b border-border-main pb-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-muted">Google Sheets → D1</p>
+        <h2 class="text-xl font-extrabold mt-1">Sheets Senkronizasyonu</h2>
+        <p class="text-sm text-muted mt-2">
+          Verileri Google Sheets'ten Cloudflare D1'e çeker. Seçili kapsamları günceller.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="smart-sync-btn" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-sm font-bold shadow-lg shadow-teal-600/20 active:scale-95 transition-all">
+          Hızlı Sync
+        </button>
+        <button id="ops-sync-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/20 active:scale-95 transition-all">
+          Seçili Verileri Sheets'ten Çek
+        </button>
+      </div>
+    </div>
+    <div id="sync-status-box" class="hidden rounded-xl px-4 py-3 text-sm font-medium border"></div>
+  </div>
+
+  <!-- SQL Yedekleme / Geri Yükleme -->
+  <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+    <div class="border-b border-border-main pb-4">
+      <p class="text-xs uppercase tracking-[0.2em] text-muted">D1 &lt;-&gt; SQL</p>
+      <h2 class="text-xl font-extrabold mt-1">SQL Yedekleme / Geri Yükleme</h2>
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      <button id="export-backup-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-lg shadow-emerald-600/20 active:scale-95 transition-all">
+        D1 Veritabanını .sql Olarak Yedekle
+      </button>
+    </div>
+
+    <div id="backup-status-box" class="hidden rounded-xl px-4 py-3 text-sm font-medium animate-in fade-in slide-in-from-top-2 duration-300"></div>
+
+    <div class="flex items-center gap-3 pt-2 border-t border-border-main">
+      <input id="import-file-input" type="file" accept=".sql" class="text-sm text-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-surface-hover file:text-primary hover:file:bg-surface cursor-pointer" />
+      <button id="import-backup-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-rose-600/20 active:scale-95 transition-all whitespace-nowrap" disabled>
+        Geri Yükle (Tam Kapsam)
+      </button>
+    </div>
+  </div>
+
+  <!-- Senkronizasyon İzleme -->
+  <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 border-b border-border-main pb-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-muted">sync_log</p>
+        <h2 class="text-xl font-extrabold mt-1">Senkronizasyon İzleme</h2>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="sync-log-retry-btn" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold">
+          Seçilileri Yeniden Dene
+        </button>
+        <select id="sync-log-status-filter" class="bg-surface-hover border border-border-main rounded-xl px-3 py-2 text-sm">
+          <option value="">Tümü</option>
+          <option value="FAIL">FAIL</option>
+          <option value="CRASH">CRASH</option>
+          <option value="RECOVERED">RECOVERED</option>
+        </select>
+        <button id="sync-log-refresh-btn" class="px-4 py-2 rounded-xl bg-surface-hover border border-border-main text-sm font-bold">
+          Yenile
+        </button>
+      </div>
+    </div>
+
+    <div id="sync-log-status-box" class="hidden rounded-xl px-3 py-2 text-sm"></div>
+
+    <div class="overflow-auto border border-border-main rounded-xl">
+      <table class="min-w-full text-sm">
+        <thead class="bg-surface-hover">
+          <tr>
+            <th class="px-3 py-2 border-b border-border-main w-8">
+              <input id="sync-log-select-all" type="checkbox" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+            </th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Tarih</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Action</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Entity</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">ID</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Durum</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Hata</th>
+          </tr>
+        </thead>
+        <tbody id="sync-log-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bakım & Kurtarma -->
+  <div class="bg-surface border border-amber-500/20 rounded-2xl p-5 shadow-xl space-y-4 bg-amber-500/5">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-amber-500 font-bold">Bakım & Kurtarma</p>
+        <h2 class="text-xl font-extrabold mt-1 text-main">Sistem İndeks Onarımı</h2>
+        <p class="text-sm text-muted mt-2">
+          Ana sayfa istatistikleri veya listeler eksik/hatalı görünüyorsa, D1'deki verileri tarayarak dashboard istatistiklerini yeniden inşa eder.
+          <span class="text-amber-500 font-medium">Bu işlem Google Sheets'ten veri çekmez, mevcut D1 verisini düzenler.</span>
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="deep-repair-btn" class="px-6 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold shadow-lg shadow-amber-600/20 active:scale-95 transition-all">
+          İstatistikleri D1'den Yeniden Hesapla
+        </button>
+      </div>
+    </div>
+  </div>
+</SettingsLayout>
+
+<script>
+  import { api } from "../../lib/api";
+  import { toast } from "../../lib/toast";
+  import { SyncManager } from "../../lib/sync";
+
+  type MasterScopeType = "standards" | "auditors" | "consultants" | "testdocs" | "sysdocs";
+  const MASTER_SCOPE_OPTIONS = ["standards", "auditors", "consultants", "testdocs", "sysdocs"] as const;
+
+  let cleanupTasks: Array<() => void> = [];
+  function registerCleanup(fn: () => void) { cleanupTasks.push(fn); }
+  function runCleanups() {
+    cleanupTasks.forEach(fn => { try { fn(); } catch(e) {} });
+    cleanupTasks = [];
+  }
+
+  let selectedBackupPayload: string | null = null;
+
+  function escapeHtml(value: any): string {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+  }
+
+  function setStatusBox(boxId: string, message: string, type: "info" | "error" | "success") {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    box.textContent = message;
+    box.classList.remove("hidden", "bg-red-500/15", "text-red-400", "border-red-500/30", "bg-emerald-500/10", "text-emerald-400", "border-emerald-500/30", "bg-indigo-500/10", "text-indigo-400", "border-indigo-500/30");
+    box.classList.add("border");
+    if (type === "error") box.classList.add("bg-red-500/15", "text-red-400", "border-red-500/30");
+    else if (type === "success") box.classList.add("bg-emerald-500/10", "text-emerald-400", "border-emerald-500/30");
+    else box.classList.add("bg-indigo-500/10", "text-indigo-400", "border-indigo-500/30");
+  }
+
+  function setSyncStatus(m: string, t: "info" | "error" | "success" = "info") { setStatusBox("sync-status-box", m, t); }
+  function setBackupStatus(m: string, t: "info" | "error" | "success" = "info") { setStatusBox("backup-status-box", m, t); }
+  function setSyncLogStatus(m: string, t: "info" | "error" | "success" = "info") { setStatusBox("sync-log-status-box", m, t); }
+
+  function setButtonBusy(btn: HTMLButtonElement | null, busy: boolean, idleText: string, busyText = "İşleniyor...") {
+    if (!btn) return;
+    btn.disabled = busy;
+    btn.textContent = busy ? busyText : idleText;
+    btn.classList.toggle("animate-pulse", busy);
+    btn.classList.toggle("opacity-80", busy);
+  }
+
+  function downloadFile(filename: string, content: string, type = "text/plain") {
+    const blob = new Blob([content], { type: type + ";charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function getSelectedScopes(): string[] {
+    return Array.from(document.querySelectorAll('input[name="sync-scope"]:checked'))
+      .map(el => (el as HTMLInputElement).value);
+  }
+
+  function getSelectedMasterTypes(): MasterScopeType[] {
+    return Array.from(document.querySelectorAll('input[name="master-sync-scope"]:checked'))
+      .map(el => (el as HTMLInputElement).value)
+      .filter((v): v is MasterScopeType => MASTER_SCOPE_OPTIONS.includes(v as MasterScopeType));
+  }
+
+  function getSyncSelection() {
+    const scopes = getSelectedScopes().filter(s => s !== "master");
+    const masterTypes = getSelectedMasterTypes();
+    if (masterTypes.length) scopes.push("master");
+    return { scopes, masterTypes };
+  }
+
+  function syncMasterParentState() {
+    const parent = document.getElementById("master-sync-all") as HTMLInputElement | null;
+    if (!parent) return;
+    const children = Array.from(document.querySelectorAll('input[name="master-sync-scope"]')) as HTMLInputElement[];
+    const checkedCount = children.filter(c => c.checked).length;
+    parent.checked = checkedCount > 0;
+    parent.indeterminate = checkedCount > 0 && checkedCount < children.length;
+  }
+
+  function setMasterChildrenChecked(checked: boolean) {
+    const children = Array.from(document.querySelectorAll('input[name="master-sync-scope"]')) as HTMLInputElement[];
+    children.forEach(c => { c.checked = checked; });
+    syncMasterParentState();
+  }
+
+  function formatSyncLogDate(ts: string | number | null | undefined) {
+    const numeric = Number(ts);
+    if (!Number.isFinite(numeric) || numeric <= 0) return "-";
+    return new Date(numeric * 1000).toLocaleString("tr-TR");
+  }
+
+  function renderSyncLog(rows: any[]) {
+    const syncLogTbody = document.getElementById("sync-log-tbody");
+    if (!syncLogTbody) return;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      syncLogTbody.innerHTML = `<tr><td colspan="7" class="px-3 py-6 text-center text-sm text-muted">Kayıt bulunamadı.</td></tr>`;
+      return;
+    }
+    syncLogTbody.innerHTML = rows.map(row => {
+      const status = String(row.status || "-").toUpperCase();
+      const statusClass = status === "FAIL" || status === "CRASH"
+        ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+        : status === "RECOVERED"
+          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+          : "bg-surface-hover text-muted border border-border-main";
+      return `
+        <tr class="border-b border-border-main/60">
+          <td class="px-3 py-2 whitespace-nowrap">
+            <input type="checkbox" class="sync-log-checkbox w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" data-id="${escapeHtml(row.id || "")}" ${status === "FAIL" || status === "CRASH" ? "" : "disabled"} />
+          </td>
+          <td class="px-3 py-2 whitespace-nowrap">${formatSyncLogDate(row.created_at)}</td>
+          <td class="px-3 py-2 whitespace-nowrap font-semibold">${escapeHtml(row.action || "-")}</td>
+          <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(row.entity_type || "-")}</td>
+          <td class="px-3 py-2 whitespace-nowrap">${escapeHtml(row.entity_id || "-")}</td>
+          <td class="px-3 py-2 whitespace-nowrap"><span class="inline-flex rounded-lg px-2 py-1 text-xs font-bold ${statusClass}">${escapeHtml(status)}</span></td>
+          <td class="px-3 py-2 text-xs text-muted">${escapeHtml(row.error_message || "-")}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  async function loadSyncLog() {
+    const statusFilter = document.getElementById("sync-log-status-filter") as HTMLSelectElement | null;
+    const status = statusFilter?.value || undefined;
+    setSyncLogStatus("sync_log kayıtları yükleniyor...", "info");
+    const res = await api.getSyncLog(20, status);
+    if (!res.success) {
+      setSyncLogStatus("sync_log yüklenemedi: " + (res.error || "Bilinmeyen hata"), "error");
+      renderSyncLog([]);
+      return;
+    }
+    renderSyncLog(Array.isArray(res.data) ? res.data : []);
+    setSyncLogStatus("sync_log kayıtları güncellendi.", "success");
+  }
+
+  function getSelectedSyncLogIds(): number[] {
+    return Array.from(document.querySelectorAll(".sync-log-checkbox:checked"))
+      .map(el => Number((el as HTMLInputElement).dataset.id || "0"))
+      .filter(id => Number.isInteger(id) && id > 0);
+  }
+
+  function getScopeLabel(scope: string) {
+    return scope === "companies" ? "Firmalar" : scope === "certificates" ? "Sertifikalar" :
+           scope === "audits" ? "Denetimler" : scope === "tests" ? "Testler" :
+           scope === "proformas" ? "Proformalar" : "Ana Veri";
+  }
+
+  function getMasterScopeLabel(scope: MasterScopeType) {
+    return scope === "standards" ? "Standartlar" : scope === "auditors" ? "Denetçiler" :
+           scope === "consultants" ? "Danışmanlar" : scope === "testdocs" ? "TestDoc" : "SysDoc";
+  }
+
+  function initPage() {
+    runCleanups();
+
+    const addEv = (id: string, ev: string, fn: any) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener(ev, fn);
+      registerCleanup(() => el.removeEventListener(ev, fn));
+    };
+
+    addEv("master-sync-all", "change", (e: Event) => {
+      setMasterChildrenChecked((e.target as HTMLInputElement).checked);
+    });
+    const masterCheckboxes = Array.from(document.querySelectorAll('input[name="master-sync-scope"]')) as HTMLInputElement[];
+    masterCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener("change", syncMasterParentState);
+      registerCleanup(() => checkbox.removeEventListener("change", syncMasterParentState));
+    });
+    syncMasterParentState();
+
+    addEv("smart-sync-btn", "click", async () => {
+      const btn = document.getElementById("smart-sync-btn") as HTMLButtonElement | null;
+      const idleText = "Hızlı Sync";
+      setButtonBusy(btn, true, idleText, "Kontrol ediliyor...");
+      setSyncStatus("Hızlı sync başlatıldı — sadece değişen veriler çekiliyor...", "info");
+      try {
+        const res = await api.smartSync();
+        if (!res.success) throw new Error(res.error || "Hızlı sync başarısız");
+        if ((res as any).isDelta) {
+          const { companies = 0, certificates = 0, audits = 0, tests = 0, proformas = 0 } = (res as any).written || {};
+          const total = companies + certificates + audits + tests + proformas;
+          if (total === 0) {
+            setSyncStatus("Değişiklik bulunamadı — D1 zaten güncel.", "success");
+            toast.success("Sistem zaten güncel, yazılacak değişiklik yok.");
+          } else {
+            setSyncStatus(`Hızlı sync tamamlandı: ${total} satır güncellendi.`, "success");
+            toast.success(`${total} satır güncellendi.`);
+          }
+        } else {
+          setSyncStatus("Tam senkronizasyon tamamlandı (fallback).", "success");
+          toast.success("Tam senkronizasyon tamamlandı.");
+        }
+        await SyncManager.forceSync();
+      } catch (e: any) {
+        setSyncStatus("Hızlı sync hatası: " + e.message, "error");
+        toast.error("Hızlı sync başarısız: " + e.message);
+      } finally {
+        setButtonBusy(btn, false, idleText);
+      }
+    });
+
+    addEv("ops-sync-btn", "click", async () => {
+      const { scopes, masterTypes } = getSyncSelection();
+      if (!scopes.length) {
+        setSyncStatus("Lütfen en az bir kapsam seçin.", "error");
+        toast.warning("Lütfen senkronize edilecek en az bir kapsam seçin.");
+        return;
+      }
+      const btn = document.getElementById("ops-sync-btn") as HTMLButtonElement | null;
+      const idleText = "Seçili Verileri Sheets'ten Çek";
+      setButtonBusy(btn, true, idleText, "Senkronize Ediliyor...");
+      const selectionLabels = scopes.flatMap(scope => {
+        if (scope !== "master") return [getScopeLabel(scope)];
+        return masterTypes.map(type => `Ana Veri / ${getMasterScopeLabel(type)}`);
+      });
+      toast.info(`${selectionLabels.join(", ")} için senkronizasyon başlatıldı...`);
+      try {
+        for (const scope of scopes) {
+          const label = getScopeLabel(scope);
+          if (scope === "master") {
+            const masterLabel = masterTypes.map(getMasterScopeLabel).join(", ");
+            setSyncStatus(`Ana veri alt başlıkları çekiliyor: ${masterLabel}`, "info");
+            let res = await api.syncMasterData(masterTypes);
+            if (!res.success && res.error === "BULK_SYNC_CONFIRMATION_REQUIRED") {
+              if (!confirm(`Bu işlem yaklaşık ${((res as any).rowCount || 0)} satır yazacak. Devam edilsin mi?`)) {
+                throw new Error("Ana veri senkronizasyonu kullanıcı tarafından iptal edildi.");
+              }
+              res = await api.bulkSync({ scope: ["master"], masterTypes, forceLargeSync: true });
+            }
+            if (!res.success) throw new Error("Master veri senkronizasyonu başarısız: " + (res.error || "Bilinmeyen hata"));
+            const checkbox = document.querySelector(`input[name="sync-scope"][value="master"]`) as HTMLInputElement | null;
+            if (checkbox) checkbox.checked = false;
+            setMasterChildrenChecked(false);
+            continue;
+          }
+          setSyncStatus(`${label} çekiliyor...`, "info");
+          let res = await api.bulkSync({ scope: [scope] });
+          if (!res.success && res.error === "BULK_SYNC_CONFIRMATION_REQUIRED") {
+            if (!confirm(`Bu işlem yaklaşık ${((res as any).rowCount || 0)} satır yazacak. Devam edilsin mi?`)) {
+              throw new Error(`${label} senkronizasyonu kullanıcı tarafından iptal edildi.`);
+            }
+            res = await api.bulkSync({ scope: [scope], forceLargeSync: true });
+          }
+          if (!res.success) throw new Error(`${label} senkronizasyonu başarısız: ${res.error || "Bilinmeyen hata"}`);
+          const checkbox = document.querySelector(`input[name="sync-scope"][value="${scope}"]`) as HTMLInputElement | null;
+          if (checkbox) checkbox.checked = false;
+        }
+        setSyncStatus("Tüm işlemler başarıyla tamamlandı.", "success");
+        toast.success("Tüm seçili senkronizasyon işlemleri başarıyla tamamlandı!");
+        await SyncManager.forceSync();
+      } catch (err: any) {
+        setSyncStatus("Hata: " + err.message, "error");
+        toast.error("İşlem sırasında bir hata oluştu: " + err.message);
+      } finally {
+        setButtonBusy(btn, false, idleText, "Senkronize Ediliyor...");
+      }
+    });
+
+    addEv("export-backup-btn", "click", async () => {
+      const topLevelScopes = getSelectedScopes().filter(s => s !== "master");
+      const masterTypes = getSelectedMasterTypes();
+      const scope = masterTypes.length ? [...topLevelScopes, "master"] : topLevelScopes;
+      if (!scope.length) {
+        setBackupStatus("Lütfen yedeklemek istediğiniz kapsamları seçin.", "error");
+        return;
+      }
+      setBackupStatus("[" + scope.join(", ") + "] kapsamı için D1 SQL yedek paketi hazırlanıyor...", "info");
+      const res = await api.exportData(scope, masterTypes);
+      if (!res.success || !(res as any).sql) {
+        setBackupStatus("Dışa aktarma başarısız: " + (res.error || "Bilinmeyen hata"), "error");
+        return;
+      }
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      downloadFile("mc-d1-backup-" + stamp + ".sql", (res as any).sql, "text/plain");
+      setBackupStatus("D1 SQL yedeği indirildi (" + scope.length + " kategori).", "success");
+    });
+
+    const fileInput = document.getElementById("import-file-input") as HTMLInputElement | null;
+    const iBtn = document.getElementById("import-backup-btn") as HTMLButtonElement | null;
+    if (fileInput) {
+      addEv("import-file-input", "change", async (event: Event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        selectedBackupPayload = null;
+        if (iBtn) iBtn.disabled = true;
+        if (!file) { setBackupStatus("İçeri aktarma için bir SQL dosyası (.sql) seçin.", "info"); return; }
+        try {
+          selectedBackupPayload = await file.text();
+          if (iBtn) iBtn.disabled = false;
+          setBackupStatus(`SQL yedek dosyası hazır: ${file.name}. 'Geri Yükle' butonuna basarak işlemi başlatabilirsin.`, "success");
+        } catch {
+          setBackupStatus("Seçilen dosya okunamadı.", "error");
+        }
+      });
+    }
+
+    addEv("import-backup-btn", "click", async () => {
+      if (!selectedBackupPayload) { setBackupStatus("Önce geçerli bir .sql dosyası seçin.", "error"); return; }
+      if (!confirm("DİKKAT! Bu işlem TÜM tabloları yedekteki veriyle değiştirecektir. Devam etmek istiyor musun?")) return;
+      if (iBtn) { iBtn.disabled = true; iBtn.textContent = "Yükleniyor..."; iBtn.classList.add("animate-pulse"); }
+      setBackupStatus("Tüm tablolar geri yükleniyor...", "info");
+      toast.info("Yedekten geri yükleme başlatıldı...");
+      try {
+        const res = await api.importBackup(selectedBackupPayload);
+        if (!res.success) {
+          toast.error("Geri yükleme başarısız: " + (res.error || "Bilinmeyen hata"));
+          setBackupStatus("Geri yükleme başarısız: " + (res.error || "Bilinmeyen hata"), "error");
+          return;
+        }
+        setBackupStatus("Veriler yüklendi. Yerel veritabanı senkronize ediliyor...", "info");
+        await SyncManager.forceSync();
+        toast.success("Geri yükleme ve senkronizasyon başarılı!");
+        setBackupStatus("Geri yükleme ve senkronizasyon başarılı. Tüm verileriniz artık güncel.", "success");
+      } catch (err: any) {
+        toast.error("Geri yükleme sırasında hata: " + err.message);
+        setBackupStatus("Geri yükleme sırasında ağ hatası oluştu: " + err.message, "error");
+      } finally {
+        if (iBtn) { iBtn.disabled = false; iBtn.textContent = "Geri Yükle (Tam Kapsam)"; iBtn.classList.remove("animate-pulse"); }
+      }
+    });
+
+    addEv("sync-log-refresh-btn", "click", () => loadSyncLog());
+    addEv("sync-log-status-filter", "change", () => loadSyncLog());
+    addEv("sync-log-select-all", "change", (e: Event) => {
+      const checked = (e.target as HTMLInputElement).checked;
+      document.querySelectorAll<HTMLInputElement>(".sync-log-checkbox:not(:disabled)").forEach(box => { box.checked = checked; });
+    });
+    addEv("sync-log-retry-btn", "click", async () => {
+      const ids = getSelectedSyncLogIds();
+      if (!ids.length) {
+        setSyncLogStatus("Önce FAIL veya CRASH kayıtlarını seçin.", "error");
+        toast.warning("Yeniden denenecek en az bir kayıt seçin.");
+        return;
+      }
+      if (!confirm(`${ids.length} başarısız sync kaydı yeniden denenecek. Devam etmek istiyor musun?`)) return;
+      setSyncLogStatus("Seçili sync kayıtları yeniden deneniyor...", "info");
+      const res = await api.call("retrySyncLog", { ids });
+      if (!res.success) {
+        setSyncLogStatus("Retry başarısız: " + (res.error || "Bilinmeyen hata"), "error");
+        toast.error("Retry başarısız: " + (res.error || "Bilinmeyen hata"));
+        return;
+      }
+      const data = (res.data || {}) as any;
+      setSyncLogStatus(`Retry tamamlandı. RECOVERED: ${data.recovered || 0}, FAILED: ${data.failed || 0}, SKIPPED: ${data.skipped || 0}.`, "success");
+      toast.success(`Retry tamamlandı. Kurtarılan: ${data.recovered || 0}`);
+      await loadSyncLog();
+    });
+
+    addEv("deep-repair-btn", "click", async () => {
+      if (!confirm("İndeks onarımı başlatılacak. Bu işlem ana sayfa istatistiklerini ve sertifika listelerini D1 verisine göre yeniden düzenler. Devam etmek istiyor musun?")) return;
+      const btn = document.getElementById("deep-repair-btn") as HTMLButtonElement | null;
+      if (btn) { btn.disabled = true; btn.textContent = "Onarım Başlatılıyor..."; }
+      toast.info("İndeks onarımı Cloudflare üzerinde başlatıldı...");
+      const res = await api.deepRepairIndex();
+      if (res.success) {
+        toast.success("Onarım emri gönderildi! Arka planda tamamlandığında verileriniz düzelecektir.");
+        setTimeout(async () => {
+          await SyncManager.forceSync();
+          if (btn) { btn.disabled = false; btn.textContent = "İstatistikleri D1'den Yeniden Hesapla"; }
+        }, 3000);
+      } else {
+        toast.error("Hata: " + (res.error || "Bilinmeyen hata"));
+        if (btn) { btn.disabled = false; btn.textContent = "İstatistikleri D1'den Yeniden Hesapla"; }
+      }
+    });
+
+    loadSyncLog();
+  }
+
+  document.addEventListener("astro:page-load", initPage);
+  document.addEventListener("astro:before-preparation", runCleanups);
+</script>

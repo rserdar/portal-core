@@ -14,7 +14,8 @@ const DriveService = {
    */
   _getFolderMap: function() {
     if (this._folderMapCache) return this._folderMapCache;
-    const json = PropertiesService.getScriptProperties().getProperty("FOLDER_MAP_JSON");
+    const json = BaseService.getGoogleConfig("drive", "folder_map_json", null)
+      || PropertiesService.getScriptProperties().getProperty("FOLDER_MAP_JSON");
     if (!json) throw new Error("FOLDER_MAP_JSON Script Property eksik! Tenant kurulum scriptini çalıştırın.");
     try {
       this._folderMapCache = JSON.parse(json);

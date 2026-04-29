@@ -1,0 +1,304 @@
+---
+import SettingsLayout from "../../layouts/SettingsLayout.astro";
+
+const MASTER_SYNC_OPTIONS = [
+  { value: "standards", label: "Standartlar" },
+  { value: "auditors", label: "Denetçiler" },
+  { value: "consultants", label: "Danışmanlar" },
+  { value: "testdocs", label: "TestDoc" },
+  { value: "sysdocs", label: "SysDoc" },
+];
+---
+
+<SettingsLayout title="Ana Veri">
+  <!-- Header -->
+  <div class="bg-surface border border-border-main rounded-2xl p-6 shadow-xl">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-muted">Master Data</p>
+        <h1 class="text-2xl font-extrabold mt-1">Ana Veri Yönetimi</h1>
+        <p class="text-sm text-muted mt-2">
+          Standartlar, Denetçiler, Danışmanlar, TestDoc ve SysDoc verilerini buradan yönetebilirsin.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="refresh-btn" class="px-4 py-2 rounded-xl bg-surface-hover border border-border-main text-sm font-bold">
+          Yenile
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dataset Seçici + Tablo -->
+  <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+    <div class="flex flex-col md:flex-row md:items-center gap-3">
+      <label for="dataset-select" class="text-sm font-bold text-muted">Veri Seti</label>
+      <select id="dataset-select" class="bg-surface-hover border border-border-main rounded-xl px-3 py-2 text-sm">
+        <option value="standards">Standartlar</option>
+        <option value="auditors">Denetçiler</option>
+        <option value="consultants">Danışmanlar</option>
+        <option value="testdocs">TestDoc</option>
+        <option value="sysdocs">SysDoc</option>
+      </select>
+      <div class="ml-auto text-xs text-muted">
+        <span id="meta-version"></span>
+        <span id="meta-updated" class="ml-3"></span>
+      </div>
+    </div>
+
+    <div id="status-box" class="hidden rounded-xl px-3 py-2 text-sm"></div>
+
+    <div class="overflow-auto border border-border-main rounded-xl">
+      <table class="min-w-full text-sm">
+        <thead id="master-thead" class="bg-surface-hover"></thead>
+        <tbody id="master-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="flex flex-wrap gap-2 pt-2">
+      <button id="add-row-btn" class="px-4 py-2 rounded-xl bg-surface-hover border border-border-main text-sm font-bold">
+        + Satır Ekle
+      </button>
+      <button id="save-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/20 active:scale-95 transition-all">
+        Kaydet
+      </button>
+    </div>
+  </div>
+
+  <!-- Master Sync Scope (backup sayfasındaki D1←Sheets için referans) -->
+  <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 border-b border-border-main pb-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-muted">Sheets → D1 Kapsamı</p>
+        <h2 class="text-xl font-extrabold mt-1">Ana Veri Senkronizasyon Kapsamı</h2>
+        <p class="text-sm text-muted mt-2">
+          Yedekleme sayfasındaki "Seçili Verileri Sheets'ten Çek" işlemi için hangi ana veri tablolarının güncelleneceğini seçin.
+        </p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 mb-1">
+      <input id="master-sync-all" type="checkbox" name="sync-scope" value="master" checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+      <span class="text-sm font-bold">Ana Veri (Tümü)</span>
+    </div>
+    <p class="text-xs text-muted -mt-1 ml-7">
+      Ana Veri kutusu tüm alt başlıkları birlikte seçer.
+    </p>
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+      {MASTER_SYNC_OPTIONS.map((scope) => (
+        <label class="flex items-center gap-2 p-3 rounded-xl bg-surface border border-border-main cursor-pointer hover:border-indigo-500 transition-colors">
+          <input type="checkbox" name="master-sync-scope" value={scope.value} checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+          <span class="text-sm font-medium">{scope.label}</span>
+        </label>
+      ))}
+    </div>
+  </div>
+</SettingsLayout>
+
+<script>
+  import { api } from "../../lib/api";
+  import { toast } from "../../lib/toast";
+
+  type MasterScopeType = "standards" | "auditors" | "consultants" | "testdocs" | "sysdocs";
+
+  const metaVersion = document.getElementById("meta-version") as HTMLElement | null;
+  const metaUpdated = document.getElementById("meta-updated") as HTMLElement | null;
+  const thead = document.getElementById("master-thead") as HTMLElement | null;
+  const tbody = document.getElementById("master-tbody") as HTMLElement | null;
+  const statusBox = document.getElementById("status-box") as HTMLElement | null;
+
+  let cleanupTasks: Array<() => void> = [];
+  function registerCleanup(fn: () => void) { cleanupTasks.push(fn); }
+  function runCleanups() {
+    cleanupTasks.forEach(fn => { try { fn(); } catch(e) {} });
+    cleanupTasks = [];
+  }
+
+  let currentType: MasterScopeType = "standards";
+  let currentVersion: string | null = null;
+  let currentHeaders: string[] = [];
+  let currentRows: any[][] = [];
+
+  function setStatus(message: string, type: "info" | "error" | "success" = "info") {
+    if (!statusBox) return;
+    statusBox.textContent = message;
+    statusBox.classList.remove("hidden", "bg-red-500/15", "text-red-200", "bg-emerald-500/15", "text-emerald-200", "bg-cyan-500/15", "text-cyan-100");
+    if (type === "error") statusBox.classList.add("bg-red-500/15", "text-red-200");
+    else if (type === "success") statusBox.classList.add("bg-emerald-500/15", "text-emerald-200");
+    else statusBox.classList.add("bg-cyan-500/15", "text-cyan-100");
+  }
+
+  function escapeHtml(value: any): string {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+  }
+
+  function syncMasterParentState() {
+    const parent = document.getElementById("master-sync-all") as HTMLInputElement | null;
+    if (!parent) return;
+    const children = Array.from(document.querySelectorAll('input[name="master-sync-scope"]')) as HTMLInputElement[];
+    const checkedCount = children.filter(c => c.checked).length;
+    parent.checked = checkedCount > 0;
+    parent.indeterminate = checkedCount > 0 && checkedCount < children.length;
+  }
+
+  function setMasterChildrenChecked(checked: boolean) {
+    const children = Array.from(document.querySelectorAll('input[name="master-sync-scope"]')) as HTMLInputElement[];
+    children.forEach(c => { c.checked = checked; });
+    syncMasterParentState();
+  }
+
+  function renderTable() {
+    if (!thead || !tbody) return;
+    thead.innerHTML = `<tr>${currentHeaders.map(h => `<th class="text-left px-3 py-2 border-b border-border-main whitespace-nowrap">${escapeHtml(h)}</th>`).join("")}<th class="px-3 py-2 border-b border-border-main">Sil</th></tr>`;
+    tbody.innerHTML = "";
+
+    currentRows.forEach((row, rowIndex) => {
+      const tr = document.createElement("tr");
+      tr.className = "border-b border-border-main/60";
+
+      currentHeaders.forEach((_, colIndex) => {
+        const td = document.createElement("td");
+        td.className = "px-2 py-2";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = row[colIndex] ?? "";
+        input.className = "w-full bg-surface-hover border border-border-main rounded-lg px-2 py-1 text-xs";
+        input.addEventListener("input", (e: Event) => {
+          currentRows[rowIndex][colIndex] = (e.target as HTMLInputElement).value;
+        });
+        td.appendChild(input);
+        tr.appendChild(td);
+      });
+
+      const tdDel = document.createElement("td");
+      tdDel.className = "px-2 py-2 text-center";
+      const delBtn = document.createElement("button");
+      delBtn.className = "px-2 py-1 rounded-lg text-xs bg-red-600/80 hover:bg-red-500 text-white";
+      delBtn.textContent = "Sil";
+      delBtn.addEventListener("click", () => { currentRows.splice(rowIndex, 1); renderTable(); });
+      tdDel.appendChild(delBtn);
+      tr.appendChild(tdDel);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function normalizeMasterPayload(raw: any, type: string) {
+    if (!raw) return null;
+    if (raw.dataset && typeof raw.dataset === "object" && Array.isArray(raw.dataset.rows)) return raw;
+    if (raw.data && typeof raw.data === "object" && raw.data.dataset) return raw.data;
+    if (Array.isArray(raw)) {
+      if (raw.length === 0) return { dataset: { headers: [], rows: [], sheetName: type }, version: null, updatedAt: null };
+      const first = raw[0];
+      const headers = first && typeof first === "object" ? Object.keys(first) : [];
+      return { dataset: { headers, rows: raw.map(r => headers.map(h => r[h] ?? "")), sheetName: type }, version: null, updatedAt: null };
+    }
+    const combinedRows = raw[type];
+    if (Array.isArray(combinedRows)) {
+      return {
+        dataset: {
+          headers: combinedRows.length > 0 && typeof combinedRows[0] === 'object' && !Array.isArray(combinedRows[0]) ? Object.keys(combinedRows[0]) : [],
+          rows: combinedRows.map(r => Array.isArray(r) ? r : (typeof r === 'object' ? Object.values(r) : [r])),
+          sheetName: type
+        },
+        version: raw.version ?? null,
+        updatedAt: raw.updatedAt ?? null
+      };
+    }
+    return null;
+  }
+
+  async function loadDataset(type: MasterScopeType) {
+    currentType = type;
+    setStatus("Veri yükleniyor...");
+
+    let res = await api.getMasterData(type);
+    let payload = normalizeMasterPayload(res.data, type);
+
+    if (!res.success || !payload?.dataset) {
+      setStatus("D1 boş. Master data aktarımı başlatılıyor...");
+      const syncRes = await api.syncMasterData([type as MasterScopeType]);
+      if (!syncRes.success) {
+        setStatus("Master sync başarısız: " + (syncRes.error || "Bilinmeyen hata"), "error");
+        return;
+      }
+      res = await api.getMasterData(type);
+      payload = normalizeMasterPayload(res.data, type);
+    }
+
+    if (!res.success || !payload?.dataset) {
+      setStatus("Veri alınamadı: " + (res.error || "Bilinmeyen hata"), "error");
+      return;
+    }
+
+    const ds = payload.dataset;
+    currentVersion = payload.version ?? null;
+    currentHeaders = Array.isArray(ds.headers) ? ds.headers : [];
+    currentRows = Array.isArray(ds.rows) ? ds.rows.map((r: any) => Array.isArray(r) ? [...r] : []) : [];
+
+    if (metaVersion) metaVersion.textContent = `v${currentVersion || "-"}`;
+    if (metaUpdated) metaUpdated.textContent = payload.updatedAt ? "Güncelleme: " + new Date(payload.updatedAt).toLocaleString("tr-TR") : "Güncelleme: -";
+
+    renderTable();
+    setStatus((ds.sheetName || type) + " yüklendi (" + currentRows.length + " satır).", "success");
+  }
+
+  async function saveDataset() {
+    if (!currentType) return;
+    setStatus("Kaydediliyor...");
+    const res = await api.updateMasterData(currentType, { rows: currentRows }, currentVersion || undefined);
+    if (!res.success) {
+      if (res.error === "MASTER_VERSION_CONFLICT") {
+        setStatus("Versiyon çakışması: Veri başka bir oturumda değişmiş. Yenileyip tekrar dene.", "error");
+      } else if (res.error === "MASTER_EMPTY_REPLACE_BLOCKED") {
+        setStatus("Boş veri setiyle tüm tabloyu silme işlemi güvenlik nedeniyle engellendi.", "error");
+      } else {
+        setStatus("Kayıt hatası: " + (res.error || "Bilinmeyen hata"), "error");
+      }
+      return;
+    }
+    const data = res.data || {};
+    currentVersion = data.version || currentVersion;
+    if (metaVersion) metaVersion.textContent = `v${currentVersion || "-"}`;
+    if (metaUpdated) metaUpdated.textContent = data.updatedAt ? "Güncelleme: " + new Date(data.updatedAt).toLocaleString("tr-TR") : "Güncelleme: -";
+    setStatus("Kaydedildi.", "success");
+    toast.success("Ana veri kaydedildi.");
+  }
+
+  function initPage() {
+    runCleanups();
+
+    const addEv = (id: string, ev: string, fn: any) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener(ev, fn);
+      registerCleanup(() => el.removeEventListener(ev, fn));
+    };
+
+    addEv("dataset-select", "change", (e: Event) => {
+      loadDataset((e.target as HTMLSelectElement).value as MasterScopeType);
+    });
+    addEv("master-sync-all", "change", (e: Event) => {
+      setMasterChildrenChecked((e.target as HTMLInputElement).checked);
+    });
+
+    const masterCheckboxes = Array.from(document.querySelectorAll('input[name="master-sync-scope"]')) as HTMLInputElement[];
+    masterCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener("change", syncMasterParentState);
+      registerCleanup(() => checkbox.removeEventListener("change", syncMasterParentState));
+    });
+    syncMasterParentState();
+
+    addEv("refresh-btn", "click", () => loadDataset(currentType));
+    addEv("add-row-btn", "click", () => {
+      currentRows.push(Array(currentHeaders.length).fill(""));
+      renderTable();
+    });
+    addEv("save-btn", "click", saveDataset);
+
+    loadDataset(currentType);
+  }
+
+  document.addEventListener("astro:page-load", initPage);
+  document.addEventListener("astro:before-preparation", runCleanups);
+</script>

@@ -1010,6 +1010,92 @@ export default {
       }
     };
 
+    const normalizeIntegrationConfig = (raw) => {
+      const input = raw && typeof raw === "object" ? raw : {};
+      return {
+        id: Number.parseInt(String(input.id || ""), 10) || null,
+        provider: String(input.provider || "").trim().toLowerCase(),
+        service: String(input.service || "").trim().toLowerCase(),
+        config_key: String(input.config_key || input.configKey || "").trim().toLowerCase(),
+        config_value: input.config_value === undefined || input.config_value === null
+          ? ""
+          : String(input.config_value),
+        tenant_scope: String(input.tenant_scope || input.tenantScope || "global").trim().toLowerCase() || "global",
+      };
+    };
+
+    const isValidIntegrationToken = (value) => /^[a-z0-9_:-]+$/i.test(String(value || "").trim());
+    const GOOGLE_FEATURE_FLAG_DEFAULTS = {
+      "feature:google_dlc": true,
+      "feature:google_drive_backup": true,
+      "feature:google_calendar": true,
+      "feature:google_gmail": true,
+    };
+    const GOOGLE_FEATURE_FLAG_KEYS = Object.keys(GOOGLE_FEATURE_FLAG_DEFAULTS);
+    const parseBooleanFlag = (value, fallback = false) => {
+      if (value === undefined || value === null || String(value).trim() === "") return fallback;
+      const normalized = String(value).trim().toLowerCase();
+      if (["1", "true", "yes", "on"].includes(normalized)) return true;
+      if (["0", "false", "no", "off"].includes(normalized)) return false;
+      return fallback;
+    };
+    const getSyncMetaValue = async (key) => {
+      const row = await env.DB_D1.prepare(`SELECT value FROM sync_meta WHERE key=?`).bind(key).first();
+      return row?.value ?? null;
+    };
+    const getGoogleFeatureFlags = async () => {
+      const rows = await env.DB_D1.prepare(
+        `SELECT key, value FROM sync_meta WHERE key IN (${GOOGLE_FEATURE_FLAG_KEYS.map(() => "?").join(",")})`
+      ).bind(...GOOGLE_FEATURE_FLAG_KEYS).all();
+      const valueMap = new Map((rows.results || []).map((row) => [String(row.key), row.value]));
+      const flags = {};
+      for (const [key, fallback] of Object.entries(GOOGLE_FEATURE_FLAG_DEFAULTS)) {
+        flags[key] = parseBooleanFlag(valueMap.get(key), fallback);
+      }
+      return flags;
+    };
+    const getGoogleRuntimeConfig = async () => {
+      const { results } = await env.DB_D1.prepare(
+        `SELECT service, config_key, config_value, tenant_scope
+         FROM integration_configs
+         WHERE provider = 'google'
+         ORDER BY service, config_key, tenant_scope, id`
+      ).all();
+      const runtimeConfig = {};
+      for (const row of results || []) {
+        const service = String(row.service || "").trim().toLowerCase();
+        const configKey = String(row.config_key || "").trim().toLowerCase();
+        const tenantScope = String(row.tenant_scope || "global").trim().toLowerCase() || "global";
+        if (!service || !configKey || tenantScope !== "global") continue;
+        if (!runtimeConfig[service]) runtimeConfig[service] = {};
+        runtimeConfig[service][configKey] = row.config_value == null ? "" : String(row.config_value);
+      }
+      return runtimeConfig;
+    };
+    const buildGasRuntimeParams = async (params) => {
+      const safeParams = params && typeof params === "object" ? { ...params } : {};
+      const [googleConfig, featureFlags] = await Promise.all([
+        getGoogleRuntimeConfig(),
+        getGoogleFeatureFlags(),
+      ]);
+      safeParams.googleConfig = googleConfig;
+      safeParams.featureFlags = featureFlags;
+      return safeParams;
+    };
+    const isGoogleFeatureEnabled = async (featureKey) => {
+      const flags = await getGoogleFeatureFlags();
+      const masterEnabled = Boolean(flags["feature:google_dlc"]);
+      if (featureKey === "feature:google_dlc") return masterEnabled;
+      return masterEnabled && Boolean(flags[featureKey]);
+    };
+    const buildGoogleFeatureSkipResponse = (featureKey, message, extra = {}) => ({
+      success: true,
+      skipped: true,
+      feature: featureKey,
+      message,
+      ...extra,
+    });
+
     const fetchFromGasViaGet = async (env, body) => {
       if (body?.action !== "translate") return null;
 
@@ -1043,7 +1129,7 @@ export default {
     };
 
     const generateSqlDump = async (env, requestedTables) => {
-      const tables = Array.isArray(requestedTables) ? requestedTables : ["companies", "certificates", "audits", "tests", "proformas", "standards", "auditors", "consultants", "testdocs", "sysdocs"];
+      const tables = Array.isArray(requestedTables) ? requestedTables : ["companies", "certificates", "audits", "tests", "proformas", "standards", "auditors", "consultants", "testdocs", "sysdocs", "integration_configs"];
       let sql = `-- ${appName} D1 SQL Export\n`;
       sql += `-- Generated: ${new Date().toISOString()}\n\n`;
 
@@ -1084,11 +1170,13 @@ export default {
         "generateIso", "generateDraftCertificate", "generateContract",
         "generateAppForm", "generateSingleBatchDoc", "generateTestReport",
         "convertToPdf", "uploadFile", "deepRepairIndex", "generateProforma", "getFolderId",
+        "suggestCertificateClassification",
         "getRecentFiles", "listDriveContents"
       ]);
-
       const timeoutMs = longRunningActions.has(action) ? 120000 : 20000;
-      const requestBody = JSON.stringify({ ...body, apiKey: env.API_KEY });
+      const enrichedBody = { ...body };
+      enrichedBody.params = await buildGasRuntimeParams(body?.params);
+      const requestBody = JSON.stringify({ ...enrichedBody, apiKey: env.API_KEY });
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -1266,6 +1354,10 @@ export default {
     const syncToBackup = (action, params, type, id) => {
       ctx.waitUntil((async () => {
         try {
+          const googleDlcEnabled = await isGoogleFeatureEnabled("feature:google_dlc");
+          if (!googleDlcEnabled) {
+            return;
+          }
           const res = await fetchFromGas(env, { action, params });
           if (!res.success) {
             await logSyncEvent(action, type, id, "FAIL", res.error || "GAS_FAIL");
@@ -1278,6 +1370,13 @@ export default {
 
       const NotificationHandlers = {
         sendSurveillanceEmail: async (p, ctx, env) => {
+          const gmailEnabled = await isGoogleFeatureEnabled("feature:google_gmail");
+          if (!gmailEnabled) {
+            return jsonResponse(buildGoogleFeatureSkipResponse(
+              "feature:google_gmail",
+              "Google Gmail DLC kapalı olduğu için e-posta gönderimi atlandı."
+            ));
+          }
           const rows = Array.isArray(p?.data) ? p.data : Array.isArray(p?.rows) ? p.rows : [];
           const email = String(p?.email || "").trim();
           if (!email) return jsonResponse({ success: false, error: "EMAIL_REQUIRED" }, 400);
@@ -1302,6 +1401,14 @@ export default {
           return jsonResponse(gasResult, gasResult?.success === false ? 502 : 200);
         },
         runMonthlyCheck: async (p, ctx, env) => {
+          const gmailEnabled = await isGoogleFeatureEnabled("feature:google_gmail");
+          if (!gmailEnabled) {
+            return jsonResponse(buildGoogleFeatureSkipResponse(
+              "feature:google_gmail",
+              "Google Gmail DLC kapalı olduğu için aylık gözetim kontrolü atlandı.",
+              { data: { sent: 0, matchedRows: 0, recipients: 0, skipped: 0, failures: [] } }
+            ));
+          }
           const today = new Date();
           const firstDayCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
           const startDate = new Date(firstDayCurrentMonth);
@@ -1997,6 +2104,9 @@ export default {
           if (scope.includes("master")) {
             masterTypes.forEach(t => tables.push(t));
           }
+          if (!tables.includes("integration_configs")) {
+            tables.push("integration_configs");
+          }
           
           const sql = await generateSqlDump(env, tables);
           return jsonResponse({ success: true, sql });
@@ -2195,6 +2305,13 @@ export default {
       // Cron scheduled() tarafından tetiklenir; GAS DailyBackupService.runDailyBackup()'ı çağırır
       triggerDailyBackup: async (p, ctx, env) => {
         try {
+          const googleDlcEnabled = await isGoogleFeatureEnabled("feature:google_dlc");
+          if (!googleDlcEnabled) {
+            return jsonResponse(buildGoogleFeatureSkipResponse(
+              "feature:google_dlc",
+              "Google DLC kapalı olduğu için günlük backup tetiklenmedi."
+            ));
+          }
           const gasResult = await fetchFromGas(env, { action: "runDailyBackup", params: {} });
           if (!gasResult.success) {
             await logSyncEvent("cronBackup", "all", null, "FAIL", gasResult.error || "GAS runDailyBackup başarısız");
@@ -2496,6 +2613,13 @@ export default {
         }
       },
       generateTestReport: async (p, ctx, env) => {
+        const googleDlcEnabled = await isGoogleFeatureEnabled("feature:google_dlc");
+        if (!googleDlcEnabled) {
+          return jsonResponse(buildGoogleFeatureSkipResponse(
+            "feature:google_dlc",
+            "Google DLC kapalı olduğu için test raporu üretimi atlandı."
+          ));
+        }
         const id = String(p?.id || "").trim();
         const lang = p?.lang || "TR";
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
@@ -2538,6 +2662,13 @@ export default {
         }
       },
       generateProforma: async (p, ctx, env) => {
+        const googleDlcEnabled = await isGoogleFeatureEnabled("feature:google_dlc");
+        if (!googleDlcEnabled) {
+          return jsonResponse(buildGoogleFeatureSkipResponse(
+            "feature:google_dlc",
+            "Google DLC kapalı olduğu için proforma üretimi atlandı."
+          ));
+        }
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
         try {
@@ -2549,6 +2680,13 @@ export default {
         }
       },
       generateContract: async (p, ctx, env) => {
+        const googleDlcEnabled = await isGoogleFeatureEnabled("feature:google_dlc");
+        if (!googleDlcEnabled) {
+          return jsonResponse(buildGoogleFeatureSkipResponse(
+            "feature:google_dlc",
+            "Google DLC kapalı olduğu için sözleşme üretimi atlandı."
+          ));
+        }
         const id = String(p?.id || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
         try {
@@ -2700,6 +2838,13 @@ export default {
 
     const DriveHandlers = {
       getFolderId: async (p, ctx, env) => {
+        const googleDlcEnabled = await isGoogleFeatureEnabled("feature:google_dlc");
+        if (!googleDlcEnabled) {
+          return jsonResponse(buildGoogleFeatureSkipResponse(
+            "feature:google_dlc",
+            "Google DLC kapalı olduğu için Drive klasör sorgusu atlandı."
+          ));
+        }
         const id = String(p?.id || p?.firmaId || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
 
@@ -2717,6 +2862,13 @@ export default {
         return jsonResponse(res);
       },
       getRecentFiles: async (p, ctx, env) => {
+        const googleDlcEnabled = await isGoogleFeatureEnabled("feature:google_dlc");
+        if (!googleDlcEnabled) {
+          return jsonResponse(buildGoogleFeatureSkipResponse(
+            "feature:google_dlc",
+            "Google DLC kapalı olduğu için Drive dosya listesi atlandı."
+          ));
+        }
         const id = String(p?.id || p?.firmaId || "").trim();
         if (!id) return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
         
@@ -2743,6 +2895,13 @@ export default {
         return jsonResponse(res);
       },
       listDriveContents: async (p, ctx, env) => {
+        const googleDlcEnabled = await isGoogleFeatureEnabled("feature:google_dlc");
+        if (!googleDlcEnabled) {
+          return jsonResponse(buildGoogleFeatureSkipResponse(
+            "feature:google_dlc",
+            "Google DLC kapalı olduğu için Drive içerik listesi atlandı."
+          ));
+        }
         const id = String(p?.id || p?.firmaId || "").trim();
         let folderId = String(p?.folderId || "").trim();
         const mimeTypes = Array.isArray(p?.mimeTypes) ? p.mimeTypes : undefined;
@@ -2769,9 +2928,119 @@ export default {
         return jsonResponse(res);
       },
       prepareBatchFolders: async (p, ctx, env) => {
+        const googleDlcEnabled = await isGoogleFeatureEnabled("feature:google_dlc");
+        if (!googleDlcEnabled) {
+          return jsonResponse(buildGoogleFeatureSkipResponse(
+            "feature:google_dlc",
+            "Google DLC kapalı olduğu için toplu klasör hazırlama atlandı."
+          ));
+        }
         const res = await fetchFromGas(env, { action: "prepareBatchFolders", params: p });
         return jsonResponse(res);
       }
+    };
+
+    const IntegrationHandlers = {
+      getGoogleFeatureFlags: async (p, ctx, env) => {
+        const flags = await getGoogleFeatureFlags();
+        return jsonResponse({ success: true, data: flags });
+      },
+      updateGoogleFeatureFlag: async (p, ctx, env) => {
+        const key = String(p?.key || "").trim();
+        if (!GOOGLE_FEATURE_FLAG_KEYS.includes(key)) {
+          return jsonResponse({ success: false, error: "INVALID_FEATURE_FLAG_KEY" }, 400);
+        }
+        const enabled = Boolean(p?.enabled);
+        await env.DB_D1.prepare(
+          `INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, unixepoch())`
+        ).bind(key, enabled ? "true" : "false").run();
+        const flags = await getGoogleFeatureFlags();
+        return jsonResponse({ success: true, data: flags });
+      },
+      getIntegrationConfigs: async (p, ctx, env) => {
+        const provider = String(p?.provider || "").trim().toLowerCase();
+        const service = String(p?.service || "").trim().toLowerCase();
+
+        if (provider && !isValidIntegrationToken(provider)) {
+          return jsonResponse({ success: false, error: "INVALID_PROVIDER" }, 400);
+        }
+        if (service && !isValidIntegrationToken(service)) {
+          return jsonResponse({ success: false, error: "INVALID_SERVICE" }, 400);
+        }
+
+        let stmt;
+        if (provider && service) {
+          stmt = env.DB_D1.prepare(
+            `SELECT * FROM integration_configs
+             WHERE provider = ? AND service = ?
+             ORDER BY service, config_key, tenant_scope, id`
+          ).bind(provider, service);
+        } else if (provider) {
+          stmt = env.DB_D1.prepare(
+            `SELECT * FROM integration_configs
+             WHERE provider = ?
+             ORDER BY service, config_key, tenant_scope, id`
+          ).bind(provider);
+        } else {
+          stmt = env.DB_D1.prepare(
+            `SELECT * FROM integration_configs
+             ORDER BY provider, service, config_key, tenant_scope, id`
+          );
+        }
+
+        const { results } = await stmt.all();
+        return jsonResponse({ success: true, data: results || [] });
+      },
+      upsertIntegrationConfig: async (p, ctx, env) => {
+        const config = normalizeIntegrationConfig(p?.config);
+        if (!config.provider || !isValidIntegrationToken(config.provider)) {
+          return jsonResponse({ success: false, error: "INVALID_PROVIDER" }, 400);
+        }
+        if (!config.service || !isValidIntegrationToken(config.service)) {
+          return jsonResponse({ success: false, error: "INVALID_SERVICE" }, 400);
+        }
+        if (!config.config_key || !isValidIntegrationToken(config.config_key)) {
+          return jsonResponse({ success: false, error: "INVALID_CONFIG_KEY" }, 400);
+        }
+        if (!config.tenant_scope || !isValidIntegrationToken(config.tenant_scope)) {
+          return jsonResponse({ success: false, error: "INVALID_TENANT_SCOPE" }, 400);
+        }
+
+        await env.DB_D1.prepare(
+          `INSERT INTO integration_configs (provider, service, config_key, config_value, tenant_scope, updated_at)
+           VALUES (?, ?, ?, ?, ?, unixepoch())
+           ON CONFLICT(provider, service, config_key, tenant_scope)
+           DO UPDATE SET
+             config_value = excluded.config_value,
+             updated_at = unixepoch()`
+        ).bind(
+          config.provider,
+          config.service,
+          config.config_key,
+          config.config_value || null,
+          config.tenant_scope,
+        ).run();
+
+        const row = await env.DB_D1.prepare(
+          `SELECT * FROM integration_configs
+           WHERE provider = ? AND service = ? AND config_key = ? AND tenant_scope = ?`
+        ).bind(
+          config.provider,
+          config.service,
+          config.config_key,
+          config.tenant_scope,
+        ).first();
+
+        return jsonResponse({ success: true, data: row || null });
+      },
+      deleteIntegrationConfig: async (p, ctx, env) => {
+        const id = Number.parseInt(String(p?.id || ""), 10);
+        if (!Number.isInteger(id) || id <= 0) {
+          return jsonResponse({ success: false, error: "ID_REQUIRED" }, 400);
+        }
+        await env.DB_D1.prepare(`DELETE FROM integration_configs WHERE id=?`).bind(id).run();
+        return jsonResponse({ success: true });
+      },
     };
 
     const MasterHandlers = {
@@ -2875,6 +3144,7 @@ export default {
           ...EntityHandlers,
           ...NotificationHandlers,
           ...MasterHandlers,
+          ...IntegrationHandlers,
           ...DriveHandlers
         };
 
@@ -2885,6 +3155,42 @@ export default {
           } catch (e) {
             console.error(`Handler Error: ${action}`, e);
             return jsonResponse({ success: false, error: `HANDLER_ERROR: ${action}`, details: e.message }, 500);
+          }
+        }
+
+        const googleDlcGatedActions = new Set([
+          "getFolderId",
+          "getRecentFiles",
+          "listDriveContents",
+          "prepareBatchFolders",
+          "uploadFile",
+          "generateDraftCertificate",
+          "generateAppForm",
+          "generateSingleBatchDoc",
+          "generateIso",
+          "convertToPdf",
+          "generateContract",
+          "generateProforma",
+          "generateTestReport",
+          "runDailyBackup",
+        ]);
+        const gmailGatedActions = new Set(["sendSurveillanceEmail", "runMonthlyCheck", "sendReport"]);
+        if (googleDlcGatedActions.has(action)) {
+          const googleDlcEnabled = await isGoogleFeatureEnabled("feature:google_dlc");
+          if (!googleDlcEnabled) {
+            return jsonResponse(buildGoogleFeatureSkipResponse(
+              "feature:google_dlc",
+              `${action} işlemi Google DLC kapalı olduğu için atlandı.`
+            ));
+          }
+        }
+        if (gmailGatedActions.has(action)) {
+          const gmailEnabled = await isGoogleFeatureEnabled("feature:google_gmail");
+          if (!gmailEnabled) {
+            return jsonResponse(buildGoogleFeatureSkipResponse(
+              "feature:google_gmail",
+              `${action} işlemi Google Gmail DLC kapalı olduğu için atlandı.`
+            ));
           }
         }
 

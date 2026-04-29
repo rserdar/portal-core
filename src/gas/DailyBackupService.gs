@@ -9,14 +9,14 @@ const DailyBackupService = {
   /**
    * Ana yedekleme ve süpürme akışı.
    */
-  runDailyBackup: function() {
+  runDailyBackup: function(params) {
     Logger.log("[DailyBackup] Günlük yedekleme başladı...");
     
     // 1. D1'den son değişiklikleri çek (Sweeper mantığıyla aynı)
     const stats = SyncService.reconcileFromD1();
     
     // 2. Mevcut Sheets verisini tam paket olarak Drive'a yedekle
-    this._saveSnapshotToDrive();
+    this._saveSnapshotToDrive(params);
     
     Logger.log("[DailyBackup] Günlük yedekleme tamamlandı.");
     return stats;
@@ -25,10 +25,18 @@ const DailyBackupService = {
   /**
    * D1 verisini SQL olarak çeker ve Drive'a yedekler.
    */
-  _saveSnapshotToDrive: function() {
+  _saveSnapshotToDrive: function(params) {
     try {
+      const runtimeParams = params && typeof params === "object" ? params : {};
       const props = PropertiesService.getScriptProperties();
-      const folderId = props.getProperty("BACKUP_FOLDER_ID");
+      const driveBackupEnabled = BaseService.getFeatureFlag("feature:google_drive_backup", true);
+      if (!driveBackupEnabled) {
+        Logger.log("[DailyBackup] feature:google_drive_backup kapalı, Drive yedeği atlanıyor.");
+        return;
+      }
+
+      const folderId = BaseService.getGoogleConfig("drive", "backup_folder_id", null)
+        || props.getProperty("BACKUP_FOLDER_ID");
       const workerUrl = props.getProperty("WORKER_URL");
       const apiKey = props.getProperty("API_KEY");
 
@@ -44,7 +52,7 @@ const DailyBackupService = {
         payload: JSON.stringify({
           action: "exportBackup",
           apiKey: apiKey,
-          params: {}
+          params: runtimeParams
         }),
         muteHttpExceptions: true
       };

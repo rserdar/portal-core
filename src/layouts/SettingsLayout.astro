@@ -1,0 +1,63 @@
+---
+import DashboardLayout from "./DashboardLayout.astro";
+
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+const pathname = Astro.url.pathname.replace(/\/$/, "");
+
+const navItems = [
+  {
+    href: "/settings/master-data",
+    label: "Ana Veri",
+    description: "Standartlar, Denetçiler, Danışmanlar",
+  },
+  {
+    href: "/settings/backup",
+    label: "Yedekleme & Senkronizasyon",
+    description: "Sheets sync, SQL backup, Sync log",
+  },
+  {
+    href: "/settings/google-dlc",
+    label: "Google DLC",
+    description: "Toggle, config registry, gözetim email",
+  },
+];
+---
+
+<DashboardLayout title={title}>
+  <div class="flex gap-6 items-start">
+    <!-- Sidebar -->
+    <aside class="w-56 shrink-0">
+      <nav class="sticky top-6 bg-surface border border-border-main rounded-2xl p-2 space-y-1">
+        <p class="text-xs uppercase tracking-[0.2em] text-muted px-3 pt-2 pb-1">Ayarlar</p>
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <a
+              href={item.href}
+              class={`block px-3 py-2.5 rounded-xl transition-colors ${
+                isActive
+                  ? "bg-indigo-600 text-white"
+                  : "text-muted hover:bg-surface-hover hover:text-primary"
+              }`}
+            >
+              <span class={`block text-sm font-semibold ${isActive ? "text-white" : ""}`}>
+                {item.label}
+              </span>
+              <span class={`block text-xs mt-0.5 ${isActive ? "text-indigo-200" : "text-muted"}`}>
+                {item.description}
+              </span>
+            </a>
+          );
+        })}
+      </nav>
+    </aside>
+
+    <!-- Content -->
+    <div class="flex-1 min-w-0 space-y-6">
+      <slot />
+    </div>
+  </div>
+</DashboardLayout>

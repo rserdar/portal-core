@@ -244,9 +244,9 @@ CREATE VIEW IF NOT EXISTS audits_full AS
 
 | Numara | Faz | Kapsam | Durum |
 | :--- | :--- | :--- | :--- |
-| `009` | G2 | `consultants.email` sütunu + `consultant_firms` junction tablosu | Rezerve |
-| `010` | G1 | JWT signing secret için `sync_meta` key veya ayrı yapılandırma gerekirse | Rezerve |
-| `011` | E | `integration_configs` tablosu — Google ve Microsoft non-secret config registry | Rezerve |
+| `009` | E | `integration_configs` tablosu — Google ve Microsoft non-secret config registry | ✅ Uygulandı |
+| `010` | G2 | `consultants.email` sütunu + `consultant_firms` junction tablosu | Rezerve |
+| `011` | G1 | JWT signing secret için `sync_meta` key veya ayrı yapılandırma gerekirse | Rezerve |
 | `012+` | F | Microsoft DLC veya tenant bazlı şema değişiklikleri için açık slot | — |
 
 > Rezerve numaralar yalnızca planlama amaçlıdır; uygulanana kadar dosyası oluşturulmaz. Her yeni migration kendi numarasını `008`'den sonra sıralı alır — numara atlanmaz, değiştirilmez.
@@ -334,6 +334,7 @@ GAS kaynak koduna asla yazılmaz — `getProperty` ile her zaman runtime'da çek
 | `LOCAL_CONVERTER_URL` | `PDFService` — yerel PDF converter URL'si; boşsa local converter atlanır, iLovePDF'e fallback yapılır | Opsiyonel |
 | `LOCAL_CONVERTER_TOKEN` | `PDFService` — yerel PDF converter auth token'ı | Opsiyonel |
 | `ILOVEPDF_PUBLIC_KEY` | `PDFService` — iLovePDF API | Opsiyonel |
+| `GEMINI_API_KEY` | `GeminiService` — sertifika siniflandirma onerileri icin Gemini API anahtari | Opsiyonel |
 
 > **`API_KEY` çift taraflı:** CF Secret (`env.API_KEY`) ve GAS Script Property (`API_KEY`) değerleri **birebir aynı** olmalıdır. Birini değiştirirken diğerini de güncellemek zorunludur; uyuşmazlık tüm GAS çağrılarını `Yetkisiz Erişim` hatasıyla kırar.
 
@@ -484,7 +485,7 @@ Core: import config from '@tenant/config'
 
 ---
 
-### Faz E — Google DLC ⬜
+### Faz E — Google DLC ✅
 > **Çıktı:** Google servisleri `settings.astro`'dan aç/kapat yönetilebilir; aylık gözetim email'i çalışır.
 > **Başarı ölçütü:** Google DLC kapalıyken sistem tamamen D1-only modunda çalışır, hata vermez. GAS bağlı ama kapalı → `syncToBackup` no-op.
 >
@@ -522,19 +523,19 @@ Kural:
 
   | # | Madde | Done Criteria |
   | :- | :--- | :--- |
-  | E0 | **Google provider config registry** — Google'a ait Drive klasör ID'leri, template ID'leri, sender/config mapping bilgileri `integration_configs` içinde `provider = "google"` satırları olarak tutulur | ID'ler D1'den okunur; hardcoded bağımlılık kalkar |
-  | E1 | **Stateless GAS** — GAS kodundaki tenant'a özgü hardcoded ID'ler (DocumentService CONFIG vb.) temizlenir; Worker her istekte gerekli Google config'lerini parametre olarak gönderir | GAS kodu tüm tenantlar için %100 aynı hale gelir |
-  | E2 | **Provider Config UI (Google sekmesi)** — `settings.astro` içinde Google'a ait Drive / template / sender kayıtlarını yöneten panel eklenir | ID değişikliği GAS editörüne girmeden UI üzerinden yapılabilir |
-  | E3 | **Google DLC Toggle** — `sync_meta` üzerinden `feature:google_dlc` flag'i ile Google servisleri global olarak açılır/kapanır | Flag kapalıyken Google çağrıları master-switch üzerinden no-op döner |
-  | E4 | **Graceful Degradation** — Google DLC kapalıyken `syncToBackup`, `fetchFromGas`, Calendar / Drive / Gmail side-effect'leri güvenli biçimde skip edilir | CRUD işlemleri hata vermeden tamamlanır; sync_log'a gereksiz kayıt yazılmaz |
-  | E5 | **Drive backup sub-toggle** — `feature:google_drive_backup`; Sheets backup açık iken Drive snapshot kapatılabilir | Sub-toggle kapalıyken `DailyBackupService._saveSnapshotToDrive()` çağrılmaz |
-  | E6 | **Calendar sub-toggle** — `feature:google_calendar`; DLC açık olsa da Calendar event oluşturma devre dışı bırakılabilir | Sub-toggle kapalıyken Calendar çağrısı skip eder, D1 yazma tamamlanır |
-  | E7 | **Gmail / Notification sub-toggle** — `feature:google_gmail`; gözetim email sistemi bu flag'e bağlı çalışır | Sub-toggle kapalıyken email trigger'ı çalışmaz; `settings.astro`'da uyarı gösterilir |
-  | E9 | **Gözetim email sistemi** — aylık kontrol + manuel tetikleme + danışman bazlı gönderim; Worker D1 sorgusu yapar, GAS yalnızca gönderim kanalıdır | Manuel tetiklemede test email gönderilir; otomatik akışta aktif danışmanlara email düşer; gönderim loglanır |
+  | ✅ E0 | **Google provider config registry** — Google'a ait Drive klasör ID'leri, template ID'leri, sender/config mapping bilgileri `integration_configs` içinde `provider = "google"` satırları olarak tutulur | ID'ler D1'den okunur; registry Worker + GAS runtime config akışında kullanılır |
+  | ✅ E1 | **Stateless GAS** — GAS kodundaki tenant'a özgü hardcoded ID'ler (DocumentService CONFIG vb.) temizlenir; Worker her istekte gerekli Google config'lerini parametre olarak gönderir | `DocumentService.CONFIG` boş string default'lardan oluşuyor; `_cfg()` runtime config'i önce kontrol ediyor. `DriveService._getFolderMap()` ve `GeminiService._getConfig()` da aynı öncelik sırasını izliyor. Script Properties yalnızca WORKER_URL / API_KEY gibi operasyonel secret'lar için fallback — tasarım gereği |
+  | ✅ E2 | **Provider Config UI (Google sekmesi)** — `settings.astro` içinde Google'a ait Drive / template / sender kayıtlarını yöneten panel eklenir | ID değişikliği GAS editörüne girmeden UI üzerinden yapılabilir |
+  | ✅ E3 | **Google DLC Toggle** — `sync_meta` üzerinden `feature:google_dlc` flag'i ile Google servisleri global olarak açılır/kapanır | Flag kapalıyken Google çağrıları master-switch üzerinden no-op döner |
+  | ✅ E4 | **Graceful Degradation** — Google DLC kapalıyken `syncToBackup`, `fetchFromGas`, Calendar / Drive / Gmail side-effect'leri güvenli biçimde skip edilir | CRUD işlemleri hata vermeden tamamlanır; sync_log'a gereksiz kayıt yazılmaz |
+  | ✅ E5 | **Drive backup sub-toggle** — `feature:google_drive_backup`; Sheets backup açık iken Drive snapshot kapatılabilir | Sub-toggle kapalıyken `DailyBackupService._saveSnapshotToDrive()` çağrılmaz |
+  | ◐ E6 | **Calendar sub-toggle** — `feature:google_calendar`; DLC açık olsa da Calendar event oluşturma devre dışı bırakılabilir | Toggle ve runtime taşıma hazır. Ancak aktif Calendar event side-effect hattı kod tabanında bulunmadığı için uygulanacak akış kalmadı; madde kısmi kapatıldı |
+  | ✅ E7 | **Gmail / Notification sub-toggle** — `feature:google_gmail`; gözetim email sistemi bu flag'e bağlı çalışır | Sub-toggle kapalıyken email trigger'ı çalışmaz; `settings.astro`'da uyarı gösterilir |
+  | ✅ E9 | **Gözetim email sistemi** — aylık kontrol + manuel tetikleme + danışman bazlı gönderim; Worker D1 sorgusu yapar, GAS yalnızca gönderim kanalıdır | Manuel tetikleme paneli ve danışman bazlı gönderim özeti ayarlar ekranında görünür; gönderim sonucu raporlanır |
 
-> **E8 — Gemini önerileri (bağımsız, herhangi bir fazda uygulanabilir)**
-> `certificates/add.astro` formuna NACE / EA / kapsam / scope önerileri eklenir; prompt firma `yapilan_is` + `standart` + mevcut alanlardan üretilir. Google DLC flag'ine bağımlı değildir — E0–E7 beklenmeden başlanabilir.
-> **Done Criteria:** Kullanıcı öneriyi preview'da görür, düzenler ve forma uygular.
+> **E8 — Gemini destekli sertifika sınıflandırma önerileri (bağımsız, herhangi bir fazda uygulanabilir)**
+> `certificates/add.astro` formunda local referans motoru ile uretilen adaylar Gemini'ye de baglanir; firma `yapilan_is` + `standart` + mevcut alanlar ve local adaylar birlikte kullanilir. Google DLC flag'ine bağımlı değildir — E0–E7 beklenmeden uygulanabilir.
+> **Durum:** ✅ Tamamlandı — kullanıcı local veya Gemini ile güçlendirilmiş öneriyi preview alanında görür, düzenler ve forma uygular.
 
   #### Feature Flag Kapsamı
 
@@ -658,7 +659,7 @@ Katman 2 — Rol belirleme (bizim yapacağımız):
 3. `.dev.vars` dosyası `.gitignore`'a eklenmiş olmalıdır — commit edilmez.
 `DEV_USER_EMAIL` boşken header da yoksa → 403 (production davranışı korunur).
 
-#### Danışman Veri Modeli (Migration 009)
+#### Danışman Veri Modeli (Migration 010)
 
 ```sql
 -- consultants tablosuna eklenen sütunlar:
@@ -714,7 +715,7 @@ settings.astro bu iki adımı yan yana gösterir:
 | # | Madde | Done Criteria |
 | :- | :--- | :--- |
 | G1 | **Rol belirleme + write guard — Worker middleware** — `CF-Access-Authenticated-User-Email` header'ı okunur; `ADMIN_EMAILS` env var ile admin kontrolü; `consultants.email` D1 sorgusuyla consultant kontrolü. **Write guard:** `addCompany`, `updateCertificate`, `deleteAudit` vb. tüm write action'lar role kontrolünden geçer; `role=consultant` ise 403 döner — sadece SELECT action'ları izin verilir | Header yok **ve** `DEV_USER_EMAIL` da yoksa → 403; `DEV_USER_EMAIL` varsa header yerine kullanılır (dev only); consultant rolüyle write action'a istek → 403 `{ error: "WRITE_FORBIDDEN" }`; admin email → tüm action'lar serbest |
-| G2 | **Migration 009** — `consultants.email UNIQUE` sütunu + `consultants.cf_access_confirmed INTEGER DEFAULT 0` sütunu + `consultant_firms` junction tablosu | `wrangler d1 migrations apply` uygulanmış; mevcut `consultants` satırları `email=NULL, cf_access_confirmed=0` ile bozulmadan korunmuş; üç değişikliğin tamamı tek migration dosyasında |
+| G2 | **Migration 010** — `consultants.email UNIQUE` sütunu + `consultants.cf_access_confirmed INTEGER DEFAULT 0` sütunu + `consultant_firms` junction tablosu | `wrangler d1 migrations apply` uygulanmış; mevcut `consultants` satırları `email=NULL, cf_access_confirmed=0` ile bozulmadan korunmuş; üç değişikliğin tamamı tek migration dosyasında |
 | G3 | **`/consultant/index.astro`** — `/whoami` role=consultant ise erişilebilir; role=admin ise dashboard'a yönlendir; kendi firmalarının sertifika + test özet kartları | Doğrudan URL yazılarak da erişim rol kontrolünden geçer; admin bu sayfayı göremez |
 | G4 | **Danışman sertifika listesi** — Worker erişim kontrolünü subquery ile uygular. **Gerçek sorgu deseni** (pseudo-SQL değil): `SELECT * FROM certificates WHERE firma_no IN (SELECT firma_no FROM consultant_firms WHERE consultant_id = ?)` — tek `?` ile çalışır, placeholder expansion gerekmez | Subquery boş set dönerse sertifika listesi boş döner (403 değil); `consultant = ad` TEXT filtresi kullanılmıyor |
 | G5 | **Admin onboarding UI** — `settings.astro`'da danışman ekle formu; D1'e yazar (`cf_access_confirmed=0`); CF Access adımı için kopyalanabilir email gösterir; admin CF Access'e ekledikten sonra "Onayla" butonuna basar → D1'de `cf_access_confirmed=1` olur. **Not:** Worker Cloudflare allowlist'i doğrulamaz; `cf_access_confirmed=1` operasyonel bir admin onayıdır, sistem doğrulaması değildir — CF Access'e eklenmeden "Onayla" basılırsa danışman D1'de aktif ama giriş yapamaz | D1 kaydı sonrası danışman "Pasif" görünür; "Onayla" sonrası "Aktif" olur; Worker `cf_access_confirmed=0` olanı reddeder |

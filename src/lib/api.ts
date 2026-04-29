@@ -137,6 +137,7 @@ export const api = {
       "importBackup",
       "exportBackup",
       "translate",
+      "suggestCertificateClassification",
       "generateIso",
       "generateDraftCertificate",
       "generateContract",
@@ -321,6 +322,14 @@ export const api = {
     return this.call("translate", { text, toEn });
   },
 
+  async suggestCertificateClassification(payload: {
+    standard: string;
+    context: Record<string, any>;
+    localSuggestions: Array<Record<string, any>>;
+  }) {
+    return this.call("suggestCertificateClassification", payload);
+  },
+
   async docsToPdf(
     docId: string,
     options: { targetFolderId?: string; targetSubfolderName?: string } = {}
@@ -399,6 +408,31 @@ export const api = {
   async exportBackup() { return this.call("exportBackup"); },
   async getSyncLog(limit: number = 20, status?: string) {
     return this.call("getSyncLog", status ? { limit, status } : { limit });
+  },
+  async getIntegrationConfigs(provider?: string, service?: string) {
+    return this.call("getIntegrationConfigs", {
+      ...(provider ? { provider } : {}),
+      ...(service ? { service } : {}),
+    });
+  },
+  async getGoogleFeatureFlags() {
+    return this.call("getGoogleFeatureFlags");
+  },
+  async updateGoogleFeatureFlag(key: string, enabled: boolean) {
+    return this.call("updateGoogleFeatureFlag", { key, enabled });
+  },
+  async upsertIntegrationConfig(config: {
+    id?: number | null;
+    provider: string;
+    service: string;
+    config_key: string;
+    config_value: string;
+    tenant_scope?: string;
+  }) {
+    return this.call("upsertIntegrationConfig", { config });
+  },
+  async deleteIntegrationConfig(id: string | number) {
+    return this.call("deleteIntegrationConfig", { id });
   },
   async exportData(
     scope: string[],

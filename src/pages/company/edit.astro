@@ -370,13 +370,16 @@ import { CONFIG } from '../../lib/config';
     </div>
 
   </div>
+<div id="page-config" data-app-name={CONFIG.APP_NAME} hidden></div>
 </DashboardLayout>
 
-<script define:vars={{ appName: CONFIG.APP_NAME }}>
+<script>
   import { api } from '../../lib/api';
   import { toast } from '../../lib/toast';
   import { DB } from '../../lib/db';
   import { $companies } from '../../lib/store';
+
+  const appName = (document.getElementById('page-config') as HTMLElement | null)?.dataset.appName ?? '';
 
   // ─── Lifecycle & Cleanup ─────────────────────────────────────────────────────
 

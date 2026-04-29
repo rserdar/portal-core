@@ -6,6 +6,16 @@ const NotificationService = {
   DEFAULT_FROM_NAME: "Portal",
   DEFAULT_REPORT_RECIPIENT: "info@example.com",
   _cfg: function(key, fallback) {
+    const runtimeKeyMap = {
+      NOTIFICATION_FROM: { service: "gmail", key: "sender_email" },
+      NOTIFICATION_FROM_NAME: { service: "gmail", key: "sender_name" },
+      NOTIFICATION_REPORT_RECIPIENT: { service: "gmail", key: "report_recipient" },
+    };
+    const runtimeMeta = runtimeKeyMap[key];
+    if (runtimeMeta) {
+      const runtimeValue = BaseService.getGoogleConfig(runtimeMeta.service, runtimeMeta.key, "");
+      if (runtimeValue) return runtimeValue;
+    }
     const value = PropertiesService.getScriptProperties().getProperty(key);
     if (value && String(value).trim()) return String(value).trim();
     return fallback;
@@ -107,7 +117,7 @@ const NotificationService = {
    * D1 sorgusu ve HTML render Worker'da yapılır; GAS yalnızca bu isteği iletir.
    * Worker → sendSurveillanceEmail → sendHtmlEmail akışıyla tamamlanır.
    */
-  runMonthlyCheck: function() {
+  runMonthlyCheck: function(params) {
     try {
       const props = PropertiesService.getScriptProperties();
       const workerUrl = props.getProperty("WORKER_URL");
@@ -117,7 +127,7 @@ const NotificationService = {
       const res = UrlFetchApp.fetch(workerUrl, {
         method: "POST",
         contentType: "application/json",
-        payload: JSON.stringify({ action: "runMonthlyCheck", apiKey: apiKey, params: {} }),
+        payload: JSON.stringify({ action: "runMonthlyCheck", apiKey: apiKey, params: params || {} }),
         muteHttpExceptions: true
       });
 

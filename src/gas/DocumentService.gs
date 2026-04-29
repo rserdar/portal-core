@@ -18,6 +18,8 @@ const DocumentService = {
     DEMO_IMAGE:        ""
   },
   _cfg: function(key) {
+    const runtimeOverride = BaseService.getGoogleConfig("docs", String(key || "").trim().toLowerCase(), "");
+    if (runtimeOverride) return runtimeOverride;
     const props = PropertiesService.getScriptProperties();
     const override = props.getProperty(key);
     return override && String(override).trim() ? String(override).trim() : this.CONFIG[key];

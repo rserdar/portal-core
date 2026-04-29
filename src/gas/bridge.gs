@@ -29,6 +29,7 @@ function doPost(e) {
 
     const action = requestData.action;
     const params = requestData.params || {};
+    BaseService.setRuntimeContext(params);
 
     switch (action) {
       // --- FİRMA SERVİSİ ---
@@ -192,6 +193,13 @@ function doPost(e) {
         result.success = true;
         break;
 
+      case "suggestCertificateClassification":
+        const geminiRes = GeminiService.suggestCertificateClassification(params);
+        result.data = geminiRes.data || null;
+        result.success = geminiRes.success;
+        if (!geminiRes.success) result.error = geminiRes.error;
+        break;
+
       // --- DOKÜMAN & DOSYA SERVİSLERİ ---
       case "getFolderId":
         const folderNickname = resolveCompanyNickname(params);
@@ -327,7 +335,7 @@ function doPost(e) {
 
       case "runMonthlyCheck":
       case "monthlyCheck":
-        const monthlyRes = NotificationService.runMonthlyCheck();
+        const monthlyRes = NotificationService.runMonthlyCheck(params);
         result.data = monthlyRes;
         result.success = monthlyRes.success;
         if (!monthlyRes.success) result.error = monthlyRes.error;
@@ -362,7 +370,7 @@ function doPost(e) {
         break;
 
       case "runDailyBackup":
-        const backupStats = DailyBackupService.runDailyBackup();
+        const backupStats = DailyBackupService.runDailyBackup(params);
         result.data = backupStats;
         result.success = true;
         break;
@@ -387,6 +395,8 @@ function doPost(e) {
     result.success = false;
     result.error = error.message;
     BaseService.logError("doPost", error);
+  } finally {
+    BaseService.clearRuntimeContext();
   }
 
   return ContentService.createTextOutput(JSON.stringify(result))

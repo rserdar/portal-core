@@ -687,9 +687,10 @@ import {
     </div>
 
   </div>
+<div id="page-config" data-app-name={CONFIG.APP_NAME} hidden></div>
 </DashboardLayout>
 
-<script define:vars={{ appName: CONFIG.APP_NAME }}>
+<script>
   import { $companies, $certificates } from '../../lib/store';
   import { api } from '../../lib/api';
   import { SyncManager } from '../../lib/sync';
@@ -708,6 +709,8 @@ import {
     getStandartPriority,
     getCertificateRecordId,
   } from "../../lib/utils"
+
+  const appName = (document.getElementById('page-config') as HTMLElement | null)?.dataset.appName ?? '';
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 

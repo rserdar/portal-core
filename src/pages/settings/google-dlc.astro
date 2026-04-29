@@ -1,0 +1,625 @@
+---
+import SettingsLayout from "../../layouts/SettingsLayout.astro";
+---
+
+<SettingsLayout title="Google DLC">
+  <!-- Header -->
+  <div class="bg-surface border border-border-main rounded-2xl p-6 shadow-xl">
+    <div>
+      <p class="text-xs uppercase tracking-[0.2em] text-muted">Faz E / Google DLC</p>
+      <h1 class="text-2xl font-extrabold mt-1">Google DLC Yönetimi</h1>
+      <p class="text-sm text-muted mt-2">
+        Google entegrasyonlarını aç/kapat, config registry'yi yönet ve gözetim email sistemini kullan.
+      </p>
+    </div>
+  </div>
+
+  <!-- Phase E Özet Durumu -->
+  <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+    <div class="border-b border-border-main pb-4">
+      <p class="text-xs uppercase tracking-[0.2em] text-muted">Faz E / Durum</p>
+      <h2 class="text-xl font-extrabold mt-1">Google DLC Özet Durumu</h2>
+      <p class="text-sm text-muted mt-2">Faz E kapsamındaki başlıkların mevcut durumunu tek bakışta izle.</p>
+    </div>
+
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+        <p class="text-xs uppercase tracking-[0.18em] text-muted">Tamamlanan</p>
+        <p id="google-phase-complete-count" class="mt-2 text-2xl font-extrabold">-</p>
+      </div>
+      <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+        <p class="text-xs uppercase tracking-[0.18em] text-muted">Kısmi</p>
+        <p id="google-phase-partial-count" class="mt-2 text-2xl font-extrabold">-</p>
+      </div>
+      <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+        <p class="text-xs uppercase tracking-[0.18em] text-muted">Bekleyen</p>
+        <p id="google-phase-pending-count" class="mt-2 text-2xl font-extrabold">-</p>
+      </div>
+      <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+        <p class="text-xs uppercase tracking-[0.18em] text-muted">Master Switch</p>
+        <p id="google-phase-master-state" class="mt-2 text-2xl font-extrabold">-</p>
+      </div>
+    </div>
+
+    <div class="overflow-auto border border-border-main rounded-xl">
+      <table class="min-w-full text-sm">
+        <thead class="bg-surface-hover">
+          <tr>
+            <th class="text-left px-3 py-2 border-b border-border-main">Madde</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Durum</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Not</th>
+          </tr>
+        </thead>
+        <tbody id="google-phase-summary-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Feature Flag Toggles -->
+  <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 border-b border-border-main pb-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-muted">Faz E / Feature Flags</p>
+        <h2 class="text-xl font-extrabold mt-1">Google DLC Toggle Yönetimi</h2>
+        <p class="text-sm text-muted mt-2">
+          Runtime sırasında Google entegrasyonlarını açıp kapat. Master switch kapalıysa Worker D1-only modda çalışır.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="google-flags-refresh-btn" class="px-4 py-2 rounded-xl bg-surface-hover border border-border-main text-sm font-bold">
+          Yenile
+        </button>
+        <button id="google-flags-save-btn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold">
+          Toggle'ları Kaydet
+        </button>
+      </div>
+    </div>
+
+    <div id="google-flags-status-box" class="hidden rounded-xl px-3 py-2 text-sm"></div>
+
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <label class="flex items-start gap-3 rounded-2xl border border-border-main bg-surface-hover p-4">
+        <input id="flag-google-dlc" type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+        <span>
+          <span class="block text-sm font-bold">Google DLC Master</span>
+          <span class="block text-xs text-muted mt-1">Kapalıyken backup sync, Drive ve Gmail çağrıları güvenli biçimde skip edilir.</span>
+        </span>
+      </label>
+      <label class="flex items-start gap-3 rounded-2xl border border-border-main bg-surface-hover p-4">
+        <input id="flag-google-drive-backup" type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+        <span>
+          <span class="block text-sm font-bold">Drive Backup</span>
+          <span class="block text-xs text-muted mt-1">Kapalıyken DailyBackupService._saveSnapshotToDrive() çağrılmaz.</span>
+        </span>
+      </label>
+      <label class="flex items-start gap-3 rounded-2xl border border-border-main bg-surface-hover p-4">
+        <input id="flag-google-calendar" type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+        <span>
+          <span class="block text-sm font-bold">Calendar</span>
+          <span class="block text-xs text-muted mt-1">Calendar side-effect'leri için hazırlık toggle'ı. Worker katmanı hazır tutulur.</span>
+        </span>
+      </label>
+      <label class="flex items-start gap-3 rounded-2xl border border-border-main bg-surface-hover p-4">
+        <input id="flag-google-gmail" type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+        <span>
+          <span class="block text-sm font-bold">Gmail / Notification</span>
+          <span class="block text-xs text-muted mt-1">Gözetim email ve bildirim akışlarını ayrı kapatıp açar.</span>
+        </span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Gözetim E-posta Kontrolü -->
+  <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 border-b border-border-main pb-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-muted">Faz E / E9</p>
+        <h2 class="text-xl font-extrabold mt-1">Gözetim E-posta Kontrolü</h2>
+        <p class="text-sm text-muted mt-2">
+          Danışman bazlı aylık gözetim mail akışını manuel olarak tetikle ve sonucu burada izle.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="google-monthly-check-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold">
+          Aylık Kontrolü Çalıştır
+        </button>
+      </div>
+    </div>
+
+    <div id="google-monthly-status-box" class="hidden rounded-xl px-3 py-2 text-sm"></div>
+
+    <div class="grid gap-3 md:grid-cols-4">
+      <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+        <p class="text-xs uppercase tracking-[0.18em] text-muted">Gönderilen</p>
+        <p id="google-monthly-sent" class="mt-2 text-2xl font-extrabold">-</p>
+      </div>
+      <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+        <p class="text-xs uppercase tracking-[0.18em] text-muted">Eşleşen Satır</p>
+        <p id="google-monthly-matched" class="mt-2 text-2xl font-extrabold">-</p>
+      </div>
+      <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+        <p class="text-xs uppercase tracking-[0.18em] text-muted">Alıcı</p>
+        <p id="google-monthly-recipients" class="mt-2 text-2xl font-extrabold">-</p>
+      </div>
+      <div class="rounded-2xl border border-border-main bg-surface-hover p-4">
+        <p class="text-xs uppercase tracking-[0.18em] text-muted">Başarısız</p>
+        <p id="google-monthly-failures" class="mt-2 text-2xl font-extrabold">-</p>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-border-main overflow-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-surface-hover">
+          <tr>
+            <th class="text-left px-3 py-2 border-b border-border-main">E-posta</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Hata</th>
+          </tr>
+        </thead>
+        <tbody id="google-monthly-failures-tbody">
+          <tr>
+            <td colspan="2" class="px-3 py-6 text-center text-sm text-muted">Henüz çalıştırılmadı.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Google Config Registry -->
+  <div class="bg-surface border border-border-main rounded-2xl p-5 shadow-xl space-y-4">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 border-b border-border-main pb-4">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-muted">Faz E / Google DLC</p>
+        <h2 class="text-xl font-extrabold mt-1">Google Konfigürasyon Registry</h2>
+        <p class="text-sm text-muted mt-2">
+          Drive klasör ID'leri, şablon ID'leri, Gmail sender ve Gemini model gibi non-secret Google config'lerini yönet.
+          Değerler D1 üzerinden runtime'da GAS'a iletilir.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="google-config-refresh-btn" class="px-4 py-2 rounded-xl bg-surface-hover border border-border-main text-sm font-bold">
+          Yenile
+        </button>
+        <button id="google-config-add-btn" class="px-4 py-2 rounded-xl bg-surface-hover border border-border-main text-sm font-bold">
+          + Özel Satır
+        </button>
+        <button id="google-config-save-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold">
+          Google Ayarlarını Kaydet
+        </button>
+      </div>
+    </div>
+
+    <div id="google-config-status-box" class="hidden rounded-xl px-3 py-2 text-sm"></div>
+
+    <div class="overflow-auto border border-border-main rounded-xl">
+      <table class="min-w-full text-sm">
+        <thead class="bg-surface-hover">
+          <tr>
+            <th class="text-left px-3 py-2 border-b border-border-main">Servis</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Anahtar</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Açıklama</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Değer</th>
+            <th class="text-left px-3 py-2 border-b border-border-main">Kapsam</th>
+            <th class="px-3 py-2 border-b border-border-main text-center">Sil</th>
+          </tr>
+        </thead>
+        <tbody id="google-config-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</SettingsLayout>
+
+<script>
+  import { api } from "../../lib/api";
+  import { toast } from "../../lib/toast";
+
+  type GoogleFeatureFlagKey = "feature:google_dlc" | "feature:google_drive_backup" | "feature:google_calendar" | "feature:google_gmail";
+  type GoogleConfigRow = {
+    id: number | null;
+    provider: string;
+    service: string;
+    config_key: string;
+    config_value: string;
+    tenant_scope: string;
+    description: string;
+    placeholder: string;
+    isDefault: boolean;
+  };
+
+  const GOOGLE_FEATURE_KEYS: GoogleFeatureFlagKey[] = [
+    "feature:google_dlc", "feature:google_drive_backup", "feature:google_calendar", "feature:google_gmail",
+  ];
+
+  const GOOGLE_CONFIG_TEMPLATES = [
+    { service: "drive", config_key: "backup_folder_id", description: "Drive SQL snapshot klasoru", placeholder: "1AbCdEf..." },
+    { service: "drive", config_key: "folder_map_json", description: "Drive harf-klasor JSON mapping", placeholder: '{"A":"folder_id"}' },
+    { service: "docs", config_key: "signature_id", description: "Imza gorsel dosya ID", placeholder: "1Signature..." },
+    { service: "docs", config_key: "draft_bg_id", description: "Taslak arka plan dosya ID", placeholder: "1DraftBg..." },
+    { service: "docs", config_key: "app_form_medicert", description: "Basvuru formu sablon ID", placeholder: "1AppForm..." },
+    { service: "docs", config_key: "app_form_inspect", description: "Ikincil basvuru formu sablon ID", placeholder: "1Inspect..." },
+    { service: "docs", config_key: "contract_temp", description: "Sozlesme sablon ID", placeholder: "1Contract..." },
+    { service: "docs", config_key: "contract_brand_label", description: "Sozlesme baslik markasi", placeholder: "Portal" },
+    { service: "docs", config_key: "proforma_temp", description: "Proforma sablon ID", placeholder: "1Proforma..." },
+    { service: "docs", config_key: "demo_image", description: "Demo gorsel dosya ID", placeholder: "1DemoImage..." },
+    { service: "docs", config_key: "app_form_primary_label", description: "Birincil basvuru form etiketi", placeholder: "Primary" },
+    { service: "docs", config_key: "app_form_secondary_label", description: "Ikincil basvuru form etiketi", placeholder: "Secondary" },
+    { service: "sheets", config_key: "spreadsheet_id", description: "Backup spreadsheet ID", placeholder: "1Spreadsheet..." },
+    { service: "gmail", config_key: "sender_email", description: "Gonderici e-posta adresi", placeholder: "ops@example.com" },
+    { service: "gmail", config_key: "sender_name", description: "Gonderici gorunen adi", placeholder: "Portal Operations" },
+    { service: "gmail", config_key: "report_recipient", description: "Rapor varsayilan alicisi", placeholder: "reports@example.com" },
+    { service: "gemini", config_key: "model", description: "Gemini model adi", placeholder: "gemini-2.5-flash" },
+    { service: "gemini", config_key: "temperature", description: "Gemini sicaklik degeri", placeholder: "0.25" },
+    { service: "gemini", config_key: "max_output_tokens", description: "Gemini maksimum cikti token sayisi", placeholder: "2048" },
+  ] as const;
+
+  let googleFeatureFlags: Record<GoogleFeatureFlagKey, boolean> = {
+    "feature:google_dlc": true, "feature:google_drive_backup": true,
+    "feature:google_calendar": true, "feature:google_gmail": true,
+  };
+  let googleConfigs: GoogleConfigRow[] = [];
+
+  let cleanupTasks: Array<() => void> = [];
+  function registerCleanup(fn: () => void) { cleanupTasks.push(fn); }
+  function runCleanups() {
+    cleanupTasks.forEach(fn => { try { fn(); } catch(e) {} });
+    cleanupTasks = [];
+  }
+
+  function escapeHtml(value: any): string {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+  }
+
+  function setStatusBox(boxId: string, message: string, type: "info" | "error" | "success") {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    box.textContent = message;
+    box.classList.remove("hidden", "bg-red-500/15", "text-red-400", "bg-emerald-500/10", "text-emerald-400", "bg-indigo-500/10", "text-indigo-400");
+    if (type === "error") box.classList.add("bg-red-500/15", "text-red-400");
+    else if (type === "success") box.classList.add("bg-emerald-500/10", "text-emerald-400");
+    else box.classList.add("bg-indigo-500/10", "text-indigo-400");
+  }
+
+  function setFlagsStatus(m: string, t: "info" | "error" | "success" = "info") { setStatusBox("google-flags-status-box", m, t); }
+  function setMonthlyStatus(m: string, t: "info" | "error" | "success" = "info") { setStatusBox("google-monthly-status-box", m, t); }
+  function setConfigStatus(m: string, t: "info" | "error" | "success" = "info") { setStatusBox("google-config-status-box", m, t); }
+
+  function setButtonBusy(btn: HTMLButtonElement | null, busy: boolean, idleText: string, busyText = "İşleniyor...") {
+    if (!btn) return;
+    btn.disabled = busy;
+    btn.textContent = busy ? busyText : idleText;
+    btn.classList.toggle("animate-pulse", busy);
+    btn.classList.toggle("opacity-80", busy);
+  }
+
+  function reflectGoogleFlagInputs() {
+    const map: Array<[string, GoogleFeatureFlagKey]> = [
+      ["flag-google-dlc", "feature:google_dlc"],
+      ["flag-google-drive-backup", "feature:google_drive_backup"],
+      ["flag-google-calendar", "feature:google_calendar"],
+      ["flag-google-gmail", "feature:google_gmail"],
+    ];
+    map.forEach(([id, key]) => {
+      const input = document.getElementById(id) as HTMLInputElement | null;
+      if (input) input.checked = Boolean(googleFeatureFlags[key]);
+    });
+  }
+
+  function renderGooglePhaseSummary() {
+    const tbody = document.getElementById("google-phase-summary-tbody");
+    const completeEl = document.getElementById("google-phase-complete-count");
+    const partialEl = document.getElementById("google-phase-partial-count");
+    const pendingEl = document.getElementById("google-phase-pending-count");
+    const masterEl = document.getElementById("google-phase-master-state");
+    if (!tbody) return;
+
+    const items = [
+      { code: "E0", status: "done", note: "Google config registry D1 üzerinden yönetiliyor." },
+      { code: "E1", status: "done", note: "Tüm hardcoded ID'ler temizlendi. Runtime config önce okunuyor; Script Properties yalnızca WORKER_URL/API_KEY gibi operasyonel değerler için fallback." },
+      { code: "E2", status: "done", note: "Settings ekranında Google config yönetim paneli aktif." },
+      { code: "E3", status: "done", note: googleFeatureFlags["feature:google_dlc"] ? "Master switch açık." : "Master switch kapalı, D1-only mod aktif." },
+      { code: "E4", status: "done", note: "Google kapalıyken Worker/GAS çağrıları güvenli skip davranışı veriyor." },
+      { code: "E5", status: "done", note: googleFeatureFlags["feature:google_drive_backup"] ? "Drive backup toggle aktif ve uygulanıyor." : "Drive backup toggle kapalı; snapshot akışı skip ediliyor." },
+      { code: "E6", status: "partial", note: "Flag tanımlı ve GAS'a taşınıyor. Migration 008 Calendar entegrasyonunu kaldırdığından gate edilecek akış yok; ileriki Calendar entegrasyonunda aktifleşir." },
+      { code: "E7", status: "done", note: googleFeatureFlags["feature:google_gmail"] ? "Gmail toggle aktif." : "Gmail toggle kapalı; mail akışları skip ediliyor." },
+      { code: "E9", status: "done", note: "Manuel aylık kontrol paneli ve danışman bazlı gönderim özeti hazır." },
+    ];
+
+    const counts = {
+      done: items.filter(i => i.status === "done").length,
+      partial: items.filter(i => i.status === "partial").length,
+      pending: items.filter(i => i.status === "pending").length,
+    };
+
+    if (completeEl) completeEl.textContent = String(counts.done);
+    if (partialEl) partialEl.textContent = String(counts.partial);
+    if (pendingEl) pendingEl.textContent = String(counts.pending);
+    if (masterEl) masterEl.textContent = googleFeatureFlags["feature:google_dlc"] ? "Açık" : "Kapalı";
+
+    tbody.innerHTML = items.map(item => {
+      const statusLabel = item.status === "done" ? "Tamamlandı" : item.status === "partial" ? "Kısmi" : "Bekliyor";
+      const statusClass = item.status === "done"
+        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+        : item.status === "partial"
+          ? "bg-amber-500/10 text-amber-300 border border-amber-500/20"
+          : "bg-surface-hover text-muted border border-border-main";
+      return `
+        <tr class="border-b border-border-main/60">
+          <td class="px-3 py-2 font-semibold">${escapeHtml(item.code)}</td>
+          <td class="px-3 py-2"><span class="inline-flex rounded-lg px-2 py-1 text-xs font-bold ${statusClass}">${statusLabel}</span></td>
+          <td class="px-3 py-2 text-xs text-muted">${escapeHtml(item.note)}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  async function loadGoogleFeatureFlags() {
+    setFlagsStatus("Google feature flag'leri yükleniyor...", "info");
+    const res = await api.getGoogleFeatureFlags();
+    if (!res.success || !res.data) {
+      setFlagsStatus("Google feature flag'leri alınamadı: " + (res.error || "Bilinmeyen hata"), "error");
+      reflectGoogleFlagInputs();
+      return;
+    }
+    googleFeatureFlags = { ...googleFeatureFlags, ...(res.data as Record<GoogleFeatureFlagKey, boolean>) };
+    reflectGoogleFlagInputs();
+    renderGooglePhaseSummary();
+    setFlagsStatus("Google feature flag'leri güncellendi.", "success");
+  }
+
+  async function saveGoogleFeatureFlags() {
+    const nextFlags: Record<GoogleFeatureFlagKey, boolean> = {
+      "feature:google_dlc": (document.getElementById("flag-google-dlc") as HTMLInputElement | null)?.checked ?? true,
+      "feature:google_drive_backup": (document.getElementById("flag-google-drive-backup") as HTMLInputElement | null)?.checked ?? true,
+      "feature:google_calendar": (document.getElementById("flag-google-calendar") as HTMLInputElement | null)?.checked ?? true,
+      "feature:google_gmail": (document.getElementById("flag-google-gmail") as HTMLInputElement | null)?.checked ?? true,
+    };
+    setFlagsStatus("Google feature flag'leri kaydediliyor...", "info");
+    try {
+      for (const key of GOOGLE_FEATURE_KEYS) {
+        const res = await api.updateGoogleFeatureFlag(key, Boolean(nextFlags[key]));
+        if (!res.success) throw new Error(res.error || `${key} kaydedilemedi`);
+      }
+      googleFeatureFlags = nextFlags;
+      reflectGoogleFlagInputs();
+      renderGooglePhaseSummary();
+      setFlagsStatus("Google feature flag'leri kaydedildi.", "success");
+      toast.success("Google DLC toggle'ları güncellendi.");
+    } catch (error: any) {
+      setFlagsStatus("Google feature flag kaydı başarısız: " + (error?.message || "Bilinmeyen hata"), "error");
+      toast.error("Google feature flag kaydı başarısız: " + (error?.message || "Bilinmeyen hata"));
+    }
+  }
+
+  function renderGoogleMonthlyCheckResult(data?: any) {
+    const sent = Number(data?.sent || 0);
+    const matchedRows = Number(data?.matchedRows || 0);
+    const recipients = Number(data?.recipients || 0);
+    const failures = Array.isArray(data?.failures) ? data.failures : [];
+    const sentEl = document.getElementById("google-monthly-sent");
+    const matchedEl = document.getElementById("google-monthly-matched");
+    const recipientsEl = document.getElementById("google-monthly-recipients");
+    const failuresEl = document.getElementById("google-monthly-failures");
+    const tbody = document.getElementById("google-monthly-failures-tbody");
+    if (sentEl) sentEl.textContent = String(sent);
+    if (matchedEl) matchedEl.textContent = String(matchedRows);
+    if (recipientsEl) recipientsEl.textContent = String(recipients);
+    if (failuresEl) failuresEl.textContent = String(failures.length);
+    if (!tbody) return;
+    if (!failures.length) {
+      tbody.innerHTML = `<tr><td colspan="2" class="px-3 py-6 text-center text-sm text-muted">Başarısız gönderim yok.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = failures.map((f: any) => `
+      <tr class="border-b border-border-main/60">
+        <td class="px-3 py-2">${escapeHtml(f?.email || "-")}</td>
+        <td class="px-3 py-2 text-rose-400">${escapeHtml(f?.error || "-")}</td>
+      </tr>
+    `).join("");
+  }
+
+  async function runGoogleMonthlyCheck() {
+    setMonthlyStatus("Aylık gözetim kontrolü çalıştırılıyor...", "info");
+    const res = await api.runMonthlyCheck();
+    if (!res.success) {
+      renderGoogleMonthlyCheckResult();
+      setMonthlyStatus("Aylık kontrol başarısız: " + (res.error || "Bilinmeyen hata"), "error");
+      toast.error("Aylık kontrol başarısız: " + (res.error || "Bilinmeyen hata"));
+      return;
+    }
+    const data = res.data || {};
+    renderGoogleMonthlyCheckResult(data);
+    if ((res as any).skipped || (data && (data as any).skipped === true)) {
+      setMonthlyStatus((res as any).message || "Google Gmail DLC kapalı olduğu için işlem atlandı.", "info");
+      toast.info((res as any).message || "Google Gmail DLC kapalı olduğu için işlem atlandı.");
+      return;
+    }
+    const failureCount = Array.isArray(data.failures) ? data.failures.length : 0;
+    const statusType = failureCount > 0 ? "error" : "success";
+    const statusMessage = failureCount > 0
+      ? `Aylık kontrol tamamlandı. Gönderilen: ${data.sent || 0}, başarısız: ${failureCount}.`
+      : `Aylık kontrol tamamlandı. Gönderilen: ${data.sent || 0}, eşleşen satır: ${data.matchedRows || 0}.`;
+    setMonthlyStatus(statusMessage, statusType);
+    if (failureCount > 0) toast.warning(statusMessage); else toast.success(statusMessage);
+  }
+
+  function mergeGoogleConfigs(rows: any[]): GoogleConfigRow[] {
+    const indexed = new Map<string, any>();
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const service = String(row?.service || "").trim().toLowerCase();
+      const configKey = String(row?.config_key || "").trim().toLowerCase();
+      const tenantScope = String(row?.tenant_scope || "global").trim().toLowerCase() || "global";
+      if (!service || !configKey) continue;
+      indexed.set(`${service}:${configKey}:${tenantScope}`, row);
+    }
+    const merged = GOOGLE_CONFIG_TEMPLATES.map((template): GoogleConfigRow => {
+      const row = indexed.get(`${template.service}:${template.config_key}:global`);
+      return {
+        id: Number(row?.id) || null, provider: "google",
+        service: template.service, config_key: template.config_key,
+        config_value: String(row?.config_value || ""), tenant_scope: String(row?.tenant_scope || "global"),
+        description: template.description, placeholder: template.placeholder, isDefault: true,
+      };
+    });
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const service = String(row?.service || "").trim().toLowerCase();
+      const configKey = String(row?.config_key || "").trim().toLowerCase();
+      const tenantScope = String(row?.tenant_scope || "global").trim().toLowerCase() || "global";
+      const isKnown = GOOGLE_CONFIG_TEMPLATES.some(t => t.service === service && t.config_key === configKey && tenantScope === "global");
+      if (isKnown) continue;
+      merged.push({
+        id: Number(row?.id) || null, provider: "google", service, config_key: configKey,
+        config_value: String(row?.config_value || ""), tenant_scope: tenantScope,
+        description: "Ozel Google config kaydi", placeholder: "", isDefault: false,
+      });
+    }
+    return merged;
+  }
+
+  function renderGoogleConfigs() {
+    const googleConfigTbody = document.getElementById("google-config-tbody");
+    if (!googleConfigTbody) return;
+    if (!googleConfigs.length) {
+      googleConfigTbody.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-sm text-muted">Google config kaydi bulunamadi.</td></tr>`;
+      return;
+    }
+    googleConfigTbody.innerHTML = googleConfigs.map((row, index) => `
+      <tr class="border-b border-border-main/60 align-top">
+        <td class="px-3 py-2 min-w-[120px]">
+          <input type="text" data-google-field="service" data-google-index="${index}" value="${escapeHtml(row.service)}"
+            class="w-full bg-surface-hover border border-border-main rounded-lg px-2 py-1 text-xs" ${row.isDefault ? "readonly" : ""} />
+        </td>
+        <td class="px-3 py-2 min-w-[180px]">
+          <input type="text" data-google-field="config_key" data-google-index="${index}" value="${escapeHtml(row.config_key)}"
+            class="w-full bg-surface-hover border border-border-main rounded-lg px-2 py-1 text-xs" ${row.isDefault ? "readonly" : ""} />
+        </td>
+        <td class="px-3 py-2 min-w-[220px] text-xs text-muted">${escapeHtml(row.description)}</td>
+        <td class="px-3 py-2 min-w-[280px]">
+          <input type="text" data-google-field="config_value" data-google-index="${index}" value="${escapeHtml(row.config_value)}"
+            placeholder="${escapeHtml(row.placeholder)}" class="w-full bg-surface-hover border border-border-main rounded-lg px-2 py-1 text-xs" />
+        </td>
+        <td class="px-3 py-2 min-w-[120px]">
+          <input type="text" data-google-field="tenant_scope" data-google-index="${index}" value="${escapeHtml(row.tenant_scope)}"
+            class="w-full bg-surface-hover border border-border-main rounded-lg px-2 py-1 text-xs" />
+        </td>
+        <td class="px-3 py-2 text-center">
+          <button type="button" data-google-remove="${index}"
+            class="px-2 py-1 rounded-lg text-xs ${row.isDefault ? "bg-surface-hover text-muted border border-border-main" : "bg-red-600/80 hover:bg-red-500 text-white"}">
+            ${row.isDefault ? "Temizle" : "Sil"}
+          </button>
+        </td>
+      </tr>
+    `).join("");
+
+    googleConfigTbody.querySelectorAll<HTMLInputElement>("[data-google-field]").forEach(input => {
+      input.addEventListener("input", (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const index = Number(target.dataset.googleIndex || "-1");
+        const field = String(target.dataset.googleField || "") as keyof GoogleConfigRow;
+        if (!Number.isInteger(index) || index < 0 || !googleConfigs[index]) return;
+        (googleConfigs[index][field] as any) = target.value;
+      });
+    });
+    googleConfigTbody.querySelectorAll<HTMLButtonElement>("[data-google-remove]").forEach(button => {
+      button.addEventListener("click", (event: Event) => {
+        const target = event.currentTarget as HTMLButtonElement;
+        const index = Number(target.dataset.googleRemove || "-1");
+        if (!Number.isInteger(index) || index < 0 || !googleConfigs[index]) return;
+        const row = googleConfigs[index];
+        if (row.isDefault) { googleConfigs[index] = { ...row, config_value: "" }; }
+        else { googleConfigs.splice(index, 1); }
+        renderGoogleConfigs();
+      });
+    });
+  }
+
+  async function loadGoogleConfigs() {
+    setConfigStatus("Google config kayitlari yukleniyor...", "info");
+    const res = await api.getIntegrationConfigs("google");
+    if (!res.success) {
+      setConfigStatus("Google config kayitlari alinamadi: " + (res.error || "Bilinmeyen hata"), "error");
+      googleConfigs = mergeGoogleConfigs([]);
+      renderGoogleConfigs();
+      return;
+    }
+    googleConfigs = mergeGoogleConfigs(Array.isArray(res.data) ? res.data : []);
+    renderGoogleConfigs();
+    renderGooglePhaseSummary();
+    setConfigStatus("Google config registry guncellendi.", "success");
+  }
+
+  async function saveGoogleConfigs() {
+    const rows = googleConfigs.map(row => ({
+      ...row,
+      service: String(row.service || "").trim().toLowerCase(),
+      config_key: String(row.config_key || "").trim().toLowerCase(),
+      tenant_scope: String(row.tenant_scope || "global").trim().toLowerCase() || "global",
+      config_value: String(row.config_value || ""),
+    }));
+    const validRows = rows.filter(row => row.service || row.config_key || row.config_value || row.id);
+    setConfigStatus("Google config registry kaydediliyor...", "info");
+    try {
+      for (const row of validRows) {
+        const isBlankValue = String(row.config_value || "").trim() === "";
+        if (isBlankValue && row.id) {
+          const deleteRes = await api.deleteIntegrationConfig(row.id);
+          if (!deleteRes.success) throw new Error(deleteRes.error || `${row.service}.${row.config_key} silinemedi`);
+          continue;
+        }
+        if (isBlankValue) continue;
+        if (!row.service || !row.config_key) throw new Error("Servis ve anahtar alanlari bos birakilamaz.");
+        const upsertRes = await api.upsertIntegrationConfig({
+          id: row.id, provider: "google", service: row.service,
+          config_key: row.config_key, config_value: row.config_value,
+          tenant_scope: row.tenant_scope || "global",
+        });
+        if (!upsertRes.success) throw new Error(upsertRes.error || `${row.service}.${row.config_key} kaydedilemedi`);
+      }
+      await loadGoogleConfigs();
+      setConfigStatus("Google config registry kaydedildi.", "success");
+      toast.success("Google config registry guncellendi.");
+    } catch (error: any) {
+      setConfigStatus("Google config kaydi basarisiz: " + (error?.message || "Bilinmeyen hata"), "error");
+      toast.error("Google config kaydi basarisiz: " + (error?.message || "Bilinmeyen hata"));
+    }
+  }
+
+  function initPage() {
+    runCleanups();
+
+    const addEv = (id: string, ev: string, fn: any) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener(ev, fn);
+      registerCleanup(() => el.removeEventListener(ev, fn));
+    };
+
+    addEv("google-flags-refresh-btn", "click", () => loadGoogleFeatureFlags());
+    addEv("google-flags-save-btn", "click", async () => {
+      const btn = document.getElementById("google-flags-save-btn") as HTMLButtonElement | null;
+      setButtonBusy(btn, true, "Toggle'ları Kaydet", "Kaydediliyor...");
+      try { await saveGoogleFeatureFlags(); } finally { setButtonBusy(btn, false, "Toggle'ları Kaydet"); }
+    });
+    addEv("google-monthly-check-btn", "click", async () => {
+      const btn = document.getElementById("google-monthly-check-btn") as HTMLButtonElement | null;
+      setButtonBusy(btn, true, "Aylık Kontrolü Çalıştır", "Çalıştırılıyor...");
+      try { await runGoogleMonthlyCheck(); } finally { setButtonBusy(btn, false, "Aylık Kontrolü Çalıştır"); }
+    });
+    addEv("google-config-refresh-btn", "click", () => loadGoogleConfigs());
+    addEv("google-config-add-btn", "click", () => {
+      googleConfigs.push({ id: null, provider: "google", service: "", config_key: "", config_value: "", tenant_scope: "global", description: "Ozel Google config kaydi", placeholder: "", isDefault: false });
+      renderGoogleConfigs();
+    });
+    addEv("google-config-save-btn", "click", async () => {
+      const btn = document.getElementById("google-config-save-btn") as HTMLButtonElement | null;
+      setButtonBusy(btn, true, "Google Ayarlarını Kaydet", "Kaydediliyor...");
+      try { await saveGoogleConfigs(); } finally { setButtonBusy(btn, false, "Google Ayarlarını Kaydet"); }
+    });
+
+    loadGoogleFeatureFlags();
+    loadGoogleConfigs();
+  }
+
+  document.addEventListener("astro:page-load", initPage);
+  document.addEventListener("astro:before-preparation", runCleanups);
+</script>
