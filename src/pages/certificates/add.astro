@@ -2941,6 +2941,46 @@ const defaultCertificationBody = tenant.brand.shortName;
             return;
           }
 
+          // QR linkini bir kez hesapla; hem qr hem cert_link alanlarında kullan
+          const computedQrLink = (() => {
+            const selected = els.standSelect.selectedOptions[0];
+            const stdCode = selected?.value || "";
+            const stdText = selected?.textContent?.trim() || "";
+            // CE veya Diğer durumunda otherInput alanını standart etiketi olarak kullan
+            const isOther =
+              stdCode === "CE" ||
+              stdCode === "DIGER" ||
+              stdText.toUpperCase() === "CE" ||
+              stdText.toUpperCase() === "DİĞER" ||
+              stdText.toUpperCase() === "DIĞER";
+            const standardLabel = isOther
+              ? (els.otherInput?.value.trim() || stdText)
+              : (els.isoFull?.value.trim() || stdText);
+            return buildCertificateQrLink(
+              companyContext.unvan || companyContext.nick,
+              standardLabel,
+              els.sno?.value.trim() || "",
+            );
+          })();
+
+          // Düzenlemede mevcut değerleri fallback olarak kullan
+          const existingQr = getEditingValue("QR Code", "qr");
+          const existingCertLink = getEditingValue("Cert Link", "cert_link", "certLink");
+          const finalQr = computedQrLink || existingQr || "";
+          const finalCertLink = computedQrLink || existingCertLink || "";
+
+          console.log("[CertForm] QR debug:", {
+            unvan: companyContext.unvan,
+            nick: companyContext.nick,
+            standardText,
+            sno: els.sno?.value,
+            computedQrLink,
+            existingQr,
+            existingCertLink,
+            finalQr,
+            finalCertLink,
+          });
+
           const certInfo = {
             nick: companyContext.nick || getEditingValue("Firma Adı", "nick"),
             firma_no:
@@ -2965,32 +3005,13 @@ const defaultCertificationBody = tenant.brand.shortName;
             durum: els.durum?.value.trim() || "",
             sertifika_not: els.not?.value.trim() || "",
             gozetim_confirmed: els.gozetimDone?.checked ? "TRUE" : "FALSE",
-            qr: (() => {
-              const computed = buildCertificateQrLink(
-                companyContext.unvan || companyContext.nick,
-                els.isoFull?.value || standardText,
-                els.sno?.value || "",
-              );
-              const existing = getEditingValue("QR Code", "qr");
-              const result = computed || existing || "";
-              console.log("[CertForm] QR debug:", {
-                unvan: companyContext.unvan,
-                nick: companyContext.nick,
-                isoFull: els.isoFull?.value,
-                standardText,
-                sno: els.sno?.value,
-                computed,
-                existing,
-                result,
-              });
-              return result;
-            })(),
+            qr: finalQr,
+            cert_link: finalCertLink,
             calendar_id: getEditingValue(
               "Calendar ID",
               "calendar_id",
               "calendar",
             ),
-            cert_link: getEditingValue("Cert Link", "cert_link", "certLink"),
           };
 
           els.submit.disabled = true;

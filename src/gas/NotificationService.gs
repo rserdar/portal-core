@@ -83,19 +83,81 @@ const NotificationService = {
   },
 
   /**
-   * Worker tarafından render edilmiş htmlBody ile email gönderir.
-   * GAS template oluşturmaz; htmlBody Worker'dan gelir.
+   * GAS tarafında email render eder ve gönderir.
+   * Worker artık sadece payload gönderiyor, render burada yapılıyor.
    */
   sendSurveillanceEmail: function(payload) {
     if (!payload || typeof payload !== "object") {
       return { success: false, error: "INVALID_PAYLOAD" };
     }
+
+    // Eğer htmlBody gelmemişse (Worker render etmediyse) burada oluştur
+    if (!payload.htmlBody) {
+      payload.htmlBody = this._renderSurveillanceHtml(payload);
+    }
+
     return this.sendHtmlEmail(payload);
   },
 
   /**
-   * Legacy sendEmail karşılığı.
+   * Medicert/Default email şablonunu render eder.
    */
+  _renderSurveillanceHtml: function(p) {
+    const firstName = p.firstName || "Merhaba";
+    const title = p.title || "";
+    const rows = Array.isArray(p.data) ? p.data : (Array.isArray(p.rows) ? p.rows : []);
+    const startDate = p.startDate || "";
+    const endDate = p.endDate || "";
+    const brandName = p.appName || "Medicert";
+    
+    const greeting = [title, firstName].filter(Boolean).join(" ").trim() || "Merhaba";
+    
+    const escape = function(v) { 
+      return String(v || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); 
+    };
+
+    let tableRows = "";
+    rows.forEach(function(row) {
+      tableRows += '<tr>' +
+        '<td style="padding:12px 14px;border-bottom:1px solid #e2e8f0;">' + escape(row.date || row.Tarih || "") + '</td>' +
+        '<td style="padding:12px 14px;border-bottom:1px solid #e2e8f0;">' + escape(row.firm || row.Firma || "") + '</td>' +
+        '<td style="padding:12px 14px;border-bottom:1px solid #e2e8f0;">' + escape(row.consultant || row.Danisman || "") + '</td>' +
+        '<td style="padding:12px 14px;border-bottom:1px solid #e2e8f0;">' + escape(row.standard || row.Standart || "") + '</td>' +
+        '<td style="padding:12px 14px;border-bottom:1px solid #e2e8f0;">' + escape(row.certificateNo || row.Sno || "") + '</td>' +
+        '<td style="padding:12px 14px;border-bottom:1px solid #e2e8f0;">' + escape(row.accreditation || row.Akrn || "") + '</td>' +
+      '</tr>';
+    });
+
+    return '<div style="margin:0;background:#eef2ff;padding:32px 16px;font-family:Arial,sans-serif;color:#172033;">' +
+      '<div style="max-width:920px;margin:0 auto;background:#ffffff;border-radius:28px;overflow:hidden;border:1px solid #c7d2fe;box-shadow:0 24px 48px rgba(15,23,42,0.08);">' +
+        '<div style="padding:28px 32px;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 55%,#4338ca 100%);color:#ffffff;">' +
+          '<div style="font-size:12px;letter-spacing:0.24em;text-transform:uppercase;opacity:0.8;margin-bottom:10px;">' + escape(brandName) + '</div>' +
+          '<div style="font-size:28px;font-weight:700;line-height:1.15;">Gözetim Bilgileri</div>' +
+          '<div style="margin-top:10px;font-size:14px;opacity:0.88;">Sertifika gözetim planlaması için güncel bildirim özeti</div>' +
+        '</div>' +
+        '<div style="padding:32px;">' +
+          '<p style="margin:0 0 14px;font-size:15px;">Sayın ' + escape(greeting) + ',</p>' +
+          '<p style="margin:0 0 24px;font-size:14px;line-height:1.7;color:#475569;">' +
+            escape(startDate) + ' - ' + escape(endDate) + ' tarih aralığındaki gözetim kayıtlarınız aşağıda listelenmiştir.' +
+          '</p>' +
+          '<table style="width:100%;border-collapse:separate;border-spacing:0;font-size:13px;overflow:hidden;border:1px solid #e2e8f0;border-radius:18px;">' +
+            '<thead>' +
+              '<tr style="background:#f8fafc;text-align:left;color:#334155;">' +
+                '<th style="padding:14px;">Tarih</th>' +
+                '<th style="padding:14px;">Firma</th>' +
+                '<th style="padding:14px;">Danışman</th>' +
+                '<th style="padding:14px;">Standart</th>' +
+                '<th style="padding:14px;">Sertifika No</th>' +
+                '<th style="padding:14px;">Akreditasyon</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' + tableRows + '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  },
+
   sendTableReport: function(htmlTable, recipient) {
     try {
       const to = recipient || this._defaultRecipient();
@@ -112,11 +174,6 @@ const NotificationService = {
     }
   },
 
-  /**
-   * Aylık gözetim email tetikleyici.
-   * D1 sorgusu ve HTML render Worker'da yapılır; GAS yalnızca bu isteği iletir.
-   * Worker → sendSurveillanceEmail → sendHtmlEmail akışıyla tamamlanır.
-   */
   runMonthlyCheck: function(params) {
     try {
       const props = PropertiesService.getScriptProperties();

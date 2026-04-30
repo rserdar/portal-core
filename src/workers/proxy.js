@@ -1,5 +1,3 @@
-import { renderTenantSurveillanceEmail } from "../tenant/email-registry.js";
-
 /**
  * 🛰️ Portal Worker Proxy (v7.0 - D1-Primary)
  *
@@ -283,10 +281,6 @@ export default {
       const normalized = String(value ?? "").trim().toLowerCase();
       return normalized === "true" || normalized === "1";
     };
-    const buildSurveillanceEmailHtml = (payload) => renderTenantSurveillanceEmail(tenantId, {
-      ...payload,
-      brandName: appName,
-    });
     const sendHtmlEmailViaGas = async (payload) => fetchFromGas(env, {
       action: "sendSurveillanceEmail",
       params: payload,
@@ -1380,22 +1374,13 @@ export default {
               "Google Gmail DLC kapalı olduğu için e-posta gönderimi atlandı."
             ));
           }
-          const rows = Array.isArray(p?.data) ? p.data : Array.isArray(p?.rows) ? p.rows : [];
-          const email = String(p?.email || "").trim();
-          if (!email) return jsonResponse({ success: false, error: "EMAIL_REQUIRED" }, 400);
-
-          const htmlBody = p?.htmlBody || buildSurveillanceEmailHtml({
-            firstName: p?.firstName || "",
-            title: p?.title || "",
-            rows,
-            startDate: p?.startDate || "",
-            endDate: p?.endDate || "",
-          });
-
           const gasResult = await sendHtmlEmailViaGas({
-            email,
-            subject: p?.subject || "Gozetim Bilgileri",
-            htmlBody,
+            ...p,
+            appName,
+            tenantId,
+            email: p?.email,
+            subject: p?.subject,
+            htmlBody: p?.htmlBody,
             from: p?.from,
             fromName: p?.fromName,
             firstName: p?.firstName || "",
@@ -1427,29 +1412,30 @@ export default {
             `).all(),
             env.DB_D1.prepare(`
               SELECT c.nickname, c.unvan, ce.consultant, ce.standart, ce.other_standart,
-                     ce.sertifika_no, ce.akreditasyon, ce.gozetim_tarihi, ce.gozetim_confirmed
-              FROM certificates_full ce
-              JOIN companies c ON c.id = ce.firma_no
+                     ce.sertifika_no, ce.akreditasyon, ce.gozetim_tarihi, ce.gozetim_confirmed,
+                     ce.firma_no
+              FROM certificates ce
+              LEFT JOIN companies c ON c.id = ce.firma_no
+              WHERE ce.durum != 'PASİF' AND ce.durum != 'İPTAL'
             `).all(),
           ]);
 
           const recipientsByConsultant = {};
-          for (const consultant of consultantRows || []) {
-            const key = String(consultant.ad || "").trim();
-            if (!key) continue;
-            const firstName = String(consultant.yetkili_adi || "").trim();
-            const lastName = String(consultant.yetkili_soyad || "").trim();
-            recipientsByConsultant[key] = {
-              firstName,
-              fullName: `${firstName} ${lastName}`.trim(),
-              title: String(consultant.hitabet || "").trim(),
-              email: String(consultant.mail || "").trim(),
-              rows: [],
-            };
-          }
+          consultantRows.forEach((c) => {
+            const key = String(c.ad || "").trim();
+            if (key && c.mail) {
+              recipientsByConsultant[key] = {
+                email: c.mail,
+                firstName: c.yetkili_adi || c.ad,
+                title: c.hitabet || "",
+                fullName: `${c.ad} ${c.soyad || ""}`.trim(),
+                rows: [],
+              };
+            }
+          });
 
           let matchedRows = 0;
-          for (const certificate of certificateRows || []) {
+          for (const certificate of certificateRows) {
             const consultantKey = String(certificate.consultant || "").trim();
             const recipient = recipientsByConsultant[consultantKey];
             if (!recipient) continue;
@@ -1477,19 +1463,16 @@ export default {
           const failures = [];
 
           for (const recipient of recipients) {
-            const htmlBody = buildSurveillanceEmailHtml({
+            const result = await sendHtmlEmailViaGas({
+              email: recipient.email,
+              subject: "Gözetim Bilgileri",
               firstName: recipient.firstName,
               title: recipient.title,
               rows: recipient.rows,
               startDate: formatDateDots(startDate),
               endDate: formatDateDots(endDate),
-            });
-            const result = await sendHtmlEmailViaGas({
-              email: recipient.email,
-              subject: "Gozetim Bilgileri",
-              htmlBody,
-              firstName: recipient.firstName,
-              title: recipient.title,
+              appName,
+              tenantId
             });
             if (result?.success) {
               sent += 1;

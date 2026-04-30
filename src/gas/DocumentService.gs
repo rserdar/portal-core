@@ -165,7 +165,7 @@ const DocumentService = {
       else body.replaceText("{{Sign}}", "");
 
       // qrLink boşsa belgenin kendi Drive URL'sini QR olarak kullan
-      this._generateQr(doc, qrLink || copy.getUrl());
+      this._generateQr(doc, qrLink || copy.getUrl(), standard);
 
       doc.saveAndClose();
       return { success: true, url: copy.getUrl(), id: copy.getId() };
@@ -764,7 +764,7 @@ const DocumentService = {
     img.setHeight(Math.round(height * ratio));
   },
 
-  _generateQr: function(doc, link) {
+  _generateQr: function(doc, link, standard) {
     try {
       const body = doc.getBody();
       const footer = doc.getFooter();
@@ -785,12 +785,16 @@ const DocumentService = {
       const blob = UrlFetchApp.fetch(qrUrl).getBlob();
 
       if (targetPara) {
+        // CE/EC sertifikalarında QR solda, ISO'larda sağda olmalı
+        const isCe = standard && (String(standard).toUpperCase().includes("CE") || String(standard).toUpperCase().includes("EC"));
+        const leftOffset = isCe ? 0 : 440;
+        const topOffset = isCe ? 5 : 0;
+
         // {{QrKod}} etiketi body'de bulunduysa oraya ekle
-        // A4 genişliği ~595pt, margin ~64pt => sağ kenar ~531pt => QR(85pt) için sol offset ~440pt
         targetPara.addPositionedImage(blob)
           .setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT)
-          .setLeftOffset(440)
-          .setTopOffset(0)
+          .setLeftOffset(leftOffset)
+          .setTopOffset(topOffset)
           .setWidth(85)
           .setHeight(85);
       } else if (footer) {

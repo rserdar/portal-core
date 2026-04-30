@@ -129,7 +129,26 @@ const CertificateService = {
         if (rowIndex === -1) throw new Error("Sertifika bulunamadı: " + id);
 
         const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getDisplayValues()[0].map(h => String(h).trim());
-        ws.getRange(rowIndex + 2, 1, 1, headers.length).setValues([this._buildRow(headers, certInfo, String(id))]);
+        const rowNum = rowIndex + 2;
+
+        // Mevcut satırı oku — boş gelen kritik alanlar için eski değeri koru
+        const currentRow = ws.getRange(rowNum, 1, 1, headers.length).getDisplayValues()[0];
+        const currentValues = {};
+        headers.forEach((h, i) => { currentValues[h] = currentRow[i]; });
+
+        // certInfo'da boş string veya undefined gelen alanlar için mevcut değeri kullan
+        // qr ve cert_link özellikle korunmalı — URL'ler yanlışlıkla silinmemeli
+        const PRESERVE_IF_EMPTY = ["qr", "cert_link", "calendar_id", "logo"];
+        const mergedInfo = Object.assign({}, certInfo);
+        PRESERVE_IF_EMPTY.forEach(function(field) {
+          const incoming = mergedInfo[field];
+          const current = currentValues[field];
+          if ((!incoming || String(incoming).trim() === "") && current && String(current).trim() !== "") {
+            mergedInfo[field] = current;
+          }
+        });
+
+        ws.getRange(rowNum, 1, 1, headers.length).setValues([this._buildRow(headers, mergedInfo, String(id))]);
         return { success: true };
       }, 30000, "CertificateService.update");
     } catch (e) {
