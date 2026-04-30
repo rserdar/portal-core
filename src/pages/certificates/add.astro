@@ -2965,11 +2965,26 @@ const defaultCertificationBody = tenant.brand.shortName;
             durum: els.durum?.value.trim() || "",
             sertifika_not: els.not?.value.trim() || "",
             gozetim_confirmed: els.gozetimDone?.checked ? "TRUE" : "FALSE",
-            qr: buildCertificateQrLink(
-              companyContext.unvan || companyContext.nick,
-              els.isoFull?.value || standardText,
-              els.sno?.value || "",
-            ),
+            qr: (() => {
+              const computed = buildCertificateQrLink(
+                companyContext.unvan || companyContext.nick,
+                els.isoFull?.value || standardText,
+                els.sno?.value || "",
+              );
+              const existing = getEditingValue("QR Code", "qr");
+              const result = computed || existing || "";
+              console.log("[CertForm] QR debug:", {
+                unvan: companyContext.unvan,
+                nick: companyContext.nick,
+                isoFull: els.isoFull?.value,
+                standardText,
+                sno: els.sno?.value,
+                computed,
+                existing,
+                result,
+              });
+              return result;
+            })(),
             calendar_id: getEditingValue(
               "Calendar ID",
               "calendar_id",

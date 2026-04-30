@@ -2472,12 +2472,21 @@ export default {
         const lockCheck = await checkOptimisticLock("certificates", id, p?.expected_updated_at);
         if (!lockCheck.ok) return lockCheck.response;
 
-        const canonical = createCanonicalCertificate(p?.certInfo || {}, { id });
+        // Eğer certInfo.qr boşsa, mevcut D1 kaydındaki qr değerini koru
+        let certInfoWithQr = p?.certInfo || {};
+        if (!certInfoWithQr.qr) {
+          const existingRow = await env.DB_D1.prepare(`SELECT qr, cert_link FROM certificates WHERE id=?`).bind(parseInt(id)).first();
+          if (existingRow?.qr) {
+            certInfoWithQr = { ...certInfoWithQr, qr: existingRow.qr };
+          }
+        }
+
+        const canonical = createCanonicalCertificate(certInfoWithQr, { id });
         // Step 1: D1 First
         await upsertCertificateD1(canonical, parseInt(id)).run();
 
         // Step 2: Background Sync
-        syncToBackup("updateCertificate", p, "certificates", id);
+        syncToBackup("updateCertificate", { ...p, certInfo: certInfoWithQr }, "certificates", id);
         ctx.waitUntil(rebuildDashboardStats());
 
         const freshRow = await env.DB_D1.prepare(`SELECT updated_at FROM certificates WHERE id=?`).bind(parseInt(id)).first();

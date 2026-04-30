@@ -36,15 +36,20 @@ export function toDisplayDate(value: string) {
 export { addOneYearMinusOneDay };
 
 export function buildCertificateQrLink(unvan: string, standardLabel: string, certNo: string) {
-  const cleanUnvan = unvan.trim();
-  const cleanStandard = standardLabel.trim();
-  const cleanCertNo = certNo.trim();
+  const cleanUnvan = (unvan || '').trim();
+  const cleanStandard = (standardLabel || '').trim();
+  const cleanCertNo = (certNo || '').trim();
   if (!cleanUnvan || !cleanStandard || !cleanCertNo) return '';
 
-  const pieces = cleanUnvan.split(/\s+/);
-  const shortName = pieces[0]?.length < 3 && pieces.length > 1
-    ? `${pieces[0]} ${pieces[1]}`
-    : pieces[0];
+  const pieces = cleanUnvan.split(/\s+/).filter(Boolean);
+  if (!pieces.length) return '';
+
+  const firstWord = pieces[0] || '';
+  const shortName = firstWord.length < 3 && pieces.length > 1
+    ? `${firstWord} ${pieces[1]}`
+    : firstWord;
+
+  if (!shortName.trim()) return '';
 
   const lookupUrl = tenant.integrations.certificateLookupUrl;
   if (!lookupUrl) return '';
