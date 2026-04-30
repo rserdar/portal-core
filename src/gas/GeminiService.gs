@@ -35,6 +35,79 @@ const GeminiService = {
     return text;
   },
 
+  _extractFirstJsonObject: function(raw) {
+    const text = String(raw || "");
+    if (!text) return "";
+
+    var start = text.indexOf("{");
+    if (start === -1) return "";
+
+    var depth = 0;
+    var inString = false;
+    var escaped = false;
+
+    for (var i = start; i < text.length; i++) {
+      var ch = text.charAt(i);
+
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch === "\\") {
+          escaped = true;
+        } else if (ch === "\"") {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (ch === "\"") {
+        inString = true;
+        continue;
+      }
+      if (ch === "{") {
+        depth += 1;
+        continue;
+      }
+      if (ch === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          return text.slice(start, i + 1);
+        }
+      }
+    }
+
+    return text.slice(start).trim();
+  },
+
+  _repairJsonText: function(raw) {
+    return String(raw || "")
+      .replace(/,\s*([}\]])/g, "$1")
+      .trim();
+  },
+
+  _parseModelJson: function(raw) {
+    var cleaned = this._cleanJsonText(raw);
+    if (!cleaned) return {};
+
+    try {
+      return JSON.parse(cleaned);
+    } catch (_) {}
+
+    var extracted = this._extractFirstJsonObject(cleaned);
+    if (extracted) {
+      try {
+        return JSON.parse(extracted);
+      } catch (_) {}
+
+      var repaired = this._repairJsonText(extracted);
+      if (repaired) {
+        return JSON.parse(repaired);
+      }
+    }
+
+    throw new Error("GEMINI_INVALID_JSON");
+  },
+
   _sanitizeSuggestion: function(item, fallbackScore) {
     const raw = item && typeof item === "object" ? item : {};
     const kapsamLines = Array.isArray(raw.kapsamLines)
@@ -122,6 +195,10 @@ const GeminiService = {
     return textPart ? String(textPart.text || "") : "";
   },
 
+  _shouldRetryStatus: function(statusCode) {
+    return [429, 500, 502, 503, 504].indexOf(Number(statusCode)) >= 0;
+  },
+
   suggestCertificateClassification: function(payload) {
     try {
       const apiKey = this._getScriptProperty("GEMINI_API_KEY", "");
@@ -129,7 +206,7 @@ const GeminiService = {
         return { success: false, error: "GEMINI_API_KEY_MISSING" };
       }
 
-      const model = this._getConfig("model", "gemini-flash-latest");
+      const model = this._getConfig("model", "gemini-2.5-flash");
       const temperature = this._parseNumber(this._getConfig("temperature", "0.25"), 0.25);
       const maxOutputTokens = Math.max(
         512,
@@ -157,29 +234,53 @@ const GeminiService = {
         }
       };
 
-      const response = UrlFetchApp.fetch(endpoint, {
-        method: "post",
-        contentType: "application/json",
-        headers: {
-          "x-goog-api-key": apiKey
-        },
-        muteHttpExceptions: true,
-        payload: JSON.stringify(requestBody)
-      });
+      var response = null;
+      var statusCode = 0;
+      var responseText = "";
+      var lastErrorCode = "";
+      var backoffs = [700, 1600, 3200];
 
-      const statusCode = response.getResponseCode();
-      const responseText = response.getContentText();
-      if (statusCode < 200 || statusCode >= 300) {
-        BaseService.logError("GeminiService.suggestCertificateClassification", new Error("Gemini HTTP " + statusCode), {
-          body: responseText.slice(0, 400)
+      for (var attempt = 0; attempt < backoffs.length; attempt++) {
+        response = UrlFetchApp.fetch(endpoint, {
+          method: "post",
+          contentType: "application/json",
+          headers: {
+            "x-goog-api-key": apiKey
+          },
+          muteHttpExceptions: true,
+          payload: JSON.stringify(requestBody)
         });
-        return { success: false, error: "GEMINI_HTTP_" + statusCode };
+
+        statusCode = response.getResponseCode();
+        responseText = response.getContentText();
+        if (statusCode >= 200 && statusCode < 300) {
+          break;
+        }
+
+        lastErrorCode = "GEMINI_HTTP_" + statusCode;
+        if (!this._shouldRetryStatus(statusCode) || attempt === backoffs.length - 1) {
+          BaseService.logError("GeminiService.suggestCertificateClassification", new Error("Gemini HTTP " + statusCode), {
+            body: String(responseText || "").slice(0, 400),
+            attempt: attempt + 1
+          });
+          return { success: false, error: lastErrorCode };
+        }
+
+        Utilities.sleep(backoffs[attempt]);
       }
 
       const parsedApi = JSON.parse(responseText || "{}");
       const modelText = this._extractTextResponse(parsedApi);
-      const cleanedText = this._cleanJsonText(modelText);
-      const parsedJson = JSON.parse(cleanedText || "{}");
+      let parsedJson = null;
+      try {
+        parsedJson = this._parseModelJson(modelText);
+      } catch (parseError) {
+        BaseService.logError("GeminiService.suggestCertificateClassification.parse", parseError, {
+          model: model,
+          rawPreview: String(modelText || "").slice(0, 800)
+        });
+        return { success: false, error: "GEMINI_INVALID_JSON" };
+      }
       const suggestions = Array.isArray(parsedJson.suggestions) ? parsedJson.suggestions : [];
 
       const sanitized = suggestions

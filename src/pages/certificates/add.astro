@@ -1,16 +1,30 @@
 ---
-import { getEntry } from 'astro:content';
 import DashboardLayout from "../../layouts/DashboardLayout.astro";
 import { ArrowLeft, FilePlus2, X, RotateCw } from "lucide-astro";
 import CompanyPicker from "../../components/CompanyPicker.astro";
 import tenant from '@tenant/config';
+import historyData from '../../data/certificate-history.json';
+import standardsReferenceData from '../../content/reference/standards.json';
+import eaReferenceData from '../../content/reference/ea-codes.json';
+import naceReferenceData from '../../content/reference/nace-codes.json';
+import iso22000ReferenceData from '../../content/reference/iso22000-categories.json';
+import iso13485ReferenceData from '../../content/reference/iso13485-categories.json';
+import iso50001ReferenceData from '../../content/reference/iso50001-categories.json';
 
-const standardsReference = (await getEntry('reference', 'standards'))?.data.items ?? [];
-const eaReference = (await getEntry('reference', 'ea-codes'))?.data.items ?? [];
-const naceReference = (await getEntry('reference', 'nace-codes'))?.data.items ?? [];
-const iso22000Reference = (await getEntry('reference', 'iso22000-categories'))?.data.items ?? [];
-const iso13485Reference = (await getEntry('reference', 'iso13485-categories'))?.data.items ?? [];
-const iso50001Reference = (await getEntry('reference', 'iso50001-categories'))?.data.items ?? [];
+function unwrapReferenceItems(source: any) {
+  if (Array.isArray(source?.items)) return source.items;
+  if (Array.isArray(source?.default?.items)) return source.default.items;
+  if (Array.isArray(source)) return source;
+  if (Array.isArray(source?.default)) return source.default;
+  return [];
+}
+
+const standardsReference = unwrapReferenceItems(standardsReferenceData);
+const eaReference = unwrapReferenceItems(eaReferenceData);
+const naceReference = unwrapReferenceItems(naceReferenceData);
+const iso22000Reference = unwrapReferenceItems(iso22000ReferenceData);
+const iso13485Reference = unwrapReferenceItems(iso13485ReferenceData);
+const iso50001Reference = unwrapReferenceItems(iso50001ReferenceData);
 const defaultCertificationBody = tenant.brand.shortName;
 ---
 
@@ -21,6 +35,7 @@ const defaultCertificationBody = tenant.brand.shortName;
   <script id="cert-iso22000-reference" type="application/json" set:html={JSON.stringify(iso22000Reference)}></script>
   <script id="cert-iso13485-reference" type="application/json" set:html={JSON.stringify(iso13485Reference)}></script>
   <script id="cert-iso50001-reference" type="application/json" set:html={JSON.stringify(iso50001Reference)}></script>
+  <script id="cert-history-reference" type="application/json" set:html={JSON.stringify(historyData)}></script>
   <div class="max-w-5xl mx-auto pb-24 space-y-6">
     <div class="flex items-center gap-3">
       <a
@@ -533,17 +548,33 @@ const defaultCertificationBody = tenant.brand.shortName;
                     class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                   />
                 </div>
-                <div class="space-y-2">
-                  <label
-                    class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >Kod / NACE</label
-                  >
-                  <input
-                    id="cert-kod"
-                    name="kod"
-                    type="text"
-                    class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
-                  />
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="space-y-2">
+                    <label
+                      class="text-[11px] font-bold uppercase tracking-widest text-muted"
+                      >EA</label
+                    >
+                    <input
+                      id="cert-ea"
+                      name="ea"
+                      type="text"
+                      class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
+                      placeholder="EA"
+                    />
+                  </div>
+                  <div class="space-y-2">
+                    <label
+                      class="text-[11px] font-bold uppercase tracking-widest text-muted"
+                      >Kod / NACE</label
+                    >
+                    <input
+                      id="cert-kod"
+                      name="kod"
+                      type="text"
+                      class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
+                      placeholder="NACE"
+                    />
+                  </div>
                 </div>
                 <div class="space-y-2">
                   <label
@@ -721,6 +752,7 @@ const defaultCertificationBody = tenant.brand.shortName;
                   <span class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-300">
                     E8
                   </span>
+                  <span id="cert-history-badge" class="badge-status border-emerald-500/20 bg-emerald-500/10 text-emerald-300 hidden"></span>
                 </div>
                 <p
                   id="cert-classification-summary"
@@ -749,115 +781,16 @@ const defaultCertificationBody = tenant.brand.shortName;
                   type="button"
                   class="hidden inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface transition-colors"
                 >
-                  En İyiyi Önizle
+                  En İyiyi Uygula
                 </button>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] gap-5">
-              <div class="space-y-3">
-                <div
-                  id="cert-classification-list"
-                  class="grid grid-cols-1 gap-3"
-                ></div>
-              </div>
-
-              <div class="rounded-2xl border border-border-main bg-surface-hover p-4 space-y-4">
-                <div class="space-y-1">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-muted">
-                    Önizleme ve Düzenleme
-                  </p>
-                  <p
-                    id="cert-classification-preview-note"
-                    class="text-sm font-semibold leading-relaxed text-muted"
-                  >
-                    Bir öneri seçildiğinde burada düzenleyip forma uygulayabilirsin.
-                  </p>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div class="space-y-2">
-                    <label
-                      class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >
-                      EA
-                    </label>
-                    <input
-                      id="cert-classification-draft-ea"
-                      type="text"
-                      class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
-                      placeholder="EA kodu"
-                    />
-                  </div>
-                  <div class="space-y-2">
-                    <label
-                      class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >
-                      NACE / Kod
-                    </label>
-                    <input
-                      id="cert-classification-draft-nace"
-                      type="text"
-                      class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
-                      placeholder="Kod"
-                    />
-                  </div>
-                </div>
-
-                <div class="space-y-2">
-                  <label
-                    class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                  >
-                    Kapsam Taslağı
-                  </label>
-                  <textarea
-                    id="cert-classification-draft-kapsam"
-                    rows={6}
-                    class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm text-main min-h-[150px] resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
-                    placeholder="Öneri kapsamı"
-                  ></textarea>
-                </div>
-
-                <div class="space-y-2">
-                  <div class="flex items-center justify-between gap-3">
-                    <label
-                      class="text-[11px] font-bold uppercase tracking-widest text-muted"
-                    >
-                      Scope Taslağı
-                    </label>
-                    <button
-                      id="cert-classification-draft-translate"
-                      type="button"
-                      class="inline-flex items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-300 hover:bg-indigo-500/15 transition-colors"
-                    >
-                      EN Çevir
-                    </button>
-                  </div>
-                  <textarea
-                    id="cert-classification-draft-scope"
-                    rows={6}
-                    class="w-full rounded-2xl border border-border-main bg-surface px-4 py-3 text-sm text-main min-h-[150px] resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
-                    placeholder="Öneri scope'u"
-                  ></textarea>
-                </div>
-
-                <div class="flex flex-col gap-2 sm:flex-row">
-                  <button
-                    id="cert-classification-apply-preview"
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-4 py-3 text-[11px] font-black uppercase tracking-widest text-white hover:bg-indigo-500 transition-colors"
-                  >
-                    Forma Uygula
-                  </button>
-                  <button
-                    id="cert-classification-clear-preview"
-                    type="button"
-                    class="inline-flex items-center justify-center rounded-2xl border border-border-main bg-surface px-4 py-3 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface-hover transition-colors"
-                  >
-                    Önizlemeyi Temizle
-                  </button>
-                </div>
-              </div>
+            <div class="space-y-3">
+              <div
+                id="cert-classification-list"
+                class="grid grid-cols-1 gap-3"
+              ></div>
             </div>
           </section>
 
@@ -996,6 +929,7 @@ const defaultCertificationBody = tenant.brand.shortName;
   import {
     parseReferenceScript,
     recommendClassification,
+    findHistoricalScopeMatches,
     buildKapsamText,
     type EaReferenceItem,
     type NaceReferenceItem,
@@ -1102,6 +1036,7 @@ const defaultCertificationBody = tenant.brand.shortName;
       denetim: document.getElementById(
         "cert-denetim",
       ) as HTMLSelectElement | null,
+      ea: document.getElementById("cert-ea") as HTMLInputElement | null,
       kod: document.getElementById("cert-kod") as HTMLInputElement | null,
       akreditasyon: document.getElementById(
         "cert-akreditasyon",
@@ -1132,30 +1067,6 @@ const defaultCertificationBody = tenant.brand.shortName;
         "cert-classification-apply-top",
       ) as HTMLButtonElement | null,
       classificationList: document.getElementById("cert-classification-list"),
-      classificationPreviewNote: document.getElementById(
-        "cert-classification-preview-note",
-      ),
-      classificationDraftEa: document.getElementById(
-        "cert-classification-draft-ea",
-      ) as HTMLInputElement | null,
-      classificationDraftNace: document.getElementById(
-        "cert-classification-draft-nace",
-      ) as HTMLInputElement | null,
-      classificationDraftKapsam: document.getElementById(
-        "cert-classification-draft-kapsam",
-      ) as HTMLTextAreaElement | null,
-      classificationDraftScope: document.getElementById(
-        "cert-classification-draft-scope",
-      ) as HTMLTextAreaElement | null,
-      classificationDraftTranslate: document.getElementById(
-        "cert-classification-draft-translate",
-      ) as HTMLButtonElement | null,
-      classificationApplyPreview: document.getElementById(
-        "cert-classification-apply-preview",
-      ) as HTMLButtonElement | null,
-      classificationClearPreview: document.getElementById(
-        "cert-classification-clear-preview",
-      ) as HTMLButtonElement | null,
     };
 
     let companyContext: Awaited<
@@ -1177,6 +1088,9 @@ const defaultCertificationBody = tenant.brand.shortName;
     let classificationSuggestionsInitialized = false;
     let classificationGeminiLoading = false;
     let activeClassificationSuggestionIndex = -1;
+    let certificateHistory: any[] = [];
+    let staticCertHistory: any[] = [];
+    let historyScopeMatches: any[] = [];
     let consultantOptions: string[] = [];
     let consultantSuggestions: string[] = [];
     let activeConsultantIndex = -1;
@@ -1575,6 +1489,37 @@ const defaultCertificationBody = tenant.brand.shortName;
       renderStandards();
     }
 
+    async function applyClassificationSuggestion(
+      suggestion: UiClassificationSuggestion,
+      options: { autoTranslate?: boolean } = { autoTranslate: true },
+    ) {
+      if (els.kod && suggestion.nace) {
+        els.kod.value = suggestion.nace;
+      }
+
+      const kapsamText = buildKapsamText(suggestion.kapsamLines);
+      if (els.kapsam && kapsamText) {
+        els.kapsam.value = kapsamText;
+      }
+
+      if (els.scope) {
+        if (options.autoTranslate && kapsamText) {
+          const res = await api.translate(kapsamText, true);
+          if (res.success) {
+            els.scope.value = String(res.data || "");
+          }
+        } else if (suggestion.scopeDraft) {
+          els.scope.value = suggestion.scopeDraft;
+        }
+      }
+
+      toast.success("Sınıflandırma başarıyla form alanlarına uygulandı.");
+    }
+
+    function clearClassificationPreview() {
+      activeClassificationSuggestionIndex = -1;
+    }
+
     function ensureClassificationReferences() {
       if (eaOptions.length === 0) {
         eaOptions = parseReferenceScript<EaReferenceItem>("cert-ea-reference");
@@ -1594,24 +1539,22 @@ const defaultCertificationBody = tenant.brand.shortName;
     }
 
     function buildClassificationInput() {
-      const previousCert = companyContext?.certificates?.[companyContext.certificates.length - 1] || null;
+      const getVal = (id: string) => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null)?.value || "";
+      
       return {
-        companyName: selectedCompany ? getCompanyNick(selectedCompany) : companyContext?.nick,
-        companyTitle: selectedCompany ? getCompanyValue(selectedCompany, "Unvan", "unvan") : companyContext?.unvan,
+        companyName: companyContext?.nick || "",
+        companyTitle: companyContext?.unvan || "",
         businessText: [
           companyContext?.yapilanIs,
-          getCompanyValue(selectedCompany, "yapilan_is", "Yapılan İş", "Yapilan Is", "yapilanIs"),
-        ]
-          .filter(Boolean)
-          .join(" "),
-        facilityText: [companyContext?.alan, getCompanyValue(selectedCompany, "Alan", "alan")].filter(Boolean).join(" "),
-        departmentText: [companyContext?.departman, getCompanyValue(selectedCompany, "Departman", "departman")].filter(Boolean).join(" "),
-        currentEa: els.ea?.value.trim() || companyContext?.ea || "",
-        currentNace: els.kod?.value.trim() || companyContext?.nace || "",
-        currentKapsam: els.kapsam?.value.trim() || "",
-        currentScope: els.scope?.value.trim() || "",
-        previousKapsam: normalizeObjectValue(previousCert || {}, ["Kapsam", "kapsam"]) || "",
-        previousScope: normalizeObjectValue(previousCert || {}, ["Scope", "scope"]) || "",
+          companyContext?.alan,
+          companyContext?.departman
+        ].filter(Boolean).join(" "),
+        currentKapsam: getVal("cert-kapsam"),
+        currentScope: getVal("cert-scope"),
+        currentEa: getVal("cert-ea"),
+        currentNace: getVal("cert-kod"),
+        historicalKapsam: historyScopeMatches[0]?.kapsam || "",
+        historicalScope: historyScopeMatches[0]?.scope || "",
       };
     }
 
@@ -1636,11 +1579,32 @@ const defaultCertificationBody = tenant.brand.shortName;
 
     function buildLocalClassificationSuggestions(limit = 6): UiClassificationSuggestion[] {
       const { targetNaceItems } = getClassificationTargetConfig();
-      return recommendClassification(eaOptions, targetNaceItems, buildClassificationInput(), limit).map((item) => ({
+      return recommendClassification(eaOptions, targetNaceItems, buildClassificationInput(), limit, historyScopeMatches).map((item) => ({
         ...item,
         source: "local",
         sourceLabel: "Referans",
       }));
+    }
+
+    function getSuggestionDisplayLabel(suggestion: UiClassificationSuggestion) {
+      const rawLabel = String(suggestion.label || "").trim();
+      if (rawLabel && rawLabel !== suggestion.nace) {
+        return rawLabel;
+      }
+
+      const { targetNaceItems } = getClassificationTargetConfig();
+      const referenceItem = targetNaceItems.find((item) => {
+        const code = String(item.code || item.id || "").trim();
+        return code === suggestion.nace;
+      });
+
+      return String(
+        referenceItem?.text ||
+          referenceItem?.fullName ||
+          referenceItem?.label ||
+          suggestion.label ||
+          suggestion.nace,
+      ).trim();
     }
 
     function mergeClassificationSuggestions(
@@ -1743,21 +1707,43 @@ const defaultCertificationBody = tenant.brand.shortName;
       toast.success(`${labelType} ${suggestion.ea ? `EA ${suggestion.ea} / ` : ""}${suggestion.nace} önerisi uygulandı.`);
     }
 
-    function updateClassificationPreviewNote(message: string) {
-      if (els.classificationPreviewNote) {
-        els.classificationPreviewNote.textContent = message;
-      }
-    }
-
     function clearClassificationPreview() {
       activeClassificationSuggestionIndex = -1;
-      if (els.classificationDraftEa) els.classificationDraftEa.value = "";
-      if (els.classificationDraftNace) els.classificationDraftNace.value = "";
-      if (els.classificationDraftKapsam) els.classificationDraftKapsam.value = "";
-      if (els.classificationDraftScope) els.classificationDraftScope.value = "";
-      updateClassificationPreviewNote(
-        "Bir öneri seçildiğinde burada düzenleyip forma uygulayabilirsin.",
-      );
+      syncClassificationCardSelection();
+    }
+
+    function syncClassificationCardSelection() {
+      if (!els.classificationList) return;
+      const activeIndex =
+        activeClassificationSuggestionIndex >= 0
+          ? activeClassificationSuggestionIndex
+          : classificationSuggestions.length > 0
+            ? 0
+            : -1;
+
+      els.classificationList
+        .querySelectorAll<HTMLElement>("[data-suggestion-card]")
+        .forEach((card) => {
+          const cardIndex = Number(card.dataset.index || "-1");
+          const isActive = cardIndex === activeIndex;
+
+          card.classList.toggle("border-indigo-500/40", isActive);
+          card.classList.toggle("bg-indigo-500/5", isActive);
+          card.classList.toggle("shadow-lg", isActive);
+          card.classList.toggle("shadow-indigo-500/10", isActive);
+          card.classList.toggle("border-border-main", !isActive);
+          card.classList.toggle("bg-surface", !isActive);
+
+          const previewButton = card.querySelector<HTMLElement>(
+            ".classification-preview",
+          );
+          previewButton?.classList.toggle("border-indigo-500/30", isActive);
+          previewButton?.classList.toggle("bg-indigo-500/10", isActive);
+          previewButton?.classList.toggle("text-indigo-300", isActive);
+          previewButton?.classList.toggle("border-border-main", !isActive);
+          previewButton?.classList.toggle("bg-surface", !isActive);
+          previewButton?.classList.toggle("text-main", !isActive);
+        });
     }
 
     async function previewClassificationSuggestion(
@@ -1768,108 +1754,90 @@ const defaultCertificationBody = tenant.brand.shortName;
         activeClassificationSuggestionIndex = options.selectedIndex;
       }
 
-      if (els.classificationDraftEa) els.classificationDraftEa.value = suggestion.ea || "";
-      if (els.classificationDraftNace) els.classificationDraftNace.value = suggestion.nace || "";
+      if (els.ea) els.ea.value = suggestion.ea || "";
+      if (els.kod) els.kod.value = suggestion.nace || "";
 
       const kapsamText = buildKapsamText(suggestion.kapsamLines);
-      if (els.classificationDraftKapsam) {
-        els.classificationDraftKapsam.value = kapsamText;
-      }
-
-      if (els.classificationDraftScope) {
-        els.classificationDraftScope.value = suggestion.scopeDraft || "";
-      }
-
-      if (options.autoTranslate && kapsamText && els.classificationDraftScope && !els.classificationDraftScope.value.trim()) {
-        const res = await api.translate(kapsamText, true);
-        if (res.success) {
-          els.classificationDraftScope.value = String(res.data || "");
-        }
-      }
-
-      updateClassificationPreviewNote(
-        `${suggestion.source === "gemini" ? "Gemini" : "Referans"} önerisi seçildi. Değerleri burada düzenleyip doğrudan sertifika formuna uygulayabilirsin.`,
-      );
-    }
-
-    async function translateClassificationDraftScope() {
-      const kapsamText = els.classificationDraftKapsam?.value.trim() || "";
-      if (!kapsamText || !els.classificationDraftScope) return;
-      const res = await api.translate(kapsamText, true);
-      if (res.success) {
-        els.classificationDraftScope.value = String(res.data || "");
-        toast.success("Taslak scope güncellendi.");
-      } else {
-        toast.error(`Çeviri hatası: ${res.error}`);
-      }
-    }
-
-    async function applyClassificationPreviewToForm() {
-      const draftNace = els.classificationDraftNace?.value.trim() || "";
-      const draftEa = els.classificationDraftEa?.value.trim() || "";
-      const draftKapsam = els.classificationDraftKapsam?.value.trim() || "";
-      const draftScope = els.classificationDraftScope?.value.trim() || "";
-
-      if (!draftNace && !draftEa && !draftKapsam && !draftScope) {
-        toast.error("Önce bir öneri seç veya taslak oluştur.");
-        return;
-      }
-
-      if (els.ea && draftEa) els.ea.value = draftEa;
-      if (els.kod && draftNace) els.kod.value = draftNace;
-
-      if (els.kapsam && draftKapsam) {
+      if (els.kapsam) {
         const shouldReplace =
           !els.kapsam.value.trim() ||
-          els.kapsam.value.trim() === draftKapsam ||
-          confirm("Mevcut kapsam alanı önizleme ile güncellensin mi?");
+          els.kapsam.value.trim() === kapsamText ||
+          confirm("Mevcut kapsam alanı öneri ile güncellensin mi?");
         if (shouldReplace) {
-          els.kapsam.value = draftKapsam;
+          els.kapsam.value = kapsamText;
         }
       }
 
-      if (els.scope && draftScope) {
+      if (els.scope && suggestion.scopeDraft) {
         const shouldReplace =
           !els.scope.value.trim() ||
-          els.scope.value.trim() === draftScope ||
-          confirm("Mevcut scope alanı önizleme ile güncellensin mi?");
+          els.scope.value.trim() === suggestion.scopeDraft ||
+          confirm("Mevcut scope alanı öneri ile güncellensin mi?");
         if (shouldReplace) {
-          els.scope.value = draftScope;
+          els.scope.value = suggestion.scopeDraft;
         }
       }
 
-      const previewSuggestion =
-        activeClassificationSuggestionIndex >= 0
-          ? classificationSuggestions[activeClassificationSuggestionIndex]
-          : null;
+      if (options.autoTranslate && kapsamText && els.scope && !els.scope.value.trim()) {
+        const res = await api.translate(kapsamText, true);
+        if (res.success) {
+          els.scope.value = String(res.data || "");
+        }
+      }
 
-      if (previewSuggestion) {
-        const selectedStandard = els.standSelect?.selectedOptions[0]?.textContent?.trim() || "";
-        const labelType = selectedStandard.includes("22000") ? "Kategori" : selectedStandard.includes("13485") ? "MD Kodu" : selectedStandard.includes("50001") ? "Sektör" : "EA/NACE";
-        toast.success(`${labelType} önerisi düzenlenerek forma uygulandı.`);
-      } else {
-        toast.success("Önizleme alanındaki değerler forma uygulandı.");
+      toast.success(
+        `${suggestion.source === "gemini" ? "Gemini" : "Referans"} önerisi form alanlarına işlendi.`,
+      );
+      syncClassificationCardSelection();
+    }
+
+    function buildHistoryScopeRecommendations() {
+      const input = buildClassificationInput();
+      const { selectedStandard } = getClassificationTargetConfig();
+      const historyItems = certificateHistory.length
+        ? certificateHistory
+        : Array.isArray(companyContext?.certificates)
+          ? companyContext.certificates
+          : [];
+      historyScopeMatches = findHistoricalScopeMatches(
+        historyItems,
+        input,
+        selectedStandard,
+        5,
+      );
+      
+      const badge = document.getElementById("cert-history-badge");
+      if (badge) {
+        if (historyScopeMatches.length > 0) {
+          badge.textContent = `${historyScopeMatches.length} Benzer Geçmiş Kapsam`;
+          badge.classList.remove("hidden");
+        } else {
+          badge.classList.add("hidden");
+        }
       }
     }
 
     async function renderClassificationSuggestions(options: { useGemini?: boolean } = {}) {
+      buildHistoryScopeRecommendations();
       ensureClassificationReferences();
       classificationSuggestionsInitialized = true;
       const { labelType } = getClassificationTargetConfig();
+      const input = buildClassificationInput();
       const localSuggestions = buildLocalClassificationSuggestions(6);
-      let nextSuggestions = localSuggestions;
+      let nextSuggestions = [...localSuggestions];
       let summaryText = "";
 
       if (!els.classificationPanel || !els.classificationSummary || !els.classificationList || !els.classificationApplyTop) {
         return;
       }
 
-      if (!localSuggestions.length && !buildClassificationInput().businessText && !buildClassificationInput().currentKapsam && !buildClassificationInput().currentScope) {
+      const hasContext = input.businessText || input.currentKapsam || input.currentScope || input.currentEa || input.currentNace;
+
+      if (!nextSuggestions.length && !hasContext) {
         els.classificationSummary.textContent =
-          "Yeterli bağlam bulunamadı. Firma faaliyeti, kapsam veya mevcut NACE bilgisi eklendiğinde daha iyi öneri üretilebilir.";
+          "Firma faaliyeti, kapsam veya mevcut alanlardan öneri üretilebilir.";
         els.classificationList.innerHTML = "";
         els.classificationApplyTop.classList.add("hidden");
-        clearClassificationPreview();
         return;
       }
 
@@ -1897,78 +1865,116 @@ const defaultCertificationBody = tenant.brand.shortName;
       classificationSuggestions = nextSuggestions;
 
       if (classificationSuggestions.length === 0) {
+        clearClassificationPreview();
         els.classificationSummary.textContent =
-          "Yeterli bağlam bulunamadı. Firma faaliyeti, kapsam veya mevcut NACE bilgisi eklendiğinde daha iyi öneri üretilebilir.";
+          hasContext 
+            ? "Eşleşen bir sınıflandırma önerisi bulunamadı. Lütfen kapsamı veya kodları kontrol edin."
+            : "Firma faaliyeti, kapsam veya mevcut alanlardan öneri üretilebilir.";
         els.classificationList.innerHTML = "";
         els.classificationApplyTop.classList.add("hidden");
-        clearClassificationPreview();
         return;
       }
 
       els.classificationApplyTop.classList.remove("hidden");
       els.classificationSummary.textContent =
-        summaryText || `${classificationSuggestions.length} öneri bulundu. En iyi eşleşmeyi önizleyip düzenleyerek forma uygulayabilirsin.`;
+        summaryText ||
+        `${classificationSuggestions.length} öneri listelendi. ${historyScopeMatches.length > 0 ? historyScopeMatches.length + " geçmiş kayıt analiz edildi." : ""}`;
 
       els.classificationList.innerHTML = classificationSuggestions
         .map((suggestion, index) => {
           const reasonText = suggestion.reasons.slice(0, 2).join(" · ") || "Referans eşleşmesi";
-          const lines = suggestion.kapsamLines
-            .slice(0, 3)
-            .map((line) => `<li class="text-xs text-muted leading-relaxed">${line}</li>`)
-            .join("");
+          const keywordText = suggestion.keywordMatches.slice(0, 4).join(", ");
+          const displayLabel = getSuggestionDisplayLabel(suggestion);
+            
+          const historyItems = index === 0 ? historyScopeMatches
+            .slice(0, 2)
+            .map((item) => item.kapsam || item.scope)
+            .filter(Boolean)
+            .map((line) => `<li class="relative pl-4 before:absolute before:left-0 before:top-2 before:h-1 before:w-1 before:rounded-full before:bg-emerald-500/50 text-emerald-400/80">${escapeHtml(line as string)}</li>`)
+            .join("") : "";
+
+          const active = index === activeClassificationSuggestionIndex || (activeClassificationSuggestionIndex < 0 && index === 0);
 
           return `
-            <div class="rounded-2xl border ${index === 0 ? "border-indigo-500/30 bg-indigo-500/10" : "border-border-main bg-surface"} p-4 space-y-3">
-              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                <div class="space-y-1">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="badge-status ${index === 0 ? "badge-status-success" : "badge-status-warning"}">Skor ${suggestion.score}</span>
-                    <span class="badge-status border-border-main bg-surface-hover text-main">EA ${suggestion.ea || "—"}</span>
-                    <span class="badge-status border-border-main bg-surface-hover text-main">${labelType} ${suggestion.nace}</span>
-                    <span class="badge-status border-border-main bg-surface-hover text-main">${suggestion.source === "gemini" ? "Gemini" : "Referans"}</span>
+            <div
+              class="group relative rounded-2xl border ${active ? "border-indigo-500/40 bg-indigo-500/5 shadow-lg shadow-indigo-500/10" : "border-border-main bg-surface"} p-5 transition-all hover:border-indigo-500/30"
+              data-suggestion-card
+              data-index="${index}"
+            >
+              <div class="flex flex-col gap-4">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="space-y-1.5">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="inline-flex items-center rounded-lg bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-400 border border-indigo-500/20">
+                        ${labelType} ${suggestion.nace}
+                      </span>
+                      <span class="inline-flex items-center rounded-lg bg-surface-hover px-2 py-0.5 text-[10px] font-bold text-muted border border-border-main">
+                        EA ${suggestion.ea || "—"}
+                      </span>
+                    </div>
+                    <h4 class="text-sm font-bold text-main leading-snug">
+                      ${escapeHtml(suggestion.nace)} - ${escapeHtml(displayLabel)}
+                    </h4>
+                    <p class="text-[11px] text-muted font-medium">${reasonText}</p>
                   </div>
-                  <p class="text-sm font-bold text-main">${suggestion.label}</p>
-                  <p class="text-xs text-muted">${reasonText}</p>
+                  
+                  <div class="flex flex-row sm:flex-col gap-2 shrink-0">
+                    <button type="button" class="classification-preview px-4 py-2 rounded-xl border border-border-main bg-surface text-[10px] font-black uppercase tracking-wider text-main hover:bg-surface-hover transition-all" data-index="${index}">Forma Yaz</button>
+                    <button type="button" class="classification-apply px-4 py-2 rounded-xl bg-indigo-600 text-[10px] font-black uppercase tracking-wider text-white hover:bg-indigo-500 transition-all shadow-md shadow-indigo-600/20" data-index="${index}">Forma Uygula</button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  class="classification-preview inline-flex items-center justify-center rounded-xl border border-border-main bg-surface px-3 py-2 text-[11px] font-black uppercase tracking-widest text-main hover:bg-surface-hover transition-colors"
-                  data-index="${index}"
-                >
-                  Önizle
-                </button>
+
+                ${keywordText ? `
+                  <div class="flex items-center gap-2 py-1 border-y border-border-main/50">
+                    <span class="text-[10px] font-bold text-muted uppercase tracking-tight">Anahtar:</span>
+                    <span class="text-[10px] text-indigo-300/70 font-medium">${escapeHtml(keywordText)}</span>
+                  </div>
+                ` : ""}
+
+                ${historyItems ? `
+                  <div class="space-y-2 border-t border-border-main/50 pt-3">
+                    <span class="text-[10px] font-bold text-emerald-300 uppercase tracking-widest">Benzer Geçmiş Kapsamlar</span>
+                    <ul class="space-y-1.5 text-[11px] leading-relaxed">
+                      ${historyItems}
+                    </ul>
+                  </div>
+                ` : ""}
               </div>
-              <ul class="space-y-1">${lines}</ul>
             </div>
           `;
         })
         .join("");
 
       els.classificationList.querySelectorAll<HTMLButtonElement>(".classification-preview").forEach((button) => {
-        const handler = async () => {
+        button.onclick = async () => {
           const index = Number(button.dataset.index || "-1");
           const suggestion = classificationSuggestions[index];
-          if (!suggestion) return;
-          await previewClassificationSuggestion(suggestion, {
-            autoTranslate: true,
-            selectedIndex: index,
-          });
+          if (suggestion) {
+            await previewClassificationSuggestion(suggestion, {
+              autoTranslate: true,
+              selectedIndex: index,
+            });
+          }
         };
-        button.onclick = () => void handler();
       });
 
-      const defaultSuggestion =
-        activeClassificationSuggestionIndex >= 0
-          ? classificationSuggestions[activeClassificationSuggestionIndex]
-          : classificationSuggestions[0];
-      const defaultIndex =
-        activeClassificationSuggestionIndex >= 0 ? activeClassificationSuggestionIndex : 0;
-      if (defaultSuggestion) {
-        void previewClassificationSuggestion(defaultSuggestion, {
-          autoTranslate: defaultSuggestion.source !== "gemini",
-          selectedIndex: defaultIndex,
-        });
+      els.classificationList.querySelectorAll<HTMLButtonElement>(".classification-apply").forEach((button) => {
+        button.onclick = async () => {
+          const index = Number(button.dataset.index || "-1");
+          const suggestion = classificationSuggestions[index];
+          if (suggestion) {
+            activeClassificationSuggestionIndex = index;
+            syncClassificationCardSelection();
+            await applyClassificationSuggestion(suggestion);
+          }
+        };
+      });
+
+      const defaultSuggestion = classificationSuggestions[0];
+      if (defaultSuggestion && activeClassificationSuggestionIndex < 0) {
+        // No auto-apply by default, just wait for user action
       }
+      syncClassificationCardSelection();
     }
 
     function normalizeConsultantName(entry: unknown) {
@@ -2002,6 +2008,12 @@ const defaultCertificationBody = tenant.brand.shortName;
         .replace(/ö/g, "o")
         .replace(/ç/g, "c")
         .trim();
+    }
+
+    function escapeHtml(text: string): string {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     function closeConsultantList() {
@@ -2163,9 +2175,9 @@ const defaultCertificationBody = tenant.brand.shortName;
           .trim()
           .toLocaleLowerCase("tr-TR")
           .replace(/[ıİ]/g, "i")
-          .replace(/[ğÄ]/g, "g")
+          .replace(/[ğÄž]/g, "g")
           .replace(/[üÜ]/g, "u")
-          .replace(/[şÅ]/g, "s")
+          .replace(/[şÅž]/g, "s")
           .replace(/[öÖ]/g, "o")
           .replace(/[çÇ]/g, "c")
           .replace(/[^a-z0-9]/g, "");
@@ -2319,15 +2331,6 @@ const defaultCertificationBody = tenant.brand.shortName;
       return value;
     }
 
-    function escapeHtml(value: unknown) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-
     function renderRecentCertificates() {
       if (!els.recentSummary || !els.recentEmpty || !els.recentList) return;
       els.recentSummary.textContent = `${recentCertificates.length} kayıt referans için hazır.`;
@@ -2460,6 +2463,9 @@ const defaultCertificationBody = tenant.brand.shortName;
       const refreshed = await loadCompanyOperationContext(activeFirmaId);
       if (refreshed) {
         companyContext = refreshed;
+        certificateHistory = Array.isArray(refreshed.certificates)
+          ? refreshed.certificates
+          : [];
       }
       return refreshed;
     }
@@ -2831,7 +2837,7 @@ const defaultCertificationBody = tenant.brand.shortName;
 
       if (els.classificationSuggest) {
         els.classificationSuggest.onclick = () => {
-          void renderClassificationSuggestions();
+          void renderClassificationSuggestions({ useGemini: false });
         };
       }
 
@@ -2843,33 +2849,13 @@ const defaultCertificationBody = tenant.brand.shortName;
 
       if (els.classificationApplyTop) {
         els.classificationApplyTop.onclick = async () => {
-          if (!classificationSuggestions[0]) {
-            await renderClassificationSuggestions();
-          }
-          if (classificationSuggestions[0]) {
-            await previewClassificationSuggestion(classificationSuggestions[0], {
-              autoTranslate: classificationSuggestions[0].source !== "gemini",
+          const suggestion = classificationSuggestions[0];
+          if (suggestion) {
+            await previewClassificationSuggestion(suggestion, {
+              autoTranslate: true,
               selectedIndex: 0,
             });
           }
-        };
-      }
-
-      if (els.classificationDraftTranslate) {
-        els.classificationDraftTranslate.onclick = async () => {
-          await translateClassificationDraftScope();
-        };
-      }
-
-      if (els.classificationApplyPreview) {
-        els.classificationApplyPreview.onclick = async () => {
-          await applyClassificationPreviewToForm();
-        };
-      }
-
-      if (els.classificationClearPreview) {
-        els.classificationClearPreview.onclick = () => {
-          clearClassificationPreview();
         };
       }
 
@@ -3075,6 +3061,9 @@ const defaultCertificationBody = tenant.brand.shortName;
           showError("Firma bağlamı yüklenemedi.", `Firma ID: ${activeFirmaId}`);
           return;
         }
+        certificateHistory = Array.isArray(companyContext.certificates)
+          ? companyContext.certificates
+          : [];
 
         els.select?.classList.add("hidden");
         hydrateHeader();

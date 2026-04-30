@@ -13,7 +13,7 @@
       "label": "EA 2",
       "code": "2",
       "group": "EA",
-      "scopeCount": 105,
+      "scopeCount": 111,
       "sampleCount": 15
     },
     {
@@ -21,7 +21,7 @@
       "label": "EA 3",
       "code": "3",
       "group": "EA",
-      "scopeCount": 735,
+      "scopeCount": 791,
       "sampleCount": 33
     },
     {
@@ -29,7 +29,7 @@
       "label": "EA 4",
       "code": "4",
       "group": "EA",
-      "scopeCount": 756,
+      "scopeCount": 777,
       "sampleCount": 19
     },
     {
@@ -45,7 +45,7 @@
       "label": "EA 6",
       "code": "6",
       "group": "EA",
-      "scopeCount": 149,
+      "scopeCount": 151,
       "sampleCount": 6
     },
     {
@@ -93,7 +93,7 @@
       "label": "EA 12",
       "code": "12",
       "group": "EA",
-      "scopeCount": 605,
+      "scopeCount": 656,
       "sampleCount": 16
     },
     {
@@ -101,7 +101,7 @@
       "label": "EA 13",
       "code": "13",
       "group": "EA",
-      "scopeCount": 102,
+      "scopeCount": 133,
       "sampleCount": 2
     },
     {
@@ -109,7 +109,7 @@
       "label": "EA 14",
       "code": "14",
       "group": "EA",
-      "scopeCount": 157,
+      "scopeCount": 171,
       "sampleCount": 6
     },
     {
@@ -117,7 +117,7 @@
       "label": "EA 15",
       "code": "15",
       "group": "EA",
-      "scopeCount": 259,
+      "scopeCount": 262,
       "sampleCount": 16
     },
     {
@@ -133,7 +133,7 @@
       "label": "EA 17",
       "code": "17",
       "group": "EA",
-      "scopeCount": 509,
+      "scopeCount": 572,
       "sampleCount": 32
     },
     {
@@ -141,7 +141,7 @@
       "label": "EA 18",
       "code": "18",
       "group": "EA",
-      "scopeCount": 388,
+      "scopeCount": 471,
       "sampleCount": 25
     },
     {
@@ -149,7 +149,7 @@
       "label": "EA 19",
       "code": "19",
       "group": "EA",
-      "scopeCount": 454,
+      "scopeCount": 552,
       "sampleCount": 24
     },
     {
@@ -157,7 +157,7 @@
       "label": "EA 20",
       "code": "20",
       "group": "EA",
-      "scopeCount": 26,
+      "scopeCount": 28,
       "sampleCount": 3
     },
     {
@@ -165,7 +165,7 @@
       "label": "EA 21",
       "code": "21",
       "group": "EA",
-      "scopeCount": 24,
+      "scopeCount": 25,
       "sampleCount": 2
     },
     {
@@ -173,7 +173,7 @@
       "label": "EA 22",
       "code": "22",
       "group": "EA",
-      "scopeCount": 95,
+      "scopeCount": 103,
       "sampleCount": 9
     },
     {
@@ -181,7 +181,7 @@
       "label": "EA 23",
       "code": "23",
       "group": "EA",
-      "scopeCount": 205,
+      "scopeCount": 462,
       "sampleCount": 14
     },
     {
@@ -221,7 +221,7 @@
       "label": "EA 28",
       "code": "28",
       "group": "EA",
-      "scopeCount": 268,
+      "scopeCount": 298,
       "sampleCount": 22
     },
     {
@@ -229,7 +229,7 @@
       "label": "EA 29",
       "code": "29",
       "group": "EA",
-      "scopeCount": 1109,
+      "scopeCount": 1133,
       "sampleCount": 97
     },
     {
@@ -237,7 +237,7 @@
       "label": "EA 30",
       "code": "30",
       "group": "EA",
-      "scopeCount": 128,
+      "scopeCount": 134,
       "sampleCount": 8
     },
     {
@@ -245,7 +245,7 @@
       "label": "EA 31",
       "code": "31",
       "group": "EA",
-      "scopeCount": 296,
+      "scopeCount": 298,
       "sampleCount": 27
     },
     {
@@ -253,7 +253,7 @@
       "label": "EA 32",
       "code": "32",
       "group": "EA",
-      "scopeCount": 298,
+      "scopeCount": 301,
       "sampleCount": 34
     },
     {
@@ -261,7 +261,7 @@
       "label": "EA 33",
       "code": "33",
       "group": "EA",
-      "scopeCount": 69,
+      "scopeCount": 78,
       "sampleCount": 8
     },
     {
@@ -269,7 +269,7 @@
       "label": "EA 34",
       "code": "34",
       "group": "EA",
-      "scopeCount": 136,
+      "scopeCount": 160,
       "sampleCount": 8
     },
     {
@@ -277,7 +277,7 @@
       "label": "EA 35",
       "code": "35",
       "group": "EA",
-      "scopeCount": 278,
+      "scopeCount": 283,
       "sampleCount": 28
     },
     {
@@ -293,7 +293,7 @@
       "label": "EA 37",
       "code": "37",
       "group": "EA",
-      "scopeCount": 77,
+      "scopeCount": 78,
       "sampleCount": 11
     },
     {
@@ -301,7 +301,7 @@
       "label": "EA 38",
       "code": "38",
       "group": "EA",
-      "scopeCount": 121,
+      "scopeCount": 126,
       "sampleCount": 13
     },
     {
@@ -309,7 +309,7 @@
       "label": "EA 39",
       "code": "39",
       "group": "EA",
-      "scopeCount": 413,
+      "scopeCount": 426,
       "sampleCount": 43
     }
   ]

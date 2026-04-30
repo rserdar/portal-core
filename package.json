@@ -10,6 +10,7 @@
     "prebuild": "node scripts/generate-email-registry.js",
     "build": "astro build",
     "preview": "astro preview",
+    "maintain-certificate-history": "node scripts/maintain-certificate-history.mjs",
     "generate-pwa-assets": "pwa-assets-generator",
     "astro": "astro"
   },
