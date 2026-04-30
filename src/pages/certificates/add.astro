@@ -2280,6 +2280,7 @@ const defaultCertificationBody = tenant.brand.shortName;
         Scope: normalizeObjectValue(record, ["scope", "Scope"]),
         Logo: normalizeObjectValue(record, ["logo", "Logo"]),
         Kod: normalizeObjectValue(record, ["nace", "Kod", "kod", "NACE"]),
+        EA: normalizeObjectValue(record, ["ea", "EA", "Ea"]),
         Akreditasyon: normalizeObjectValue(record, [
           "akreditasyon",
           "Akreditasyon",
@@ -2636,6 +2637,8 @@ const defaultCertificationBody = tenant.brand.shortName;
           "NACE",
           "nace",
         ]);
+      if (els.ea)
+        els.ea.value = normalizeObjectValue(cert, ["EA", "ea", "Ea"]);
       if (els.akreditasyon)
         els.akreditasyon.value =
           normalizeObjectValue(cert, ["Akreditasyon", "akreditasyon"]) ||
@@ -2955,6 +2958,7 @@ const defaultCertificationBody = tenant.brand.shortName;
             scope: els.scope?.value.trim() || "",
             logo: els.logo?.value.trim() || "",
             nace: els.kod?.value.trim() || "",
+            ea: els.ea?.value.trim() || "",
             akreditasyon: els.akreditasyon?.value.trim() || "IAKS",
             akredite: els.akredite?.value.trim() || defaultCertificationBody,
             consultant: els.dan?.value.trim() || "",

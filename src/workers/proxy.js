@@ -220,6 +220,7 @@ export default {
       const certLink = pick(["cert_link", "certLink", "Cert Link"]);
       const logo = pick(["logo", "Logo"]);
       const nace = pick(["nace", "kod", "NACE"]);
+      const ea = pick(["ea", "EA", "Ea"]);
 
       const canonical = {
         ...(id ? { id } : {}),
@@ -236,6 +237,7 @@ export default {
         scope,
         akreditasyon,
         akredite,
+        ea,
         consultant,
         other_standart: otherStandart,
         durum,
@@ -740,6 +742,7 @@ export default {
         sScope: cert.scope,
         logo: cert.logo || company.logo,
         nace: cert.nace,
+        ea: cert.ea || null,
         akrn: cert.akreditasyon,
         not: cert.sertifika_not,
         other: cert.other_standart,
@@ -866,7 +869,7 @@ export default {
       return env.DB_D1.prepare(_D1_CERT_SQL).bind(
         id, parseInt(c.firma_no) || null, c.standart || null, c.denetim_tipi || null,
         c.sertifika_no || null, c.sertifika_tarihi || null, c.gozetim_tarihi || null, c.tescil_tarihi || null, c.gecerlilik_tarihi || null,
-        c.kapsam || null, c.scope || null, c.akreditasyon || null, c.akredite || null, null,
+        c.kapsam || null, c.scope || null, c.akreditasyon || null, c.akredite || null, c.ea || null,
         c.nace || null, c.consultant || null, c.other_standart || null, c.durum || null, c.sertifika_not || null,
         tGozConf === "TRUE" || tGozConf === true || tGozConf === "1" ? 1 : 0,
         c.calendar_id || null, c.qr || null, c.cert_link || null, c.logo || null
