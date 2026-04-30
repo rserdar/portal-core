@@ -69,8 +69,7 @@ const tenantConfig: TenantConfig = {
     },
   ],
   integrations: {
-    // Tenant reposunda medicert/config.ts içinde gerçek URL set edilir.
-    // Örnek: certificateLookupUrl: 'https://www.medicert.com.tr/verify'
+    // Gerçek URL tenant reposundaki config'de set edilir.
     certificateLookupUrl: '',
   },
 };
