@@ -2944,18 +2944,8 @@ const defaultCertificationBody = tenant.brand.shortName;
           // QR linkini bir kez hesapla; hem qr hem cert_link alanlarında kullan
           const computedQrLink = (() => {
             const selected = els.standSelect.selectedOptions[0];
-            const stdCode = selected?.value || "";
             const stdText = selected?.textContent?.trim() || "";
-            // CE veya Diğer durumunda otherInput alanını standart etiketi olarak kullan
-            const isOther =
-              stdCode === "CE" ||
-              stdCode === "DIGER" ||
-              stdText.toUpperCase() === "CE" ||
-              stdText.toUpperCase() === "DİĞER" ||
-              stdText.toUpperCase() === "DIĞER";
-            const standardLabel = isOther
-              ? (els.otherInput?.value.trim() || stdText)
-              : (els.isoFull?.value.trim() || stdText);
+            const standardLabel = stdText || els.isoFull?.value.trim() || "";
             return buildCertificateQrLink(
               companyContext.unvan || companyContext.nick,
               standardLabel,

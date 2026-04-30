@@ -249,6 +249,94 @@ export default {
       };
       return canonical;
     };
+    const createCertificateBackupPayload = (source, options = {}) => {
+      const canonical = createCanonicalCertificate(source, options);
+      if (options.id !== undefined && options.id !== null && String(options.id).trim() !== "") {
+        return { ...canonical, id: String(options.id).trim() };
+      }
+      if (canonical.id !== undefined && canonical.id !== null && String(canonical.id).trim() !== "") {
+        return { ...canonical, id: String(canonical.id).trim() };
+      }
+      return canonical;
+    };
+    const resolveCertificateLookupUrl = () => {
+      const configuredLookupUrl = String(env.CERTIFICATE_LOOKUP_URL || "").trim();
+      if (configuredLookupUrl) return configuredLookupUrl;
+
+      for (const candidate of [String(env.APP_ORIGIN || "").trim(), resolvedOrigin]) {
+        if (!candidate) continue;
+        try {
+          const url = new URL(candidate);
+          if (url.hostname.startsWith("portalapi.")) {
+            url.hostname = `sorgulama.${url.hostname.slice("portalapi.".length)}`;
+            return url.toString();
+          }
+          if (url.hostname.startsWith("portal.")) {
+            url.hostname = `sorgulama.${url.hostname.slice("portal.".length)}`;
+            return url.toString();
+          }
+        } catch {}
+      }
+
+      return "";
+    };
+    const resolveCertificateStandardLabel = (certificate) => {
+      const standardText = String(certificate?.standart || "").trim();
+      const otherStandard = String(certificate?.other_standart || "").trim();
+      return standardText || otherStandard;
+    };
+    const buildCertificateQrLink = (companyName, standardLabel, certNo) => {
+      const lookupUrl = resolveCertificateLookupUrl();
+      if (!lookupUrl) return "";
+
+      const cleanCompanyName = String(companyName || "").trim();
+      const cleanStandard = String(standardLabel || "").trim();
+      const cleanCertNo = String(certNo || "").trim();
+      const companyPieces = cleanCompanyName.split(/\s+/).filter(Boolean);
+      const firstWord = companyPieces[0] || "";
+      const shortName = firstWord.length < 3 && companyPieces.length > 1
+        ? `${firstWord} ${companyPieces[1]}`
+        : firstWord;
+      const normalizedShortName = shortName.trim();
+
+      if (!normalizedShortName && !cleanStandard && !cleanCertNo) return "";
+
+      const url = new URL(lookupUrl);
+      if (normalizedShortName) url.searchParams.set("firma", normalizedShortName);
+      if (cleanStandard) url.searchParams.set("standart", cleanStandard);
+      if (cleanCertNo) url.searchParams.set("numara", cleanCertNo);
+      return url.toString();
+    };
+    const ensureCertificateLinks = async (certificate) => {
+      const next = certificate && typeof certificate === "object" ? { ...certificate } : {};
+      const existingLink = String(next.qr || next.cert_link || "").trim();
+      if (existingLink) {
+        if (!String(next.qr || "").trim()) next.qr = existingLink;
+        if (!String(next.cert_link || "").trim()) next.cert_link = existingLink;
+        return next;
+      }
+
+      let companyName = String(next.nick || "").trim();
+      const firmaNo = parseInt(String(next.firma_no || "").trim(), 10);
+      if (!companyName && Number.isFinite(firmaNo)) {
+        const companyRow = await env.DB_D1
+          .prepare(`SELECT nickname, unvan FROM companies WHERE id=?`)
+          .bind(firmaNo)
+          .first();
+        companyName = String(companyRow?.unvan || companyRow?.nickname || "").trim();
+      }
+
+      const generatedLink = buildCertificateQrLink(
+        companyName,
+        resolveCertificateStandardLabel(next),
+        next.sertifika_no,
+      );
+      if (!generatedLink) return next;
+
+      next.qr = generatedLink;
+      next.cert_link = generatedLink;
+      return next;
+    };
     const stripMeta = (value) => {
       if (!value || typeof value !== "object" || Array.isArray(value)) return value;
       const next = { ...value };
@@ -2437,13 +2525,13 @@ export default {
         return jsonResponse({ success: true, data: results || [] });
       },
       addCertificate: async (p, ctx, env) => {
-        const canonical = createCanonicalCertificate(p?.certInfo || {});
+        const canonical = await ensureCertificateLinks(createCanonicalCertificate(p?.certInfo || {}));
         // Step 1: D1 First
         const dbRes = await upsertCertificateD1(canonical, null).run();
         const newId = dbRes.meta.last_row_id;
 
         // Step 2: Background Sync
-        const syncParams = { ...p, id: newId, certInfo: { ...p.certInfo, id: newId } };
+        const syncParams = { ...p, id: newId, certInfo: createCertificateBackupPayload(canonical, { id: newId }) };
         syncToBackup("addCertificate", syncParams, "certificates", newId);
         ctx.waitUntil(rebuildDashboardStats());
 
@@ -2455,21 +2543,24 @@ export default {
         const lockCheck = await checkOptimisticLock("certificates", id, p?.expected_updated_at);
         if (!lockCheck.ok) return lockCheck.response;
 
-        // Eğer certInfo.qr boşsa, mevcut D1 kaydındaki qr değerini koru
         let certInfoWithQr = p?.certInfo || {};
-        if (!certInfoWithQr.qr) {
+        if (!certInfoWithQr.qr || !certInfoWithQr.cert_link) {
           const existingRow = await env.DB_D1.prepare(`SELECT qr, cert_link FROM certificates WHERE id=?`).bind(parseInt(id)).first();
-          if (existingRow?.qr) {
-            certInfoWithQr = { ...certInfoWithQr, qr: existingRow.qr };
-          }
+          const preservedQr = String(certInfoWithQr.qr || existingRow?.qr || existingRow?.cert_link || "").trim();
+          const preservedCertLink = String(certInfoWithQr.cert_link || existingRow?.cert_link || existingRow?.qr || "").trim();
+          certInfoWithQr = {
+            ...certInfoWithQr,
+            ...(preservedQr ? { qr: preservedQr } : {}),
+            ...(preservedCertLink ? { cert_link: preservedCertLink } : {}),
+          };
         }
 
-        const canonical = createCanonicalCertificate(certInfoWithQr, { id });
+        const canonical = await ensureCertificateLinks(createCanonicalCertificate(certInfoWithQr, { id }));
         // Step 1: D1 First
         await upsertCertificateD1(canonical, parseInt(id)).run();
 
         // Step 2: Background Sync
-        syncToBackup("updateCertificate", { ...p, certInfo: certInfoWithQr }, "certificates", id);
+        syncToBackup("updateCertificate", { ...p, id, certInfo: createCertificateBackupPayload(canonical, { id }) }, "certificates", id);
         ctx.waitUntil(rebuildDashboardStats());
 
         const freshRow = await env.DB_D1.prepare(`SELECT updated_at FROM certificates WHERE id=?`).bind(parseInt(id)).first();

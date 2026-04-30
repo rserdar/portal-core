@@ -35,28 +35,53 @@ export function toDisplayDate(value: string) {
 
 export { addOneYearMinusOneDay };
 
+function resolveCertificateLookupUrl() {
+  const configuredLookupUrl = String(tenant.integrations.certificateLookupUrl || '').trim();
+  if (configuredLookupUrl) return configuredLookupUrl;
+
+  if (typeof window === 'undefined') return '';
+
+  try {
+    const currentUrl = new URL(window.location.origin);
+    const host = currentUrl.hostname;
+
+    if (host.startsWith('portalapi.')) {
+      currentUrl.hostname = `sorgulama.${host.slice('portalapi.'.length)}`;
+      return currentUrl.toString();
+    }
+
+    if (host.startsWith('portal.')) {
+      currentUrl.hostname = `sorgulama.${host.slice('portal.'.length)}`;
+      return currentUrl.toString();
+    }
+
+    return '';
+  } catch {
+    return '';
+  }
+}
+
 export function buildCertificateQrLink(unvan: string, standardLabel: string, certNo: string) {
   const cleanUnvan = (unvan || '').trim();
   const cleanStandard = (standardLabel || '').trim();
   const cleanCertNo = (certNo || '').trim();
-  if (!cleanUnvan || !cleanStandard || !cleanCertNo) return '';
 
   const pieces = cleanUnvan.split(/\s+/).filter(Boolean);
-  if (!pieces.length) return '';
-
   const firstWord = pieces[0] || '';
   const shortName = firstWord.length < 3 && pieces.length > 1
     ? `${firstWord} ${pieces[1]}`
     : firstWord;
 
-  if (!shortName.trim()) return '';
-
-  const lookupUrl = tenant.integrations.certificateLookupUrl;
+  const lookupUrl = resolveCertificateLookupUrl();
   if (!lookupUrl) return '';
 
   const url = new URL(lookupUrl);
-  url.searchParams.set('firma', shortName.trim());
-  url.searchParams.set('standart', cleanStandard);
-  url.searchParams.set('numara', cleanCertNo);
+  const normalizedShortName = shortName.trim();
+  if (normalizedShortName) url.searchParams.set('firma', normalizedShortName);
+  if (cleanStandard) url.searchParams.set('standart', cleanStandard);
+  if (cleanCertNo) url.searchParams.set('numara', cleanCertNo);
+
+  if (![normalizedShortName, cleanStandard, cleanCertNo].some(Boolean)) return '';
+
   return url.toString();
 }
