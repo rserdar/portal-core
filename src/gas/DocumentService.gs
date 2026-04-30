@@ -164,7 +164,8 @@ const DocumentService = {
       if (select === "S") this._replaceImage(body, "{{Sign}}", this._cfg("SIGNATURE_ID"), 48);
       else body.replaceText("{{Sign}}", "");
 
-      if (qrLink) this._generateQr(doc, qrLink);
+      // qrLink boşsa belgenin kendi Drive URL'sini QR olarak kullan
+      this._generateQr(doc, qrLink || copy.getUrl());
 
       doc.saveAndClose();
       return { success: true, url: copy.getUrl(), id: copy.getId() };
@@ -765,36 +766,49 @@ const DocumentService = {
 
   _generateQr: function(doc, link) {
     try {
-      if (!link) return;
-
+      const body = doc.getBody();
       const footer = doc.getFooter();
-      if (!footer) return;
+      const qrLabel = "{{QrKod}}";
+
+      // Her durumda hem body hem footer'dan etiketi temizle
+      // ⚠️ Paragraf referansını replaceText'ten ÖNCE al:
+      // replaceText() DOM'u değiştirir → bodyFound stale (geçersiz) olur.
+      const bodyFound = body.findText(qrLabel);
+      const targetPara = bodyFound ? bodyFound.getElement().getParent().asParagraph() : null;
+      body.replaceText(qrLabel, "");
+      if (footer) footer.replaceText(qrLabel, "");
+
+      // Link yoksa resim ekleme adımına geçme
+      if (!link) return;
 
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(link)}`;
       const blob = UrlFetchApp.fetch(qrUrl).getBlob();
 
-      // Footer'daki ilk paragrafa sabit konumlu olarak ekle
-      // Kullanıcı talebi: x:18 y:27
-      const paragraph = footer.getChild(0).asParagraph();
-      
-      // Varsa eski QrKod yer tutucusunu temizle
-      footer.replaceText("{{QrKod}}", "");
-
-      paragraph.addPositionedImage(blob)
-        .setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT)
-        .setLeftOffset(510)
-        .setTopOffset(3)
-        .setWidth(90)
-        .setHeight(90);
+      if (targetPara) {
+        // {{QrKod}} etiketi body'de bulunduysa oraya ekle
+        // A4 genişliği ~595pt, margin ~64pt => sağ kenar ~531pt => QR(85pt) için sol offset ~440pt
+        targetPara.addPositionedImage(blob)
+          .setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT)
+          .setLeftOffset(440)
+          .setTopOffset(0)
+          .setWidth(85)
+          .setHeight(85);
+      } else if (footer) {
+        // Body'de yoksa footer fallback
+        const para = footer.getChild(0).asParagraph();
+        para.addPositionedImage(blob)
+          .setLayout(DocumentApp.PositionedLayout.ABOVE_TEXT)
+          .setLeftOffset(510)
+          .setTopOffset(3)
+          .setWidth(90)
+          .setHeight(90);
+      }
 
     } catch (e) {
       BaseService.logError("_generateQr", e);
     }
   },
 
-  /**
-   * Legacy testTarihString karşılığı.
-   */
   _parseFlexibleDate: function(value) {
     if (!value) return null;
     if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
