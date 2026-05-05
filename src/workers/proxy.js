@@ -14,6 +14,8 @@
  *   env.DB_D1   — Cloudflare D1  (source of truth)
  */
 
+import * as TenantExt from "./tenant-extension.js";
+
 export default {
   async fetch(request, env, ctx) {
     const appName = String(env.APP_NAME || "Portal");
@@ -2533,6 +2535,7 @@ export default {
         // Step 2: Background Sync
         const syncParams = { ...p, id: newId, certInfo: createCertificateBackupPayload(canonical, { id: newId }) };
         syncToBackup("addCertificate", syncParams, "certificates", newId);
+        ctx.waitUntil(TenantExt.onDataChange(env, "certificate", canonical, "put"));
         ctx.waitUntil(rebuildDashboardStats());
 
         return jsonResponse({ success: true, id: newId });
@@ -2562,6 +2565,7 @@ export default {
         // Step 2: Background Sync
         syncToBackup("updateCertificate", { ...p, id, certInfo: createCertificateBackupPayload(canonical, { id }) }, "certificates", id);
         ctx.waitUntil(rebuildDashboardStats());
+        ctx.waitUntil(TenantExt.onDataChange(env, "certificate", canonical, "put"));
 
         const freshRow = await env.DB_D1.prepare(`SELECT updated_at FROM certificates WHERE id=?`).bind(parseInt(id)).first();
         return jsonResponse({ success: true, data: { updated_at: freshRow?.updated_at ?? null } });
@@ -3217,22 +3221,31 @@ export default {
       }
     };
 
+    const actionHandlers = {
+      ...SyncHandlers,
+      ...CompanyHandlers,
+      ...CertificateHandlers,
+      ...EntityHandlers,
+      ...NotificationHandlers,
+      ...MasterHandlers,
+      ...IntegrationHandlers,
+      ...DriveHandlers,
+      ...(TenantExt.TenantLookupHandlers || {})
+    };
+
+    if (request.method === "GET") {
+      const url = new URL(request.url);
+      const action = url.searchParams.get("action");
+      if (action && actionHandlers[action]) {
+        const params = Object.fromEntries(url.searchParams.entries());
+        return await actionHandlers[action](params, ctx, env);
+      }
+    }
+
     if (request.method === "POST") {
       try {
         const body = await request.json();
         const { action, params = {} } = body;
-
-        // V6 Dictionary Initialization
-        const actionHandlers = {
-          ...SyncHandlers,
-          ...CompanyHandlers,
-          ...CertificateHandlers,
-          ...EntityHandlers,
-          ...NotificationHandlers,
-          ...MasterHandlers,
-          ...IntegrationHandlers,
-          ...DriveHandlers
-        };
 
         // 🎯 1. V6 Dispatcher (O(1) Domain Logic)
         if (actionHandlers[action]) {
