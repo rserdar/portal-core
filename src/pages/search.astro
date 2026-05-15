@@ -82,7 +82,7 @@ import DataTable from '../components/DataTable.astro';
         const s = gField(cert, 'Standart', 'standart');
         const other = gField(cert, 'Other Standard', 'Other', 'other', 'Diğer', 'diger', 'Diğer Standart', 'digerStandart');
         const sl = s.toLowerCase();
-        const isOther = sl === 'diğer' || sl === 'diger' || sl === 'other';
+        const isOther = sl === 'diğer' || sl === 'diger' || sl === 'other' || sl === 'others';
         return isOther && other ? other : s;
       }).filter(Boolean)
     )) as string[];

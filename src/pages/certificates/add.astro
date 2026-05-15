@@ -1399,8 +1399,9 @@ const defaultCertificationBody = tenant.brand.shortName;
       els.standSelect.innerHTML = '<option value="">Seçiniz...</option>';
       standards.forEach((item) => {
         const option = document.createElement("option");
-        option.value = item.id;
-        option.textContent = item.id;
+        const isOtherStandard = item.id === "Diğer" || item.fullName === "Others";
+        option.value = isOtherStandard ? "Others" : item.id;
+        option.textContent = isOtherStandard ? "Others" : item.id;
         option.dataset.prefix = item.prefix;
         option.dataset.fullName = item.fullName;
         els.standSelect?.appendChild(option);
@@ -1416,7 +1417,7 @@ const defaultCertificationBody = tenant.brand.shortName;
           "10002",
           "50001",
           "CE",
-          "Diğer",
+          "Others",
         ].forEach((value) => {
           const option = document.createElement("option");
           option.value = value;
@@ -1465,7 +1466,7 @@ const defaultCertificationBody = tenant.brand.shortName;
         .replace(/[Å]/g, "S")
         .replace(/[Ö]/g, "O")
         .replace(/[Ç]/g, "C");
-      return normalized === "DIGER" || normalized === "CE";
+      return normalized === "DIGER" || normalized === "OTHER" || normalized === "OTHERS" || normalized === "CE";
     }
 
     function syncOtherStandardVisibility(
@@ -2530,8 +2531,11 @@ const defaultCertificationBody = tenant.brand.shortName;
 
       if (els.standSelect) {
         let effectiveStandardValue = standardValue;
+        if (shouldShowOtherStandard(effectiveStandardValue)) {
+          effectiveStandardValue = "Others";
+        }
         if (!effectiveStandardValue && otherValue) {
-          effectiveStandardValue = "Diğer";
+          effectiveStandardValue = "Others";
         }
 
         let option = Array.from(els.standSelect.options).find(
@@ -2941,7 +2945,7 @@ const defaultCertificationBody = tenant.brand.shortName;
             return;
           }
 
-          // QR linkini bir kez hesapla; hem qr hem cert_link alanlarında kullan
+          // QR linkini bir kez hesapla; yeni akışta yalnızca qr alanına yazıyoruz
           const computedQrLink = (() => {
             const selected = els.standSelect.selectedOptions[0];
             const stdText = selected?.textContent?.trim() || "";
@@ -2956,8 +2960,7 @@ const defaultCertificationBody = tenant.brand.shortName;
           // Düzenlemede mevcut değerleri fallback olarak kullan
           const existingQr = getEditingValue("QR Code", "qr");
           const existingCertLink = getEditingValue("Cert Link", "cert_link", "certLink");
-          const finalQr = computedQrLink || existingQr || "";
-          const finalCertLink = computedQrLink || existingCertLink || "";
+          const finalQr = computedQrLink || existingQr || existingCertLink || "";
 
           console.log("[CertForm] QR debug:", {
             unvan: companyContext.unvan,
@@ -2968,7 +2971,6 @@ const defaultCertificationBody = tenant.brand.shortName;
             existingQr,
             existingCertLink,
             finalQr,
-            finalCertLink,
           });
 
           const certInfo = {
@@ -2996,7 +2998,6 @@ const defaultCertificationBody = tenant.brand.shortName;
             sertifika_not: els.not?.value.trim() || "",
             gozetim_confirmed: els.gozetimDone?.checked ? "TRUE" : "FALSE",
             qr: finalQr,
-            cert_link: finalCertLink,
             calendar_id: getEditingValue(
               "Calendar ID",
               "calendar_id",

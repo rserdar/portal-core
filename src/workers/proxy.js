@@ -193,6 +193,11 @@ export default {
         const bId = parseInt(getCertificateId(b), 10);
         return (isNaN(bId) ? 0 : bId) - (isNaN(aId) ? 0 : aId);
       });
+    const normalizeStandardToken = (value) => normalizeTR(String(value || "").trim());
+    const isOtherStandard = (value) => {
+      const normalized = normalizeStandardToken(value);
+      return normalized === "diger" || normalized === "other" || normalized === "others";
+    };
     const createCanonicalCertificate = (source, options = {}) => {
       const input = source && typeof source === "object" && !Array.isArray(source) ? source : {};
       const pick = getPicker(input, options.explicit || null);
@@ -285,6 +290,7 @@ export default {
     const resolveCertificateStandardLabel = (certificate) => {
       const standardText = String(certificate?.standart || "").trim();
       const otherStandard = String(certificate?.other_standart || "").trim();
+      if (isOtherStandard(standardText)) return "Others";
       return standardText || otherStandard;
     };
     const buildCertificateQrLink = (companyName, standardLabel, certNo) => {
@@ -314,7 +320,7 @@ export default {
       const existingLink = String(next.qr || next.cert_link || "").trim();
       if (existingLink) {
         if (!String(next.qr || "").trim()) next.qr = existingLink;
-        if (!String(next.cert_link || "").trim()) next.cert_link = existingLink;
+        next.cert_link = "";
         return next;
       }
 
@@ -336,7 +342,7 @@ export default {
       if (!generatedLink) return next;
 
       next.qr = generatedLink;
-      next.cert_link = generatedLink;
+      next.cert_link = "";
       return next;
     };
     const stripMeta = (value) => {
@@ -1539,7 +1545,7 @@ export default {
               date: formatDateDots(surveillanceDate),
               firm: String(certificate.nickname || certificate.unvan || "").trim(),
               consultant: recipient.fullName || consultantKey,
-              standard: String(certificate.standart || "").trim() === "Other"
+              standard: isOtherStandard(certificate.standart)
                 ? String(certificate.other_standart || "").trim()
                 : String(certificate.standart || "").trim(),
               certificateNo: String(certificate.sertifika_no || "").trim(),
@@ -2547,14 +2553,18 @@ export default {
         if (!lockCheck.ok) return lockCheck.response;
 
         let certInfoWithQr = p?.certInfo || {};
-        if (!certInfoWithQr.qr || !certInfoWithQr.cert_link) {
+        if (!certInfoWithQr.qr) {
           const existingRow = await env.DB_D1.prepare(`SELECT qr, cert_link FROM certificates WHERE id=?`).bind(parseInt(id)).first();
           const preservedQr = String(certInfoWithQr.qr || existingRow?.qr || existingRow?.cert_link || "").trim();
-          const preservedCertLink = String(certInfoWithQr.cert_link || existingRow?.cert_link || existingRow?.qr || "").trim();
           certInfoWithQr = {
             ...certInfoWithQr,
             ...(preservedQr ? { qr: preservedQr } : {}),
-            ...(preservedCertLink ? { cert_link: preservedCertLink } : {}),
+            cert_link: "",
+          };
+        } else {
+          certInfoWithQr = {
+            ...certInfoWithQr,
+            cert_link: "",
           };
         }
 

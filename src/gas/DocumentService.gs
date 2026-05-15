@@ -43,6 +43,18 @@ const DocumentService = {
   _contractLabel: function() {
     return this._cfg("CONTRACT_BRAND_LABEL") || this._cfg("APP_FORM_PRIMARY_LABEL") || "Portal";
   },
+  _isOtherStandard: function(standard) {
+    const normalized = String(standard || "")
+      .trim()
+      .toLowerCase()
+      .replace(/ğ/g, "g")
+      .replace(/ü/g, "u")
+      .replace(/ş/g, "s")
+      .replace(/ö/g, "o")
+      .replace(/ç/g, "c")
+      .replace(/ı/g, "i");
+    return normalized === "diger" || normalized === "other" || normalized === "others";
+  },
 
   /**
    * ISO Sertifikası Üretir (eski isoBas).
@@ -70,7 +82,7 @@ const DocumentService = {
 
       // File name: matches legacy isoBas format
       const akreditasyonFormatted = (akreditasyon === "Non-Acc" || akreditasyon === "NA") ? "" : (akreditasyon || "");
-      const standartFormatted = (standard === "Diğer") ? (other || "") : (standard || "");
+      const standartFormatted = this._isOtherStandard(standard) ? (other || "") : (standard || "");
       let fileName = lang === "EN"
         ? `${isim} - ${akreditasyonFormatted} ${standartFormatted} (M${id})`
         : `${isim} - ${akreditasyonFormatted} ${standartFormatted} ${lang} (M${id})`;
@@ -114,8 +126,8 @@ const DocumentService = {
         "{{Scope}}":  sScope  || ""
       });
 
-      // "Diğer" standard: replace Standart/aStandart placeholders
-      if (standard === "Diğer") {
+      // Other/Others/Diğer standard: replace Standart/aStandart placeholders
+      if (this._isOtherStandard(standard)) {
         body.replaceText("{{Standart}}", other || "");
         body.replaceText("{{aStandart}}", not || "");
       }
@@ -276,7 +288,7 @@ const DocumentService = {
       const folderId = DriveService.getCompanyFolderId(isim);
       const docTemp = DriveService.safeGetFile(tempId, "Draft sertifika şablonu");
       const folder = DriveService.safeGetFolder(folderId, "Draft sertifika klasörü");
-      const standardDisplay = standard === "Diğer" ? (other || standard) : standard;
+      const standardDisplay = this._isOtherStandard(standard) ? (other || standard) : standard;
       const copyName = lang === "EN"
         ? `${isim} - Draft ${standardDisplay} (M${id})`
         : `${isim} - Draft ${standardDisplay} ${lang} (M${id})`;
@@ -298,8 +310,8 @@ const DocumentService = {
         "{{GozT}}": "xxx",
         "{{DenT}}": "xxx",
         "{{ilkT}}": "xxx",
-        "{{Standart}}": standard === "Diğer" ? (other || "") : "",
-        "{{aStandart}}": standard === "Diğer" ? (aStandart || "") : "",
+        "{{Standart}}": this._isOtherStandard(standard) ? (other || "") : "",
+        "{{aStandart}}": this._isOtherStandard(standard) ? (aStandart || "") : "",
         "{{Sign}}": "",
         "{{QrKod}}": ""
       };

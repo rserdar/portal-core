@@ -1768,7 +1768,7 @@ import {
     }));
 
     const isCE    = (s: string) => { const u = s.trim().toUpperCase(); return u === 'CE' || u.startsWith('CE '); };
-    const isOther = (s: string) => { const u = s.trim().toUpperCase(); return u === 'DİĞER' || u === 'DIGER' || u === 'OTHER'; };
+    const isOther = (s: string) => { const u = s.trim().toUpperCase(); return u === 'DİĞER' || u === 'DIGER' || u === 'OTHER' || u === 'OTHERS'; };
 
     const byPriority = (arr: typeof mapped) => {
       const sorted = [...arr].sort((a, b) => {
@@ -1824,7 +1824,7 @@ import {
       const gozetimConf  = isTruthyFlag(g(c, 'gozetim_confirmed', 'gozetimConfirmed', 'Gözetim Conf.', 'gozetimConf'));
 
       const sLow = standart.toLowerCase();
-      const isOther = sLow === 'diğer' || sLow === 'diger' || sLow === 'other';
+      const isOther = sLow === 'diğer' || sLow === 'diger' || sLow === 'other' || sLow === 'others';
 
       // Eğer bilinen key'lerle bulunamadıysa obje içinde normalize eşleşme ara
       if (isOther && !otherStandart) {

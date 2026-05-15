@@ -35,6 +35,22 @@ export function toDisplayDate(value: string) {
 
 export { addOneYearMinusOneDay };
 
+function normalizeOtherStandardLabel(value: string) {
+  const raw = String(value || '').trim();
+  const normalized = raw
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c')
+    .replace(/ı/g, 'i');
+  if (normalized === 'diger' || normalized === 'other' || normalized === 'others') {
+    return 'Others';
+  }
+  return raw;
+}
+
 function resolveCertificateLookupUrl() {
   const configuredLookupUrl = String(tenant.integrations.certificateLookupUrl || '').trim();
   if (configuredLookupUrl) return configuredLookupUrl;
@@ -63,7 +79,7 @@ function resolveCertificateLookupUrl() {
 
 export function buildCertificateQrLink(unvan: string, standardLabel: string, certNo: string) {
   const cleanUnvan = (unvan || '').trim();
-  const cleanStandard = (standardLabel || '').trim();
+  const cleanStandard = normalizeOtherStandardLabel(standardLabel || '');
   const cleanCertNo = (certNo || '').trim();
 
   const pieces = cleanUnvan.split(/\s+/).filter(Boolean);
