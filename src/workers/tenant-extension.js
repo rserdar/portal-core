@@ -42,6 +42,55 @@ const createResponse = (payload, status = 200) => {
   });
 };
 
+const hasRenderableCertificateFields = (row) => {
+  return Boolean(
+    row &&
+    row.company &&
+    row.address &&
+    row.city &&
+    row.country &&
+    row.standard &&
+    row.number &&
+    row.certDate &&
+    row.surveillanceDate
+  );
+};
+
+const OTHER_STANDARD_TOKENS = new Set(["other", "others", "diger"]);
+
+const buildStandardLookupContext = async (env, inputStandard) => {
+  const rawStandard = String(inputStandard || "").trim();
+  const normalizedInput = normalizeForSearch(rawStandard);
+  let dbStandardCode = rawStandard;
+  let kvStandardKey = normalizedInput;
+  const standardNames = new Set([rawStandard]);
+
+  if (OTHER_STANDARD_TOKENS.has(normalizedInput)) {
+    dbStandardCode = "Diğer";
+    kvStandardKey = normalizeForSearch(dbStandardCode);
+    standardNames.add("Diğer");
+    standardNames.add("Others");
+    standardNames.add("Other");
+  }
+
+  const stdRecord = await env.DB_D1.prepare(
+    `SELECT kod, tam_ad FROM standards WHERE tam_ad = ? OR kod = ? OR kisaltma = ?`
+  ).bind(rawStandard, rawStandard, rawStandard).first();
+
+  if (stdRecord) {
+    dbStandardCode = stdRecord.kod || dbStandardCode;
+    kvStandardKey = normalizeForSearch(dbStandardCode);
+    if (stdRecord.kod) standardNames.add(stdRecord.kod);
+    if (stdRecord.tam_ad) standardNames.add(stdRecord.tam_ad);
+  }
+
+  return {
+    dbStandardCode,
+    kvStandardKey,
+    standardNameCandidates: Array.from(standardNames).filter(Boolean),
+  };
+};
+
 export const TenantLookupHandlers = {
   sertifikaSorgula: async (p, ctx, env) => {
     try {
@@ -53,11 +102,10 @@ export const TenantLookupHandlers = {
       if (!certNo || !std) return createResponse({ success: false, error: "CERTNO_AND_STANDARD_REQUIRED" }, 400);
 
       // 1. Önce gelen standart isminden asıl kodu bulmaya çalış (KV eşleşmesi için kritik)
-      let searchStd = std;
-      const stdRecord = await env.DB_D1.prepare(`SELECT kod FROM standards WHERE tam_ad = ? OR kod = ? OR kisaltma = ?`).bind(p.standart || p.standard, p.standart || p.standard, p.standart || p.standard).first();
-      if (stdRecord) {
-        searchStd = normalizeForSearch(stdRecord.kod);
-      }
+      const standardContext = await buildStandardLookupContext(env, p.standart || p.standard);
+      const searchStd = standardContext.kvStandardKey;
+      const dbStandardCode = standardContext.dbStandardCode;
+      const standardNameCandidates = standardContext.standardNameCandidates;
 
       // 1. Layer: KV (Edge) - Artık kod üzerinden arıyoruz
       const cachedStr = await env.DB.get(`idx:cert:${searchStd}:${certNo}`);
@@ -96,8 +144,15 @@ export const TenantLookupHandlers = {
             row.certDate = row.sertifika_tarihi;
             row.surveillanceDate = row.gecerlilik_tarihi;
             row.accreditation = row.accreditation || row.akreditasyon;
+            row.company = row.company || row.unvan || row.nickname || row.nick;
             row.number = row.number || row.sertifika_no;
             row.standard = row.standard_full || row.standart || row.standard || p.standart;
+
+            // Eski KV payload'lari arayuzun bekledigi alanlarin bir kismini
+            // hic tasimiyor. Bu durumda eksik veri donmek yerine D1'e dusuyoruz.
+            if (!hasRenderableCertificateFields(row)) {
+              throw new Error("KV_PAYLOAD_INCOMPLETE");
+            }
 
             const finalResp = JSON.stringify(row);
             return new Response(finalResp, { 
@@ -142,7 +197,7 @@ export const TenantLookupHandlers = {
         )
         AND (
           c.standart = ? 
-          OR s.tam_ad = ? 
+          OR s.tam_ad IN (${standardNameCandidates.map(() => "?").join(", ")})
           OR s.kod = ? 
           OR LOWER(c.other_standart) LIKE LOWER(?)
         )
@@ -151,7 +206,9 @@ export const TenantLookupHandlers = {
         ORDER BY c.id DESC
       `).bind(
         inputCertNo, inputCertNo, inputCertNo,
-        searchStd, p.standart || p.standard, searchStd, 
+        dbStandardCode,
+        ...standardNameCandidates,
+        dbStandardCode,
         `%${p.standart || p.standard}%`
       ).first();
 

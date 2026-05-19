@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import icon from "astro-icon";
 import AstroPWA from '@vite-pwa/astro';
+import { fileURLToPath } from 'url';
 
 const tenantId = process.env.TENANT_ID || "medicert";
 const brandAppName = process.env.PUBLIC_BRAND_APP_NAME || "Portal";
@@ -63,7 +64,7 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
-        "@tenant": new URL(`./src/tenant/${tenantId}`, import.meta.url).pathname,
+        "@tenant": fileURLToPath(new URL(`./src/tenant/${tenantId}`, import.meta.url)),
       },
     },
     plugins: [tailwindcss()],
