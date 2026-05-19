@@ -28,6 +28,10 @@ export interface TenantIntegrationConfig {
   certificateLookupUrl?: string;
 }
 
+export interface TenantOperationConfig {
+  certificationBodies?: string[];
+}
+
 export interface TenantConfig {
   id: string;
   locale: string;
@@ -35,4 +39,5 @@ export interface TenantConfig {
   userDefaults: TenantUserDefaults;
   navigation: TenantNavigationItem[];
   integrations: TenantIntegrationConfig;
+  operations?: TenantOperationConfig;
 }

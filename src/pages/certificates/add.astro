@@ -25,7 +25,9 @@ const naceReference = unwrapReferenceItems(naceReferenceData);
 const iso22000Reference = unwrapReferenceItems(iso22000ReferenceData);
 const iso13485Reference = unwrapReferenceItems(iso13485ReferenceData);
 const iso50001Reference = unwrapReferenceItems(iso50001ReferenceData);
-const defaultCertificationBody = tenant.brand.shortName;
+const defaultCertificationBody = String(
+  tenant.operations?.certificationBodies?.[0] || tenant.brand.shortName,
+).trim();
 ---
 
 <DashboardLayout title="Sertifika Ekle">

@@ -72,6 +72,9 @@ const tenantConfig: TenantConfig = {
     // Gerçek URL tenant reposundaki config'de set edilir.
     certificateLookupUrl: '',
   },
+  operations: {
+    certificationBodies: ["Portal", "Inspect"],
+  },
 };
 
 export default tenantConfig;

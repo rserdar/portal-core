@@ -3,7 +3,14 @@ import PageShell from '../../components/PageShell.astro';
 import CompanyPicker from '../../components/CompanyPicker.astro';
 import tenant from '@tenant/config';
 
-const defaultCertificationBody = tenant.brand.shortName;
+const certificationBodies = Array.from(
+  new Set(
+    (tenant.operations?.certificationBodies || [tenant.brand.shortName, 'Inspect'])
+      .map((value) => String(value || '').trim())
+      .filter(Boolean),
+  ),
+);
+const defaultCertificationBody = certificationBodies[0] || tenant.brand.shortName;
 ---
 
 <PageShell
@@ -59,8 +66,9 @@ const defaultCertificationBody = tenant.brand.shortName;
         <div class="space-y-2">
           <label class="text-[11px] font-bold uppercase tracking-widest text-muted">Belgelendirme Firması</label>
           <select id="form-nbody" class="w-full rounded-2xl border border-border-main bg-surface-hover px-4 py-3 text-sm text-main focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
-            <option value={defaultCertificationBody}>{defaultCertificationBody}</option>
-            <option value="Inspect">Inspect</option>
+            {certificationBodies.map((body) => (
+              <option value={body}>{body}</option>
+            ))}
           </select>
         </div>
         <div class="space-y-2">
